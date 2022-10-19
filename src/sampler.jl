@@ -1,3 +1,4 @@
+# TODO: Move this to DelayEmbeddings.jl
 export statespace_sampler
 using Distributions, LinearAlgebra, Random
 
@@ -5,7 +6,7 @@ using Distributions, LinearAlgebra, Random
     statespace_sampler(rng = Random.GLOBAL_RNG; kwargs...) → sampler, isinside
 Convenience function that creates two functions. `sampler` is a 0-argument function
 that generates random points inside a state space region defined by the keywords.
-`isinside` is a 1-argument function that decides returns `true` if the given 
+`isinside` is a 1-argument function that decides returns `true` if the given
 state space point is inside that region.
 
 The regions can be:
@@ -14,8 +15,8 @@ The regions can be:
   be either `"uniform"` or `"multgauss"`.
 * **Sphere**, of `spheredims` dimensions, radius `radius` and centered on `center`.
 """
-function statespace_sampler(rng = Random.GLOBAL_RNG; 
-        min_bounds=[], max_bounds=[], method="uniform", 
+function statespace_sampler(rng = Random.GLOBAL_RNG;
+        min_bounds=[], max_bounds=[], method="uniform",
         radius::Number=-1,
         spheredims::Int=0, center=zeros(spheredims),
     )
@@ -69,7 +70,7 @@ end
 #Algorithm is taken from https://math.stackexchange.com/questions/1585975/how-to-generate-random-points-on-a-sphere.
 #It follows from the fact that a multivariate normal distribution is spherically symmetric.
 function sphereregion(r, dim, center, rng)
-    @assert r ≥ 0 
+    @assert r ≥ 0
     gen() = normalize([( 2*randn(rng) - 1 ) for j=1:dim]) .* r .+ center
     isinside(x) = norm(x .- center) < r
     return gen, isinside
