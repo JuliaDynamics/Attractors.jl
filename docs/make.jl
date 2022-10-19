@@ -2,12 +2,9 @@ cd(@__DIR__)
 using Pkg
 CI = get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
 using Attractors
-using Attractors.DynamicalSystemsBase
-using Attractors.DelayEmbeddings
 using Documenter
 using DocumenterTools: Themes
 using CairoMakie
-import Entropies.Wavelets
 using DynamicalSystems
 
 # %% JuliaDynamics theme
