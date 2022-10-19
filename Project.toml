@@ -5,22 +5,26 @@ version = "0.1.0"
 
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+DelayEmbeddings = "5732040d-69e3-5649-938a-b6b4f237613f"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
-DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Neighborhood = "645ca80c-8b79-4109-87ea-e1f58159d116"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
-DelayEmbeddings = "5732040d-69e3-5649-938a-b6b4f237613f"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Clustering = "0.14"
-ProgressMeter = "1.7"
-DynamicalSystemsBase = "2.8.0"
-Optim = "1.7"
 DelayEmbeddings = "2"
 Distances = "0.7, 0.8, 0.9, 0.10"
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
-OrdinaryDiffEq = "5"
+DynamicalSystemsBase = "2.8.0"
+Neighborhood = "0.2.2"
+Optim = "1.7"
+ProgressMeter = "1.7"
 
 [extras]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
