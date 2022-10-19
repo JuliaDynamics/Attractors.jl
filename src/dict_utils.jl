@@ -4,7 +4,7 @@ export unique_keys, swap_dict_keys!
 # in continuation and attractor matching business
 # Thanks a lot to Valentin (@Seelengrab) for generous help in the key swapping code.
 # Swapping keys and ensuring that everything works "as expected" is,
-# surprising, one of the hardest things to code in ChaosTools.jl.
+# surprising, one of the hardest things to code in Attractors.jl.
 
 """
     swap_dict_keys!(d::Dict, replacement_map::Dict)

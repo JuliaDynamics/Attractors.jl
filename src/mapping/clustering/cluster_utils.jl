@@ -121,7 +121,7 @@ function optimal_radius_dbscan_silhouette_optim(
     feat_ranges = maximum(features, dims=2)[:,1] .- minimum(features, dims=2)[:,1];
     # vary ϵ to find the best radius (which will maximize the mean sillhoute)
     dists = pairwise(metric, features)
-    f = (ϵ) -> ChaosTools.silhouettes_from_distances(
+    f = (ϵ) -> Attractors.silhouettes_from_distances(
         ϵ, dists, min_neighbors, silhouette_statistic
     )
     opt = Optim.optimize(

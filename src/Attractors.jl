@@ -6,6 +6,7 @@ Part of [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.j
 module Attractors
 using DelayEmbeddings # for datasets, will be replaced by StateSpaceSets.jl
 using DynamicalSystemsBase
+export Dataset # re-exported here because it is used so often
 
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
