@@ -235,3 +235,23 @@ end
         end
     end
 end
+
+# %%
+@testset "non-found attractors" begin
+    # This is standard henon map
+    ds = Systems.henon(; b = 0.3, a = 1.4)
+    ps = range(1.2, 1.25; length = 3)
+    # This grid is chosen such that no attractors are in there!
+    xg = yg = range(-25, -5; length = 500)
+    pidx = 1
+    sampler, = statespace_sampler(Random.MersenneTwister(1234);
+        min_bounds = [-2,-2], max_bounds = [2,2]
+    )
+    mapper = AttractorsViaRecurrences(ds, (xg, yg))
+    continuation = RecurrencesSeedingContinuation(mapper)
+    fractions_curves, attractors_info = basins_fractions_continuation(
+        continuation, ps, pidx, sampler;
+        show_progress = false, samples_per_parameter = 100
+    )
+    @test all(i -> isempty(i), attractors_info)
+end

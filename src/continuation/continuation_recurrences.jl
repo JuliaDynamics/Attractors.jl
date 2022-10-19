@@ -95,13 +95,18 @@ function basins_fractions_continuation(
             additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
         )
         current_attractors = mapper.bsn_nfo.attractors
-        # Match with previous attractors before storing anything!
-        rmap = match_attractor_ids!(current_attractors, prev_attractors; metric, threshold)
+        if !isempty(current_attractors) && !isempty(prev_attractors)
+            # If there are any attractors,
+            # match with previous attractors before storing anything!
+            rmap = match_attractor_ids!(
+                current_attractors, prev_attractors; metric, threshold
+            )
+            swap_dict_keys!(fs, rmap)
+        end
         # Then do the remaining setup for storing and next step
-        swap_dict_keys!(fs, rmap)
-        overwrite_dict!(prev_attractors, current_attractors)
         push!(fractions_curves, fs)
-        push!(attractors_info, get_info(prev_attractors))
+        push!(attractors_info, get_info(current_attractors))
+        overwrite_dict!(prev_attractors, current_attractors)
         next!(progress)
     end
     # Normalize to smaller available integers for user convenience
