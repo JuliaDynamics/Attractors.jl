@@ -141,7 +141,7 @@ end
 
     function featurizer(A, t)
         # This is the number of boxes needed to cover the set
-        g = exp(genentropy(A, 0.1; q = 0))
+        g = exp(entropy(Renyi(0), probabilities(A, 0.1)))
         return [g, minimum(A[:,1])]
     end
 
