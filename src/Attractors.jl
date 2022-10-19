@@ -8,12 +8,11 @@ module Attractors
 
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
-include("basins_of_attraction.jl")
 include("basins_utilities.jl")
 include("fractality_of_basins.jl")
 include("tipping.jl")
 include("sampler.jl")
 include("continuation/basins_fractions_continuation_api.jl")
-
+include("deprecated.jl")
 
 end # module Attractors

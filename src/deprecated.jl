@@ -1,6 +1,6 @@
-# TODO:
-# This entire file is DEPRECATED and will be removed in future versions.
-
+# This function is deprecated, however it will NEVER be removed.
+# In the future, this call signature will remain here but its source code
+# will simply be replaced by an error message.
 function basins_of_attraction(grid::Tuple, ds;
         Δt=nothing, diffeq = NamedTuple(), attractors = nothing,
         # T, idxs, compelte_state are DEPRECATED!
@@ -18,7 +18,8 @@ function basins_of_attraction(grid::Tuple, ds;
 
     The only reason the existing method is kept in and can be used is because the paper
     G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*
-    had this old call signature published.
+    and the book G. Datseris and U. Parlitz, *Nonlinear Dynamics*,
+    have this old call signature published.
     """)
 
     if !isnothing(T)
