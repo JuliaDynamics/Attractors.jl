@@ -31,7 +31,13 @@ Themes.compile(joinpath(@__DIR__, "juliadynamics-dark.scss"), joinpath(@__DIR__,
 # %% Build docs
 ENV["JULIA_DEBUG"] = "Documenter"
 
-PAGES = include("toc.jl")
+PAGES = [
+    "index.md",
+    "attractors.md",
+    "basins.md",
+    "examples.md",
+]
+
 include("style.jl")
 
 makedocs(
