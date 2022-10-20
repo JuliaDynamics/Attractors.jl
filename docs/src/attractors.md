@@ -5,8 +5,22 @@ The example [2D basins of 4D system](@ref) contains most of the functionality do
 
 ```@docs
 AttractorMapper
+```
+
+## Proximity
+```@docs
 AttractorsViaProximity
+```
+
+## Recurrences
+```@docs
 AttractorsViaRecurrences
+AttractorsViaRecurrencesSparse
 automatic_Δt_basins
+```
+## Featurizing
+```@docs
 AttractorsViaFeaturizing
+ClusteringConfig
+cluster_features
 ```

@@ -5,10 +5,8 @@ using Documenter
 using DocumenterTools: Themes
 ENV["JULIA_DEBUG"] = "Documenter"
 using CairoMakie
-
-# Package specific to this package
+# Packages specific to these docs
 using Attractors
-using DynamicalSystemsBase
 
 # %% JuliaDynamics theme
 # It includes themeing for the HTML build
@@ -32,18 +30,18 @@ Themes.compile(joinpath(@__DIR__, "juliadynamics-light.scss"), joinpath(@__DIR__
 Themes.compile(joinpath(@__DIR__, "juliadynamics-dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
 
 # %% Build docs
-
 PAGES = [
     "index.md",
     "attractors.md",
     "basins.md",
+    "continuation.md",
     "examples.md",
 ]
 
 include("style.jl")
 
 makedocs(
-    modules = [Attractors],
+    modules = [Attractors, Attractors.DelayEmbeddings],
     format = Documenter.HTML(
         prettyurls = CI,
         assets = [
@@ -55,7 +53,7 @@ makedocs(
     authors = "George Datseris, Kalel Rossi, Alexandre Wagemakers",
     pages = PAGES,
     doctest = CI,
-    draft = false,
+    draft = true,
 )
 
 if CI
