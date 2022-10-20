@@ -2,7 +2,7 @@
 
 ## Discrete system example
 ```@example MAIN
-using DynamicalSystems
+using Attractors
 function newton_map(z, p, n)
     z1 = z[1] + im*z[2]
     dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
@@ -50,7 +50,7 @@ fig
 ## Stroboscopic map example
 This example targets periodically driven 2D continuous dynamical systems, like the Duffing oscillator:
 ```@example MAIN
-using DynamicalSystems
+using Attractors
 ω=1.0; f = 0.2
 ds = Systems.duffing([0.1, 0.25]; ω, f, d = 0.15, β = -1)
 using OrdinaryDiffEq
