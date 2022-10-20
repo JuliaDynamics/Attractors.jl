@@ -35,7 +35,7 @@ PAGES = include("toc.jl")
 include("style.jl")
 
 makedocs(
-    modules = [Entropies],
+    modules = [Attractors],
     format = Documenter.HTML(
         prettyurls = CI,
         assets = [
@@ -44,7 +44,7 @@ makedocs(
         collapselevel = 3,
         ),
     sitename = "Entropies.jl",
-    authors = "Kristian Agasøster Haaga, George Datseris",
+    authors = "George Datseris, Kalel Rossi, Alexandre Wagemakers",
     pages = PAGES,
     doctest = CI,
     draft = false,
@@ -52,7 +52,7 @@ makedocs(
 
 if CI
     deploydocs(
-        repo = "github.com/JuliaDynamics/Entropies.jl.git",
+        repo = "github.com/JuliaDynamics/Attractors.jl.git",
         target = "build",
         push_preview = true
     )
