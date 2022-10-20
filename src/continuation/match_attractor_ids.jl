@@ -23,7 +23,7 @@ different attractors get assigned different IDs. However
 which attractor gets which ID is somewhat arbitrary. Finding the attractors of the
 same system for slightly different parameters could label "similar" attractors (at
 the different parameters) with different IDs.
-`match_attractors!` tries to "match" them by modifying the attractor IDs,
+`match_attractors_ids!` tries to "match" them by modifying the attractor IDs,
 i.e., the keys of the given dictionaries.
 
 The matching happens according to the output of the [`datasets_sets_distances`](@ref)

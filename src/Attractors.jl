@@ -1,12 +1,15 @@
 """
 A module for finding attractors of dynamical systems,
-their basins, and continuing them across parameters.
+their basins and their boundaris,
+and continuing attractors and basins across parameters.
+
 Part of [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/).
 """
 module Attractors
-using DelayEmbeddings # for datasets, will be replaced by StateSpaceSets.jl
-using DynamicalSystemsBase
-export Dataset # re-exported here because it is used so often
+
+using Reexport
+@reexport using DelayEmbeddings # for datasets, will be replaced by StateSpaceSets.jl
+@reexport using DynamicalSystemsBase
 
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
