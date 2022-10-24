@@ -11,10 +11,9 @@ match attractor IDs in dictionary `a₊` so that its attractors that are the clo
 those in dictionary `a₋` get assigned the same key as in `a₋`.
 Typically the +,- mean after and before some change of parameter of a system.
 
-Return the `replacement_map`, a dictionary mapping old keys of `a₊` to
+Return the replacement map, a dictionary mapping old keys of `a₊` to
 the new ones that they were mapped to. You can obtain this map, without modifying
-the dictionaries, by directly calling the [`replacement_map`](@ref) function
-with the output of [`datasets_sets_distances`](@ref) for given `metric`.
+the dictionaries, by directly calling the [`replacement_map`](@ref) function directly.
 
 ## Description
 
@@ -38,9 +37,8 @@ Additionally, you can provide a `threshold` value. If the distance between two a
 is larger than this `threshold`, then it is guaranteed that the attractors will get assigned
 different key in the dictionary `a₊`.
 """
-function match_attractor_ids!(a₊::AbstractDict, a₋; metric = Euclidean(), threshold = Inf)
-    distances = datasets_sets_distances(a₊, a₋, metric)
-    rmap = replacement_map(a₊, a₋, distances, threshold)
+function match_attractor_ids!(a₊::AbstractDict, a₋; kwargs...)
+    rmap = replacement_map(a₊, a₋; kwargs...)
     swap_dict_keys!(a₊, rmap)
     return rmap
 end
@@ -54,12 +52,13 @@ function match_attractor_ids!(as::Vector{<:Dict}; kwargs...)
 end
 
 """
-    replacement_map(a₊, a₋, distances, threshold) → rmap
+    replacement_map(a₊, a₋; metric = Euclidean(), threshold = Inf) → rmap
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_attractor_ids!`](@ref).
 Instead of passing dictionaries for `a₊, a₋`, you may pass their keys directly.
 """
-function replacement_map(a₊::Dict, a₋::Dict, distances::Dict, threshold)
+function replacement_map(a₊::Dict, a₋::Dict; metric = Euclidean(), threshold = Inf)
+    distances = datasets_sets_distances(a₊, a₋, metric)
     keys₊, keys₋ = keys.((a₊, a₋))
     replacement_map(keys₊, keys₋, distances::Dict, threshold)
 end
