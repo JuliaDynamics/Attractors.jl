@@ -55,7 +55,6 @@ end
     replacement_map(a₊, a₋; metric = Euclidean(), threshold = Inf) → rmap
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_attractor_ids!`](@ref).
-Instead of passing dictionaries for `a₊, a₋`, you may pass their keys directly.
 """
 function replacement_map(a₊::Dict, a₋::Dict; metric = Euclidean(), threshold = Inf)
     distances = datasets_sets_distances(a₊, a₋, metric)
