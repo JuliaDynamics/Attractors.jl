@@ -74,14 +74,11 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         test_basins_fractions(mapper; known = true, err = aerr)
     end
 
-    @testset "Recurrences Non-Sparse" begin
-        mapper = AttractorsViaRecurrences(ds, grid; sparse=false, diffeq, show_progress = false, kwargs...)
+    @testset "Recurrences" begin
+        mapper = AttractorsViaRecurrences(ds, grid; diffeq, show_progress = false, kwargs...)
         test_basins_fractions(mapper; err = rerr)
     end
-    @testset "Recurrences Sparse" begin
-        mapper = AttractorsViaRecurrences(ds, grid; sparse=true, diffeq, show_progress = false, kwargs...)
-        test_basins_fractions(mapper; err = rerr)
-    end
+
     @testset "Featurizing, unsupervised" begin
         for optimal_radius_method in ["silhouettes", "silhouettes_optim"]
             clusterspecs = ClusteringConfig(num_attempts_radius=20,
@@ -91,6 +88,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3])
         end
     end
+
     @testset "Featurizing, supervised" begin
         # First generate the templates
         function features_from_u(u)
