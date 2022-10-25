@@ -3,7 +3,6 @@
 
 export AttractorMapper,
     AttractorsViaRecurrences,
-    AttractorsViaRecurrencesSparse,
     AttractorsViaProximity,
     AttractorsViaFeaturizing,
     ClusteringConfig,
