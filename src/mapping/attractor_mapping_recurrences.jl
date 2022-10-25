@@ -27,6 +27,9 @@ dimensional subspace.
 * `diffeq = NamedTuple()`: Keyword arguments propagated to [`integrator`](@ref). Only
   valid for `ContinuousDynamicalSystem`. It is recommended to choose high accuracy
   solvers for this application, e.g. `diffeq = (alg=Vern9(), reltol=1e-9, abstol=1e-9)`.
+* `stop_at_dt = true`: control whether the integrator advances exactly `Δt` time points
+   with each step or not. Being true typically slows down the algorithm but leads to denser
+   trajectories. This might be preferrable for some attractors such as limit cycles.
 * `mx_chk_att = 2`: A parameter that sets the maximum checks of consecutives hits of
   an attractor before deciding the basin of the initial condition.
 * `mx_chk_hit_bas = 10`: Maximum check of consecutive visits of the same basin of
@@ -89,9 +92,11 @@ end
 
 
 function AttractorsViaRecurrences(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), sparse = false, unsafe = false, kwargs...
+        Δt = nothing, diffeq = NamedTuple(), sparse = false, unsafe = false,
+        stop_at_dt = true, kwargs...
     )
-    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, unsafe)
+    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, unsafe,
+    stop_at_dt)
     return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
 end
 
@@ -107,9 +112,10 @@ See the docstring of [`AttractorsViaRecurrences`](@ref) for possible keywords
 and details on the algorithm.
 """
 function AttractorsViaRecurrencesSparse(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), unsafe=false, kwargs...
+        Δt = nothing, diffeq = NamedTuple(), unsafe=false,
+        stop_at_dt = true, kwargs...
     )
-    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, true, unsafe)
+    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, true, unsafe, stop_at_dt)
     return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
 end
 
@@ -202,7 +208,7 @@ mutable struct BasinsInfo{B, IF, D, T, Q, A <: AbstractArray{Int32, B}}
 end
 
 function basininfo_and_integ(
-        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, unsafe
+        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, unsafe, stop_at_dt
     )
     integ = integrator(ds; diffeq)
     isdiscrete = isdiscretetime(integ)
@@ -210,7 +216,7 @@ function basininfo_and_integ(
     iter_f! = if (isdiscrete && Δt == 1)
         (integ) -> step!(integ)
     else
-        (integ) -> step!(integ, Δt)
+        (integ) -> step!(integ, Δt, stop_at_dt)
     end
     bsn_nfo = init_bsn_nfo(grid, integ, iter_f!, sparse, unsafe)
     return bsn_nfo, integ
