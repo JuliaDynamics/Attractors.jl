@@ -49,6 +49,11 @@ dimensional subspace.
   traces (which leads to infinite resetting of all counters). As this check comes with a
   performance deficit, the keyword `unsafe=true` can be set to disable it in case the user
   is confident the algorithm will hault.
+* `store_once_per_cell = false`: Control if multiple points in state space that belong to
+   the same cell are stored or not in the attractor. This exists because, due to the
+   state space discretization, a single cell in the space can contain multiple points
+   visited by the integrator. Storing multiple points with `store_once_per_cell = true` leads
+   denser attractors, which may be desirable for instance to avoid gaps in limit cycles.
 
 ## Description
 An initial condition given to an instance of `AttractorsViaRecurrences` is iterated
@@ -376,7 +381,7 @@ The label `1` (initial value) outlined in the paper is `0` here instead.
 function _identify_basin_of_cell!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u_full_state;
         mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
-        horizon_limit = 1e6, mx_chk_lost = 20,
+        horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = false,
         show_progress = true, # show_progress only used when finding new attractor.
     )
 
@@ -433,7 +438,7 @@ function _identify_basin_of_cell!(
             # We make sure we hit the attractor another mx_chk_loc_att consecutive times
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
-            store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_once_per_cell && store_attractor!(bsn_nfo, u_full_state, show_progress)
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
             # We have checked the presence of an attractor: tidy up everything
             # and get a new cell
