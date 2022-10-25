@@ -408,7 +408,7 @@ function _identify_basin_of_cell!(
 
     if bsn_nfo.state == :att_found
         if ic_label == 0 || ic_label == bsn_nfo.visited_cell
-            # Maybe chaotic attractor, perodic or long recursion.
+            # Maybe chaotic attractor, periodic or long recursion.
             # label this box as part of an attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             bsn_nfo.consecutive_match = 1
@@ -417,6 +417,7 @@ function _identify_basin_of_cell!(
             # We make sure we hit the attractor another mx_chk_loc_att consecutive times
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
+            store_attractor!(bsn_nfo, u_full_state, show_progress)
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
             # We have checked the presence of an attractor: tidy up everything
             # and get a new cell
