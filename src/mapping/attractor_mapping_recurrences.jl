@@ -50,10 +50,11 @@ dimensional subspace.
   performance deficit, the keyword `unsafe=true` can be set to disable it in case the user
   is confident the algorithm will hault.
 * `store_once_per_cell = false`: Control if multiple points in state space that belong to
-   the same cell are stored or not in the attractor. This exists because, due to the
-   state space discretization, a single cell in the space can contain multiple points
-   visited by the integrator. Storing multiple points with `store_once_per_cell = true` leads
-   denser attractors, which may be desirable for instance to avoid gaps in limit cycles.
+   the same cell are stored or not in the attractor. This exists because, due to the state
+   space discretization, a single cell in the space can contain multiple points visited by
+   the integrator. If `store_once_per_cell = true`, at least `mx_chk_loc_att` points are
+   stored per attractor, leading to denser attractors, which may be desirable for instance
+   to avoid gaps in limit cycles.
 
 ## Description
 An initial condition given to an instance of `AttractorsViaRecurrences` is iterated
