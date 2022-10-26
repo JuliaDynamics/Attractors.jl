@@ -1,7 +1,6 @@
 using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.DelayEmbeddings
-using Entropies # for featurizing of Lorenz84
 using Test
 using LinearAlgebra
 using OrdinaryDiffEq
@@ -140,9 +139,12 @@ end
     grid = (xg, yg, zg)
     expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
 
+    using Entropies
+
     function featurizer(A, t)
-        # This is the number of boxes needed to cover the set
-        g = exp(entropy(Renyi(0), probabilities(A, 0.1)))
+        # `g` is the number of boxes needed to cover the set
+        probs = probabilities(A, ValueHistogram(0.1))
+        g = exp(entropy(Renyi(0), probs))
         return [g, minimum(A[:,1])]
     end
 
