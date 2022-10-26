@@ -1,6 +1,5 @@
 using Attractors
 using Test
-using OrdinaryDiffEq:Vern9
 using Random
 using Statistics
 
