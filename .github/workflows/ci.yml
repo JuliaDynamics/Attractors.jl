@@ -46,7 +46,7 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
           # Here we add `main` version of entropies for access to `Renyi`.
-        run: |
+      - run: |
           julia '
               using Pkg
               Pkg.add("Entropies#main")
