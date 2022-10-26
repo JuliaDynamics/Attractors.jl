@@ -4,12 +4,13 @@ using OrdinaryDiffEq:Vern9
 using Random
 using Statistics
 
-@testset "Non-sparse version" begin
+@testset "Compatibility sparse and nonsparse" begin
     function test_compatibility_sparse_nonsparse(ds, grid; diffeq, kwargs...)
         sampler, = statespace_sampler(Random.MersenneTwister(1234);
             min_bounds = minimum.(grid), max_bounds = maximum.(grid)
         )
             ics = Dataset([sampler() for i in 1:1000])
+
             mapper = AttractorsViaRecurrences(ds, grid; sparse=true, diffeq, show_progress = false, kwargs...)
             fs_sparse, labels_sparse, approx_atts_sparse = basins_fractions(mapper, ics; show_progress = false)
 
