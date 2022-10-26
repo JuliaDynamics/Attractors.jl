@@ -10,7 +10,7 @@ using Statistics
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, clustering_threshold = 0.0,
+        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance_template = Inf,
         diffeq = NamedTuple(), kwargs...
     )
     # u0s is Vector{Pair}
@@ -92,13 +92,16 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     @testset "Featurizing, supervised" begin
         # First generate the templates
         function features_from_u(u)
-            A = trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq)
+            A = ds isa DynamicalSystem ?
+            trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq) :
+            trajectory(ds, 100, u; Ttr = 500, Δt = 1)
+
             featurizer(A, 0)
         end
         t = [features_from_u(x[2]) for x in u0s]
         templates = Dict([u0[1] for u0 ∈ u0s] .=> t) #keeps labels of u0s
 
-        clusterspecs = ClusteringConfig(; templates, clustering_threshold)
+        clusterspecs = ClusteringConfig(; templates, max_distance_template)
         mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; diffeq, Ttr=500
         )
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
@@ -119,7 +122,7 @@ end
         return any(isinf, x) ? [200.0, 200.0] : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    clustering_threshold = 20, ε = 1e-3)
+    max_distance_template = 20, ε = 1e-3)
 end
 
 
