@@ -109,6 +109,7 @@ end
 function _cluster_features_across_parameters(features, dists, cc)
     # Cluster them
     metric = cc.clust_method_norm
+    # @show features
     f = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
     f = float.(f)
     features_for_optimal = if cc.max_used_features == 0
@@ -120,7 +121,12 @@ function _cluster_features_across_parameters(features, dists, cc)
         features_for_optimal, cc.min_neighbors, metric, cc.optimal_radius_method,
         cc.num_attempts_radius, cc.silhouette_statistic
     )
-    dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
+    if ϵ_optimal > 0 
+        dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
+    else
+        @warn "Optimal radius ϵ_optimal is 0, using 5 instead" 
+        dbscanresult = dbscan(dists, 5, cc.min_neighbors)
+    end
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
 end
