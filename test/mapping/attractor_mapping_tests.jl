@@ -69,15 +69,15 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         end
     end
 
-    # @testset "Proximity" begin
-    #     mapper = AttractorsViaProximity(ds, known_attractors, ε; diffeq, Ttr = 100)
-    #     test_basins_fractions(mapper; known = true, err = aerr)
-    # end
+    @testset "Proximity" begin
+        mapper = AttractorsViaProximity(ds, known_attractors, ε; diffeq, Ttr = 100)
+        test_basins_fractions(mapper; known = true, err = aerr)
+    end
 
-    # @testset "Recurrences" begin
-    #     mapper = AttractorsViaRecurrences(ds, grid; diffeq, show_progress = false, kwargs...)
-    #     test_basins_fractions(mapper; err = rerr)
-    # end
+    @testset "Recurrences" begin
+        mapper = AttractorsViaRecurrences(ds, grid; diffeq, show_progress = false, kwargs...)
+        test_basins_fractions(mapper; err = rerr)
+    end
 
     @testset "Featurizing, unsupervised" begin
         for optimal_radius_method in ["silhouettes", "silhouettes_optim"]
