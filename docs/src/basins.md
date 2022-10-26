@@ -7,8 +7,6 @@ Calculating basins of attraction, or their state space fractions, can be done wi
 - [`basins_fractions`](@ref)
 - [`basins_of_attraction`](@ref).
 
-See also the related functions [`statespace_sampler`](@ref) and [`match_attractors_ids!`](@ref).
-
 ```@docs
 basins_fractions
 basins_of_attraction
