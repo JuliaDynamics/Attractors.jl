@@ -197,7 +197,8 @@ end
 
 @testset "dumb bistable map" begin
 
-
+# This is a fake bistable map that has two equilibrium points 
+# for r > 0.5. It has predictable fractions. 
 function dumb_map(dz, z, p, n)
     x,y = z
     r = p[1]
