@@ -6,9 +6,7 @@ using Random
 @testset "Henon map" begin
 
     ds = Systems.henon(; b = -0.9, a = 1.4)
-    psorig = range(0.6, 1.1; length = 20)
-
-    # xg = yg = range(-2.5, 2.5, length = 500)
+    psorig = range(0.6, 1.1; length = 10)
     pidx = 1
     sampler, = statespace_sampler(Random.MersenneTwister(1234);
         min_bounds = [-2,-2], max_bounds = [2,2]
@@ -20,27 +18,23 @@ using Random
         if abs(a[end,1]) > 100 || isnan(a[end,1])
             return [100]
         end
-        # @show a[end-5:end,1]o
         tol = 1e-5
         if abs(a[end-1,1] - a[end,1]) < tol
             # period 1
-            # println("period 1") 
             return [1] 
         elseif abs(a[end-3,1] - a[end,1]) < tol
             # period 3
-            # println("period 3") 
             return [3]
         else
             return [100]
         end
     end
     clusterspecs = Attractors.ClusteringConfig()
-    clusterspecs.optimal_radius_method = .1
-    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 1000)
+    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler;
-    show_progress = true, samples_per_parameter = 1000, par_weight = 1.)
+    show_progress = true, samples_per_parameter = 1000, par_weight = 1., ϵ_optimal = 1.)
 
     for (i, p) in enumerate(psorig)
 
@@ -87,17 +81,14 @@ end
     rrange = range(0., 2; length = 20)
     ridx = 1
 
-    # the features need some noise, if they are too well defined then the attractors are not 
-    # clustered together.
-    featurizer(a, t) = a[end,:] .+ rand(2)*0.1
+    featurizer(a, t) = a[end,:] 
     clusterspecs = Attractors.ClusteringConfig()
-    clusterspecs.optimal_radius_method = 0.1
     # clusterspecs.optimal_radius_method = "silhouettes"
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler;
-    show_progress = true, samples_per_parameter = 100, par_weight = 1.)
+    show_progress = true, samples_per_parameter = 100, par_weight = 1., ϵ_optimal = 0.1)
 
 
     for (i, r) in enumerate(rrange)

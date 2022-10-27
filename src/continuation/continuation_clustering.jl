@@ -54,7 +54,8 @@ end
 
 function basins_fractions_continuation(
         continuation::NamedTuple, prange, pidx, ics::Function;
-        samples_per_parameter = 100, show_progress = true, par_weight = 1; ϵ_optimal = 1.
+        samples_per_parameter = 100, show_progress = true, par_weight = 1, 
+        ϵ_optimal = 1.
     )
     spp, n = samples_per_parameter, length(prange)
     (; mapper, info_extraction) = continuation
@@ -86,7 +87,7 @@ function basins_fractions_continuation(
         end
     end
 
-    # cluster_labels =  _cluster_features_across_parameters(features, dists, cc)
+    # Cluster the values accross parameters
     dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
 
@@ -105,31 +106,5 @@ function basins_fractions_continuation(
         )
     end
     return fractions_curves, attractors_info
-end
-
-
-function _cluster_features_across_parameters(features, dists, cc)
-    # Cluster them
-    metric = cc.clust_distance_metric
-    # @show features
-    f = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
-    f = float.(f)
-    features_for_optimal = if cc.max_used_features == 0
-        f
-    else
-        StatsBase.sample(f, minimum(length(features), cc.max_used_features); replace = false)
-    end 
-    ϵ_optimal = optimal_radius_dbscan(
-        features_for_optimal, cc.min_neighbors, metric, cc.optimal_radius_method,
-        cc.num_attempts_radius, cc.silhouette_statistic
-    )
-    if ϵ_optimal > 0 
-        dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
-    else
-        @warn "Optimal radius ϵ_optimal is 0, using 5 instead" 
-        dbscanresult = dbscan(dists, 5, cc.min_neighbors)
-    end
-    cluster_labels = cluster_assignment(dbscanresult)
-    return cluster_labels
 end
 
