@@ -2,7 +2,6 @@ using Attractors
 using Test
 using OrdinaryDiffEq:Vern9
 using Random
-using Statistics
 
 @testset "Density of attractors" begin
     function test_morrislecar(; stop_at_dt, store_once_per_cell)
