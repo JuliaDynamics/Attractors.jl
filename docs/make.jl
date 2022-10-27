@@ -49,7 +49,7 @@ makedocs(
         ],
         collapselevel = 3,
         ),
-    sitename = "Entropies.jl",
+    sitename = "Attractors.jl",
     authors = "George Datseris, Kalel Rossi, Alexandre Wagemakers",
     pages = PAGES,
     doctest = CI,
