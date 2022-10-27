@@ -19,7 +19,7 @@ using Random
                 )
 
         sampler, = Attractors.statespace_sampler(Random.MersenneTwister(1);
-            min_bounds = [-0.5, -1], max_bounds = [0.5, 1])
+            min_bounds = [-0.5, 0], max_bounds = [0.5, 1])
         ics = Dataset([sampler() for i in 1:1000])
 
         fs, labels, atts = basins_fractions(mapper, ics; show_progress=false)
