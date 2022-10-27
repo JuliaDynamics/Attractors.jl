@@ -1,7 +1,6 @@
 using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.DelayEmbeddings
-using Entropies # for featurizing of Lorenz84
 using Test
 using LinearAlgebra
 using OrdinaryDiffEq
@@ -10,7 +9,7 @@ using Statistics
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, clustering_threshold = 0.0,
+        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance_template = Inf,
         diffeq = NamedTuple(), kwargs...
     )
     # u0s is Vector{Pair}
@@ -78,10 +77,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         mapper = AttractorsViaRecurrences(ds, grid; diffeq, show_progress = false, kwargs...)
         test_basins_fractions(mapper; err = rerr)
     end
-    @testset "Recurrences Sparse" begin
-        mapper = AttractorsViaRecurrencesSparse(ds, grid; diffeq, show_progress = false, kwargs...)
-        test_basins_fractions(mapper; err = rerr)
-    end
+
     @testset "Featurizing, unsupervised" begin
         for optimal_radius_method in ["silhouettes", "silhouettes_optim"]
             clusterspecs = ClusteringConfig(num_attempts_radius=20,
@@ -91,16 +87,20 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3])
         end
     end
+
     @testset "Featurizing, supervised" begin
         # First generate the templates
         function features_from_u(u)
-            A = trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq)
+            A = ds isa DynamicalSystem ?
+            trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq) :
+            trajectory(ds, 100, u; Ttr = 500, Δt = 1)
+
             featurizer(A, 0)
         end
         t = [features_from_u(x[2]) for x in u0s]
         templates = Dict([u0[1] for u0 ∈ u0s] .=> t) #keeps labels of u0s
 
-        clusterspecs = ClusteringConfig(; templates, clustering_threshold)
+        clusterspecs = ClusteringConfig(; templates, max_distance_template)
         mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; diffeq, Ttr=500
         )
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
@@ -121,7 +121,7 @@ end
         return any(isinf, x) ? [200.0, 200.0] : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    clustering_threshold = 20, ε = 1e-3)
+    max_distance_template = 20, ε = 1e-3)
 end
 
 
@@ -139,9 +139,12 @@ end
     grid = (xg, yg, zg)
     expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
 
+    using Entropies
+
     function featurizer(A, t)
-        # This is the number of boxes needed to cover the set
-        g = exp(entropy(Renyi(0), probabilities(A, 0.1)))
+        # `g` is the number of boxes needed to cover the set
+        probs = probabilities(A, ValueHistogram(0.1))
+        g = exp(entropy(Renyi(0), probs))
         return [g, minimum(A[:,1])]
     end
 

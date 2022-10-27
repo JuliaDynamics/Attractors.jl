@@ -13,5 +13,5 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     testfile("basins/uncertainty_tests.jl")
 
     testfile("continuation/matching_attractors_tests.jl")
-    testfile("continuation/basins_continutation_tests.jl")
+    testfile("continuation/recurrences_continuation_tests.jl")
 end

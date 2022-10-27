@@ -1,9 +1,8 @@
 using Attractors
-using Attractors.DelayEmbeddings
-using Test
-using Statistics
+using Statistics, Random
 
 @testset "Artificial test for cluster_features" begin
+    ## prepare test (three possible attractors)
     function featurizer(A, t)
         return [maximum(A[:,1]), maximum(A[:,2])]
     end
@@ -12,37 +11,43 @@ using Statistics
         return cluster_features(features, clusterspecs)
     end
     attractor_pool = [[0 0], [10 10], [20 20]];
-    correctlabels = [1,1,1,1, 2,2,2,1,2,3,3,3,3,1]
-    a = attractor_pool[correctlabels]
-    a[end] = [50 5]; correctlabels[end] = -1;
+    correct_labels = [1,1,1,1, 2,2,2,1,2,3,3,3,3,1]
+    a = attractor_pool[correct_labels]; correct_labels_infinite_threshold = deepcopy(correct_labels);
+    a[end] = [50 5]; correct_labels[end] = -1; correct_labels_infinite_threshold[end] = 3;
     attractors = Dict(1:length(a) .=> Dataset.(a; warn = false));
 
     ## Unsupervised
-    for optimal_radius_method in ["silhouettes", "silhouettes_optim"]
+    ### silhouettes and real
+    for optimal_radius_method in ["silhouettes", "silhouettes_optim", 5.0]
         for silhouette_statistic in [mean, minimum]
             clusterspecs = ClusteringConfig(; num_attempts_radius=20, silhouette_statistic,
             optimal_radius_method=optimal_radius_method, min_neighbors=2, rescale_features=false)
             clust_labels = cluster_datasets(featurizer, [], attractors, clusterspecs)
-            @test clust_labels == correctlabels
+            @test clust_labels == correct_labels
         end
     end
 
-    correctlabels_knee = [1,1,1,1, 2,2,2,1,2,3,3,3,3,1,2,2,2,2,2,3,3,3,3,3,3,1,1,1,1,1] #smaller number of features works even worse
-    using Random; Random.seed!(1)
-    a = [attractor_pool[label] + 0.2*rand(Float64, (1,2)) for label in correctlabels_knee]
+    ### knee method
+    correct_labels_knee = [1,1,1,1, 2,2,2,1,2,3,3,3,3,1,2,2,2,2,2,3,3,3,3,3,3,1,1,1,1,1] #smaller number of features works even worse
+    Random.seed!(1)
+    a = [attractor_pool[label] + 0.2*rand(Float64, (1,2)) for label in correct_labels_knee]
     attractors_knee = Dict(1:length(a) .=> Dataset.(a; warn = false));
     clusterspecs = ClusteringConfig( optimal_radius_method="knee",
     min_neighbors=4, rescale_features=false)
     clust_labels = cluster_datasets(featurizer, [], attractors_knee, clusterspecs)
-    # @test clust_labels == correctlabels #fails
-    @test maximum(clust_labels) == maximum(correctlabels) #at least check if it finds the same amount of attractors; note this does not work for any value of `min_neighbors`.
+    # @test clust_labels == correct_labels #fails
+    @test maximum(clust_labels) == maximum(correct_labels) #at least check if it finds the same amount of attractors; note this does not work for any value of `min_neighbors`.
 
     ## Supervised
     ###construct templates
     t = map(x->featurizer(x, []), attractor_pool);
     template_labels = [i for i ∈ eachindex(attractor_pool)]
     templates = Dict(template_labels.=> t)
-    clusterspecs = ClusteringConfig(; templates, min_neighbors=1, rescale_features=false, clustering_threshold=0.1)
+    ###compare
+    clusterspecs = ClusteringConfig(; templates, min_neighbors=1, rescale_features=false)
     clust_labels = cluster_datasets(featurizer, [], attractors, clusterspecs)
-    @test clust_labels == correctlabels
+    @test clust_labels == correct_labels_infinite_threshold
+    clusterspecs = ClusteringConfig(; templates, min_neighbors=1, rescale_features=false, max_distance_template=0.0)
+    clust_labels = cluster_datasets(featurizer, [], attractors, clusterspecs)
+    @test clust_labels == correct_labels
 end
