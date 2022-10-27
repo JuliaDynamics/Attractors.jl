@@ -37,12 +37,12 @@ end
     ds = Systems.magnetic_pendulum(; d, α, ω)
     xg = yg = range(-3, 3, length = 100)
     ds = projected_integrator(ds, 1:2, [0.0, 0.0])
-    mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
+    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)
     b₋, a₋ = basins_of_attraction(mapper; show_progress = false)
     # still 3 attractors at γ3 = 0.2, but only 2 at 0.1
     @testset "γ3 $γ3" for γ3 ∈ [0.2, 0.1]
         set_parameter!(ds, :γs, [1, 1, γ3])
-        mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
+        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)
         b₊, a₊ = basins_of_attraction(mapper; show_progress = false)
         @testset "distances match" begin
             rmap = match_attractor_ids!(a₊, a₋)

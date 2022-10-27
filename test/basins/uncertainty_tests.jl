@@ -9,7 +9,7 @@ using OrdinaryDiffEq
     ds = Systems.grebogi_map(rand(2))
     θg = range(0, 2π, length = 251)
     xg = range(-0.5, 0.5, length = 251)
-    mapper = AttractorsViaRecurrences(ds, (θg, xg))
+    mapper = AttractorsViaRecurrences(ds, (θg, xg); sparse = false)
     bsn, att = basins_of_attraction(mapper; show_progress = false)
     e, f, α = uncertainty_exponent(bsn; range_ε = 3:15)
     # In the paper the value is roughly 0.2
@@ -36,7 +36,7 @@ end
 
     ds = DiscreteDynamicalSystem(newton_map,[0.1, 0.2], [3] , newton_map_J)
     xg = yg = range(-1.,1.,length=300)
-    mapper = AttractorsViaRecurrences(ds, (xg, yg))
+    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false)
     bsn,att = basins_of_attraction(mapper; show_progress = false)
     e,f,α = uncertainty_exponent(bsn; range_ε = 5:30)
 
@@ -49,7 +49,7 @@ end
     ds = Systems.grebogi_map()
     θg=range(0,2π,length = 300)
     xg=range(-0.5,0.5,length = 300)
-    mapper = AttractorsViaRecurrences(ds, (θg, xg))
+    mapper = AttractorsViaRecurrences(ds, (θg, xg); sparse = false)
     basin, attractors = basins_of_attraction(mapper; show_progress = false)
     Sb, Sbb = basin_entropy(basin, 6)
     @test 0.4 ≤ Sb ≤ 0.42
@@ -60,7 +60,7 @@ end
 
     ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
     xg = yg = range(-2.,2.,length = 300)
-    mapper = AttractorsViaRecurrences(ds, (xg, yg))
+    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false)
     basin, attractors = basins_of_attraction(mapper; show_progress = false)
     test_res, Sbb = basins_fractal_test(basin; ε = 5)
     @test test_res == :smooth

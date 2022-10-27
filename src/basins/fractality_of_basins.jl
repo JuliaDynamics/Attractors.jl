@@ -139,6 +139,8 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     return tst_res, Ŝbb
 end
 
+# as suggested in https://github.com/JuliaStats/StatsBase.jl/issues/398#issuecomment-417875619
+linreg(x, y) = hcat(fill!(similar(x), 1), x) \ y
 
 """
     basins_fractal_dimension(basins; kwargs...) -> V_ε, N_ε ,d

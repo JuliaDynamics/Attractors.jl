@@ -13,7 +13,7 @@ using Random
     pidx = :γs
     for (j, ps) in enumerate((psorig, reverse(psorig)))
         # test that both finding and removing attractor works
-        mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
+        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
         sampler, = statespace_sampler(; min_bounds = [-3,-3], max_bounds = [3,3])
 
         continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
@@ -101,7 +101,7 @@ end
     # really small threshold like 0.2 we still get a "single" attractor
     # throughout the range. Now we get one with period 14, a chaotic,
     # and one with period 7 that spans the second half of the parameter range
-    mapper = AttractorsViaRecurrences(ds, (xg, yg),
+    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false,
         mx_chk_fnd_att = 3000,
         mx_chk_loc_att = 3000
     )
@@ -173,7 +173,7 @@ end
     sampler, = statespace_sampler(Random.MersenneTwister(1234);
         min_bounds = [-2,-2], max_bounds = [2,2]
     )
-    mapper = AttractorsViaRecurrences(ds, (xg, yg))
+    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     continuation = RecurrencesSeedingContinuation(mapper)
     fractions_curves, attractors_info = basins_fractions_continuation(
         continuation, ps, pidx, sampler;

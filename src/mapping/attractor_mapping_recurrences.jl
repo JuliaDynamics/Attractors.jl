@@ -7,8 +7,6 @@ include("sparse_arrays.jl")
 Map initial conditions to attractors by identifying attractors on the fly based on
 recurrences in the state space, as outlined by Datseris & Wagemakers[^Datseris2022].
 Works for any case encapsulated by [`GeneralizedDynamicalSystem`](@ref).
-The version [`AttractorsViaRecurrencesSparse`](@ref) should practically always be
-preferred over this one.
 
 `grid` is a tuple of ranges partitioning the state space so that a finite state
 machine can operate on top of it. For example
@@ -18,6 +16,12 @@ system. The grid has to be the same dimensionality as the state space, use a
 dimensional subspace.
 
 ## Keyword Arguments
+* `sparse = true`: control the interval representation of the state space grid. If true,
+   uses a sparse array, whose memory usage is in general more efficient than a regular
+   array obtained with `sparse=false`. In practice, the sparse representation should
+   always be preferred when searching for [`basins_fractions`](@ref). Only for very low
+   dimensional systems and for computing the full [`basins_of_attraction`](@ref) the
+   non-sparse version should be used.
 * `Δt`: Approximate time step of the integrator, which is `1` for discrete systems.
   For continuous systems, an automatic value is calculated using
   [`automatic_Δt_basins`](@ref).
@@ -89,27 +93,9 @@ end
 
 
 function AttractorsViaRecurrences(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), sparse = false, unsafe = false, kwargs...
+        Δt = nothing, diffeq = NamedTuple(), sparse = true, unsafe = false, kwargs...
     )
     bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, unsafe)
-    return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
-end
-
-"""
-    AttractorsViaRecurrencesSparse(ds::GeneralizedDynamicalSystem, grid::Tuple; kwargs...)
-This version is practically identical to [`AttractorsViaRecurrences`](@ref),
-with the difference that the internal representation of the grid uses a sparse array.
-In practice, it should always be preferred when searching for [`basins_fractions`](@ref).
-Only for very low dimensional systems and for computing the full
-[`basins_of_attraction`](@ref) the non-sparse version should be used.
-
-See the docstring of [`AttractorsViaRecurrences`](@ref) for possible keywords
-and details on the algorithm.
-"""
-function AttractorsViaRecurrencesSparse(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), unsafe=false, kwargs...
-    )
-    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, true, unsafe)
     return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
 end
 
