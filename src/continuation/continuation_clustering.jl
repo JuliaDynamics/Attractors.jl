@@ -54,7 +54,7 @@ end
 
 function basins_fractions_continuation(
         continuation::NamedTuple, prange, pidx, ics::Function;
-        samples_per_parameter = 100, show_progress = true, par_weight = 1
+        samples_per_parameter = 100, show_progress = true, par_weight = 1; ϵ_optimal = 1.
     )
     spp, n = samples_per_parameter, length(prange)
     (; mapper, info_extraction) = continuation
@@ -86,7 +86,9 @@ function basins_fractions_continuation(
         end
     end
 
-    cluster_labels =  _cluster_features_across_parameters(features, dists, cc)
+    # cluster_labels =  _cluster_features_across_parameters(features, dists, cc)
+    dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
+    cluster_labels = cluster_assignment(dbscanresult)
 
     # And finally collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
