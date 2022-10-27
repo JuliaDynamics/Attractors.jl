@@ -77,6 +77,8 @@ function optimal_radius_dbscan(features, min_neighbors, metric, optimal_radius_m
         )
     elseif optimal_radius_method == "knee"
         ϵ_optimal = optimal_radius_dbscan_knee(features, min_neighbors, metric)
+    elseif optimal_radius_method isa Real
+      ϵ_optimal = optimal_radius_method
     else
         error("Unkown `optimal_radius_method`.")
     end

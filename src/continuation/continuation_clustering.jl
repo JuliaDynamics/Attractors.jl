@@ -74,7 +74,7 @@ function basins_fractions_continuation(
 
     # Construct distance matrix
     cc = mapper.cluster_config
-    metric = cc.clust_method_norm
+    metric = cc.clust_distance_metric
     dists = pairwise(metric, features)
 
     # use parameter distance weight (w is the weight for one parameter only)
@@ -108,7 +108,7 @@ end
 
 function _cluster_features_across_parameters(features, dists, cc)
     # Cluster them
-    metric = cc.clust_method_norm
+    metric = cc.clust_distance_metric
     # @show features
     f = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
     f = float.(f)

@@ -4,9 +4,9 @@ using Random
 
 
 @testset "Henon map" begin
-    # This is standard henon map
-    ds = Systems.henon(; b = 0.3, a = 1.4)
-    psorig = range(1.04, 1.12; length = 30)
+
+    ds = Systems.henon(; b = -0.9, a = 1.4)
+    psorig = range(0.6, 1.1; length = 20)
 
     # xg = yg = range(-2.5, 2.5, length = 500)
     pidx = 1
@@ -17,39 +17,38 @@ using Random
     ps = psorig
     # Feature based on period. 
     function featurizer(a, t) 
-        if abs(a[end,1]) > 100
+        if abs(a[end,1]) > 100 || isnan(a[end,1])
             return [100]
         end
-
+        # @show a[end-5:end,1]o
         tol = 1e-5
         if abs(a[end-1,1] - a[end,1]) < tol
-            # period 1 
+            # period 1
+            println("period 1") 
             return [1] 
         elseif abs(a[end-3,1] - a[end,1]) < tol
             # period 3
+            println("period 3") 
             return [3]
-        elseif abs(a[end-9,1] - a[end,1]) < tol
-            # period 9
-            return [9]
         else
             return [100]
         end
     end
     clusterspecs = Attractors.ClusteringConfig()
-    clusterspecs.optimal_radius_method = 0.1
-    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 2000)
+    clusterspecs.optimal_radius_method = .1
+    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 1000)
     continuation = ClusteringAcrossParametersContinuation(mapper)
-    fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+    @show fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler;
-    show_progress = true, samples_per_parameter = 100, par_weight = 1.)
+    show_progress = true, samples_per_parameter = 1000, par_weight = 1.)
 
     for (i, p) in enumerate(psorig)
 
         fs = fractions_curves[i]
-        if  1.07 < p < 1.09 
+        if   p < 0.9 
             @show k = sort!(collect(keys(fs)))
             @test length(k) == 2
-        else
+        elseif p > 1. 
             @show k = sort!(collect(keys(fs)))
             @test length(k) == 3
             # v = values(fs) 
@@ -96,7 +95,8 @@ end
     # clustered together.
     featurizer(a, t) = a[end,:] .+ rand(2)*0.1
     clusterspecs = Attractors.ClusteringConfig()
-    clusterspecs.optimal_radius_method = "silhouettes"
+    clusterspecs.optimal_radius_method = 0.1
+    # clusterspecs.optimal_radius_method = "silhouettes"
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
