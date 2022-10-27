@@ -24,11 +24,11 @@ using Random
         tol = 1e-5
         if abs(a[end-1,1] - a[end,1]) < tol
             # period 1
-            println("period 1") 
+            # println("period 1") 
             return [1] 
         elseif abs(a[end-3,1] - a[end,1]) < tol
             # period 3
-            println("period 3") 
+            # println("period 3") 
             return [3]
         else
             return [100]
@@ -38,7 +38,7 @@ using Random
     clusterspecs.optimal_radius_method = .1
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 1000)
     continuation = ClusteringAcrossParametersContinuation(mapper)
-    @show fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+    fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler;
     show_progress = true, samples_per_parameter = 1000, par_weight = 1.)
 
@@ -46,15 +46,11 @@ using Random
 
         fs = fractions_curves[i]
         if   p < 0.9 
-            @show k = sort!(collect(keys(fs)))
+            k = sort!(collect(keys(fs)))
             @test length(k) == 2
         elseif p > 1. 
-            @show k = sort!(collect(keys(fs)))
+            k = sort!(collect(keys(fs)))
             @test length(k) == 3
-            # v = values(fs) 
-            # for f in v
-            #     @test (0.4 < f < 0.6)
-            # end
         end    
         @test sum(values(fs)) ≈ 1
     end
