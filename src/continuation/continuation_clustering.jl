@@ -1,5 +1,6 @@
 export ClusteringAcrossParametersContinuation
 import ProgressMeter
+import Mmap
 
 """
     ClusteringAcrossParametersContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
@@ -76,7 +77,16 @@ function basins_fractions_continuation(
     # Construct distance matrix
     cc = mapper.cluster_config
     metric = cc.clust_distance_metric
-    dists = pairwise(metric, features)
+
+    # The distance matrix can get very large. The use of memory map based array is 
+    # necessary.
+    if length(features) > 20000
+        s = open("./tmp_mmap.bin", "w+") # write and create if non existing.
+        dists = Mmap.mmap(s, Matrix{Float32}, ( length(features), length(features)))  
+    else
+        dists = zeros(length(features), length(features))
+    end
+    pairwise!(metric, dists, features; symmetric = true)
 
     # use parameter distance weight (w is the weight for one parameter only)
     # Parameter range is rescaled from 0 to 1.
@@ -88,8 +98,13 @@ function basins_fractions_continuation(
     end
 
     # Cluster the values accross parameters
+
     dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
+
+    if length(features) > 20000
+        rm("./tmp_mmap.bin")
+    end
 
     # And finally collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
