@@ -56,7 +56,7 @@ end
 function basins_fractions_continuation(
         continuation::NamedTuple, prange, pidx, ics::Function;
         samples_per_parameter = 100, show_progress = true, par_weight = 1, 
-        ϵ_optimal = 1.
+        ϵ_optimal = 1., mmap_limit = 20000
     )
     spp, n = samples_per_parameter, length(prange)
     (; mapper, info_extraction) = continuation
@@ -80,7 +80,7 @@ function basins_fractions_continuation(
 
     # The distance matrix can get very large. The use of memory map based array is 
     # necessary.
-    if length(features) > 20000
+    if length(features) > mmap_limit
         s = open("./tmp_mmap.bin", "w+") # write and create if non existing.
         dists = Mmap.mmap(s, Matrix{Float32}, ( length(features), length(features)))  
     else
@@ -102,7 +102,7 @@ function basins_fractions_continuation(
     dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
 
-    if length(features) > 20000
+    if length(features) > mmap_limit
         rm("./tmp_mmap.bin")
     end
 

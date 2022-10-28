@@ -49,6 +49,24 @@ using Random
         @test sum(values(fs)) ≈ 1
     end
 
+
+    # Test mmap 
+    fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+    continuation, psorig, pidx, sampler;
+    show_progress = true, samples_per_parameter = 1000, par_weight = 1., ϵ_optimal = 1., mmap_limit = 1000)
+
+    for (i, p) in enumerate(psorig)
+        fs = fractions_curves[i]
+        if   p < 0.9 
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 2
+        elseif p > 1. 
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 3
+        end    
+        @test sum(values(fs)) ≈ 1
+    end
+
 end
 
 
