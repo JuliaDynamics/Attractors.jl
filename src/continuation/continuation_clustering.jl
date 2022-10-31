@@ -81,7 +81,8 @@ function basins_fractions_continuation(
     # The distance matrix can get very large. The use of memory map based array is 
     # necessary.
     if length(features) > mmap_limit
-        s = open("./tmp_mmap.bin", "w+") # write and create if non existing.
+        # Create temp file
+        pth, s = mktemp()  
         dists = Mmap.mmap(s, Matrix{Float32}, ( length(features), length(features)))  
     else
         dists = zeros(length(features), length(features))
@@ -98,13 +99,8 @@ function basins_fractions_continuation(
     end
 
     # Cluster the values accross parameters
-
     dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
-
-    if length(features) > mmap_limit
-        rm("./tmp_mmap.bin")
-    end
 
     # And finally collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
