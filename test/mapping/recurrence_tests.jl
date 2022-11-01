@@ -1,17 +1,18 @@
 using Attractors
 using Test
-using OrdinaryDiffEq:Vern9
+using OrdinaryDiffEq: Vern9
 using Random
 
 @testset "Density of attractors" begin
-    function test_morrislecar(; stop_at_dt, store_once_per_cell)
+    function test_morrislecar(; stop_at_Δt, store_once_per_cell)
         df = Systems.morris_lecar(; I = 0.115)
         diffeq = (reltol = 1e-9,  alg = Vern9())
         xg = yg = range(-1,1,length = 20000)
         mapper = AttractorsViaRecurrences(df, (xg, yg);
                 mx_chk_fnd_att = 5000,
                 mx_chk_loc_att = 1000,
-                stop_at_dt,
+                stop_at_Δt,
+                diffeq,
                 store_once_per_cell,
                 sparse = true,
                 Δt = 0.1,

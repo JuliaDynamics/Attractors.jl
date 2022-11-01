@@ -36,8 +36,10 @@ dimensional subspace.
   valid for continuous time systems. It is recommended to choose high accuracy
   solvers for this application, e.g. `diffeq = (alg=Vern9(), reltol=1e-9, abstol=1e-9)`.
 * `stop_at_Δt = false`: control whether the integrator advances exactly `Δt` time points
-   with each step or not. Being true typically slows down the algorithm but leads to denser
-   trajectories. This might be preferrable for some attractors such as limit cycles.
+   with each step or not. Should only be used if `Δt` is smaller than the typical integrator
+   step (for continuous time systems). Being true slows down performance significantly but
+   increases accuracy drastically, especially in the case of limit cycle attractors,
+   but only if the automatic value of `Δt` is used.
 
 ### Finite state machine configuration
 * `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
@@ -84,19 +86,19 @@ attraction or exit basins is utilized. In other functions like `basins_fractions
 only the attractor locations are utilized.
 
 The iteration of a given initial condition continues until one of the following happens:
-1. The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
+-  The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
    it is considered that an attractor is found and is labelled with a new ID. Then,
    iteration continues a bit more until we have identified the attractor with sufficient
    accuracy, i.e., until `mx_chk_loc_att` cells with the new ID have been visited.
-1. The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
+-  The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
    the initial condition is numbered with the attractor's ID.
-1. The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
+-  The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
    belongs to that basin and is numbered accordingly. Notice that basins are stored and
    used only when `sparse = false`.
-1. The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
+-  The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
    of the integrator state becomes > than `horizon_limit`: the initial
    condition's label is set to `-1`.
-1. If none of the above happens, the initial condition is labelled `-1` after
+-  If none of the above happens, the initial condition is labelled `-1` after
    and `mx_chk_safety` integrator steps.
 
 [^Datseris2022]:
@@ -477,8 +479,8 @@ function _identify_basin_of_cell!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{B, IF, D, T, Q},
-    u_full_state, show_progress = true) where {B, IF, D, T, Q}
+function store_attractor!(bsn_nfo::BasinsInfo{D, IF, T},
+    u_full_state, show_progress = true) where {D, IF, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
