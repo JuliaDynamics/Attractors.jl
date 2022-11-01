@@ -47,7 +47,8 @@ function _default_seeding_process(attractor::AbstractDataset)
 end
 
 function basins_fractions_continuation(
-        continuation::RecurrencesSeedingContinuation, prange, pidx, ics::Function;
+        continuation::RecurrencesSeedingContinuation,
+        prange, pidx, ics::Function = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,
     )
     # show_progress && @info "Starting basins fraction continuation."
@@ -135,4 +136,13 @@ function reset!(mapper::AttractorsViaRecurrences)
     # because we want the next attractor to be labelled differently in case
     # it doesn't actually match to any of the new ones
     return
+end
+
+function _ics_from_grid(continuation::RecurrencesSeedingContinuation)
+    return _ics_from_grid(continuation.mapper.grid)
+end
+
+function _ics_from_grid(grid::Tuple)
+    sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+    return sampler
 end
