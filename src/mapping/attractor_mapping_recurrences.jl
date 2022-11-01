@@ -163,7 +163,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     )
 
     # TODO: Here we can have a slightly more efficient iteration by
-    # iterating I in different ways. In this way it always starts from the edge of
+    # iterating over `I` in different ways. In this way it always starts from the edge of
     # the grid, which is the least likely location for attractors. We need to
     # iterate I either randomly or from its center.
     for (k, ind) in enumerate(I)
@@ -187,11 +187,11 @@ end
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-mutable struct BasinsInfo{B, IF, D, T, Q, A <: AbstractArray{Int32, B}}
+mutable struct BasinsInfo{D, IF, T, Q, A <: AbstractArray{Int32, D}}
     basins::A # sparse or dense
-    grid_steps::SVector{B, Float64}
-    grid_maxima::SVector{B, Float64}
-    grid_minima::SVector{B, Float64}
+    grid_steps::SVector{D, Float64}
+    grid_maxima::SVector{D, Float64}
+    grid_minima::SVector{D, Float64}
     iter_f!::IF
     state::Symbol
     current_att_label::Int
@@ -200,7 +200,6 @@ mutable struct BasinsInfo{B, IF, D, T, Q, A <: AbstractArray{Int32, B}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    # TODO: Isn't `D` and `B` always equivalent...? can't we just remove `D`?
     attractors::Dict{Int32, Dataset{D, T}}
     visited_list::Q
 end
@@ -222,7 +221,9 @@ end
 
 function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
     D = length(get_state(integ))
+    T = eltype(get_state(integ))
     G = length(grid)
+    D == G || error("Grid and dynamical system do not have the same dimension!")
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
@@ -239,7 +240,7 @@ function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
         iter_f!,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int32,Dataset{D, eltype(get_state(integ))}}(),
+        Dict{Int32, Dataset{D, T}}(),
         Vector{CartesianIndex{G}}(),
     )
     reset_basins_counters!(bsn_nfo)
