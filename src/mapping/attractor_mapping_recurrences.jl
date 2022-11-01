@@ -43,20 +43,20 @@ dimensional subspace.
 
 ### Finite state machine configuration
 * `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
-  before declaring convergence to an existing attractor.
+  before declaring convergence to that existing attractor.
 * `mx_chk_hit_bas = 10`: Maximum check of consecutive visits of the same basin of
   attraction before declaring convergence to an existing attractor.
 * `mx_chk_fnd_att = 100`: Maximum check of consecutive visits to a previously visited
-  unnumbered cell before declaring we have found a new attractor.
+  unlabeled cell before declaring we have found a new attractor.
 * `mx_chk_loc_att = 100`: Maximum check of consecutive visits to cells marked as a new
   attractor, during the attractor identification phase, before declaring we that we have
   identified the new attractor with sufficient cells.
 * `store_once_per_cell = true`: Control if multiple points in state space that belong to
-  the same cell are stored or not in the attractor. If `true`, and after an attractor is
-  found, each visited cell will only store a point once, which is desirable for fixed
+  the same cell are stored or not in the attractor, after an attractor is found.
+  If `true`, each visited cell will only store a point once, which is desirable for fixed
   points and limit cycles. If `false`, at least `mx_chk_loc_att` points are
-  stored per attractor, leading to denser attractors, which may be desirable for instance
-  in chaotic attractors.
+  stored per attractor, leading to more densely stored attractors,
+  which may be desirable for instance in chaotic attractors.
 * `mx_chk_lost = 20`: Maximum check of iterations outside the defined grid before we
   declare the orbit lost outside and hence assign it label `-1`.
 * `horizon_limit = 1e6`: If the norm of the integrator state reaches this
@@ -225,7 +225,7 @@ function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
     D = length(get_state(integ))
     T = eltype(get_state(integ))
     G = length(grid)
-    D == G || error("Grid and dynamical system do not have the same dimension!")
+    # D == G || error("Grid and dynamical system do not have the same dimension!")
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
@@ -352,6 +352,7 @@ function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; mx_chk_safety = Int(1e6),
     return cell_label
 end
 
+# TODO: Once this is removed, the check D == G below needs to be adjusted.
 _possibly_reduced_state(y, integ, grid) = y
 function _possibly_reduced_state(y, integ::PoincareMap, grid)
     if integ.planecrossing.plane isa Tuple && length(grid) == dimension(integ)-1
