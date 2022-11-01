@@ -112,10 +112,9 @@ end
 
 
 function AttractorsViaRecurrences(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), sparse = true, unsafe = false,
+        Δt = nothing, diffeq = NamedTuple(), sparse = true,
         stop_at_Δt = false, kwargs...)
-    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, unsafe,
-    stop_at_Δt)
+    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, stop_at_Δt)
     return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
 end
 
@@ -201,14 +200,13 @@ mutable struct BasinsInfo{B, IF, D, T, Q, A <: AbstractArray{Int32, B}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    unsafe::Bool
     # TODO: Isn't `D` and `B` always equivalent...? can't we just remove `D`?
     attractors::Dict{Int32, Dataset{D, T}}
     visited_list::Q
 end
 
 function basininfo_and_integ(
-        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, unsafe, stop_at_Δt
+        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, stop_at_Δt
     )
     integ = integrator(ds; diffeq)
     isdiscrete = isdiscretetime(integ)
@@ -218,11 +216,11 @@ function basininfo_and_integ(
     else
         (integ) -> step!(integ, Δt, stop_at_Δt)
     end
-    bsn_nfo = init_bsn_nfo(grid, integ, iter_f!, sparse, unsafe)
+    bsn_nfo = init_bsn_nfo(grid, integ, iter_f!, sparse)
     return bsn_nfo, integ
 end
 
-function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool, unsafe::Bool)
+function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
     D = length(get_state(integ))
     G = length(grid)
     grid_steps = step.(grid)
@@ -240,7 +238,7 @@ function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool, unsaf
         SVector{G, Float64}(grid_minima),
         iter_f!,
         :att_search,
-        2,4,0,1,0,0,unsafe,
+        2,4,0,1,0,0,
         Dict{Int32,Dataset{D, eltype(get_state(integ))}}(),
         Vector{CartesianIndex{G}}(),
     )
@@ -324,8 +322,8 @@ function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; mx_chk_safety = Int(1e6),
         # within the same grid cell. In such a case, when starting on the second attractor
         # the trajectory will forever reset between locating a new attractor and recurring
         # on the previously found one...
-        bsn_nfo.unsafe || (bsn_nfo.safety_counter += 1)
-        if bsn_nfo.unsafe || (bsn_nfo.safety_counter ≥ mx_chk_safety)
+        bsn_nfo.safety_counter += 1
+        if bsn_nfo.safety_counter ≥ mx_chk_safety
             @warn  """
             `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
             It may be that the grid is not fine enough and attractors intersect in the
