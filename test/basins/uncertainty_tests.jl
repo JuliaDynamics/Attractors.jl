@@ -1,5 +1,4 @@
 using Attractors
-using DynamicalSystemsBase
 using Test
 using OrdinaryDiffEq
 

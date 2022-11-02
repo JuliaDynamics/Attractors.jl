@@ -22,34 +22,51 @@ dimensional subspace.
    always be preferred when searching for [`basins_fractions`](@ref). Only for very low
    dimensional systems and for computing the full [`basins_of_attraction`](@ref) the
    non-sparse version should be used.
-* `Δt`: Approximate time step of the integrator, which is `1` for discrete systems.
-  For continuous systems, an automatic value is calculated using
-  [`automatic_Δt_basins`](@ref).
+
+### Integrator configuration
 * `Ttr = 0`: This keyword arguments allows to skip a transient before the recurrence
   routine begins. It is useful for some high dimensional systems to speed up the
   convergence to the attractor.
+* `Δt`: Approximate time step of the integrator, which is `1` for discrete time systems.
+  For continuous systems, an automatic value is calculated using
+  [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
+  much smaller than the typical integrator internal step size in case of adaptive
+  integrators. In that case use `stop_at_Δt = true`.
 * `diffeq = NamedTuple()`: Keyword arguments propagated to [`integrator`](@ref). Only
-  valid for `ContinuousDynamicalSystem`. It is recommended to choose high accuracy
+  valid for continuous time systems. It is recommended to choose high accuracy
   solvers for this application, e.g. `diffeq = (alg=Vern9(), reltol=1e-9, abstol=1e-9)`.
-* `mx_chk_att = 2`: A parameter that sets the maximum checks of consecutives hits of
-  an attractor before deciding the basin of the initial condition.
+* `stop_at_Δt = false`: control whether the integrator advances exactly `Δt` time points
+   with each step or not. Should only be used if `Δt` is smaller than the typical integrator
+   step (for continuous time systems). Being true slows down performance significantly but
+   increases accuracy drastically, especially in the case of limit cycle attractors,
+   but only if the automatic value of `Δt` is used.
+
+### Finite state machine configuration
+* `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
+  before declaring convergence to that existing attractor.
 * `mx_chk_hit_bas = 10`: Maximum check of consecutive visits of the same basin of
-  attraction. This number can be increased for higher accuracy.
-* `mx_chk_fnd_att = 100`: Maximum check of unnumbered cell before considering we have
-  an attractor. This number can be increased for higher accuracy.
-* `mx_chk_loc_att = 100`: Maximum check of consecutive cells marked as an attractor
-  before considering that we have all the available pieces of the attractor.
+  attraction before declaring convergence to an existing attractor.
+* `mx_chk_fnd_att = 100`: Maximum check of consecutive visits to a previously visited
+  unlabeled cell before declaring we have found a new attractor.
+* `mx_chk_loc_att = 100`: Maximum check of consecutive visits to cells marked as a new
+  attractor, during the attractor identification phase, before declaring we that we have
+  identified the new attractor with sufficient cells.
+* `store_once_per_cell = true`: Control if multiple points in state space that belong to
+  the same cell are stored or not in the attractor, after an attractor is found.
+  If `true`, each visited cell will only store a point once, which is desirable for fixed
+  points and limit cycles. If `false`, at least `mx_chk_loc_att` points are
+  stored per attractor, leading to more densely stored attractors,
+  which may be desirable for instance in chaotic attractors.
 * `mx_chk_lost = 20`: Maximum check of iterations outside the defined grid before we
-  consider the orbit lost outside. This number can be increased for higher accuracy.
+  declare the orbit lost outside and hence assign it label `-1`.
 * `horizon_limit = 1e6`: If the norm of the integrator state reaches this
-  limit we consider that the orbit diverges.
-* `safety_counter_max = Int(1e6)`: A safety counter that is always increasing for
+  limit we declare that the orbit diverged to infinity.
+* `mx_chk_safety = Int(1e6)`: A safety counter that is always increasing for
   each initial condition. Once exceeded, the algorithm assigns `-1` and throws a warning.
-  This clause exists to stop the algorithm never haulting for innappropriately defined grids,
+  This clause exists to stop the algorithm never haulting for innappropriate grids,
   where a found attractor may intersect in the same cell with a new attractor the orbit
-  traces (which leads to infinite resetting of all counters). As this check comes with a
-  performance deficit, the keyword `unsafe=true` can be set to disable it in case the user
-  is confident the algorithm will hault.
+  traces (which leads to infinite resetting of all counters).
+
 
 ## Description
 An initial condition given to an instance of `AttractorsViaRecurrences` is iterated
@@ -66,19 +83,23 @@ or with grid cells that belong to basins of already found attractors.
 Notice that only in the special method
 `basins_of_attraction(mapper::AttractorsViaRecurrences)` the information of the
 attraction or exit basins is utilized. In other functions like `basins_fractions`
-only the attractor locations are utilized.
+only the attractor locations are utilized, as the basins themselves are not stored.
 
 The iteration of a given initial condition continues until one of the following happens:
-1. The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
-   it is considered that an attractor is found and is labelled with a new number.
-1. The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
-   the initial condition is numbered with the attractor's number.
-1. The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
-   belongs to that basin and is numbered accordingly.
-1. The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
+-  The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
+   it is considered that an attractor is found and is labelled with a new ID. Then,
+   iteration continues a bit more until we have identified the attractor with sufficient
+   accuracy, i.e., until `mx_chk_loc_att` cells with the new ID have been visited.
+-  The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
+   the initial condition is numbered with the attractor's ID.
+-  The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
+   belongs to that basin and is numbered accordingly. Notice that basins are stored and
+   used only when `sparse = false`.
+-  The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
    of the integrator state becomes > than `horizon_limit`: the initial
-   condition is set to -1.
-1. If none of the above happens and `unsafe=true`, the algorithm will error.
+   condition's label is set to `-1`.
+-  If none of the above happens, the initial condition is labelled `-1` after
+   and `mx_chk_safety` integrator steps.
 
 [^Datseris2022]:
     G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*,
@@ -93,9 +114,9 @@ end
 
 
 function AttractorsViaRecurrences(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), sparse = true, unsafe = false, kwargs...
-    )
-    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, unsafe)
+        Δt = nothing, diffeq = NamedTuple(), sparse = true,
+        stop_at_Δt = false, kwargs...)
+    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, stop_at_Δt)
     return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
 end
 
@@ -144,7 +165,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     )
 
     # TODO: Here we can have a slightly more efficient iteration by
-    # iterating I in different ways. In this way it always starts from the edge of
+    # iterating over `I` in different ways. In this way it always starts from the edge of
     # the grid, which is the least likely location for attractors. We need to
     # iterate I either randomly or from its center.
     for (k, ind) in enumerate(I)
@@ -168,11 +189,11 @@ end
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-mutable struct BasinsInfo{B, IF, D, T, Q, A <: AbstractArray{Int32, B}}
+mutable struct BasinsInfo{D, IF, T, Q, A <: AbstractArray{Int32, D}}
     basins::A # sparse or dense
-    grid_steps::SVector{B, Float64}
-    grid_maxima::SVector{B, Float64}
-    grid_minima::SVector{B, Float64}
+    grid_steps::SVector{D, Float64}
+    grid_maxima::SVector{D, Float64}
+    grid_minima::SVector{D, Float64}
     iter_f!::IF
     state::Symbol
     current_att_label::Int
@@ -181,14 +202,12 @@ mutable struct BasinsInfo{B, IF, D, T, Q, A <: AbstractArray{Int32, B}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    unsafe::Bool
-    # TODO: Isn't `D` and `B` always equivalent...? can't we just remove `D`?
     attractors::Dict{Int32, Dataset{D, T}}
     visited_list::Q
 end
 
 function basininfo_and_integ(
-        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, unsafe
+        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, stop_at_Δt
     )
     integ = integrator(ds; diffeq)
     isdiscrete = isdiscretetime(integ)
@@ -196,15 +215,17 @@ function basininfo_and_integ(
     iter_f! = if (isdiscrete && Δt == 1)
         (integ) -> step!(integ)
     else
-        (integ) -> step!(integ, Δt)
+        (integ) -> step!(integ, Δt, stop_at_Δt)
     end
-    bsn_nfo = init_bsn_nfo(grid, integ, iter_f!, sparse, unsafe)
+    bsn_nfo = init_bsn_nfo(grid, integ, iter_f!, sparse)
     return bsn_nfo, integ
 end
 
-function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool, unsafe::Bool)
+function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
     D = length(get_state(integ))
+    T = eltype(get_state(integ))
     G = length(grid)
+    # D == G || error("Grid and dynamical system do not have the same dimension!")
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
@@ -220,8 +241,8 @@ function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool, unsaf
         SVector{G, Float64}(grid_minima),
         iter_f!,
         :att_search,
-        2,4,0,1,0,0,unsafe,
-        Dict{Int32,Dataset{D, eltype(get_state(integ))}}(),
+        2,4,0,1,0,0,
+        Dict{Int32, Dataset{D, T}}(),
         Vector{CartesianIndex{G}}(),
     )
     reset_basins_counters!(bsn_nfo)
@@ -282,12 +303,12 @@ end
     get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; kwargs...) -> ic_label
 Return the label of the attractor that the initial condition `u0` converges to,
 or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exceeding
-`safety_counter_max`).
+`mx_chk_safety`).
 
 Notice the numbering system `cell_label` is as in `_identify_basin_of_cell!`
 so before the label processing done in e.g., `basins_of_attraction`.
 """
-function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; safety_counter_max = Int(1e6), Ttr = 0, kwargs...)
+function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; mx_chk_safety = Int(1e6), Ttr = 0, kwargs...)
     # This routine identifies the attractor using the previously defined basin.
     # reinitialize integrator
     reinit!(integ, u0)
@@ -304,12 +325,12 @@ function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; safety_counter_max = Int(
         # within the same grid cell. In such a case, when starting on the second attractor
         # the trajectory will forever reset between locating a new attractor and recurring
         # on the previously found one...
-        bsn_nfo.unsafe || (bsn_nfo.safety_counter += 1)
-        if bsn_nfo.unsafe || (bsn_nfo.safety_counter ≥ safety_counter_max)
+        bsn_nfo.safety_counter += 1
+        if bsn_nfo.safety_counter ≥ mx_chk_safety
             @warn  """
             `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
             It may be that the grid is not fine enough and attractors intersect in the
-            same cell, or `safety_counter_max` is not high enough for a very fine grid.
+            same cell, or `mx_chk_safety` is not high enough for a very fine grid.
             Iteration will terminate now and exit with error.
             Here are some info on current status:\n
             state: $(get_state(integ)),\n
@@ -331,6 +352,7 @@ function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; safety_counter_max = Int(
     return cell_label
 end
 
+# TODO: Once this is removed, the check D == G below needs to be adjusted.
 _possibly_reduced_state(y, integ, grid) = y
 function _possibly_reduced_state(y, integ::PoincareMap, grid)
     if integ.planecrossing.plane isa Tuple && length(grid) == dimension(integ)-1
@@ -356,7 +378,7 @@ The label `1` (initial value) outlined in the paper is `0` here instead.
 function _identify_basin_of_cell!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u_full_state;
         mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
-        horizon_limit = 1e6, mx_chk_lost = 20,
+        horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = true,
         show_progress = true, # show_progress only used when finding new attractor.
     )
 
@@ -404,7 +426,7 @@ function _identify_basin_of_cell!(
 
     if bsn_nfo.state == :att_found
         if ic_label == 0 || ic_label == bsn_nfo.visited_cell
-            # Maybe chaotic attractor, perodic or long recursion.
+            # Maybe chaotic attractor, periodic or long recursion.
             # label this box as part of an attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             bsn_nfo.consecutive_match = 1
@@ -413,6 +435,7 @@ function _identify_basin_of_cell!(
             # We make sure we hit the attractor another mx_chk_loc_att consecutive times
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
+            store_once_per_cell || store_attractor!(bsn_nfo, u_full_state, show_progress)
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
             # We have checked the presence of an attractor: tidy up everything
             # and get a new cell
@@ -457,8 +480,8 @@ function _identify_basin_of_cell!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{B, IF, D, T, Q},
-    u_full_state, show_progress = true) where {B, IF, D, T, Q}
+function store_attractor!(bsn_nfo::BasinsInfo{D, IF, T},
+    u_full_state, show_progress = true) where {D, IF, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
