@@ -1,5 +1,4 @@
 export basins_fractions_clustering, basins_fractions, cluster_datasets
-using Statistics: mean
 using Neighborhood
 using ProgressMeter
 include("clustering/cluster_config.jl")
