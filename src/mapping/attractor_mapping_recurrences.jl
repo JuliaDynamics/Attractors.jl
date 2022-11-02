@@ -83,7 +83,7 @@ or with grid cells that belong to basins of already found attractors.
 Notice that only in the special method
 `basins_of_attraction(mapper::AttractorsViaRecurrences)` the information of the
 attraction or exit basins is utilized. In other functions like `basins_fractions`
-only the attractor locations are utilized.
+only the attractor locations are utilized, as the basins themselves are not stored.
 
 The iteration of a given initial condition continues until one of the following happens:
 -  The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
