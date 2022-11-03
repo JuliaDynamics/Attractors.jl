@@ -17,12 +17,24 @@ The function takes as an input a `mapper` that maps initial conditions to attrac
 - `prange` Range of parameter to analyze.
 - `pidx` Number or symbol of the parameter to change in the array of parameters of the dynamical system. 
 - `ics` Sampler function to generate initial conditions to sample. 
-- `samples_per_parameter` Number of samples per parameter.
-- `par_weight` The distance matrix between features has a special extra  weight that is 
- proportional to the distance |p_i - p_j| between the parameters of each features. This 
- keyword argument is the weight coeficient that ponderates the distance matrix.
+- `samples_per_parameter = 100` Number of samples per parameter.
+- `par_weight = 1` The distance matrix between features has a special extra  weight that 
+  is proportional to the distance |pi - pj| between the parameters of each features. This 
+  keyword argument is the weight coeficient that ponderates the distance matrix.
+- `ϵ_optimal = 1.` This is the optimal radius for the DBSCAN clustering algorithm. It should be set 
+  manually. 
+- `mmap_limit = 20000` this parameter sets the limit of features that should be clustered using only the 
+  RAM memory. Above this limit the program uses a memory map based array to store the distance 
+  matrix on the disk. 
 
 ## Description
+
+The method first simulate and compute a set of statistics on the trajectories, for example the mean 
+ and standard deviation of the trajectory data points. Once all the featured statistics have been 
+ computed, the algorithm computes the distance between each feature. A special weitgh term is added 
+ so that the distance between features with different parameters is increased. It helps to discriminate
+ between attractors with very different parameters. At last, the distance matrix is clustered with the 
+ DBSCAN algorithm
 
 [^Gelbrecht2020]:
     Gelbrecht, M., Kurths, J., & Hellmann, F. (2020). Monte Carlo basin bifurcation
