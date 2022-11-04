@@ -30,6 +30,7 @@ using Random
         end
     end
     clusterspecs = Attractors.ClusteringConfig()
+    clusterspecs.optimal_radius_method = 1.
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
@@ -102,11 +103,12 @@ end
     featurizer(a, t) = a[end,:] 
     clusterspecs = Attractors.ClusteringConfig()
     # clusterspecs.optimal_radius_method = "silhouettes"
+    clusterspecs.optimal_radius_method = .1
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler;
-    show_progress = true, samples_per_parameter = 100, par_weight = 1., ϵ_optimal = 0.1)
+    show_progress = true, samples_per_parameter = 100, par_weight = 1.)
 
 
     for (i, r) in enumerate(rrange)
