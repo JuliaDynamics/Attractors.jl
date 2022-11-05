@@ -14,13 +14,12 @@ using Random
     for (j, ps) in enumerate((psorig, reverse(psorig)))
         # test that both finding and removing attractor works
         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
-        sampler, = statespace_sampler(; min_bounds = [-3,-3], max_bounds = [3,3])
 
         continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
         # With this threshold all attractors are mapped to each other, they are within
         # distance 1 in state space.
         fractions_curves, attractors_info = basins_fractions_continuation(
-            continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = 1000
+            continuation, ps, pidx; show_progress = false, samples_per_parameter = 1000
         )
 
         # Keys of the two attractors that always exist

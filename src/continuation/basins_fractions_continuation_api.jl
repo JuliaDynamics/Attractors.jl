@@ -16,7 +16,11 @@ system with index `pidx`. `ics` is as in [`basins_fractions`](@ref),
 i.e., it must be a function generating random initial conditions.
 
 Current continuation methods are:
-- [`RecurrencesSeedingContinuation`](@ref).
+- [`RecurrencesSeedingContinuation`](@ref). For this sampler, `ics` is optional.
+  If not given, one is created using the `grid` of [`AttractorsViaRecurrences`](@ref):
+  ```
+  sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+  ```
 
 Return:
 1. `fractions_curves <: Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.

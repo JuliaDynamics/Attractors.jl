@@ -47,7 +47,8 @@ function _default_seeding_process(attractor::AbstractDataset)
 end
 
 function basins_fractions_continuation(
-        continuation::RecurrencesSeedingContinuation, prange, pidx, ics::Function;
+        continuation::RecurrencesSeedingContinuation,
+        prange, pidx, ics::Function = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,
     )
     # show_progress && @info "Starting basins fraction continuation."
@@ -69,7 +70,8 @@ function basins_fractions_continuation(
     )
     info = get_info(prev_attractors)
     attractors_info = [info]
-
+    next!(progress; showvalues = [("previous parameter", prange[1]),])
+    # Continue loop over all remaining parameters
     for p in prange[2:end]
         set_parameter!(mapper.integ, pidx, p)
         reset!(mapper)
@@ -107,7 +109,7 @@ function basins_fractions_continuation(
         push!(fractions_curves, fs)
         push!(attractors_info, get_info(current_attractors))
         overwrite_dict!(prev_attractors, current_attractors)
-        next!(progress)
+        next!(progress; showvalues = [("previous parameter", p),])
     end
     # Normalize to smaller available integers for user convenience
     rmap = retract_keys_to_consecutive(fractions_curves)
@@ -135,4 +137,13 @@ function reset!(mapper::AttractorsViaRecurrences)
     # because we want the next attractor to be labelled differently in case
     # it doesn't actually match to any of the new ones
     return
+end
+
+function _ics_from_grid(continuation::RecurrencesSeedingContinuation)
+    return _ics_from_grid(continuation.mapper.grid)
+end
+
+function _ics_from_grid(grid::Tuple)
+    sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+    return sampler
 end

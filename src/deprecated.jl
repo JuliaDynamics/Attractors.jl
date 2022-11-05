@@ -68,7 +68,6 @@ end
 
 
 import ProgressMeter
-using Statistics: mean
 
 function estimate_basins_proximity!(mapper, grid; show_progress = true, kwargs...)
     basins = zeros(Int16, map(length, grid))

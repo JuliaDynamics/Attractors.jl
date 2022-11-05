@@ -17,16 +17,15 @@ Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Clustering = "0.14"
-#DelayEmbeddings = "2.5"
+
+# DelayEmbeddings = "2.5"
 Distances = "0.7, 0.8, 0.9, 0.10"
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
-#DynamicalSystemsBase = "2.9.0"
+# DynamicalSystemsBase = "2.9.0"
 Neighborhood = "0.2.2"
 Optim = "1.7"
 ProgressMeter = "1.7"
 Reexport = "1"
-
