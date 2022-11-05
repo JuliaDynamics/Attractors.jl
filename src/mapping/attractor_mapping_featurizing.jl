@@ -1,10 +1,17 @@
 export AttractorsViaFeaturizing, group_features, extract_features
-using ProgressMeter
+
+# Flexible mapping of initial conditions into "attractors" by featurizing
+# and grouping using arbitrary grouping configurations. The only thing
+# necessary for a new grouping configuration is to:
+# 1. make a new type and subtype `GroupingConfig`.
+# 2. Extend the function `group_features(features, config)` documented below.
+# 3. Include the new grouping file in the `grouping/all_grouping_configs.jl`
 
 #####################################################################################
 # Structs and documentation string
 #####################################################################################
 abstract type GroupingConfig end
+include("grouping/all_grouping_configs.jl")
 
 struct AttractorsViaFeaturizing{I, G<:GroupingConfig, T, F} <: AttractorMapper
     integ::I
@@ -97,6 +104,7 @@ function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
     println(io, rpad(" T: ", ps), mapper.total)
+    println(io, rpad(" group via: ", ps), nameof(typeof(mapper.group_config)))
     return
 end
 
@@ -124,8 +132,9 @@ end
 #####################################################################################
 # featurizing and grouping source code
 #####################################################################################
-# TODO: This functionality should be a generic parallel evolving function...
+import ProgressMeter
 
+# TODO: This functionality should be a generic parallel evolving function...
 """
     extract_features(mapper, ics; N = 1000, show_progress = true)
 Return a vector of the features of each initial condition in `ics` (as in
