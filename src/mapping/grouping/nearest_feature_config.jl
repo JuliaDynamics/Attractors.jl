@@ -1,4 +1,5 @@
 using Neighborhood, Distances
+export GroupViaNearestFeature
 
 """
     GroupViaNearestFeature(templates; kwargs...)
