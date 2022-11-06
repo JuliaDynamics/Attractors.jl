@@ -35,7 +35,7 @@ using Random
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler;
-    show_progress = true, samples_per_parameter = 1000, par_weight = 1., ϵ_optimal = 1.)
+    show_progress = true, samples_per_parameter = 1000, par_weight = 1.)
 
     for (i, p) in enumerate(psorig)
 
@@ -54,7 +54,7 @@ using Random
     # Test mmap 
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler;
-    show_progress = true, samples_per_parameter = 1000, par_weight = 1., ϵ_optimal = 1., mmap_limit = 1000)
+    show_progress = true, samples_per_parameter = 1000, par_weight = 1., mmap_limit = 1000)
 
     for (i, p) in enumerate(psorig)
         fs = fractions_curves[i]
@@ -102,8 +102,9 @@ end
 
     featurizer(a, t) = a[end,:] 
     clusterspecs = Attractors.ClusteringConfig()
-    # clusterspecs.optimal_radius_method = "silhouettes"
-    clusterspecs.optimal_radius_method = .1
+    clusterspecs.optimal_radius_method = "silhouettes"
+    clusterspecs.max_used_features = 200
+    # clusterspecs.optimal_radius_method = .1
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(

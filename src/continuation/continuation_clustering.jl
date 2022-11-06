@@ -21,8 +21,6 @@ The function takes as an input a `mapper` that maps initial conditions to attrac
 - `par_weight = 1` The distance matrix between features has a special extra  weight that 
   is proportional to the distance |pi - pj| between the parameters of each features. This 
   keyword argument is the weight coeficient that ponderates the distance matrix.
-- `ϵ_optimal = 1.` This is the optimal radius for the DBSCAN clustering algorithm. It should be set 
-  manually. 
 - `mmap_limit = 20000` this parameter sets the limit of features that should be clustered using only the 
   RAM memory. Above this limit the program uses a memory map based array to store the distance 
   matrix on the disk. 
@@ -68,7 +66,7 @@ end
 function basins_fractions_continuation(
         continuation::NamedTuple, prange, pidx, ics::Function;
         samples_per_parameter = 100, show_progress = true, par_weight = 1, 
-        ϵ_optimal = 1., mmap_limit = 20000
+        mmap_limit = 20000
     )
     spp, n = samples_per_parameter, length(prange)
     (; mapper, info_extraction) = continuation
@@ -109,8 +107,7 @@ end
 
 function _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper)
     # Construct distance matrix
-    cc = mapper.cluster_config
-    metric = cc.clust_distance_metric
+    metric = mapper.cluster_config.clust_distance_metric
     pairwise!(metric, dists, features; symmetric = true)
     # use parameter distance weight (w is the weight for one parameter only)
     # Parameter range is rescaled from 0 to 1.
@@ -132,10 +129,10 @@ function _cluster_across_parameters(dists, features, mapper)
       features_for_optimal = if cc.max_used_features == 0
           features
       else
-          StatsBase.sample(features, minimum(length(features), max_used_features); replace = false)
+          sample(features, minimum([length(features), cc.max_used_features]), replace = false)
       end
       ϵ_optimal = optimal_radius_dbscan(
-          features_for_optimal, cc.min_neighbors, cc.metric, cc.optimal_radius_method,
+          features_for_optimal, cc.min_neighbors, cc.clust_distance_metric, cc.optimal_radius_method,
           cc.num_attempts_radius, cc.silhouette_statistic
       )
     elseif cc.optimal_radius_method isa Real
@@ -144,7 +141,7 @@ function _cluster_across_parameters(dists, features, mapper)
       error("Specified optimal_radius_method is incorrect. Please specify the radius
        directly as a Real number or the method to compute it as a String")
     end
-
+    @show ϵ_optimal
     dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
