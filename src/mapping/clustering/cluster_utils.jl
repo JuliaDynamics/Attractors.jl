@@ -151,7 +151,7 @@ function optimal_radius_dbscan_knee(features, min_neighbors, metric)
     tree = searchstructure(KDTree, features, metric)
     # Get distances, excluding distance to self (hence the Theiler window)
     d,n = size(features) 
-    features_vec = [features[:,j] for j=1:size(features,d)]
+    features_vec = [features[:,j] for j=1:n]
     _, distances = bulksearch(tree, features_vec, NeighborNumber(min_neighbors), Theiler(0))
     meandistances = map(mean, distances)
     sort!(meandistances)
