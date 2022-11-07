@@ -44,10 +44,13 @@ The method first simulate and compute a set of statistics on the trajectories, f
 """
 function ClusteringAcrossParametersContinuation(
         mapper::AttractorsViaFeaturizing;
-        info_extraction = mean_across_features
-        # TODO: Here we can add more keywords regarding how to cluster across parameters.
+        info_extraction = mean_across_features,
+        samples_per_parameter = 100, 
+        show_progress = true, 
+        par_weight = 1, 
+        mmap_limit = 20000
     )
-    return (; mapper, info_extraction)
+    return (; mapper, info_extraction, samples_per_parameter, show_progress, par_weight, mmap_limit)
 end
 
 function mean_across_features(fs)
@@ -65,11 +68,9 @@ end
 
 function basins_fractions_continuation(
         continuation::NamedTuple, prange, pidx, ics::Function;
-        samples_per_parameter = 100, show_progress = true, par_weight = 1, 
-        mmap_limit = 20000
     )
+    (; mapper, info_extraction, samples_per_parameter, show_progress, par_weight, mmap_limit) = continuation
     spp, n = samples_per_parameter, length(prange)
-    (; mapper, info_extraction) = continuation
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
@@ -130,7 +131,6 @@ function _cluster_across_parameters(dists, features, mapper)
     # Cluster the values accross parameters
     cc = mapper.cluster_config
     ftrs = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
-    @show size(ftrs)
     cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, false, 
     cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
     cc.max_used_features; dists
