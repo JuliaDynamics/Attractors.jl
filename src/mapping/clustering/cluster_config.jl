@@ -203,7 +203,7 @@ end
 # Unsupervised method: clustering in feature space
 function cluster_features_clustering(
         features, min_neighbors, metric, rescale_features, optimal_radius_method,
-        num_attempts_radius, silhouette_statistic, max_used_features
+        num_attempts_radius, silhouette_statistic, max_used_features; dists = nothing
     )
     # needed because dbscan, as implemented, needs to receive as input a matrix D x N
     # such that D < N
@@ -216,14 +216,15 @@ function cluster_features_clustering(
         features = mapslices(_rescale!, features; dims=2)
     end
 
-    dists = pairwise(metric, features)
-
+    if isnothing(dists)
+        dists = pairwise(metric, features)
+    end
     # These functions are called from cluster_utils.jl
     if optimal_radius_method isa String
       features_for_optimal = if max_used_features == 0
           features
       else
-          StatsBase.sample(features, minimum(length(features), max_used_features); replace = false)
+          sample(features, minimum([length(features), max_used_features]), replace = false)
       end
       ϵ_optimal = optimal_radius_dbscan(
           features_for_optimal, min_neighbors, metric, optimal_radius_method,

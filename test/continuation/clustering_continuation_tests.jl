@@ -104,7 +104,6 @@ end
     clusterspecs = Attractors.ClusteringConfig()
     clusterspecs.optimal_radius_method = "silhouettes"
     clusterspecs.max_used_features = 200
-    # clusterspecs.optimal_radius_method = .1
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20)
     continuation = ClusteringAcrossParametersContinuation(mapper)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(

@@ -70,20 +70,8 @@ function basins_fractions_continuation(
     )
     spp, n = samples_per_parameter, length(prange)
     (; mapper, info_extraction) = continuation
-    progress = ProgressMeter.Progress(n;
-        desc="Continuating basins fractions:", enabled=show_progress
-    )
 
-    # Extract the first possible feature to initialize the features container
-    feature = extract_features(mapper, ics; N = 1)
-    features = Vector{typeof(feature[1])}(undef, n*spp)
-    # Collect features
-    for (i, p) in enumerate(prange)
-        set_parameter!(mapper.integ, pidx, p)
-        current_features = extract_features_threaded(mapper, ics; show_progress, N = spp)
-        features[((i - 1)*spp + 1):i*spp] .= current_features
-        next!(progress)
-    end
+    features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
     # The distance matrix can get very large. The use of memory map based array is 
     # necessary.
@@ -99,9 +87,27 @@ function basins_fractions_continuation(
 
     cluster_labels = _cluster_across_parameters(dists, features, mapper)
 
-    fractions_curves, attractors_info = _label_fractions(cluster_labels, n, spp, feature, info_extraction)
+    fractions_curves, attractors_info = _label_fractions(cluster_labels, n, spp, features[1], info_extraction)
 
     return fractions_curves, attractors_info
+end
+ 
+
+function _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
+    progress = ProgressMeter.Progress(n;
+        desc="Continuating basins fractions:", enabled=show_progress
+    )
+    # Extract the first possible feature to initialize the features container
+    feature = extract_features(mapper, ics; N = 1)
+    features = Vector{typeof(feature[1])}(undef, n*spp)
+    # Collect features
+    for (i, p) in enumerate(prange)
+        set_parameter!(mapper.integ, pidx, p)
+        current_features = extract_features_threaded(mapper, ics; show_progress, N = spp)
+        features[((i - 1)*spp + 1):i*spp] .= current_features
+        next!(progress)
+    end
+    return features
 end
 
 
@@ -123,27 +129,12 @@ end
 function _cluster_across_parameters(dists, features, mapper)
     # Cluster the values accross parameters
     cc = mapper.cluster_config
-
-    # These functions are called from cluster_utils.jl
-    if cc.optimal_radius_method isa String
-      features_for_optimal = if cc.max_used_features == 0
-          features
-      else
-          sample(features, minimum([length(features), cc.max_used_features]), replace = false)
-      end
-      ϵ_optimal = optimal_radius_dbscan(
-          features_for_optimal, cc.min_neighbors, cc.clust_distance_metric, cc.optimal_radius_method,
-          cc.num_attempts_radius, cc.silhouette_statistic
-      )
-    elseif cc.optimal_radius_method isa Real
-      ϵ_optimal = cc.optimal_radius_method
-    else
-      error("Specified optimal_radius_method is incorrect. Please specify the radius
-       directly as a Real number or the method to compute it as a String")
-    end
-    @show ϵ_optimal
-    dbscanresult = dbscan(dists, ϵ_optimal, cc.min_neighbors)
-    cluster_labels = cluster_assignment(dbscanresult)
+    ftrs = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
+    @show size(ftrs)
+    cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, false, 
+    cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
+    cc.max_used_features; dists
+    )
     return cluster_labels
 end
 

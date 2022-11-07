@@ -92,9 +92,10 @@ for the radius that leads to the best clustering, as characterized by quantifier
 silhouettes. Does a linear (sequential) search.
 """
 function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
-        num_attempts_radius, silhouette_statistic
+       num_attempts_radius, silhouette_statistic
     )
-    feat_ranges = maximum(features, dims=2)[:,1] .- minimum(features, dims=2)[:,1];
+    d = size(features,1) == length(features) ? 1 : 2; 
+    feat_ranges = maximum(features, dims = d)[:,1] .- minimum(features, dims = d)[:,1];
     ϵ_grid = range(
         minimum(feat_ranges)/num_attempts_radius, minimum(feat_ranges);
         length=num_attempts_radius
@@ -121,7 +122,8 @@ but find minimum via optimization with Optim.jl.
 function optimal_radius_dbscan_silhouette_optim(
         features, min_neighbors, metric, num_attempts_radius, silhouette_statistic
     )
-    feat_ranges = maximum(features, dims=2)[:,1] .- minimum(features, dims=2)[:,1];
+    d,n = size(features) 
+    feat_ranges = maximum(features, dims = d)[:,1] .- minimum(features, dims = d)[:,1];
     # vary ϵ to find the best radius (which will maximize the mean sillhoute)
     dists = pairwise(metric, features)
     f = (ϵ) -> Attractors.silhouettes_from_distances(
@@ -148,7 +150,8 @@ Find the optimal radius ϵ of a point neighborhood for use in DBSCAN through the
 function optimal_radius_dbscan_knee(features, min_neighbors, metric)
     tree = searchstructure(KDTree, features, metric)
     # Get distances, excluding distance to self (hence the Theiler window)
-    features_vec = [features[:,j] for j=1:size(features,2)]
+    d,n = size(features) 
+    features_vec = [features[:,j] for j=1:size(features,d)]
     _, distances = bulksearch(tree, features_vec, NeighborNumber(min_neighbors), Theiler(0))
     meandistances = map(mean, distances)
     sort!(meandistances)
@@ -166,7 +169,8 @@ method for `AttractorsViaFeaturizing`. The basic idea is to iteratively search f
 leads to the best clustering, as characterized by quantifiers known as silhouettes.
 """
 function optimal_radius_dbscan_silhouette_original(features, min_neighbors, metric; num_attempts_radius=200)
-    feat_ranges = maximum(features, dims=2)[:,1] .- minimum(features, dims=2)[:,1];
+    d,n = size(features) 
+    feat_ranges = maximum(features, dims = d)[:,1] .- minimum(features, dims = d)[:,1];
     ϵ_grid = range(minimum(feat_ranges)/num_attempts_radius, minimum(feat_ranges), length=num_attempts_radius)
     s_grid = zeros(size(ϵ_grid)) # average silhouette values (which we want to maximize)
 
