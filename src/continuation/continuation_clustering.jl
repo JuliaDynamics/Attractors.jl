@@ -128,12 +128,12 @@ function _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_con
     pairwise!(metric, dists, features; symmetric = true)
     # use parameter distance weight (w is the weight for one parameter only)
     # Parameter range is rescaled from 0 to 1.
-    # par_array = kron(range(0,1,length(prange)), ones(spp))
-    # for k in 1:length(par_array)
-    #     for j in 1:length(par_array)
-    #         dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
-    #     end
-    # end
+    par_array = kron(range(0,1,length(prange)), ones(spp))
+    for k in 1:length(par_array)
+        for j in 1:length(par_array)
+            dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
+        end
+    end
 end
 
 
