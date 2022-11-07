@@ -94,7 +94,7 @@ silhouettes. Does a linear (sequential) search.
 function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
        num_attempts_radius, silhouette_statistic
     )
-    d = size(features,1) == length(features) ? 1 : 2; 
+    d,n = size(features) 
     feat_ranges = maximum(features, dims = d)[:,1] .- minimum(features, dims = d)[:,1];
     ϵ_grid = range(
         minimum(feat_ranges)/num_attempts_radius, minimum(feat_ranges);
