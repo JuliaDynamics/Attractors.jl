@@ -224,7 +224,9 @@ function cluster_features_clustering(
       features_for_optimal = if max_used_features == 0
           features
       else
-          sample(features, minimum([length(features), max_used_features]), replace = false)
+          ind = sample(1:nfeats, minimum([length(features), max_used_features]), replace = false)
+          features[:,ind]
+          # sample(features, minimum([length(features), max_used_features]), replace = false)
       end
       ϵ_optimal = optimal_radius_dbscan(
           features_for_optimal, min_neighbors, metric, optimal_radius_method,

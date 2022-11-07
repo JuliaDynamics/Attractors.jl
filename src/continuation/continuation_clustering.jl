@@ -131,9 +131,10 @@ function _cluster_across_parameters(dists, features, mapper)
     # Cluster the values accross parameters
     cc = mapper.cluster_config
     ftrs = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
-    cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, false, 
-    cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
-    cc.max_used_features; dists
+@show size(ftrs)
+    cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, 
+        false, cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
+        cc.max_used_features; dists
     )
     return cluster_labels
 end
