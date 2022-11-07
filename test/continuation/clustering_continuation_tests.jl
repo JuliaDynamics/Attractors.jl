@@ -32,7 +32,7 @@ using Random
     clusterspecs = Attractors.ClusteringConfig()
     clusterspecs.optimal_radius_method = 1.
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500)
-    continuation = ClusteringAcrossParametersContinuation(mapper; show_progress = true, 
+    continuation = ClusteringAcrossParametersContinuation(mapper, 
         samples_per_parameter = 1000, par_weight = 1.)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler)
@@ -53,7 +53,7 @@ using Random
 
 
     # Test mmap 
-    continuation = ClusteringAcrossParametersContinuation(mapper; show_progress = true,
+    continuation = ClusteringAcrossParametersContinuation(mapper,
          samples_per_parameter = 1000, par_weight = 1., mmap_limit = 200)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler)
@@ -107,7 +107,7 @@ end
     clusterspecs.optimal_radius_method = "silhouettes"
     clusterspecs.max_used_features = 200
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20)
-    continuation = ClusteringAcrossParametersContinuation(mapper; show_progress = true, samples_per_parameter = 100, par_weight = 1.)
+    continuation = ClusteringAcrossParametersContinuation(mapper, samples_per_parameter = 100, par_weight = 1.)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler)
     
