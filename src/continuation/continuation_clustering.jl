@@ -2,12 +2,13 @@ export ClusteringAcrossParametersContinuation
 import ProgressMeter
 import Mmap
 
-struct ClusteringAcrossParametersContinuation{A, M, I, E} <: BasinsFractionContinuation
+struct ClusteringAcrossParametersContinuation{A, M, I, E, C} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
     samples_per_parameter::I 
     par_weight::M
     mmap_limit::I
+    cluster_config::C
 end
 
 """
@@ -55,9 +56,10 @@ function ClusteringAcrossParametersContinuation(
         info_extraction = mean_across_features,
         samples_per_parameter = 100, 
         par_weight = 1, 
-        mmap_limit = 20000
+        mmap_limit = 20000,
+        cluster_config = ClusterConfig()
     )
-    return ClusteringAcrossParametersContinuation(mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit)
+    return ClusteringAcrossParametersContinuation(mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config)
 end
 
 function mean_across_features(fs)
@@ -77,7 +79,7 @@ function basins_fractions_continuation(
         continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics::Function;
         show_progress = true
     )
-    (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit) = continuation
+    (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
@@ -92,9 +94,9 @@ function basins_fractions_continuation(
         dists = zeros(length(features), length(features))
     end
     
-    _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper)
+    _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_config)
 
-    cluster_labels = _cluster_across_parameters(dists, features, mapper)
+    cluster_labels = _cluster_across_parameters(dists, features, cluster_config)
 
     fractions_curves, attractors_info = _label_fractions(cluster_labels, n, spp, features[1], info_extraction)
 
@@ -102,7 +104,7 @@ function basins_fractions_continuation(
 end
  
 
-function _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
+function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
     progress = ProgressMeter.Progress(n;
         desc="Continuating basins fractions:", enabled=show_progress
     )
@@ -120,24 +122,24 @@ function _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 end
 
 
-function _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper)
+function _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_config)
     # Construct distance matrix
-    metric = mapper.cluster_config.clust_distance_metric
+    metric = cluster_config.clust_distance_metric
     pairwise!(metric, dists, features; symmetric = true)
     # use parameter distance weight (w is the weight for one parameter only)
     # Parameter range is rescaled from 0 to 1.
-    par_array = kron(range(0,1,length(prange)), ones(spp))
-    for k in 1:length(par_array)
-        for j in 1:length(par_array)
-            dists[k,j] += par_weight*metric(par_array[k],par_array[j])
-        end
-    end
+    # par_array = kron(range(0,1,length(prange)), ones(spp))
+    # for k in 1:length(par_array)
+    #     for j in 1:length(par_array)
+    #         dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
+    #     end
+    # end
 end
 
 
-function _cluster_across_parameters(dists, features, mapper)
+function _cluster_across_parameters(dists, features, cluster_config)
     # Cluster the values accross parameters
-    cc = mapper.cluster_config
+    cc = cluster_config
     ftrs = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
     cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, 
         false, cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
@@ -163,4 +165,33 @@ function _label_fractions(cluster_labels, n, spp, feature, info_extraction)
         )
     end
     return fractions_curves, attractors_info
+end
+
+function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress)
+    progress = ProgressMeter.Progress(n;
+        desc="Continuating basins fractions:", enabled=show_progress
+    )
+
+    set_parameter!(mapper.integ, pidx, prange[1])
+    fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
+    fractions_curves = [fs]
+    current_attractors = deepcopy(mapper.bsn_nfo.attractors)
+    attractors_info = [current_attractors]
+
+    for (i, p) in enumerate(prange)
+        set_parameter!(mapper.integ, pidx, p)
+        reset!(mapper)
+        fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
+        push!(fractions_curves, fs)
+        push!(attractors_info, deepcopy(mapper.bsn_nfo.attractors))
+        next!(progress)
+    end
+    # collect Datasets
+    vec_att = Dataset[]
+    for att in attractors_info
+        for a in att
+            push!(vec_att, a[2])
+        end
+    end 
+    return vec_att
 end
