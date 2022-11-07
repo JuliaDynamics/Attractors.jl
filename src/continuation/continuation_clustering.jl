@@ -51,7 +51,7 @@ The method first simulate and compute a set of statistics on the trajectories, f
     stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
 """
 function ClusteringAcrossParametersContinuation(
-        mapper::AttractorsViaFeaturizing;
+        mapper::AttractorMapper;
         info_extraction = mean_across_features,
         samples_per_parameter = 100, 
         par_weight = 1, 
