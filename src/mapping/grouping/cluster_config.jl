@@ -2,28 +2,17 @@ using Distances, Clustering, Distributions
 export ClusteringConfig, cluster_features
 
 """
-    ClusteringConfig(; kwargs...)
+  GroupViaClustering(; kwargs...)
 
-Initialize a struct that contains information used to cluster "features".
-These features are typically extracted from trajectories/datasets in
-[`AttractorsViaFeaturizing`](@ref), or manualy by the user.
+Initialize a struct that contains instructions on how to group features in
+[`AttractorsViaFeaturizing`](@ref). `GroupViaClustering` clusters features into
+groups using DBSCAN, similar to the original work by bSTAB[^Stender2021] and
+MCBB[^Gelbrecht2021]. Several options on clustering are available, see keywords below.
 
-The clustering is done in the function [`cluster_features`](@ref).
-
-The default clustering method is an improvement over existing literature, see Description.
+The defaults are a significant improvement over existing literature, see Description.
 
 ## Keyword arguments
-* `clust_distance_metric = Euclidean()`: metric to be used in the clustering. Used in both versions.
-### Supervised method
-* `templates = nothing`: Enables supervised version, see below. If given (i.e. different
-  than `nothing`), `templates` must be a `Dict` of cluster labels to cluster features. The
-  labels must be of `Int` type, and the features are `Vector`s representing a cluster
-  (which can be an attractor, for instance). The label `-1` is reserved for invalid
-  trajectories, which either diverge or whose clustering failed.
-* `max_distance_template = Inf`: Maximum allowed distance between a feature and its nearest
-  template for it to be assigned to that template. By default, `Inf` guarantees that a
-  feature is assigned to its nearest template regardless of the distance.
-### Unsupervised method
+* `clust_distance_metric = Euclidean()`: metric to be used in the clustering.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 * `min_neighbors = 10`: minimum number of neighbors (i.e. of similar features) each
@@ -59,24 +48,15 @@ The default clustering method is an improvement over existing literature, see De
   attraction).
 
 ## Description
-The trajectory `X`, which may for instance be an attractor, is transformed into a vector
-of features. Each feature is a number useful in _characterizing the attractor_, and
-distinguishing it from other attrators. Example features are the mean or standard
-deviation of one of the of the timeseries of the trajectory, the entropy of the first two
-dimensions, the fractal dimension of `X`, or anything else you may fancy. The vectors of
-features are then used to identify clusters of the trajectories. An application thus is to
-cluster attractors. Currently two methods are offered to achieve this.
-
-### Unsupervised method
-The **unsupervised method** does not rely on templates, and instead uses the DBSCAN
-clustering algorithm to automatically identify clusters of similar features. To achieve
-this, each feature is considered a point in feature space. Each cluster then basically
+The DBSCAN clustering algorithm is used to automatically identify clusters of similar
+features. Each feature vector is a point in a feature space. Each cluster then basically
 groups points that are closely packed together. Closely packed means that the points have
 at least `min_neighbors` inside a ball of radius `optimal_radius` centered on them. This
 method typically works well if the radius is chosen well, which is not necessarily an easy
 task. Currently, three methods are implemented to automatically estimate an "optimal"
 radius.
-#### Estimating the optimal radius
+
+### Estimating the optimal radius
 The default method is the **silhouettes method**, which includes keywords `silhouette` and
 `silhouette_optim`. Both of them search for the radius that optimizes the clustering,
 meaning the one that maximizes a statistic `silhouette_statistic` (e.g. mean value) of a
@@ -97,39 +77,30 @@ distances, sorted in ascending order. This distance is chosen as the optimal rad
 described in [^Kriegel1996] and [^Schubert2017]. It typically performs considerably worse
 than the `"silhouette"` methods.
 
-### Supervised method
-In the alternative, **supervised version**, the user provides features to be used as
-templates guiding the clustering via the `templates` keyword. Features are clustered to
-their nearest template if the distance to that template is below or equal to the threshold
-`max_distance_template`. The distances are computed via the metric defined by
-`clust_distance_metric`. So the algorithm first finds the template nearest to each feature
-(in that metric) via the `k`-nearest-neighbors algorithm for `k=1` and then compares their
-distance to the threshold. If the distance is below or equal to the threshold, the feature
-is assigned the template's label, which is given in `templates`. If the distance is
-larger, the feature is assigned label `-1`.
-
 [^Stender2021]:
-    Stender & Hoffmann, [bSTAB: an open-source software for computing the basin
+    Stender & Hoffmann 2021, [bSTAB: an open-source software for computing the basin
     stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
+[^Gelbrecht2021]:
+    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
+    [2020 New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 [^Kriegel1996]: Ester, Kriegel, Sander and Xu: A Density-Based Algorithm for Discovering
     Clusters in Large Spatial Databases with Noise
 [^Schubert2017]:
     Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
     Should (Still) Use DBSCAN
 """
-mutable struct ClusteringConfig{A, M}
-    templates::A
+mutable struct ClusteringConfig{R<:Union{Real, String}, M}
     clust_distance_metric::M
     max_distance_template::Float64
     min_neighbors::Int
     rescale_features::Bool
-    optimal_radius_method::Union{Real, String}
+    optimal_radius_method::R
     num_attempts_radius::Int
     silhouette_statistic::Function
     max_used_features::Int
 end
 
-function ClusteringConfig(; templates::Union{Nothing, Dict} = nothing,
+function ClusteringConfig(;
         clust_distance_metric=Euclidean(), max_distance_template = Inf, min_neighbors = 10,
         rescale_features=true, optimal_radius_method::Union{Real, String}="silhouettes_optim",
         num_attempts_radius=100, silhouette_statistic = mean, max_used_features = 0,

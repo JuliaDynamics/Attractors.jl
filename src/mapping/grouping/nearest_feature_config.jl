@@ -20,7 +20,7 @@ that the `featurizer` function given in [`AttractorsViaFeaturizing`](@ref) retur
 - `max_distance = Inf`: Maximum allowed distance between a feature and its nearest
   template for it to be assigned to that template. By default, `Inf` guarantees that a
   feature is assigned to its nearest template regardless of the distance.
-  Features that exceed `max_distance` to all `templates` get labelled `-1` (divergent).
+  Features that exceed `max_distance` to their nearest template get labelled `-1`.
 """
 struct GroupViaNearestFeature{D, T, K}
     templates::Vector{SVector{D,T}}
