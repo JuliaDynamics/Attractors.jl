@@ -117,9 +117,6 @@ end
 # API funtion (group features)
 #####################################################################################
 function group_features(features::Vector{<:AbstractVector}, config::GroupViaClustering)
-    (; min_neighbors, clust_distance_metric, rescale_features, optimal_radius_method,
-    num_attempts_radius, silhouette_statistic, max_used_features) = config
-
     nfeats = length(features); dimfeats = length(features[1])
     if dimfeats ≥ nfeats
         throw(ArgumentError("""
@@ -127,12 +124,18 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         $nfeats to be greater or equal than the number of dimensions $dimfeats
         """))
     end
-
-    if rescale_features
-        features = rescale_to_01(features)
+    if config.rescale_features
+        features = _rescale_to_01(features)
     end
+    ϵ_optimal = _extract_ϵ_optimal(features, config)
+    distances = pairwise(features, config.metric)
+    return _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
+end
 
-    # Obtain optimal radius
+function _extract_ϵ_optimal(features, config::GroupViaClustering)
+    (; min_neighbors, clust_distance_metric, optimal_radius_method,
+    num_attempts_radius, silhouette_statistic, max_used_features) = config
+
     if optimal_radius_method isa String
         if max_used_features == 0 || max_used_features > nfeats
             features_for_optimal = features
@@ -149,8 +152,11 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         error("Specified optimal_radius_method is incorrect. Please specify the radius
         directly as a Real number or the method to compute it as a String")
     end
-    # Perform the DBSCAN and assign the result into labels
-    distances = pairwise(clust_distance_metric, features)
+    return ϵ_optimal
+end
+
+# Already expecting the distance matrix, the output of `pairwise`
+function _cluster_distances_into_labels(distances, ϵ_optimal, min_neighbors)
     dbscanresult = dbscan(distances, ϵ_optimal, min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
@@ -159,12 +165,12 @@ end
 """
 Do "min-max" rescaling of vector of feature vectors so that its values span `[0,1]`.
 """
-function rescale_to_01(features::Vector{<:SVector})
+function _rescale_to_01(features::Vector{<:SVector})
     dataset = Dataset(features) # To access min-maxima
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
-function rescale_to_01(features::Vector{<:Vector})
+function _rescale_to_01(features::Vector{<:Vector})
     dataset = Dataset(features) # To access min-maxima
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
