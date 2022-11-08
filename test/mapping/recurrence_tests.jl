@@ -1,3 +1,9 @@
+DO_EXTENSIVE_TESTS = parse(Bool, get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", false))
+
+if DO_EXTENSIVE_TESTS
+# The functionality tested here has been resolved and is only added as a test
+# for future security. It has no need to be tested in every commit.
+
 using Attractors
 using Test
 using OrdinaryDiffEq: Vern9
@@ -66,3 +72,5 @@ end
         test_compatibility_sparse_nonsparse(ds, grid)
     end
 end
+
+end # extensive tests clause

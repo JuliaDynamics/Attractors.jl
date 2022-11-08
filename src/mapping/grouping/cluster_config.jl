@@ -35,7 +35,7 @@ The defaults are a significant improvement over existing literature, see Descrip
   - `"knee"`: chooses the the radius according to the knee (a.k.a. elbow,
     highest-derivative method) and is quicker, though generally leading to much worse
     clustering. It requires that `min_neighbors` > 1.
-#### Keywords for optimal radius estimation
+### Keywords for optimal radius estimation
 * `num_attempts_radius = 100`: number of radii that the `optimal_radius_method` will try
   out in its iterative procedure. Higher values increase the accuracy of clustering,
   though not necessarily much, while always reducing speed.
