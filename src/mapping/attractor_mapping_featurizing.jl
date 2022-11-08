@@ -70,11 +70,6 @@ The following configuration structs can be used to decide how the features are g
 - [`GroupViaNearestFeature`](@ref), which allows `id = mapper(u0)`
 - [`GroupViaHistogram`](@ref), which allows `id = mapper(u0)`
 
-Generally speaking, the [`AttractorsViaProximity`](@ref) mapper is superior to this.
-However, if the dynamical system has extremely high-dimensionality, there may be reasons
-to use `AttractorsViaFeaturizing` algorithm instead, as it projects the trajectories
-into a much lower dimensional representation of features.
-
 [^Stender2021]:
     Stender & Hoffmann 2021, [bSTAB: an open-source software for computing the basin
     stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
