@@ -15,12 +15,15 @@ AttractorsViaProximity
 ## Recurrences
 ```@docs
 AttractorsViaRecurrences
-AttractorsViaRecurrencesSparse
 automatic_Δt_basins
 ```
+
 ## Featurizing
 ```@docs
 AttractorsViaFeaturizing
-ClusteringConfig
-cluster_features
+GroupViaClustering
+GroupViaNearestFeature
+GroupViaHistogram
+group_features
+extract_features
 ```

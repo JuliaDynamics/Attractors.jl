@@ -1,7 +1,15 @@
+# This is an extensive test file. Its goal is to test all combination of mappers
+# with all combinations of dynamical systems. However, this can take
+# several years to complete. So, the environment parameter
+# `ATTRACTORS_EXTENSIVE_TESTS` controls whether the tests should be done extensively or not.
+# If not, a small, but representative subset of mappers and dynamical systems is used.
+
+DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
+
+using Test
 using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.DelayEmbeddings
-using Test
 using LinearAlgebra
 using OrdinaryDiffEq
 using Random
@@ -9,7 +17,7 @@ using Statistics
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance_template = Inf,
+        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance = Inf,
         diffeq = NamedTuple(), kwargs...
     )
     # u0s is Vector{Pair}
@@ -28,7 +36,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     function test_basins_fractions(mapper;
             err = 1e-3, known=false, single_u_mapping = true,
             known_ids = known_ids, expected_fs = expected_fs,
-            replace_ids_for_clustering = nothing
         )
         if single_u_mapping
             for (k, u0) in u0s
@@ -68,42 +75,48 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         end
     end
 
-    @testset "Proximity" begin
-        mapper = AttractorsViaProximity(ds, known_attractors, ε; diffeq, Ttr = 100)
-        test_basins_fractions(mapper; known = true, err = aerr)
-    end
-
     @testset "Recurrences" begin
         mapper = AttractorsViaRecurrences(ds, grid; diffeq, show_progress = false, kwargs...)
         test_basins_fractions(mapper; err = rerr)
     end
 
-    @testset "Featurizing, unsupervised" begin
-        for optimal_radius_method in ["silhouettes", "silhouettes_optim"]
-            clusterspecs = ClusteringConfig(num_attempts_radius=20,
-             optimal_radius_method=optimal_radius_method)
-            mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; diffeq, Ttr = 500)
+    @testset "Featurizing, clustering" begin
+        radius_methods = if DO_EXTENSIVE_TESTS
+            ["silhouettes", "silhouettes_optim"]
+        else
+            ["silhouettes_optim"]
+        end
+        for optimal_radius_method in radius_methods
+            config = GroupViaClustering(; num_attempts_radius=20, optimal_radius_method)
+            mapper = AttractorsViaFeaturizing(ds, featurizer, config; diffeq, Ttr = 500)
             test_basins_fractions(mapper;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3])
         end
     end
 
-    @testset "Featurizing, supervised" begin
+    @testset "Featurizing, nearest feature" begin
         # First generate the templates
         function features_from_u(u)
             A = ds isa DynamicalSystem ?
-            trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq) :
-            trajectory(ds, 100, u; Ttr = 500, Δt = 1)
-
+                trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq) :
+                trajectory(ds, 100, u; Ttr = 500, Δt = 1)
             featurizer(A, 0)
         end
         t = [features_from_u(x[2]) for x in u0s]
-        templates = Dict([u0[1] for u0 ∈ u0s] .=> t) #keeps labels of u0s
+        templates = Dict([u0[1] for u0 ∈ u0s] .=> t) # keeps labels of u0s
 
-        clusterspecs = ClusteringConfig(; templates, max_distance_template)
-        mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; diffeq, Ttr=500
-        )
+        config = GroupViaNearestFeature(templates; max_distance)
+        mapper = AttractorsViaFeaturizing(ds, featurizer, config; diffeq, Ttr=500)
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
+    end
+
+    if DO_EXTENSIVE_TESTS
+        # Proximity method is the simplest and not crucial to test due to the limited
+        # practical use of not being able to find attractors
+        @testset "Proximity" begin
+            mapper = AttractorsViaProximity(ds, known_attractors, ε; diffeq, Ttr = 100)
+            test_basins_fractions(mapper; known = true, err = aerr)
+        end
     end
 end
 
@@ -117,11 +130,11 @@ end
     function featurizer(A, t)
         # Notice that unsupervised clustering cannot support "divergence to infinity",
         # which it identifies as another attractor (in fact, the first one).
-        x = [mean(A[:, 1]), mean(A[:, 2])]
-        return any(isinf, x) ? [200.0, 200.0] : x
+        x = @SVector[mean(A[:, 1]), mean(A[:, 2])]
+        return any(isinf, x) ? @SVector[200.0, 200.0] : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    max_distance_template = 20, ε = 1e-3)
+    max_distance = 20, ε = 1e-3)
 end
 
 
@@ -145,7 +158,7 @@ end
         # `g` is the number of boxes needed to cover the set
         probs = probabilities(A, ValueHistogram(0.1))
         g = exp(entropy(Renyi(0), probs))
-        return [g, minimum(A[:,1])]
+        return @SVector[g, minimum(A[:,1])]
     end
 
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -153,67 +166,70 @@ end
 end
 
 
-@testset "Duffing oscillator: stroboscopic map" begin
-    ds = Systems.duffing([0.1, 0.25]; ω = 1.0, f = 0.2, d = 0.15, β = -1)
-    xg = yg = range(-2.2, 2.2; length=200)
-    grid = (xg, yg)
-    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-    T = 2π/1.0
-    ds = stroboscopicmap(ds, T; diffeq)
-    u0s = [
-        1 => [-0.8, 0],
-        2 => [1.8, 0],
-    ]
-    expected_fs_raw = Dict(2 => 0.511, 1 => 0.489)
-    function featurizer(A, t)
-        return [A[end][1], A[end][2]]
+# Okay, all of these aren't fundamentally new tests.
+if DO_EXTENSIVE_TESTS
+    @testset "Duffing oscillator: stroboscopic map" begin
+        ds = Systems.duffing([0.1, 0.25]; ω = 1.0, f = 0.2, d = 0.15, β = -1)
+        xg = yg = range(-2.2, 2.2; length=200)
+        grid = (xg, yg)
+        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+        T = 2π/1.0
+        ds = stroboscopicmap(ds, T; diffeq)
+        u0s = [
+            1 => [-0.8, 0],
+            2 => [1.8, 0],
+        ]
+        expected_fs_raw = Dict(2 => 0.511, 1 => 0.489)
+        function featurizer(A, t)
+            return @SVector[A[end][1], A[end][2]]
+        end
+
+        test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
+        ε = 0.01, ferr=1e-2, rerr = 1e-2, aerr = 5e-3)
     end
 
-    test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    ε = 0.01, ferr=1e-2, rerr = 1e-2, aerr = 5e-3)
-end
 
+    @testset "Magnetic pendulum: projected system" begin
+        ds = Systems.magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3)
+        xg = range(-2,2,length = 201)
+        yg = range(-2,2,length = 201)
+        grid = (xg, yg)
+        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+        ds = projected_integrator(ds, 1:2, [0.0, 0.0]; diffeq)
+        u0s = [
+            1 => [-0.5, 0.857],
+            2 => [-0.5, -0.857],
+            3 => [1.  , 0.],
+        ]
+        expected_fs_raw = Dict(2 => 0.318, 3 => 0.347, 1 => 0.335)
 
-@testset "Magnetic pendulum: projected system" begin
-    ds = Systems.magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3)
-    xg = range(-2,2,length = 201)
-    yg = range(-2,2,length = 201)
-    grid = (xg, yg)
-    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-    ds = projected_integrator(ds, 1:2, [0.0, 0.0]; diffeq)
-    u0s = [
-        1 => [-0.5, 0.857],
-        2 => [-0.5, -0.857],
-        3 => [1.  , 0.],
-    ]
-    expected_fs_raw = Dict(2 => 0.318, 3 => 0.347, 1 => 0.335)
+        function featurizer(A, t)
+            return @SVector[A[end][1], A[end][2]]
+        end
 
-    function featurizer(A, t)
-        return [A[end][1], A[end][2]]
+        test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
     end
 
-    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
-end
 
+    @testset "Thomas cyclical: Poincaré map" begin
+        ds = Systems.thomas_cyclical(b = 0.1665)
+        xg = yg = range(-6.0, 6.0; length = 100) # important, don't use 101 here, because
+        # the dynamical system has some fixed points ON the hyperplane.
+        grid = (xg, yg)
+        pmap = poincaremap(ds, (3, 0.0), 1e6;
+            rootkw = (xrtol = 1e-8, atol = 1e-8), diffeq=(reltol=1e-9,)
+        )
+        u0s = [
+            1 => [1.83899, -4.15575, 0],
+            2 => [1.69823, -0.0167188, 0],
+            3 => [-4.08547,  -2.26516, 0],
+        ]
+        expected_fs_raw = Dict(2 => 0.29, 3 => 0.237, 1 => 0.473)
+        function thomas_featurizer(A, t)
+            x, y = columns(A)
+            return @SVector[minimum(x), minimum(y)]
+        end
 
-@testset "Thomas cyclical: Poincaré map" begin
-    ds = Systems.thomas_cyclical(b = 0.1665)
-    xg = yg = range(-6.0, 6.0; length = 100) # important, don't use 101 here, because
-    # the dynamical system has some fixed points ON the hyperplane.
-    grid = (xg, yg)
-    pmap = poincaremap(ds, (3, 0.0), 1e6;
-        rootkw = (xrtol = 1e-8, atol = 1e-8), diffeq=(reltol=1e-9,)
-    )
-    u0s = [
-        1 => [1.83899, -4.15575, 0],
-        2 => [1.69823, -0.0167188, 0],
-        3 => [-4.08547,  -2.26516, 0],
-    ]
-    expected_fs_raw = Dict(2 => 0.29, 3 => 0.237, 1 => 0.473)
-    function thomas_featurizer(A, t)
-        x, y = columns(A)
-        return [minimum(x), minimum(y)]
+        test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
     end
-
-    test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
 end
