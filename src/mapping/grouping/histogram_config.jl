@@ -16,7 +16,7 @@ The second argument `min_entries_per_bin` quantifies how many entries each bin
 needs to have to get assigned a unique label. All bins that have _less_ than
 `min_entries_per_bin` get assigned the special label `-1`.
 """
-struct GroupViaHistogram{B<:FixedRectangularBinning, L}
+struct GroupViaHistogram{B<:FixedRectangularBinning, L} <: GroupingConfig
     binning::B
     min_entries_per_bin::Int
     labels_to_bins::L

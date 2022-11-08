@@ -1,8 +1,9 @@
 using Distances, Clustering, Distributions
-export ClusteringConfig, cluster_features
+import Optim
+export GroupViaClustering
 
 """
-  GroupViaClustering(; kwargs...)
+    GroupViaClustering(; kwargs...)
 
 Initialize a struct that contains instructions on how to group features in
 [`AttractorsViaFeaturizing`](@ref). `GroupViaClustering` clusters features into
@@ -89,7 +90,7 @@ than the `"silhouette"` methods.
     Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
     Should (Still) Use DBSCAN
 """
-mutable struct ClusteringConfig{R<:Union{Real, String}, M<:Metric, F<:Function}
+struct GroupViaClustering{R<:Union{Real, String}, M<:Metric, F<:Function} <: GroupingConfig
     clust_distance_metric::M
     min_neighbors::Int
     rescale_features::Bool
@@ -99,20 +100,18 @@ mutable struct ClusteringConfig{R<:Union{Real, String}, M<:Metric, F<:Function}
     max_used_features::Int
 end
 
-function ClusteringConfig(;
+function GroupViaClustering(;
         clust_distance_metric=Euclidean(), min_neighbors = 10,
         rescale_features=true, num_attempts_radius=100,
         optimal_radius_method::Union{Real, String} = "silhouettes_optim",
         silhouette_statistic = mean, max_used_features = 0,
     )
-    return ClusteringConfig(
+    return GroupViaClustering(
         clust_distance_metric, min_neighbors,
         rescale_features, optimal_radius_method,
         num_attempts_radius, silhouette_statistic, max_used_features
     )
 end
-
-include("cluster_utils.jl")
 
 #####################################################################################
 # API funtion (group features)
@@ -165,3 +164,34 @@ function rescale_to_01(features::Vector{<:SVector})
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
+
+#####################################################################################
+# Utilities
+#####################################################################################
+"""
+Util function for `classify_features`. Returns the assignment vector, in which the i-th
+component is the cluster index of the i-th feature.
+"""
+function cluster_assignment(clusters, data; include_boundary=true)
+    assign = zeros(Int, size(data)[2])
+    for (idx, cluster) in enumerate(clusters)
+        assign[cluster.core_indices] .= idx
+        if cluster.boundary_indices != []
+            if include_boundary
+                assign[cluster.boundary_indices] .= idx
+            else
+                assign[cluster.boundary_indices] .= -1
+            end
+        end
+    end
+    return assign
+end
+function cluster_assignment(dbscanresult::Clustering.DbscanResult)
+    labels = dbscanresult.assignments
+    return replace!(labels, 0=>-1)
+end
+
+#####################################################################################
+# Finding optimal ϵ
+#####################################################################################
+include("cluster_optimal_ϵ.jl")

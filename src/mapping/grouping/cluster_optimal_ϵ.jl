@@ -1,30 +1,6 @@
-import Optim
 #####################################################################################
-# Utilities
+# Calculate Silhuettes
 #####################################################################################
-"""
-Util function for `classify_features`. Returns the assignment vector, in which the i-th
-component is the cluster index of the i-th feature.
-"""
-function cluster_assignment(clusters, data; include_boundary=true)
-    assign = zeros(Int, size(data)[2])
-    for (idx, cluster) in enumerate(clusters)
-        assign[cluster.core_indices] .= idx
-        if cluster.boundary_indices != []
-            if include_boundary
-                assign[cluster.boundary_indices] .= idx
-            else
-                assign[cluster.boundary_indices] .= -1
-            end
-        end
-    end
-    return assign
-end
-function cluster_assignment(dbscanresult::Clustering.DbscanResult)
-    labels = dbscanresult.assignments
-    return replace!(labels, 0=>-1)
-end
-
 """
 Calculate silhouettes. A bit slower than the implementation in `Clustering.jl` but seems
 to be more robust. The latter seems to be incorrect in some cases.

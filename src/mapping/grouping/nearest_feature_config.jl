@@ -22,7 +22,7 @@ that the `featurizer` function given in [`AttractorsViaFeaturizing`](@ref) retur
   feature is assigned to its nearest template regardless of the distance.
   Features that exceed `max_distance` to their nearest template get labelled `-1`.
 """
-struct GroupViaNearestFeature{D, T, K}
+struct GroupViaNearestFeature{D, T, K} <: GroupingConfig
     templates::Vector{SVector{D,T}}
     max_distance::T
     template_tree::K
