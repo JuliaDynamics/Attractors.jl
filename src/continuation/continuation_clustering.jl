@@ -167,31 +167,3 @@ function _label_fractions(cluster_labels, n, spp, feature, info_extraction)
     return fractions_curves, attractors_info
 end
 
-function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress)
-    progress = ProgressMeter.Progress(n;
-        desc="Continuating basins fractions:", enabled=show_progress
-    )
-
-    set_parameter!(mapper.integ, pidx, prange[1])
-    fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
-    fractions_curves = [fs]
-    current_attractors = deepcopy(mapper.bsn_nfo.attractors)
-    attractors_info = [current_attractors]
-
-    for (i, p) in enumerate(prange)
-        set_parameter!(mapper.integ, pidx, p)
-        reset!(mapper)
-        fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
-        push!(fractions_curves, fs)
-        push!(attractors_info, deepcopy(mapper.bsn_nfo.attractors))
-        next!(progress)
-    end
-    # collect Datasets
-    vec_att = Dataset[]
-    for att in attractors_info
-        for a in att
-            push!(vec_att, a[2])
-        end
-    end 
-    return vec_att
-end
