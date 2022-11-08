@@ -24,6 +24,6 @@ end
 
 GroupViaHistogram(binning) = GroupViaHistogram(binning, 1)
 
-function group_features(features::Vector{<:AbstractVector}, config::GroupViaHistogram)
-    error("Not yet implemented (waiting for resolution in Entropies.jl")
+function group_features(features, config::GroupViaHistogram)
+    error("Not yet implemented (waiting for resolution in Entropies.jl)")
 end

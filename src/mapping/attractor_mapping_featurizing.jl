@@ -5,6 +5,10 @@ export AttractorsViaFeaturizing, group_features, extract_features
 # necessary for a new grouping configuration is to:
 # 1. make a new type and subtype `GroupingConfig`.
 # 2. Extend the function `group_features(features, config)` documented below.
+#    If the grouping allows for mapping individual initial conditions to IDs,
+#    then instead extend the **internal function** `feature_to_group(feature, config)`.
+#    You can still extend `group_features` as well if there are performance benefits
+#    (as is the case of the grouping to nearest feature for example)
 # 3. Include the new grouping file in the `grouping/all_grouping_configs.jl`
 
 #####################################################################################
@@ -33,36 +37,39 @@ Initialize a `mapper` that maps initial conditions to attractors using a featuri
 grouping approach. This is a supercase of the featurizing and clustering approach that
 is utilized by bSTAB[^Stender2021] and MCBB[^Gelbrecht2021].
 See [`AttractorMapper`](@ref) for how to use the `mapper`.
+This `mapper` allows the syntax `mapper(u0)` only for some `grouping_config` types,
+see below.
 
 `featurizer` is a function that takes as an input an integrated trajectory `A::Dataset` and
-the corresponding time vector `t` and returns a `Vector{<:Real}` of features describing the
-trajectory.
+the corresponding time vector `t` and returns an `SVector{<:Real}` of features describing the
+trajectory. It is important to use static vectors for better performance.
 
 See also the intermediate functions [`extract_features`](@ref) and [`group_features`](@ref),
 which can be utilized when wanting to work directly with features.
 
 ## Keyword arguments
 * `T=100, Ttr=100, Δt=1, diffeq=NamedTuple()`: Propagated to [`trajectory`](@ref).
-* `treaded = true`: Whether to run the generation of features over threads.
+* `treaded = true`: Whether to run the generation of features over threads by integrating
+  trajectories in parallel.
 
 ## Description
-The trajectory `X` of each initial condition is transformed into a vector of features. Each
+The trajectory `X` of an initial condition is transformed into features. Each
 feature is a number useful in _characterizing the attractor_ the initial condition ends up
 at, and distinguishing it from other attractors. Example features are the mean or standard
 deviation of some the dimensions of the trajectory, the entropy of some of the
 dimensions, the fractal dimension of `X`, or anything else you may fancy.
 
-The vectors of features are then grouped using one of the sevaral available grouping
-configurations. Each group is assumed to be a unique attractor, and hence each initial
-condition is labelled according to the group it is part of. The method thus relies on the
-user having at least some basic idea about what attractors to expect in order to pick the
-right features, and the right way to group them,
+All feature vectors (each initial condition = 1 vector) are then grouped using one of the
+sevaral available grouping configurations. Each group is assumed to be a unique attractor,
+and hence each initial condition is labelled according to the group it is part of.
+The method thus relies on the user having at least some basic idea about what attractors
+to expect in order to pick the right features, and the right way to group them,
 in contrast to [`AttractorsViaRecurrences`](@ref).
 
 The following configuration structs can be used to decide how the features are grouped:
 - [`GroupViaClustering`](@ref)
-- [`GroupViaNearestFeature`](@ref)
-- [`GroupViaHistogram`](@ref)
+- [`GroupViaNearestFeature`](@ref), which allows `id = mapper(u0)`
+- [`GroupViaHistogram`](@ref), which allows `id = mapper(u0)`
 
 Generally speaking, the [`AttractorsViaProximity`](@ref) mapper is superior to this.
 However, if the dynamical system has extremely high-dimensionality, there may be reasons
@@ -88,12 +95,27 @@ function AttractorsViaFeaturizing(ds::GeneralizedDynamicalSystem, featurizer::Fu
 end
 
 """
-    group_features(features, group_config) → labels
-Group the given features vector according to the configuration and return
+    group_features(features, group_config::GroupingConfig) → labels
+Group the given vector of feature vectors according to the configuration and return
 the labels (vector of equal length as `features`).
 See [`AttractorsViaFeaturizing`](@ref) for possible configurations.
 """
-function group_features end
+function group_features(features::Vector{<:AbstractVector}, group_config::GroupingConfig)
+    return map(f -> feature_to_group(f, group_config), features)
+end
+
+"""
+    feature_to_group(feature::AbstractVector, group_config::GroupingConfig) → group_label
+Map the given feature vector to its group label (integer).
+This is an internal function
+"""
+function feature_to_group(::AbstractVector, group_config::GroupingConfig)
+    throw(ArgumentError("""
+        `feature_to_group` not implemented for config $(nameof(typeof(group_config)))
+    """))
+end
+
+
 
 DynamicalSystemsBase.get_rule_for_print(m::AttractorsViaFeaturizing) =
 get_rule_for_print(m.integ)
