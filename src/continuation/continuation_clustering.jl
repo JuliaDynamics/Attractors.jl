@@ -82,7 +82,7 @@ function basins_fractions_continuation(
     (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
-    features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
+    features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress, cluster_config)
 
     # The distance matrix can get very large. The use of memory map based array is 
     # necessary.
@@ -167,7 +167,7 @@ function _label_fractions(cluster_labels, n, spp, feature, info_extraction)
     return fractions_curves, attractors_info
 end
 
-function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress)
+function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress, cluster_config)
     progress = ProgressMeter.Progress(n;
         desc="Continuating basins fractions:", enabled=show_progress
     )
@@ -178,7 +178,7 @@ function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, pra
     current_attractors = deepcopy(mapper.bsn_nfo.attractors)
     attractors_info = [current_attractors]
 
-    for (i, p) in enumerate(prange)
+    for (i, p) in enumerate(prange[2:end])
         set_parameter!(mapper.integ, pidx, p)
         reset!(mapper)
         fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
@@ -188,10 +188,45 @@ function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, pra
     end
     # collect Datasets
     vec_att = Dataset[]
-    for att in attractors_info
+    par_array = Float64[]
+    key_array = Int64[]
+    for (k,att) in enumerate(attractors_info)
         for a in att
             push!(vec_att, a[2])
+            push!(key_array, a[1])
+            push!(par_array, prange[k])
         end
     end 
+     
+    @show length(par_array), length(vec_att)
+    metric = cluster_config.clust_distance_metric
+    dists = pairwise(metric, vec_att; symmetric = true)
+    par_weight = 1/(par_array[end]-par_array[1])
+    for k in 1:length(par_array)
+        for j in 1:length(par_array)
+            dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
+            if par_array[k] == par_array[j]
+                dists[k,j] += Inf
+            end
+        end
+    end
+@show dists
+    # cluster with dbscan 
+    dbscanresult = dbscan(dists, 0.3, 1)
+    cluster_labels = cluster_assignment(dbscanresult)
+    @show cluster_labels 
+
+    fractions_curves2 = Vector{Dict{Int, Float64}}(undef, n)
+    c = 0
+    for i in 1:n
+        @show l = sum(par_array .== prange[i])
+        @show current_labels = view(cluster_labels, c+1:c+l)
+        @show c+1:c+l
+        @show current_ids = unique(current_labels)
+        @show  fractions_curves[i]
+        c += l
+        # fractions_curves[i] = basins_fractions(current_labels, current_ids)
+    end
+
     return vec_att
 end
