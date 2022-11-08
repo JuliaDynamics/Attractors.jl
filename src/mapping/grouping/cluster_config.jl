@@ -89,25 +89,24 @@ than the `"silhouette"` methods.
     Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
     Should (Still) Use DBSCAN
 """
-mutable struct ClusteringConfig{R<:Union{Real, String}, M}
+mutable struct ClusteringConfig{R<:Union{Real, String}, M<:Metric, F<:Function}
     clust_distance_metric::M
-    max_distance_template::Float64
     min_neighbors::Int
     rescale_features::Bool
     optimal_radius_method::R
     num_attempts_radius::Int
-    silhouette_statistic::Function
+    silhouette_statistic::F
     max_used_features::Int
 end
 
 function ClusteringConfig(;
-        clust_distance_metric=Euclidean(), max_distance_template = Inf, min_neighbors = 10,
-        rescale_features=true, optimal_radius_method::Union{Real, String}="silhouettes_optim",
-        num_attempts_radius=100, silhouette_statistic = mean, max_used_features = 0,
+        clust_distance_metric=Euclidean(), min_neighbors = 10,
+        rescale_features=true, num_attempts_radius=100,
+        optimal_radius_method::Union{Real, String} = "silhouettes_optim",
+        silhouette_statistic = mean, max_used_features = 0,
     )
     return ClusteringConfig(
-        templates, clust_distance_metric,
-        Float64(max_distance_template), min_neighbors,
+        clust_distance_metric, min_neighbors,
         rescale_features, optimal_radius_method,
         num_attempts_radius, silhouette_statistic, max_used_features
     )
@@ -116,98 +115,53 @@ end
 include("cluster_utils.jl")
 
 #####################################################################################
-# Clustering classification functions
+# API funtion (group features)
 #####################################################################################
-"""
-    cluster_features(features, cc::ClusteringConfig)
-Cluster the given `features::Vector{<:AbstractVector}`, according to given
-[`ClusteringConfig`](@ref). Return `cluster_labels`, which contains, for each feature, the
-labels (indices) of the corresponding cluster.
-"""
-function cluster_features(features::Vector{<:AbstractVector}, cc::ClusteringConfig)
-    # All methods require the features in a matrix format
-    f = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
-    f = float.(f)
-    if !isnothing(cc.templates)
-        cluster_features_templates(f, cc)
-    else
-        cluster_features_clustering(
-            f, cc.min_neighbors, cc.clust_distance_metric,
-            cc.rescale_features, cc.optimal_radius_method,
-            cc.num_attempts_radius, cc.silhouette_statistic, cc.max_used_features,
-        )
+function group_features(features::Vector{<:AbstractVector}, config::GroupViaClustering)
+    (; min_neighbors, metric, rescale_features, optimal_radius_method,
+    num_attempts_radius, silhouette_statistic, max_used_features) = config
+
+    nfeats = length(features); dimfeats = length(features[1])
+    if dimfeats ≥ nfeats
+        throw(ArgumentError("""
+        Not enough features. The algorithm needs the number of features
+        $nfeats to be greater or equal than the number of dimensions $dimfeats
+        """))
     end
-end
-
-# Supervised method: for each template, return the label of its nearest template (cluster)
-# if the distance is smaller than the threshold.
-function cluster_features_templates(features, cc::ClusteringConfig)
-    #puts each vector into a column, with the ordering based on the order given in keys(d)
-    templates = float.(reduce(hcat, [cc.templates[i] for i ∈ keys(cc.templates)]))
-
-    #prepare for nearest-neighbors algorithm (kNN with k=1)
-    template_tree = searchstructure(KDTree, templates, cc.clust_distance_metric)
-    cluster_labels, dists_to_templates = bulksearch(template_tree, features, NeighborNumber(1))
-    cluster_labels = reduce(vcat, cluster_labels) # make it a vector
-    dists_to_templates = reduce(vcat, dists_to_templates)
-
-    # Make label -1 if error strictly bigger than threshold
-    cluster_labels[dists_to_templates .> cc.max_distance_template] .= -1
-    matlabels_to_dictlabels = Dict(1:length(keys(cc.templates)) .=> keys(cc.templates))
-
-    # cluster_user_labels[i] is the label of template nearest to feature i
-    # (i-th column of features matrix)
-    cluster_user_labels = replace(cluster_labels, matlabels_to_dictlabels...)
-    return cluster_user_labels
-end
-
-"""
-Do "min-max" rescaling of vector `vec`: rescale it such that its values span `[0,1]`.
-"""
-function _rescale!(vec::Vector{T}) where T
-    vec .-= minimum(vec)
-    max = maximum(vec)
-    if max == 0 return zeros(T, length(vec)) end
-    vec ./= maximum(vec)
-end
-
-# Unsupervised method: clustering in feature space
-function cluster_features_clustering(
-        features, min_neighbors, metric, rescale_features, optimal_radius_method,
-        num_attempts_radius, silhouette_statistic, max_used_features
-    )
-    # needed because dbscan, as implemented, needs to receive as input a matrix D x N
-    # such that D < N
-    dimfeats, nfeats = size(features)
-    if dimfeats ≥ nfeats @warn "Not enough features. The algorithm needs the number of features
-         $nfeats to be greater or equal than the number of dimensions $dimfeats";
-           return 1:nfeats, zeros(nfeats) end
 
     if rescale_features
-        features = mapslices(_rescale!, features; dims=2)
+        features = rescale_to_01(features)
     end
 
-    dists = pairwise(metric, features)
-
-    # These functions are called from cluster_utils.jl
+    # Obtain optimal radius
     if optimal_radius_method isa String
-      features_for_optimal = if max_used_features == 0
-          features
-      else
-          StatsBase.sample(features, minimum(length(features), max_used_features); replace = false)
-      end
-      ϵ_optimal = optimal_radius_dbscan(
-          features_for_optimal, min_neighbors, metric, optimal_radius_method,
-          num_attempts_radius, silhouette_statistic
-      )
+        if max_used_features == 0 || max_used_features > nfeats
+            features_for_optimal = features
+        else
+            features_for_optimal = StatsBase.sample(features, max_used_features; replace = false)
+        end
+        ϵ_optimal = optimal_radius_dbscan(
+            features_for_optimal, min_neighbors, metric, optimal_radius_method,
+            num_attempts_radius, silhouette_statistic
+        )
     elseif optimal_radius_method isa Real
-      ϵ_optimal = optimal_radius_method
+        ϵ_optimal = optimal_radius_method
     else
-      error("Specified optimal_radius_method is incorrect. Please specify the radius
-       directly as a Real number or the method to compute it as a String")
+        error("Specified optimal_radius_method is incorrect. Please specify the radius
+        directly as a Real number or the method to compute it as a String")
     end
-
-    dbscanresult = dbscan(dists, ϵ_optimal, min_neighbors)
+    # Perform the DBSCAN and assign the result into labels
+    distances = pairwise(metric, features)
+    dbscanresult = dbscan(distances, ϵ_optimal, min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
+end
+
+"""
+Do "min-max" rescaling of vector of feature vectors so that its values span `[0,1]`.
+"""
+function rescale_to_01(features::Vector{<:SVector})
+    dataset = Dataset(features) # To access min-maxima
+    mini, maxi = minmaxima(dataset)
+    return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
