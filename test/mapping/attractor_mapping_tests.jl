@@ -4,12 +4,12 @@
 # `ATTRACTORS_EXTENSIVE_TESTS` controls whether the tests should be done extensively or not.
 # If not, a small, but representative subset of mappers and dynamical systems is used.
 
-DO_EXTENSIVE_TESTS = parse(Bool, get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", false))
+DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
+using Test
 using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.DelayEmbeddings
-using Test
 using LinearAlgebra
 using OrdinaryDiffEq
 using Random
@@ -17,7 +17,7 @@ using Statistics
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance_template = Inf,
+        rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance = Inf,
         diffeq = NamedTuple(), kwargs...
     )
     # u0s is Vector{Pair}
@@ -36,7 +36,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     function test_basins_fractions(mapper;
             err = 1e-3, known=false, single_u_mapping = true,
             known_ids = known_ids, expected_fs = expected_fs,
-            replace_ids_for_clustering = nothing
         )
         if single_u_mapping
             for (k, u0) in u0s
@@ -88,9 +87,8 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             ["silhouettes_optim"]
         end
         for optimal_radius_method in radius_methods
-            clusterspecs = ClusteringConfig(num_attempts_radius=20,
-             optimal_radius_method=optimal_radius_method)
-            mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; diffeq, Ttr = 500)
+            config = GroupViaClustering(; num_attempts_radius=20, optimal_radius_method)
+            mapper = AttractorsViaFeaturizing(ds, featurizer, config; diffeq, Ttr = 500)
             test_basins_fractions(mapper;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3])
         end
@@ -100,17 +98,15 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         # First generate the templates
         function features_from_u(u)
             A = ds isa DynamicalSystem ?
-            trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq) :
-            trajectory(ds, 100, u; Ttr = 500, Δt = 1)
-
+                trajectory(ds, 100, u; Ttr = 500, Δt = 1, diffeq) :
+                trajectory(ds, 100, u; Ttr = 500, Δt = 1)
             featurizer(A, 0)
         end
         t = [features_from_u(x[2]) for x in u0s]
-        templates = Dict([u0[1] for u0 ∈ u0s] .=> t) #keeps labels of u0s
+        templates = Dict([u0[1] for u0 ∈ u0s] .=> t) # keeps labels of u0s
 
-        clusterspecs = ClusteringConfig(; templates, max_distance_template)
-        mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; diffeq, Ttr=500
-        )
+        config = GroupViaNearestFeature(templates; max_distance)
+        mapper = AttractorsViaFeaturizing(ds, featurizer, config; diffeq, Ttr=500)
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
     end
 
@@ -134,11 +130,11 @@ end
     function featurizer(A, t)
         # Notice that unsupervised clustering cannot support "divergence to infinity",
         # which it identifies as another attractor (in fact, the first one).
-        x = [mean(A[:, 1]), mean(A[:, 2])]
-        return any(isinf, x) ? [200.0, 200.0] : x
+        x = @SVector[mean(A[:, 1]), mean(A[:, 2])]
+        return any(isinf, x) ? @SVector[200.0, 200.0] : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    max_distance_template = 20, ε = 1e-3)
+    max_distance = 20, ε = 1e-3)
 end
 
 
@@ -162,7 +158,7 @@ end
         # `g` is the number of boxes needed to cover the set
         probs = probabilities(A, ValueHistogram(0.1))
         g = exp(entropy(Renyi(0), probs))
-        return [g, minimum(A[:,1])]
+        return @SVector[g, minimum(A[:,1])]
     end
 
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -185,7 +181,7 @@ if DO_EXTENSIVE_TESTS
         ]
         expected_fs_raw = Dict(2 => 0.511, 1 => 0.489)
         function featurizer(A, t)
-            return [A[end][1], A[end][2]]
+            return @SVector[A[end][1], A[end][2]]
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -208,7 +204,7 @@ if DO_EXTENSIVE_TESTS
         expected_fs_raw = Dict(2 => 0.318, 3 => 0.347, 1 => 0.335)
 
         function featurizer(A, t)
-            return [A[end][1], A[end][2]]
+            return @SVector[A[end][1], A[end][2]]
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
@@ -231,7 +227,7 @@ if DO_EXTENSIVE_TESTS
         expected_fs_raw = Dict(2 => 0.29, 3 => 0.237, 1 => 0.473)
         function thomas_featurizer(A, t)
             x, y = columns(A)
-            return [minimum(x), minimum(y)]
+            return @SVector[minimum(x), minimum(y)]
         end
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)

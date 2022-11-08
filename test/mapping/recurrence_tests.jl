@@ -1,4 +1,4 @@
-DO_EXTENSIVE_TESTS = parse(Bool, get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", false))
+DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
 if DO_EXTENSIVE_TESTS
 # The functionality tested here has been resolved and is only added as a test

@@ -117,7 +117,7 @@ end
 # API funtion (group features)
 #####################################################################################
 function group_features(features::Vector{<:AbstractVector}, config::GroupViaClustering)
-    (; min_neighbors, metric, rescale_features, optimal_radius_method,
+    (; min_neighbors, clust_distance_metric, rescale_features, optimal_radius_method,
     num_attempts_radius, silhouette_statistic, max_used_features) = config
 
     nfeats = length(features); dimfeats = length(features[1])
@@ -140,8 +140,8 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
             features_for_optimal = StatsBase.sample(features, max_used_features; replace = false)
         end
         ϵ_optimal = optimal_radius_dbscan(
-            features_for_optimal, min_neighbors, metric, optimal_radius_method,
-            num_attempts_radius, silhouette_statistic
+            features_for_optimal, min_neighbors, clust_distance_metric,
+            optimal_radius_method, num_attempts_radius, silhouette_statistic
         )
     elseif optimal_radius_method isa Real
         ϵ_optimal = optimal_radius_method
@@ -150,7 +150,7 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         directly as a Real number or the method to compute it as a String")
     end
     # Perform the DBSCAN and assign the result into labels
-    distances = pairwise(metric, features)
+    distances = pairwise(clust_distance_metric, features)
     dbscanresult = dbscan(distances, ϵ_optimal, min_neighbors)
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
@@ -160,6 +160,11 @@ end
 Do "min-max" rescaling of vector of feature vectors so that its values span `[0,1]`.
 """
 function rescale_to_01(features::Vector{<:SVector})
+    dataset = Dataset(features) # To access min-maxima
+    mini, maxi = minmaxima(dataset)
+    return map(f -> f .* (maxi .- mini) .+ mini, features)
+end
+function rescale_to_01(features::Vector{<:Vector})
     dataset = Dataset(features) # To access min-maxima
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)

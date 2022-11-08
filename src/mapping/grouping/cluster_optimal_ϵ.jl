@@ -68,7 +68,7 @@ silhouettes. Does a linear (sequential) search.
 function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
         num_attempts_radius, silhouette_statistic
     )
-    feat_ranges = maximum(features, dims=2)[:,1] .- minimum(features, dims=2)[:,1];
+    feat_ranges = features_ranges(features)
     ϵ_grid = range(
         minimum(feat_ranges)/num_attempts_radius, minimum(feat_ranges);
         length=num_attempts_radius
@@ -88,6 +88,13 @@ function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
     return ϵ_optimal
 end
 
+function features_ranges(features)
+    d = Dataset(features) # zero cost if `features` is a `Vector{<:SVector}`
+    mini, maxi = minmaxima(d)
+    return maxi .- mini
+end
+
+
 """
 Same as `optimal_radius_dbscan_silhouette`,
 but find minimum via optimization with Optim.jl.
@@ -95,7 +102,7 @@ but find minimum via optimization with Optim.jl.
 function optimal_radius_dbscan_silhouette_optim(
         features, min_neighbors, metric, num_attempts_radius, silhouette_statistic
     )
-    feat_ranges = maximum(features, dims=2)[:,1] .- minimum(features, dims=2)[:,1];
+    feat_ranges = features_ranges(features)
     # vary ϵ to find the best radius (which will maximize the mean sillhoute)
     dists = pairwise(metric, features)
     f = (ϵ) -> Attractors.silhouettes_from_distances(

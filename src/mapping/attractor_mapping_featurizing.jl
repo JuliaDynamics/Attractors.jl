@@ -102,16 +102,16 @@ Group the given vector of feature vectors according to the configuration and ret
 the labels (vector of equal length as `features`).
 See [`AttractorsViaFeaturizing`](@ref) for possible configurations.
 """
-function group_features(features, group_config::GroupingConfig)
+function group_features(features::Vector{<:AbstractVector}, group_config::GroupingConfig)
     return map(f -> feature_to_group(f, group_config), features)
 end
 
 """
-    feature_to_group(feature::AbstractVector, group_config::GroupingConfig) → group_label
+    feature_to_group(feature::SVector, group_config::GroupingConfig) → group_label
 Map the given feature vector to its group label (integer).
 This is an internal function
 """
-function feature_to_group(::AbstractVector, group_config::GroupingConfig)
+function feature_to_group(feature, group_config::GroupingConfig)
     throw(ArgumentError("""
         `feature_to_group` not implemented for config $(nameof(typeof(group_config)))
     """))
