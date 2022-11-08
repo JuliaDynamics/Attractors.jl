@@ -48,7 +48,7 @@ which can be utilized when wanting to work directly with features.
 
 ## Keyword arguments
 * `T=100, Ttr=100, Δt=1, diffeq=NamedTuple()`: Propagated to [`trajectory`](@ref).
-* `treaded = true`: Whether to run the generation of features over threads by integrating
+* `threaded = true`: Whether to run the generation of features over threads by integrating
   trajectories in parallel.
 
 ## Description
