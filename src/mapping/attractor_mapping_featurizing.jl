@@ -7,8 +7,7 @@ export AttractorsViaFeaturizing, group_features, extract_features
 # 2. Extend the function `group_features(features, config)` documented below.
 #    If the grouping allows for mapping individual initial conditions to IDs,
 #    then instead extend the **internal function** `feature_to_group(feature, config)`.
-#    You can still extend `group_features` as well if there are performance benefits
-#    (as is the case of the grouping to nearest feature for example)
+#    You can still extend `group_features` as well if there are any performance benefits
 # 3. Include the new grouping file in the `grouping/all_grouping_configs.jl`
 
 #####################################################################################
@@ -100,7 +99,7 @@ Group the given vector of feature vectors according to the configuration and ret
 the labels (vector of equal length as `features`).
 See [`AttractorsViaFeaturizing`](@ref) for possible configurations.
 """
-function group_features(features::Vector{<:AbstractVector}, group_config::GroupingConfig)
+function group_features(features, group_config::GroupingConfig)
     return map(f -> feature_to_group(f, group_config), features)
 end
 

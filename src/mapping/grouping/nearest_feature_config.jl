@@ -22,31 +22,45 @@ that the `featurizer` function given in [`AttractorsViaFeaturizing`](@ref) retur
   feature is assigned to its nearest template regardless of the distance.
   Features that exceed `max_distance` to all `templates` get labelled `-1` (divergent).
 """
-struct GroupViaNearestFeature{D, T, M <: Metric}
+struct GroupViaNearestFeature{D, T, K}
     templates::Vector{SVector{D,T}}
-    metric::M
     max_distance::T
+    template_tree::K
+    dummy_idxs::Vector{Int}
+    dummy_dist::Vector{T}
 end
-function GroupViaNearestFeature(templates; metric = Euclidean(), max_distance = Inf)
-    t = if templates isa Vector{<:AbstractVector}
+function GroupViaNearestFeature(
+        templates::Vector{<:AbstractVector}; metric = Euclidean(), max_distance = Inf
+    )
+    x = first(templates)
+    D = length(x); T = eltype(x)
+    t = if templates isa Vector{<:SVector}
         templates
     else
-        x = first(templates)
-        D = length(x); T = eltype(x)
         map(x -> SVector{D,T}(x), templates)
     end
-    return GroupViaNearestFeature(templates, metric, max_distance)
+    # The tree performs the nearest neighbor searches efficiently
+    tree = searchstructure(KDTree, templates, metric)
+    dummy_idxs = [0]; dummy_dist = T[0]
+    return GroupViaNearestFeature(templates, tree, T(max_distance), dummy_idxs, dummy_dist)
 end
 
-function group_features(features::Vector{<:AbstractVector}, config::GroupViaNearestFeature)
-   # prepare for nearest-neighbors algorithm (kNN with k=1)
-   template_tree = searchstructure(KDTree, config.templates, config.metric)
-   labels_nested, distances_nested = bulksearch(template_tree, features, NeighborNumber(1))
-   labels = reduce(vcat, labels_nested) # make it a vector
-   distances = reduce(vcat, distances_nested)
-   # Make label -1 if error strictly bigger than threshold
-   labels[distances .> config.max_distance_template] .= -1
-   # labels[i] is the label of template nearest to feature i
-   # (i-th column of features matrix)
-   return labels
+# The following function comes from the source code of the `bulksearch` function
+# from Neighborhood.jl. It's the most efficient way to perform one knn search,
+# and makes it unecessary to also implement `group_features`. The bulk version
+# has the same performance!
+@inbounds function feature_to_group(feature, config::GroupViaNearestFeature)
+    (; tree, max_distance, dummy_idxs, dummy_dist) = config
+    skip = Neighborhood.NearestNeighbors.always_false
+    sort_result = false
+    Neighborhood.NearestNeighbors.knn_point!(
+        tree, feature, sort_result, dummy_dist, dummy_idxs, skip
+    )
+    label = dummy_idxs[1]
+    d = dummy_dist[1]
+    if d > max_distance
+        return -1
+    else
+        return label
+    end
 end
