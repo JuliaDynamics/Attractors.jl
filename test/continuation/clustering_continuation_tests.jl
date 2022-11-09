@@ -28,10 +28,10 @@ using Random
             return [100]
         end
     end
-    clusterspecs = Attractors.ClusteringConfig(optimal_radius_method = 1.)
-    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer; T = 500)
+    clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.)
+    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
     continuation = ClusteringAcrossParametersContinuation(mapper, 
-        samples_per_parameter = 1000, par_weight = 1., cluster_config = clusterspecs)
+        samples_per_parameter = 1000, par_weight = 1.)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler)
     
@@ -52,7 +52,7 @@ using Random
 
     # Test mmap 
     continuation = ClusteringAcrossParametersContinuation(mapper,
-         samples_per_parameter = 1000, par_weight = 1., mmap_limit = 200, cluster_config = clusterspecs)
+         samples_per_parameter = 1000, par_weight = 1., mmap_limit = 200)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, psorig, pidx, sampler)
 
@@ -139,9 +139,9 @@ end
     ridx = 1
 
     featurizer(a, t) = a[end,:] 
-    clusterspecs = Attractors.ClusteringConfig(optimal_radius_method = "silhouettes", max_used_features = 200)
-    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer; T = 20)
-    continuation = ClusteringAcrossParametersContinuation(mapper, samples_per_parameter = 100, par_weight = 1., cluster_config = clusterspecs)
+    clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
+    mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
+    continuation = ClusteringAcrossParametersContinuation(mapper, samples_per_parameter = 100, par_weight = 1.)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler)
     

@@ -8,11 +8,11 @@ struct ClusteringAcrossParametersContinuation{A, M, I, E, C} <: BasinsFractionCo
     samples_per_parameter::I 
     par_weight::M
     mmap_limit::I
-    cluster_config::C
+    group_config::C
 end
 
 """
-    ClusteringAcrossParametersContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
+    ClusteringAcrossParametersContinuation(mapper::AttractorMapper; kwargs...)
  A method to compute the continuation of a basin when a parameter changes, see
   [`basins_fractions_continuation`](@ref). This method computes the Features accross a 
   range of parameters before performing a clustering into classes using a special metric, 
@@ -24,24 +24,29 @@ The function takes as an input a `mapper` that maps initial conditions to attrac
 
 ## Keyword Arguments
 - `prange` Range of parameter to analyze.
-- `pidx` Number or symbol of the parameter to change in the array of parameters of the dynamical system. 
+- `pidx` Number or symbol of the parameter to change in the array of parameters of the dynamical
+  system.
 - `ics` Sampler function to generate initial conditions to sample. 
 - `samples_per_parameter = 100` Number of samples per parameter.
-- `par_weight = 1` The distance matrix between features has a special extra  weight that 
+- `par_weight = 1.` The distance matrix between features has a special extra  weight that 
   is proportional to the distance |pi - pj| between the parameters of each features. This 
-  keyword argument is the weight coeficient that ponderates the distance matrix.
-- `mmap_limit = 20000` this parameter sets the limit of features that should be clustered using only the 
-  RAM memory. Above this limit the program uses a memory map based array to store the distance 
-  matrix on the disk. 
+  keyword argument is the weight coeficient that ponderates the distance matrix. Notice
+  that the range of parameters is normalized from 0 to 1 such that the largest distance
+  in the parameter space is 1. 
+- `mmap_limit = 20000` this parameter sets the limit of features that should be clustered using
+  only the RAM memory. Above this limit the program uses a memory map based array to store the 
+  distance matrix on the disk. 
+- `group_config` The clustering configuration must be included in the `mapper` structure 
+  for the `AttractorsViaFeaturing` mappers.
 
 ## Description
 
-The method first simulate and compute a set of statistics on the trajectories, for example the mean 
- and standard deviation of the trajectory data points. Once all the featured statistics have been 
- computed, the algorithm computes the distance between each feature. A special weitgh term is added 
- so that the distance between features with different parameters is increased. It helps to discriminate
- between attractors with very different parameters. At last, the distance matrix is clustered with the 
- DBSCAN algorithm
+The method first integrates and computes a set of statistics on the trajectories, for example 
+ the mean and standard deviation of the trajectory data points. Once all the featured statistics
+ have been  computed, the algorithm computes the distance between each feature. A special weight
+ term is added so that the distance between features with different parameters is increased. 
+ It helps to discriminate between attractors with very different parameters. At last, the 
+ distance matrix is clustered with the DBSCAN algorithm.
 
 [^Gelbrecht2020]:
     Gelbrecht, M., Kurths, J., & Hellmann, F. (2020). Monte Carlo basin bifurcation
@@ -57,9 +62,9 @@ function ClusteringAcrossParametersContinuation(
         samples_per_parameter = 100, 
         par_weight = 1, 
         mmap_limit = 20000,
-        cluster_config = ClusterConfig()
+        group_config = nothing
     )
-    return ClusteringAcrossParametersContinuation(mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config)
+    return ClusteringAcrossParametersContinuation(mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, group_config)
 end
 
 function mean_across_features(fs)
@@ -79,7 +84,7 @@ function basins_fractions_continuation(
         continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics::Function;
         show_progress = true
     )
-    (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config) = continuation
+    (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, group_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
@@ -94,10 +99,9 @@ function basins_fractions_continuation(
         dists = zeros(length(features), length(features))
     end
     
-    _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_config)
+    _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper; group_config)
 
-    cluster_labels = _cluster_across_parameters(dists, features, cluster_config)
-
+    cluster_labels = _cluster_across_parameters(dists, features, mapper; group_config)
     fractions_curves, attractors_info = _label_fractions(cluster_labels, n, spp, features[1], info_extraction)
 
     return fractions_curves, attractors_info
@@ -114,20 +118,22 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
     # Collect features
     for (i, p) in enumerate(prange)
         set_parameter!(mapper.integ, pidx, p)
-        current_features = extract_features_threaded(mapper, ics; show_progress, N = spp)
+        current_features = extract_features(mapper, ics; show_progress, N = spp)
         features[((i - 1)*spp + 1):i*spp] .= current_features
-        next!(progress)
+        ProgressMeter.next!(progress)
     end
     return features
 end
 
 
-function _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_config)
+function _get_dist_matrix!(features, dists, prange, spp, par_weight, 
+    mapper::AttractorsViaFeaturizing; group_config
+    )
     # Construct distance matrix
-    metric = cluster_config.clust_distance_metric
+    metric = mapper.group_config.clust_distance_metric
     pairwise!(metric, dists, features; symmetric = true)
     # use parameter distance weight (w is the weight for one parameter only)
-    # Parameter range is rescaled from 0 to 1.
+    # Parameter range is normalized from 0 to 1.
     par_array = kron(range(0,1,length(prange)), ones(spp))
     for k in 1:length(par_array)
         for j in 1:length(par_array)
@@ -137,14 +143,13 @@ function _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_con
 end
 
 
-function _cluster_across_parameters(dists, features, cluster_config)
-    # Cluster the values accross parameters
-    cc = cluster_config
-    ftrs = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
-    cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, 
-        false, cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
-        cc.max_used_features; dists
+function _cluster_across_parameters(dists, features, mapper::AttractorsViaFeaturizing; 
+    group_config
     )
+    # Cluster the values accross parameters
+    cc = mapper.group_config
+    ϵ_optimal =  _extract_ϵ_optimal(features, cc)
+    cluster_labels = _cluster_distances_into_labels(dists, ϵ_optimal, cc.min_neighbors)
     return cluster_labels
 end
 

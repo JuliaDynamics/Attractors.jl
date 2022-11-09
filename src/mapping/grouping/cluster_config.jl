@@ -137,10 +137,10 @@ function _extract_ϵ_optimal(features, config::GroupViaClustering)
     num_attempts_radius, silhouette_statistic, max_used_features) = config
 
     if optimal_radius_method isa String
-        if max_used_features == 0 || max_used_features > nfeats
+        if max_used_features == 0 || max_used_features > length(features)
             features_for_optimal = features
         else
-            features_for_optimal = StatsBase.sample(features, max_used_features; replace = false)
+            features_for_optimal = sample(features, max_used_features; replace = false)
         end
         ϵ_optimal = optimal_radius_dbscan(
             features_for_optimal, min_neighbors, clust_distance_metric,
