@@ -1,5 +1,5 @@
 using Test, Attractors
-using Attractors.DynamicalSystemsBase, Attractors.DelayEmbeddings
+using Attractors.DynamicalSystemsBase
 using Random
 
 @testset "magnetic pendulum" begin
@@ -74,20 +74,6 @@ end
 
 # %%
 @testset "Henon map" begin
-    # Reference for the "new Henon":
-    # Shrimali, Manish Dev, et al. "The nature of attractor basins in multistable systems."
-    # International Journal of Bifurcation and Chaos 18.06 (2008): 1675-1688.
-    # https://doi.org/10.1142/S0218127408021269
-    function new_henon(x, p, n)
-        return SVector{2}(p[1] - x[1]^2 - (1 - p[2])*x[2],  x[1])
-    end
-    a = 0.0
-    ν = 0.01
-    u0 = [0.0, 0.6]
-    ds = DiscreteDynamicalSystem(new_henon, u0, [a,ν])
-    ps = range(0.0, 0.4; length = 101)
-
-    # This is standard henon map
     ds = Systems.henon(; b = 0.3, a = 1.4)
     psorig = range(1.2, 1.25; length = 101)
     # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
