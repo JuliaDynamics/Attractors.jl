@@ -8,7 +8,7 @@ Part of [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.j
 module Attractors
 
 using Reexport
-@reexport using DelayEmbeddings # for datasets, will be replaced by StateSpaceSets.jl
+@reexport using StateSpaceSets
 @reexport using DynamicalSystemsBase
 
 include("dict_utils.jl")
