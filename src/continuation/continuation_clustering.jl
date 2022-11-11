@@ -2,29 +2,32 @@ export ClusteringAcrossParametersContinuation
 import ProgressMeter
 import Mmap
 
-struct ClusteringAcrossParametersContinuation{A, M, I, E, G <: GroupingConfig} <: BasinsFractionContinuation
+struct ClusteringAcrossParametersContinuation{A, E} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
-    samples_per_parameter::I
-    par_weight::M
-    mmap_limit::I
+    samples_per_parameter::Int
+    par_weight::Float64
+    use_mmap::Bool
 end
 
 """
     ClusteringAcrossParametersContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
 A method for [`basins_fractions_continuation`](@ref).
 It uses clustering across of features across a parameter range, potentially weighted
-by the distance in parameter space, as described in [^Gelbrecht2020].
+by the distance in parameter space. Its input `mapper` must have
+a `GroupByClustering` as its grouping configuration.
+This is the original method described in [^Gelbrecht2020].
 
 ## Keyword Arguments
-- `par_weight = 1` The distance matrix between features has a special extra weight that
+- `par_weight = 0` The distance matrix between features has a special extra weight that
   is proportional to the distance `|p[i] - p[j]|` between the parameters used when
   extracting features. This keyword argument is the weight coeficient that ponderates
   the distance matrix. Notice that the range of parameters is normalized from 0 to 1
-such that the largest distance in the parameter space is 1.
-- `mmap_limit = 20000` this parameter sets the limit of features that should be clustered
-  using only the RAM memory. Above this limit the program uses a memory map based array to
-  store the distance matrix on the disk.
+  such that the largest distance in the parameter space is 1. The normalization is done
+  because the feature space is also (by default) normalized to 0-1.
+- `use_mmap = false` this parameter whether the feature distance matrix should be computed
+  in memory or on the disk using memory map. Should be used if a matrix with side
+  `length(prange)*samples_per_parameter` exceeds available memory.
 
 ## Description
 
@@ -35,24 +38,24 @@ term is added so that the distance between features with different parameters is
 It helps to discriminate between attractors with very different parameters. At last, the
 distance matrix is clustered with the DBSCAN algorithm.
 
-[^Gelbrecht2020]:
-    Gelbrecht, M., Kurths, J., & Hellmann, F. (2020). Monte Carlo basin bifurcation
-    analysis. New Journal of Physics, 22(3), 033032.
+[^Gelbrecht2021]:
+    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
+    [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function ClusteringAcrossParametersContinuation(
         mapper::AttractorsViaFeaturizing;
         info_extraction = mean_across_features,
         samples_per_parameter = 100,
-        par_weight = 1,
-        mmap_limit = 20000,
+        par_weight = 0.0,
+        use_mmap = false,
     )
     if !(mapper.group_config isa ClusteringConfig)
         throw(ArgumentError(
-            "This method only works with clustering configuration for AttractorsViaFeaturizing"
+            "This method only works with `GroupViaClustering` as the grouping configuration."
         ))
     end
     return ClusteringAcrossParametersContinuation(
-        mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit
+        mapper, info_extraction, samples_per_parameter, par_weight, use_mmap
     )
 end
 
@@ -69,16 +72,16 @@ end
 
 function basins_fractions_continuation(
         continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics::Function;
-        show_progress = true
+        show_progress = true, samples_per_parameter = 100
     )
-    (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit) = continuation
+    (; mapper, info_extraction, par_weight) = continuation
     spp, n = samples_per_parameter, length(prange)
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
     # The distance matrix can get very large. The use of memory map based array is
     # necessary.
-    if length(features) > mmap_limit
+    if continuation.use_mmap
         # Create temp file
         pth, s = mktemp()
         dists = Mmap.mmap(s, Matrix{Float32}, (length(features), length(features)))
