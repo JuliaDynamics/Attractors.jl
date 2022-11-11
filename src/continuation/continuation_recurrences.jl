@@ -70,7 +70,7 @@ function basins_fractions_continuation(
     )
     info = get_info(prev_attractors)
     attractors_info = [info]
-    next!(progress; showvalues = [("previous parameter", prange[1]),])
+    ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
     # Continue loop over all remaining parameters
     for p in prange[2:end]
         set_parameter!(mapper.integ, pidx, p)
@@ -109,7 +109,7 @@ function basins_fractions_continuation(
         push!(fractions_curves, fs)
         push!(attractors_info, get_info(current_attractors))
         overwrite_dict!(prev_attractors, current_attractors)
-        next!(progress; showvalues = [("previous parameter", p),])
+        ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     # Normalize to smaller available integers for user convenience
     rmap = retract_keys_to_consecutive(fractions_curves)

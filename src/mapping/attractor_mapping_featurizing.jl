@@ -75,7 +75,7 @@ The following configuration structs can be used to decide how the features are g
     stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
 [^Gelbrecht2021]:
     Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
-    [2020 New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
+    [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function AttractorsViaFeaturizing(ds::GeneralizedDynamicalSystem, featurizer::Function,
     group_config::GroupingConfig = ClusteringGrouping(); T=100, Ttr=100, Δt=1,
