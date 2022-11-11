@@ -5,7 +5,6 @@ import Mmap
 struct ClusteringAcrossParametersContinuation{A, E} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
-    samples_per_parameter::Int
     par_weight::Float64
     use_mmap::Bool
 end
@@ -48,7 +47,6 @@ distance matrix is clustered with the DBSCAN algorithm.
 function ClusteringAcrossParametersContinuation(
         mapper::AttractorsViaFeaturizing;
         info_extraction = mean_across_features,
-        samples_per_parameter = 100,
         par_weight = 0.0,
         use_mmap = false,
     )
@@ -58,7 +56,7 @@ function ClusteringAcrossParametersContinuation(
         ))
     end
     return ClusteringAcrossParametersContinuation(
-        mapper, info_extraction, samples_per_parameter, par_weight, use_mmap
+        mapper, info_extraction, par_weight, use_mmap
     )
 end
 

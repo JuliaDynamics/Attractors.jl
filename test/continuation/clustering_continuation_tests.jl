@@ -30,10 +30,9 @@ using Random
     end
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
-    continuation = ClusteringAcrossParametersContinuation(mapper,
-        samples_per_parameter = 1000, par_weight = 1.)
+    continuation = ClusteringAcrossParametersContinuation(mapper; par_weight = 1.0)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
-    continuation, psorig, pidx, sampler)
+    continuation, psorig, pidx, sampler; samples_per_parameter = 1000)
 
 
     for (i, p) in enumerate(psorig)
@@ -50,9 +49,9 @@ using Random
 
     # Test mmap
     continuation = ClusteringAcrossParametersContinuation(mapper,
-         samples_per_parameter = 1000, par_weight = 1.0, use_mmap=true)
+          par_weight = 1.0, use_mmap=true)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
-    continuation, psorig, pidx, sampler)
+    continuation, psorig, pidx, sampler; samples_per_parameter = 1000,)
 
     for (i, p) in enumerate(psorig)
         fs = fractions_curves[i]
@@ -101,7 +100,7 @@ end
     featurizer(a, t) = a[end,:]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-    continuation = ClusteringAcrossParametersContinuation(mapper, samples_per_parameter = 100, par_weight = 1.)
+    continuation = ClusteringAcrossParametersContinuation(mapper; par_weight = 1.)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler)
 
