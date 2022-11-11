@@ -16,9 +16,12 @@ A method for [`basins_fractions_continuation`](@ref).
 It uses clustering across of features across a parameter range, potentially weighted
 by the distance in parameter space. Its input `mapper` must have
 a `GroupByClustering` as its grouping configuration.
-This is the original method described in [^Gelbrecht2020].
+This is the original continuation method described in [^Gelbrecht2020].
 
 ## Keyword Arguments
+- `info_extraction::Function` a function that takes as an input a vector of features
+  (corresponding to a cluster) and returns a description of the cluster.
+  By default, the centroid of the cluster is used.
 - `par_weight = 0` The distance matrix between features has a special extra weight that
   is proportional to the distance `|p[i] - p[j]|` between the parameters used when
   extracting features. This keyword argument is the weight coeficient that ponderates
@@ -49,9 +52,9 @@ function ClusteringAcrossParametersContinuation(
         par_weight = 0.0,
         use_mmap = false,
     )
-    if !(mapper.group_config isa ClusteringConfig)
+    if !(mapper.group_config isa GroupViaClustering)
         throw(ArgumentError(
-            "This method only works with `GroupViaClustering` as the grouping configuration."
+            "This method needs `GroupViaClustering` as the grouping configuration."
         ))
     end
     return ClusteringAcrossParametersContinuation(
@@ -71,7 +74,7 @@ function mean_across_features(fs)
 end
 
 function basins_fractions_continuation(
-        continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics::Function;
+        continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )
     (; mapper, info_extraction, par_weight) = continuation
@@ -89,9 +92,13 @@ function basins_fractions_continuation(
         dists = zeros(length(features), length(features))
     end
 
+    progress = ProgressMeter.ProgressUnknown(;
+        desc="Clustering: ", enabled=show_progress
+    )
     _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper)
-
     cluster_labels = _cluster_across_parameters(dists, features, mapper)
+    ProgressMeter.finish!(progress)
+
     fractions_curves, attractors_info = _label_fractions(cluster_labels, n, spp, features[1], info_extraction)
 
     return fractions_curves, attractors_info
@@ -100,7 +107,7 @@ end
 
 function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
     progress = ProgressMeter.Progress(n;
-        desc="Generating features:", enabled=show_progress
+        desc="Generating features: ", enabled=show_progress
     )
     # Extract the first possible feature to initialize the features container
     feature = extract_features(mapper, ics; N = 1)
