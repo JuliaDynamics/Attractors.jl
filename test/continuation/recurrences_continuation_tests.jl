@@ -1,5 +1,5 @@
 using Test, Attractors
-using Attractors.DynamicalSystemsBase, Attractors.DelayEmbeddings
+using Attractors.DynamicalSystemsBase
 using Random
 
 @testset "magnetic pendulum" begin
@@ -74,8 +74,6 @@ end
 
 # %%
 @testset "Henon map" begin
-
-    # This is standard henon map
     ds = Systems.henon(; b = 0.3, a = 1.4)
     psorig = range(1.2, 1.25; length = 101)
     # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
@@ -105,7 +103,7 @@ end
         mx_chk_loc_att = 3000
     )
     continuation = RecurrencesSeedingContinuation(mapper;
-        threshold = 0.99, metric = distance_function
+        threshold = 0.99, method = distance_function
     )
     ps = psorig
     fractions_curves, attractors_info = basins_fractions_continuation(

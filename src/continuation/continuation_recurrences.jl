@@ -5,7 +5,7 @@ import ProgressMeter
 # in two independent steps: it first finds attractors and then matches them.
 struct RecurrencesSeedingContinuation{A, M, S, E} <: BasinsFractionContinuation
     mapper::A
-    metric::M
+    method::M
     threshold::Float64
     seeds_from_attractor::S
     info_extraction::E
@@ -18,7 +18,7 @@ It uses seeding of previous attractors to find new ones, which is the main perfo
 bottleneck. Will write more once we have the paper going.
 
 ## Keyword Arguments
-- `metric, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
+- `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
   used to match attractors between each parameter slice.
 - `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
   and outputs whatever information should be stored. It is used to return the
@@ -30,12 +30,12 @@ bottleneck. Will write more once we have the paper going.
   per attractor.
 """
 function RecurrencesSeedingContinuation(
-        mapper::AttractorsViaRecurrences; metric = Euclidean(),
+        mapper::AttractorsViaRecurrences; method = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
     return RecurrencesSeedingContinuation(
-        mapper, metric, threshold, seeds_from_attractor, info_extraction
+        mapper, method, threshold, seeds_from_attractor, info_extraction
     )
 end
 
@@ -57,7 +57,7 @@ function basins_fractions_continuation(
         desc="Continuating basins fractions:", enabled=show_progress
     )
 
-    (; mapper, metric, threshold) = continuation
+    (; mapper, method, threshold) = continuation
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.integ, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
@@ -101,7 +101,7 @@ function basins_fractions_continuation(
             # If there are any attractors,
             # match with previous attractors before storing anything!
             rmap = match_attractor_ids!(
-                current_attractors, prev_attractors; metric, threshold
+                current_attractors, prev_attractors; method, threshold
             )
             swap_dict_keys!(fs, rmap)
         end
