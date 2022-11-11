@@ -103,7 +103,7 @@ end
         mx_chk_loc_att = 3000
     )
     continuation = RecurrencesSeedingContinuation(mapper;
-        threshold = 0.99, metric = distance_function
+        threshold = 0.99, method = distance_function
     )
     ps = psorig
     fractions_curves, attractors_info = basins_fractions_continuation(
