@@ -183,44 +183,43 @@ end
 
 
 @testset "dumb bistable map" begin
+    # This is a fake bistable map that has two equilibrium points
+    # for r > 0.5. It has predictable fractions.
+    function dumb_map(dz, z, p, n)
+        x,y = z
+        r = p[1]
 
-# This is a fake bistable map that has two equilibrium points 
-# for r > 0.5. It has predictable fractions. 
-function dumb_map(dz, z, p, n)
-    x,y = z
-    r = p[1]
-
-    if r < 0.5
-        dz[1] = dz[2] = 0.
-    else
-        if x > 0 
-            dz[1] = r
-            dz[2] = r
+        if r < 0.5
+            dz[1] = dz[2] = 0.0
         else
-            dz[1] = -r
-            dz[2] = -r
+            if x > 0
+                dz[1] = r
+                dz[2] = r
+            else
+                dz[1] = -r
+                dz[2] = -r
+            end
         end
+        return
     end
-    return
-end
 
 
-r = 1.
-ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
-yg = xg = range(-10., 10, length = 100)
-grid = (xg,yg)
-mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+    r = 1.
+    ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
+    yg = xg = range(-10., 10, length = 100)
+    grid = (xg,yg)
+    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
 
-sampler, = statespace_sampler(Random.MersenneTwister(1234);
-    min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+    sampler, = statespace_sampler(Random.MersenneTwister(1234);
+        min_bounds = minimum.(grid), max_bounds = maximum.(grid))
 
-rrange = range(0., 2; length = 20)
-ridx = 1
-continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = .3, metric = Euclidean())
-fractions_curves, a = Attractors.basins_fractions_continuation(
-    continuation, rrange, ridx, sampler;
-    show_progress = true, samples_per_parameter = 1000
-)
+    rrange = range(0., 2; length = 20)
+    ridx = 1
+    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3)
+    fractions_curves, a = Attractors.basins_fractions_continuation(
+        continuation, rrange, ridx, sampler;
+        show_progress = false, samples_per_parameter = 1000
+    )
 
     for (i, r) in enumerate(rrange)
 
@@ -228,14 +227,14 @@ fractions_curves, a = Attractors.basins_fractions_continuation(
         if r < 0.5
             k = sort!(collect(keys(fs)))
             @test length(k) == 1
-        else 
+        else
             k = sort!(collect(keys(fs)))
             @test length(k) == 2
-            v = values(fs) 
+            v = values(fs)
             for f in v
                 @test (0.4 < f < 0.6)
             end
-        end    
+        end
         @test sum(values(fs)) ≈ 1
     end
 
