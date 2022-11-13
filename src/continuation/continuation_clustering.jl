@@ -93,7 +93,9 @@ function basins_fractions_continuation(
     progress = ProgressMeter.ProgressUnknown(;
         desc="Clustering: ", enabled=show_progress
     )
+    ProgressMeter.next!(progress)
     _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper)
+    ProgressMeter.next!(progress)
     cluster_labels = _cluster_across_parameters(dists, features, mapper)
     ProgressMeter.finish!(progress)
 
