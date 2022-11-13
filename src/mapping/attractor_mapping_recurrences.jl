@@ -327,14 +327,14 @@ function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; mx_chk_safety = Int(1e6),
         # on the previously found one...
         bsn_nfo.safety_counter += 1
         if bsn_nfo.safety_counter ≥ mx_chk_safety
-            @warn  """
-            `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
-            It may be that the grid is not fine enough and attractors intersect in the
-            same cell, or `mx_chk_safety` is not high enough for a very fine grid.
-            Here are some info on current status:\n
-            state: $(get_state(integ)),\n
-            parameters: $(get_parameters(integ)).
-            """
+            # @warn """
+            # `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
+            # It may be that the grid is not fine enough and attractors intersect in the
+            # same cell, or `mx_chk_safety` is not high enough for a very fine grid.
+            # Here are some info on current status:\n
+            # state: $(get_state(integ)),\n
+            # parameters: $(get_parameters(integ)).
+            # """
             return -1
         end
 
@@ -489,9 +489,6 @@ function store_attractor!(bsn_nfo::BasinsInfo{D, IF, T},
     else
         # initialize container for new attractor
         bsn_nfo.attractors[attractor_id] = Dataset([V(u_full_state)])
-        if show_progress
-            @info "AttractorsViaRecurrences found new attractor with id: $(attractor_id)"
-        end
     end
 end
 
