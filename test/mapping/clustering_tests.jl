@@ -8,7 +8,7 @@ using Statistics, Random
     end
     function cluster_datasets(featurizer, t, datasets, clusterspecs)
         features = [featurizer(datasets[i], t) for i=1:length(datasets)]
-        return cluster_features(features, clusterspecs)
+        return group_features(features, clusterspecs)
     end
     attractor_pool = [[0 0], [10 10], [20 20]];
     correct_labels = [1,1,1,1, 2,2,2,1,2,3,3,3,3,1]
@@ -20,7 +20,7 @@ using Statistics, Random
     ### silhouettes and real
     for optimal_radius_method in ["silhouettes", "silhouettes_optim", 5.0]
         for silhouette_statistic in [mean, minimum]
-            clusterspecs = ClusteringConfig(; num_attempts_radius=20, silhouette_statistic,
+            clusterspecs = GroupViaClustering(; num_attempts_radius=20, silhouette_statistic,
             optimal_radius_method=optimal_radius_method, min_neighbors=2, rescale_features=false)
             clust_labels = cluster_datasets(featurizer, [], attractors, clusterspecs)
             @test clust_labels == correct_labels

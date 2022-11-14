@@ -128,7 +128,7 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         features = _rescale_to_01(features)
     end
     ϵ_optimal = _extract_ϵ_optimal(features, config)
-    distances = pairwise(features, config.metric)
+    distances = pairwise(features, config.clust_distance_metric)
     return _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
 end
 
