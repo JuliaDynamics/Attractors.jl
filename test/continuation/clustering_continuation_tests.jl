@@ -1,62 +1,35 @@
 using Test, Attractors
-using Attractors.DynamicalSystemsBase, Attractors.DelayEmbeddings
+using Attractors.DynamicalSystemsBase
 using Random
 
-# @testset "Henon map" begin
+# @testset "Henon map Recurrences accross Parameters" begin
 
-#     ds = Systems.henon(; b = -0.9, a = 1.4)
-#     psorig = range(0.6, 1.1; length = 10)
-#     pidx = 1
-#     sampler, = statespace_sampler(Random.MersenneTwister(1234);
-#         min_bounds = [-2,-2], max_bounds = [2,2]
-#     )
+    ds = Systems.henon(; b = -0.9, a = 1.4)
+    psorig = range(0.6, 1.1; length = 10)
+    pidx = 1
+    xg = yg = range(-2,2, length = 1000)
+    grid = (xg,yg)
+    sampler, = statespace_sampler(Random.MersenneTwister(1234);
+        min_bounds = minimum.(grid), max_bounds = maximum.(grid)
+    )
 
-#     ps = psorig
-#     # Feature based on period. 
-#     function featurizer(a, t) 
-#         if abs(a[end,1]) > 100 || isnan(a[end,1])
-#             return [100]
-#         end
-#         tol = 1e-5
-#         if abs(a[end-1,1] - a[end,1]) < tol
-#             # period 1
-#             return [1] 
-#         elseif abs(a[end-3,1] - a[end,1]) < tol
-#             # period 3
-#             return [3]
-#         else
-#             return [100]
-#         end
-#     end
-#     clusterspecs = Attractors.ClusteringConfig(optimal_radius_method = 1.)
-#     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer; T = 500)
-#     continuation = ClusteringAcrossParametersContinuation(mapper, 
-#         samples_per_parameter = 1000, par_weight = 1., cluster_config = clusterspecs)
-#     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
-#     continuation, psorig, pidx, sampler)
+    ps = psorig
+    dts_dis(x,y)= dataset_distance(x,y, Hausdorff())
+    # clusterspecs = Attractors.GroupViaClustering(;clust_distance_metric = dts_dis, optimal_radius_method = 1.)
+    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true)
+
+   vt =  Attractors._get_features_prange(mapper, sampler, length(ps), 1000, ps, pidx, true, dts_dis)
+    
+
+    # continuation = ClusteringAcrossParametersContinuation(mapper, 
+        # samples_per_parameter = 1000, par_weight = 1., cluster_config = clusterspecs)
+    
+    # fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+        # continuation, psorig, pidx, sampler)
     
 
 #     for (i, p) in enumerate(psorig)
 
-#         fs = fractions_curves[i]
-#         if   p < 0.9 
-#             k = sort!(collect(keys(fs)))
-#             @test length(k) == 2
-#         elseif p > 1. 
-#             k = sort!(collect(keys(fs)))
-#             @test length(k) == 3
-#         end    
-#         @test sum(values(fs)) ≈ 1
-#     end
-
-
-#     # Test mmap 
-#     continuation = ClusteringAcrossParametersContinuation(mapper,
-#          samples_per_parameter = 1000, par_weight = 1., mmap_limit = 200, cluster_config = clusterspecs)
-#     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
-#     continuation, psorig, pidx, sampler)
-
-#     for (i, p) in enumerate(psorig)
 #         fs = fractions_curves[i]
 #         if   p < 0.9 
 #             k = sort!(collect(keys(fs)))
@@ -70,43 +43,71 @@ using Random
 
 # end
 
-@testset "Henon map Recurrences accross Parameters" begin
 
-    ds = Systems.henon(; b = -0.9, a = 1.4)
-    psorig = range(0.6, 1.1; length = 10)
-    pidx = 1
-    xg = yg = range(-2,2, length = 1000)
-    grid = (xg,yg)
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-    )
+# @testset "Henon map" begin
 
-    ps = psorig
-    dts_dis(x,y)= dataset_distance(x,y, Hausdorff())
-    clusterspecs = Attractors.ClusteringConfig(clust_distance_metric = dts_dis, optimal_radius_method = 1.)
-    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true)
+#     ds = Systems.henon(; b = -0.9, a = 1.4)
+#     psorig = range(0.6, 1.1; length = 10)
+#     pidx = 1
+#     sampler, = statespace_sampler(Random.MersenneTwister(1234);
+#         min_bounds = [-2,-2], max_bounds = [2,2]
+#     )
 
-    continuation = ClusteringAcrossParametersContinuation(mapper, 
-        samples_per_parameter = 1000, par_weight = 1., cluster_config = clusterspecs)
-    
-    fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
-        continuation, psorig, pidx, sampler)
-    
+#     ps = psorig
+#     # Feature based on period.
+#     function featurizer(a, t)
+#         if abs(a[end,1]) > 100 || isnan(a[end,1])
+#             return [100]
+#         end
+#         tol = 1e-5
+#         if abs(a[end-1,1] - a[end,1]) < tol
+#             # period 1
+#             return [1]
+#         elseif abs(a[end-3,1] - a[end,1]) < tol
+#             # period 3
+#             return [3]
+#         else
+#             return [100]
+#         end
+#     end
+#     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.)
+#     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
+#     continuation = ClusteringAcrossParametersContinuation(mapper; par_weight = 1.0)
+#     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+#     continuation, psorig, pidx, sampler; samples_per_parameter = 1000)
 
-    for (i, p) in enumerate(psorig)
 
-        fs = fractions_curves[i]
-        if   p < 0.9 
-            k = sort!(collect(keys(fs)))
-            @test length(k) == 2
-        elseif p > 1. 
-            k = sort!(collect(keys(fs)))
-            @test length(k) == 3
-        end    
-        @test sum(values(fs)) ≈ 1
-    end
+#     for (i, p) in enumerate(psorig)
+#         fs = fractions_curves[i]
+#         if p < 0.9
+#             k = sort!(collect(keys(fs)))
+#             @test length(k) == 2
+#         elseif p > 1.
+#             k = sort!(collect(keys(fs)))
+#             @test length(k) == 3
+#         end
+#         @test sum(values(fs)) ≈ 1
+#     end
 
-end
+#     # Test mmap
+#     continuation = ClusteringAcrossParametersContinuation(mapper,
+#           par_weight = 1.0, use_mmap=true)
+#     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+#     continuation, psorig, pidx, sampler; samples_per_parameter = 1000,)
+
+#     for (i, p) in enumerate(psorig)
+#         fs = fractions_curves[i]
+#         k = sort!(collect(keys(fs)))
+#         if p < 0.9
+#             @test length(k) == 2
+#         elseif p > 1.0
+#             @test length(k) == 3
+#         end
+#         @test sum(values(fs)) ≈ 1
+#     end
+
+# end
+
 
 
 # @testset "Dummy bistable map" begin
@@ -118,7 +119,7 @@ end
 #         if r < 0.5
 #             dz[1] = dz[2] = 0.
 #         else
-#             if x > 0 
+#             if x > 0
 #                 dz[1] = r
 #                 dz[2] = r
 #             else
@@ -138,13 +139,12 @@ end
 #     rrange = range(0., 2; length = 20)
 #     ridx = 1
 
-#     featurizer(a, t) = a[end,:] 
-#     clusterspecs = Attractors.ClusteringConfig(optimal_radius_method = "silhouettes", max_used_features = 200)
-#     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer; T = 20)
-#     continuation = ClusteringAcrossParametersContinuation(mapper, samples_per_parameter = 100, par_weight = 1., cluster_config = clusterspecs)
+#     featurizer(a, t) = a[end,:]
+#     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
+#     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
+#     continuation = ClusteringAcrossParametersContinuation(mapper; par_weight = 1.)
 #     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
 #     continuation, rrange, ridx, sampler)
-    
 
 
 #     for (i, r) in enumerate(rrange)
@@ -153,14 +153,16 @@ end
 #         if r < 0.5
 #             k = sort!(collect(keys(fs)))
 #             @test length(k) == 1
-#         else 
+#         else
 #             k = sort!(collect(keys(fs)))
 #             @test length(k) == 2
-#             v = values(fs) 
+#             v = values(fs)
 #             for f in v
-#                 @test (0.4 < f < 0.6)
+#                 @test (0.3 < f < 0.7)
 #             end
-#         end    
+#         end
 #         @test sum(values(fs)) ≈ 1
 #     end
 # end
+
+

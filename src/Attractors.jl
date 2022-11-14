@@ -1,14 +1,14 @@
 """
 A module for finding attractors of dynamical systems,
-their basins and their boundaris,
-and continuing attractors and basins across parameters.
+their basins and their boundaries,
+and continuing attractors and their basins across parameters.
 
 Part of [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/).
 """
 module Attractors
 
 using Reexport
-@reexport using DelayEmbeddings # for datasets, will be replaced by StateSpaceSets.jl
+@reexport using StateSpaceSets
 @reexport using DynamicalSystemsBase
 
 include("dict_utils.jl")

@@ -1,5 +1,5 @@
 using Test, Attractors
-using Attractors.DynamicalSystemsBase, Attractors.DelayEmbeddings
+using Attractors.DynamicalSystemsBase
 using Random
 
 @testset "magnetic pendulum" begin
@@ -74,8 +74,26 @@ end
 
 # %%
 @testset "Henon map" begin
+<<<<<<< HEAD
 
     # This is standard henon map
+||||||| db4ad65
+    # Reference for the "new Henon":
+    # Shrimali, Manish Dev, et al. "The nature of attractor basins in multistable systems."
+    # International Journal of Bifurcation and Chaos 18.06 (2008): 1675-1688.
+    # https://doi.org/10.1142/S0218127408021269
+    function new_henon(x, p, n)
+        return SVector{2}(p[1] - x[1]^2 - (1 - p[2])*x[2],  x[1])
+    end
+    a = 0.0
+    ν = 0.01
+    u0 = [0.0, 0.6]
+    ds = DiscreteDynamicalSystem(new_henon, u0, [a,ν])
+    ps = range(0.0, 0.4; length = 101)
+
+    # This is standard henon map
+=======
+>>>>>>> main
     ds = Systems.henon(; b = 0.3, a = 1.4)
     psorig = range(1.2, 1.25; length = 101)
     # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
@@ -105,7 +123,7 @@ end
         mx_chk_loc_att = 3000
     )
     continuation = RecurrencesSeedingContinuation(mapper;
-        threshold = 0.99, metric = distance_function
+        threshold = 0.99, method = distance_function
     )
     ps = psorig
     fractions_curves, attractors_info = basins_fractions_continuation(
@@ -179,6 +197,7 @@ end
         show_progress = false, samples_per_parameter = 100
     )
     @test all(i -> isempty(i), attractors_info)
+<<<<<<< HEAD
 end
 
 
@@ -240,3 +259,67 @@ fractions_curves, a = Attractors.basins_fractions_continuation(
     end
 
 end
+||||||| db4ad65
+end
+=======
+end
+
+
+@testset "dumb bistable map" begin
+    # This is a fake bistable map that has two equilibrium points
+    # for r > 0.5. It has predictable fractions.
+    function dumb_map(dz, z, p, n)
+        x,y = z
+        r = p[1]
+
+        if r < 0.5
+            dz[1] = dz[2] = 0.0
+        else
+            if x > 0
+                dz[1] = r
+                dz[2] = r
+            else
+                dz[1] = -r
+                dz[2] = -r
+            end
+        end
+        return
+    end
+
+
+    r = 1.
+    ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
+    yg = xg = range(-10., 10, length = 100)
+    grid = (xg,yg)
+    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+
+    sampler, = statespace_sampler(Random.MersenneTwister(1234);
+        min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+
+    rrange = range(0., 2; length = 20)
+    ridx = 1
+    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3)
+    fractions_curves, a = Attractors.basins_fractions_continuation(
+        continuation, rrange, ridx, sampler;
+        show_progress = false, samples_per_parameter = 1000
+    )
+
+    for (i, r) in enumerate(rrange)
+
+        fs = fractions_curves[i]
+        if r < 0.5
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 1
+        else
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 2
+            v = values(fs)
+            for f in v
+                @test (0.4 < f < 0.6)
+            end
+        end
+        @test sum(values(fs)) ≈ 1
+    end
+
+end
+>>>>>>> main

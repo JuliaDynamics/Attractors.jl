@@ -1,5 +1,5 @@
 using Test, Attractors
-using Attractors.DynamicalSystemsBase, Attractors.DelayEmbeddings
+using Attractors.DynamicalSystemsBase
 
 @testset "analytic" begin
     a_befo = Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)])

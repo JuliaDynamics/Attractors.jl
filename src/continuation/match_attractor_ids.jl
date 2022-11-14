@@ -5,7 +5,7 @@ export match_attractor_ids!, match_basins_ids!, replacement_map
 # Matching attractors and key swapping business
 ###########################################################################################
 """
-    match_attractor_ids!(a₊::AbstractDict, a₋; metric = Euclidean(), threshold = Inf)
+    match_attractor_ids!(a₊::AbstractDict, a₋; method = Centroid(), threshold = Inf)
 Given dictionaries `a₊, a₋` mapping IDs to attractors (`Dataset` instances),
 match attractor IDs in dictionary `a₊` so that its attractors that are the closest to
 those in dictionary `a₋` get assigned the same key as in `a₋`.
@@ -26,10 +26,9 @@ the different parameters) with different IDs.
 i.e., the keys of the given dictionaries.
 
 The matching happens according to the output of the [`datasets_sets_distances`](@ref)
-function with the keyword `metric`. `metric` can be whatever that function accepts, such as
-an actual `Metric` instance, or an arbitrary user-defined function that computes
-an arbitrary "distance" between two datasets. Attractors are then match according to
-distance, with unique mapping. The closest attractors (before and after) are mapped to each
+function with the keyword `method`. method` can be whatever that function accepts.
+Attractors are then match according to distance, with unique mapping.
+The closest attractors (before and after) are mapped to each
 other, and are removed from the matching pool, and then the next pair with least
 remaining distance is matched, and so on.
 
@@ -43,7 +42,7 @@ function match_attractor_ids!(a₊::AbstractDict, a₋; kwargs...)
     return rmap
 end
 
-# Convenience method that isn't documented. Used in test suite.
+# Convenience method that isn't documented. Used in test suite however
 function match_attractor_ids!(as::Vector{<:Dict}; kwargs...)
     for i in 1:length(as)-1
         a₊, a₋ = as[i+1], as[i]
@@ -52,12 +51,12 @@ function match_attractor_ids!(as::Vector{<:Dict}; kwargs...)
 end
 
 """
-    replacement_map(a₊, a₋; metric = Euclidean(), threshold = Inf) → rmap
+    replacement_map(a₊, a₋; method = Centroid(), threshold = Inf) → rmap
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_attractor_ids!`](@ref).
 """
-function replacement_map(a₊::Dict, a₋::Dict; metric = Euclidean(), threshold = Inf)
-    distances = datasets_sets_distances(a₊, a₋, metric)
+function replacement_map(a₊::Dict, a₋::Dict; method = Centroid(), threshold = Inf)
+    distances = datasets_sets_distances(a₊, a₋, method)
     keys₊, keys₋ = keys.((a₊, a₋))
     replacement_map(keys₊, keys₋, distances::Dict, threshold)
 end

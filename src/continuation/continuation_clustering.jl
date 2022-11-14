@@ -2,64 +2,62 @@ export ClusteringAcrossParametersContinuation
 import ProgressMeter
 import Mmap
 
-struct ClusteringAcrossParametersContinuation{A, M, I, E, C} <: BasinsFractionContinuation
+struct ClusteringAcrossParametersContinuation{A, E} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
-    samples_per_parameter::I 
-    par_weight::M
-    mmap_limit::I
-    cluster_config::C
+    par_weight::Float64
+    use_mmap::Bool
 end
 
 """
     ClusteringAcrossParametersContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
- A method to compute the continuation of a basin when a parameter changes, see
-  [`basins_fractions_continuation`](@ref). This method computes the Features accross a 
-  range of parameters before performing a clustering into classes using a special metric, 
-  see [^Gelbrecht2020]. 
-
-The function takes as an input a `mapper` that maps initial conditions to attractors 
-  using the featurizing method [^Stender2021]. See [`AttractorMapper`](@ref) for how to  
-  use the `mapper`.
+A method for [`basins_fractions_continuation`](@ref).
+It uses clustering across of features across a parameter range, potentially weighted
+by the distance in parameter space. Its input `mapper` must have
+a `GroupByClustering` as its grouping configuration.
+This is the original continuation method described in [^Gelbrecht2020].
 
 ## Keyword Arguments
-- `prange` Range of parameter to analyze.
-- `pidx` Number or symbol of the parameter to change in the array of parameters of the dynamical system. 
-- `ics` Sampler function to generate initial conditions to sample. 
-- `samples_per_parameter = 100` Number of samples per parameter.
-- `par_weight = 1` The distance matrix between features has a special extra  weight that 
-  is proportional to the distance |pi - pj| between the parameters of each features. This 
-  keyword argument is the weight coeficient that ponderates the distance matrix.
-- `mmap_limit = 20000` this parameter sets the limit of features that should be clustered using only the 
-  RAM memory. Above this limit the program uses a memory map based array to store the distance 
-  matrix on the disk. 
+- `info_extraction::Function` a function that takes as an input a vector of features
+  (corresponding to a cluster) and returns a description of the cluster.
+  By default, the centroid of the cluster is used.
+- `par_weight = 0` The distance matrix between features has a special extra weight that
+  is proportional to the distance `|p[i] - p[j]|` between the parameters used when
+  extracting features. This keyword argument is the weight coeficient that ponderates
+  the distance matrix. Notice that the range of parameters is normalized from 0 to 1
+  such that the largest distance in the parameter space is 1. The normalization is done
+  because the feature space is also (by default) normalized to 0-1.
+- `use_mmap = false` this parameter whether the feature distance matrix should be computed
+  in memory or on the disk using memory map. Should be used if a matrix with side
+  `length(prange)*samples_per_parameter` exceeds available memory.
 
 ## Description
 
-The method first simulate and compute a set of statistics on the trajectories, for example the mean 
- and standard deviation of the trajectory data points. Once all the featured statistics have been 
- computed, the algorithm computes the distance between each feature. A special weitgh term is added 
- so that the distance between features with different parameters is increased. It helps to discriminate
- between attractors with very different parameters. At last, the distance matrix is clustered with the 
- DBSCAN algorithm
+The method first integrates and computes a set of statistics on the trajectories, for example
+the mean and standard deviation of the trajectory data points. Once all the featured statistics
+have been  computed, the algorithm computes the distance between each feature. A special weight
+term is added so that the distance between features with different parameters is increased.
+It helps to discriminate between attractors with very different parameters. At last, the
+distance matrix is clustered with the DBSCAN algorithm.
 
-[^Gelbrecht2020]:
-    Gelbrecht, M., Kurths, J., & Hellmann, F. (2020). Monte Carlo basin bifurcation
-    analysis. New Journal of Physics, 22(3), 033032.
-
-[^Stender2021]:
-    Stender & Hoffmann, [bSTAB: an open-source software for computing the basin
-    stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
+[^Gelbrecht2021]:
+    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
+    [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function ClusteringAcrossParametersContinuation(
-        mapper::AttractorMapper;
+        mapper::AttractorsViaFeaturizing;
         info_extraction = mean_across_features,
-        samples_per_parameter = 100, 
-        par_weight = 1, 
-        mmap_limit = 20000,
-        cluster_config = ClusterConfig()
+        par_weight = 0.0,
+        use_mmap = false,
     )
-    return ClusteringAcrossParametersContinuation(mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config)
+    if !(mapper.group_config isa GroupViaClustering)
+        throw(ArgumentError(
+            "This method needs `GroupViaClustering` as the grouping configuration."
+        ))
+    end
+    return ClusteringAcrossParametersContinuation(
+        mapper, info_extraction, par_weight, use_mmap
+    )
 end
 
 function mean_across_features(fs)
@@ -73,40 +71,41 @@ function mean_across_features(fs)
     return means ./ N
 end
 
-
-
 function basins_fractions_continuation(
-        continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics::Function;
-        show_progress = true
+        continuation::ClusteringAcrossParametersContinuation, prange, pidx, ics;
+        show_progress = true, samples_per_parameter = 100
     )
-    (; mapper, info_extraction, samples_per_parameter, par_weight, mmap_limit, cluster_config) = continuation
+    (; mapper, info_extraction, par_weight) = continuation
     spp, n = samples_per_parameter, length(prange)
 
-    features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress, cluster_config)
+    features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
-    # The distance matrix can get very large. The use of memory map based array is 
+    # The distance matrix can get very large. The use of memory map based array is
     # necessary.
-    if length(features) > mmap_limit
+    if continuation.use_mmap
         # Create temp file
-        pth, s = mktemp()  
-        dists = Mmap.mmap(s, Matrix{Float32}, ( length(features), length(features)))  
+        pth, s = mktemp()
+        dists = Mmap.mmap(s, Matrix{Float32}, (length(features), length(features)))
     else
         dists = zeros(length(features), length(features))
     end
-    
-    _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_config)
 
-    cluster_labels = _cluster_across_parameters(dists, features, cluster_config)
+    progress = ProgressMeter.ProgressUnknown(;
+        desc="Clustering: ", enabled=show_progress
+    )
+    _get_dist_matrix!(features, dists, prange, spp, par_weight, mapper)
+    cluster_labels = _cluster_across_parameters(dists, features, mapper)
+    ProgressMeter.finish!(progress)
 
     fractions_curves, attractors_info = _label_fractions(cluster_labels, n, spp, features[1], info_extraction)
 
     return fractions_curves, attractors_info
 end
- 
+
 
 function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
     progress = ProgressMeter.Progress(n;
-        desc="Continuating basins fractions:", enabled=show_progress
+        desc="Generating features: ", enabled=show_progress
     )
     # Extract the first possible feature to initialize the features container
     feature = extract_features(mapper, ics; N = 1)
@@ -114,40 +113,36 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
     # Collect features
     for (i, p) in enumerate(prange)
         set_parameter!(mapper.integ, pidx, p)
-        current_features = extract_features_threaded(mapper, ics; show_progress, N = spp)
+        current_features = extract_features(mapper, ics; show_progress, N = spp)
         features[((i - 1)*spp + 1):i*spp] .= current_features
-        next!(progress)
+        ProgressMeter.next!(progress)
     end
     return features
 end
 
 
-function _get_dist_matrix!(features, dists, prange, spp, par_weight, cluster_config)
+function _get_dist_matrix!(features, dists, prange, spp, par_weight,
+    mapper::AttractorsViaFeaturizing)
     # Construct distance matrix
-    metric = cluster_config.clust_distance_metric
+    metric = mapper.group_config.clust_distance_metric
     pairwise!(metric, dists, features; symmetric = true)
     # use parameter distance weight (w is the weight for one parameter only)
-    # Parameter range is rescaled from 0 to 1.
+    # Parameter range is normalized from 0 to 1.
     par_array = kron(range(0,1,length(prange)), ones(spp))
-    for k in 1:length(par_array)
-        for j in 1:length(par_array)
-            dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
+    @inbounds for k in eachindex(par_array)
+        for j in eachindex(par_array)
+            dists[k,j] += par_weight*abs(par_array[k] - par_array[j])
         end
     end
 end
 
-
-function _cluster_across_parameters(dists, features, cluster_config)
+function _cluster_across_parameters(dists, features, mapper::AttractorsViaFeaturizing)
     # Cluster the values accross parameters
-    cc = cluster_config
-    ftrs = reduce(hcat, features) # Convert to Matrix from Vector{Vector}
-    cluster_labels = cluster_features_clustering(ftrs, cc.min_neighbors, cc.clust_distance_metric, 
-        false, cc.optimal_radius_method, cc.num_attempts_radius, cc.silhouette_statistic, 
-        cc.max_used_features; dists
-    )
+    cc = mapper.group_config
+    ϵ_optimal =  _extract_ϵ_optimal(features, cc)
+    cluster_labels = _cluster_distances_into_labels(dists, ϵ_optimal, cc.min_neighbors)
     return cluster_labels
 end
-
 
 function _label_fractions(cluster_labels, n, spp, feature, info_extraction)
     # And finally collect/group stuff into their dictionaries
@@ -167,7 +162,8 @@ function _label_fractions(cluster_labels, n, spp, feature, info_extraction)
     return fractions_curves, attractors_info
 end
 
-function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress, cluster_config)
+
+function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress, metric)
     progress = ProgressMeter.Progress(n;
         desc="Continuating basins fractions:", enabled=show_progress
     )
@@ -184,7 +180,7 @@ function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, pra
         fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
         push!(fractions_curves, fs)
         push!(attractors_info, deepcopy(mapper.bsn_nfo.attractors))
-        next!(progress)
+        ProgressMeter.next!(progress)
     end
     # collect Datasets
     vec_att = Dataset[]
@@ -196,25 +192,27 @@ function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, pra
             push!(key_array, a[1])
             push!(par_array, prange[k])
         end
-    end 
-     
+    end
+
     @show length(par_array), length(vec_att)
-    metric = cluster_config.clust_distance_metric
     dists = pairwise(metric, vec_att; symmetric = true)
     par_weight = 1/(par_array[end]-par_array[1])
     for k in 1:length(par_array)
         for j in 1:length(par_array)
             dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
             if par_array[k] == par_array[j]
-                dists[k,j] += Inf
+                dists[k,j] += 100
             end
         end
     end
-@show dists
-    # cluster with dbscan 
+# @show dists
+    gc = GroupViaClustering()
+    # @show ϵ_optimal =  _extract_ϵ_optimal(vec_att, gc)
+    # cluster with dbscan
     dbscanresult = dbscan(dists, 0.3, 1)
+    # dbscanresult = dbscan(dists, ϵ_optimal, 1)
     cluster_labels = cluster_assignment(dbscanresult)
-    @show cluster_labels 
+    @show cluster_labels
 
     fractions_curves2 = Vector{Dict{Int, Float64}}(undef, n)
     c = 0
