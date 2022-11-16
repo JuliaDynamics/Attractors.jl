@@ -4,6 +4,7 @@ import Mmap
 
 struct ClusteringAttractorsContinuation{A, G} <: BasinsFractionContinuation
     mapper::A
+    cluster_in_slice::Float64
     par_weight::Float64
     group_config::G
 end
@@ -21,11 +22,12 @@ a `GroupByClustering` as its grouping configuration.
 """
 function ClusteringAttractorsContinuation(
         mapper::AttractorsViaRecurrences;
+        cluster_in_slice = 100., 
         par_weight = 0.0,
         group_config = GroupViaClustering()
     )
     return ClusteringAttractorsContinuation(
-        mapper, par_weight, group_config
+        mapper, cluster_in_slice, par_weight, group_config
     )
 end
 
@@ -34,12 +36,13 @@ function basins_fractions_continuation(
         continuation::ClusteringAttractorsContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )
-    (; mapper, par_weight, group_config) = continuation
+    (; mapper, cluster_in_slice, par_weight, group_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
     keys,  pars, vecs, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
-    dists = _get_dist_matrix(vecs, pars, spp, par_weight, group_config)
+    dists = _get_dist_matrix(vecs, pars, spp, par_weight, cluster_in_slice, group_config)
+
     cluster_labels = _cluster_across_parameters(dists, vecs, group_config)
 
     _label_fractions!(cluster_labels, n, keys, pars, prange, f_curves, att_info)
@@ -82,7 +85,7 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
 end
 
 
-function _get_dist_matrix(vec_att, par_array, spp, par_weight, group_config::GroupViaClustering)
+function _get_dist_matrix(vec_att, par_array, spp, par_weight, cluster_in_slice, group_config::GroupViaClustering)
     metric = group_config.clust_distance_metric
     # Construct distance matrix
     dists = pairwise(metric, vec_att; symmetric = true)
@@ -90,8 +93,9 @@ function _get_dist_matrix(vec_att, par_array, spp, par_weight, group_config::Gro
     for k in 1:length(par_array)
         for j in 1:length(par_array)
             dists[k,j] += par_weight*abs(par_array[k]-par_array[j])
+            # Add a weight to the dist if we do not want to cluster for the same parameter slice
             if par_array[k] == par_array[j]
-                dists[k,j] += 100
+                dists[k,j] += cluster_in_slice
             end
         end
     end
