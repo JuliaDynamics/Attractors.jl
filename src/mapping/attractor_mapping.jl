@@ -1,6 +1,5 @@
 # Definition of the attracting mapping API and exporting
 # At the end it also includes all files related to mapping
-
 export AttractorMapper,
     AttractorsViaRecurrences,
     AttractorsViaProximity,
@@ -97,7 +96,7 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractDataset, F
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
         used_dataset && (labels[i] = label)
-        show_progress && next!(progress)
+        show_progress && ProgressMeter.next!(progress)
     end
     # the non-public-API `additional_fs` is used in the continuation methods
     additive_dict_merge!(fs, additional_fs)
