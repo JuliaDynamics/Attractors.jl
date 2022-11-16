@@ -90,7 +90,7 @@ than the `"silhouette"` methods.
     Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
     Should (Still) Use DBSCAN
 """
-struct GroupViaClustering{R<:Union{Real, String}, M<:Metric, F<:Function} <: GroupingConfig
+struct GroupViaClustering{R<:Union{Real, String}, M<:Union{Metric, Function}, F<:Function} <: GroupingConfig
     clust_distance_metric::M
     min_neighbors::Int
     rescale_features::Bool
