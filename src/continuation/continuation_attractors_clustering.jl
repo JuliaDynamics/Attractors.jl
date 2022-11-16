@@ -37,11 +37,10 @@ function basins_fractions_continuation(
     (; mapper, par_weight, group_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
-    # features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
     keys,  pars, vecs, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
     dists = _get_dist_matrix(vecs, pars, spp, par_weight, group_config)
-    cluster_labels = _cluster_across_parameters(dists, vecs, mapper)
+    cluster_labels = _cluster_across_parameters(dists, vecs, group_config)
 
     _label_fractions!(cluster_labels, n, keys, pars, prange, f_curves, att_info)
 
@@ -55,7 +54,7 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
     )
     # Do the first parameter to build the arrays
     set_parameter!(mapper.integ, pidx, prange[1])
-    fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
+    fs = basins_fractions(mapper, ics; show_progress, N = spp)
     fractions_curves = [fs]
     current_attractors = deepcopy(mapper.bsn_nfo.attractors)
     attractors_info = [current_attractors]
@@ -63,7 +62,7 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
     for (i, p) in enumerate(prange[2:end])
         set_parameter!(mapper.integ, pidx, p)
         reset!(mapper)
-        fs = basins_fractions(mapper, ics; show_progress = true, N = spp)
+        fs = basins_fractions(mapper, ics; show_progress, N = spp)
         push!(fractions_curves, fs)
         push!(attractors_info, deepcopy(mapper.bsn_nfo.attractors))
         ProgressMeter.next!(progress)
@@ -103,8 +102,11 @@ function _cluster_across_parameters(dists, vecs, group_config)
     gc = group_config
     # DO THE OPTIMIZATION HERE
     # cluster with dbscan
-    dbscanresult = dbscan(dists, 0.3, 1)
-    cluster_labels = cluster_assignment(dbscanresult)
+    # ϵ_optimal =  _extract_ϵ_optimal(vecs, gc)
+    ϵ_optimal =  gc.optimal_radius_method
+    cluster_labels = _cluster_distances_into_labels(dists, ϵ_optimal, gc.min_neighbors)
+    # dbscanresult = dbscan(dists, 0.3, 1)
+    # cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
 end
 

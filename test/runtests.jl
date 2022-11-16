@@ -15,4 +15,5 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     testfile("continuation/matching_attractors_tests.jl")
     testfile("continuation/recurrences_continuation_tests.jl")
     testfile("continuation/clustering_continuation_tests.jl")
+    testfile("continuation/clustering_attractors_tests.jl")
 end
