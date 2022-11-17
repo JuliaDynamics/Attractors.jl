@@ -2,7 +2,7 @@ using Test, Attractors
 using Attractors.DynamicalSystemsBase
 using Random
 
-# @testset "Clustering Attractors: Henon map" begin
+@testset "Clustering Attractors: Henon map" begin
     ds = Systems.henon(; b = -0.9, a = 1.4)
     prange = range(0.6, 1.1; length = 20)
     pidx = 1; spp = 1000
@@ -30,19 +30,16 @@ using Random
     )
     # Compare fractions 
     for k in 1:length(prange)
-        v1 = collect(values(fs[k]))
+        v1 = collect(values(fsj[k]))
         v2 = collect(values(fs2[k]))
         # @show v1, v2
-        # @test length(v1) == length(v2)
-        # for d in  ((sort(v1) .- sort(v2)) .< 0.001)
-        #     @test d
-        # end
+        @test length(v1) == length(v2)
     end
 
     # compare number of labels detected
     k1 = Int[]; k2 = Int[];
     for k in 1:length(prange)
-        push!(k1, collect(keys(fs[k]))...)
+        push!(k1, collect(keys(fsj[k]))...)
         push!(k2, collect(keys(fs2[k]))...)
     end
     @test sort(unique(k1)) == sort(unique(k2))
@@ -70,25 +67,25 @@ end
     dts_dis(x,y)= dataset_distance(x,y, Hausdorff())
     gc = GroupViaClustering(;clust_distance_metric = dts_dis, optimal_radius_method = .2, min_neighbors = 1)
     continuation = ClusteringAttractorsContinuation(mapper; par_weight = 1., group_config = gc)
-    fs, att = basins_fractions_continuation(
+    fs, att, fsj = basins_fractions_continuation(
         continuation,  ps, pidx, sampler; 
         show_progress = true, samples_per_parameter = spp)
     
      
     # Compare fractions 
     for k in 1:length(ps)
-        v1 = collect(values(fs[k]))
+        v1 = collect(values(fsj[k]))
         v2 = collect(values(fs2[k]))
         @show v1, v2
-        for d in  ((sort(v1) .- sort(v2)) .< 0.001)
-            @test d
-        end
+        # for d in  ((sort(v1) .- sort(v2)) .< 0.001)
+        #     @test d
+        # end
     end
 
     # compare number of labels detected
     k1 = Int[]; k2 = Int[];
     for k in 1:length(ps)
-        push!(k1, collect(keys(fs[k]))...)
+        push!(k1, collect(keys(fsj[k]))...)
         push!(k2, collect(keys(fs2[k]))...)
     end
     @test sort(unique(k1)) == sort(unique(k2))

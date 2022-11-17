@@ -92,7 +92,6 @@ function _label_fractions(clustered_labels, fractions_curves, attractors_info, p
     P = length(fractions_curves)
     original_labels = keytype(first(fractions_curves))[]
     unlabeled_fractions = zeros(P)
-    # Transform original data into sequential vectors
     for i in eachindex(fractions_curves)
         fs = fractions_curves[i]
         ai = attractors_info[i]
@@ -105,6 +104,7 @@ function _label_fractions(clustered_labels, fractions_curves, attractors_info, p
     # Anyways, time to reconstruct the joint fractions
     joint_fractions = [Dict{Int,Float64}() for _ in 1:P]
     current_p_idx = 0
+    next_label = maximum(clustered_labels) + 1   
     for j in eachindex(clustered_labels)
         new_label = clustered_labels[j]
         p_idx = pindex[j]
@@ -114,7 +114,13 @@ function _label_fractions(clustered_labels, fractions_curves, attractors_info, p
         end
         d = joint_fractions[current_p_idx]
         orig_frac = get(fractions_curves[current_p_idx], original_labels[j], 0)
-        d[new_label] = get(d, new_label, 0) + orig_frac
+        if new_label == -1
+            # unclustered attractors get a proper label.
+            d[next_label] = get(d, next_label, 0) + orig_frac
+            next_label += 1
+        else
+            d[new_label] = get(d, new_label, 0) + orig_frac
+        end
     end
 
     return joint_fractions
