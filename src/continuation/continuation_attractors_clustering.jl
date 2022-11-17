@@ -43,9 +43,9 @@ function basins_fractions_continuation(
 
     features, pindex, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, featurizer, show_progress)
 
-    clustered_labels = cluster_all_features(features, group_config, par_weight; prange = pindex, samples_per_parameter = 1, cluster_in_slice)
-    @show clustered_labels    
-    j_curves = _label_fractions(clustered_labels, f_curves, att_info)
+    cluster_labels = cluster_all_features(features, group_config, par_weight; prange = pindex, samples_per_parameter = 1, cluster_in_slice)
+
+    j_curves = _label_fractions(cluster_labels, f_curves, att_info)
 
     return f_curves, att_info, j_curves
 end
@@ -84,7 +84,6 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
             push!(features, featurizer(ai[k]))
         end
      end
-# features = 1;
     return features, parameter_idxs, fractions_curves, attractors_info
 end
 

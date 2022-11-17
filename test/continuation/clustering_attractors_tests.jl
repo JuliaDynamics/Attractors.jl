@@ -4,7 +4,7 @@ using Random
 
 # @testset "Clustering Attractors: Henon map" begin
     ds = Systems.henon(; b = -0.9, a = 1.4)
-    prange = range(0.6, 1.1; length = 10)
+    prange = range(0.6, 1.1; length = 20)
     pidx = 1; spp = 1000
     xg = yg = range(-2,2, length = 1000)
     grid = (xg,yg)
@@ -32,7 +32,7 @@ using Random
     for k in 1:length(prange)
         v1 = collect(values(fs[k]))
         v2 = collect(values(fs2[k]))
-        @show v1, v2
+        # @show v1, v2
         # @test length(v1) == length(v2)
         # for d in  ((sort(v1) .- sort(v2)) .< 0.001)
         #     @test d

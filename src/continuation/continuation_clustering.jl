@@ -142,11 +142,11 @@ function _get_dist_matrix!(features, dists, prange, spp, par_weight, clust_confi
     # Parameter range is normalized from 0 to 1.
     if par_weight ≠ 0
         isnothing(prange) && error("`par_weight` isn't 0, but `prange` isn't given!")
-        par_weight = par_weight/abs(prange[end]-prange[1])
-        par_array = kron(range(0,1,length(prange)), ones(spp))
+        pw = par_weight/abs(prange[end]-prange[1])
+        par_array = kron(prange, ones(spp))
         @inbounds for k in eachindex(par_array)
             for j in eachindex(par_array)
-                dists[k,j] += par_weight*abs(par_array[k] - par_array[j])
+                dists[k,j] += pw*abs(par_array[k] - par_array[j])
                 # Add a weight to the dist if we do not want to cluster for the same parameter slice
                 if par_array[k] == par_array[j]
                     dists[k,j] += cluster_in_slice
@@ -154,7 +154,6 @@ function _get_dist_matrix!(features, dists, prange, spp, par_weight, clust_confi
             end
         end
     end
-    @show dists
 end
 
 function _cluster_across_parameters(dists, features, cc::GroupViaClustering)
