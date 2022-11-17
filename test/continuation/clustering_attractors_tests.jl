@@ -5,7 +5,7 @@ using Random
 @testset "Clustering Attractors: Henon map" begin
     ds = Systems.henon(; b = -0.9, a = 1.4)
     prange = range(0.6, 1.1; length = 10)
-    pidx = 1; spp = 10000
+    pidx = 1; spp = 1000
     xg = yg = range(-2,2, length = 1000)
     grid = (xg,yg)
     mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true)

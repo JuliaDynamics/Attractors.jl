@@ -2,8 +2,9 @@ export ClusteringAttractorsContinuation
 import ProgressMeter
 import Mmap
 
-struct ClusteringAttractorsContinuation{A, G} <: BasinsFractionContinuation
+struct ClusteringAttractorsContinuation{A, G, F} <: BasinsFractionContinuation
     mapper::A
+    featurizer::F
     cluster_in_slice::Float64
     par_weight::Float64
     group_config::G
@@ -22,12 +23,13 @@ a `GroupByClustering` as its grouping configuration.
 """
 function ClusteringAttractorsContinuation(
         mapper::AttractorsViaRecurrences;
+        featurizer = identity,
         cluster_in_slice = 100., 
         par_weight = 0.0,
         group_config = GroupViaClustering()
     )
     return ClusteringAttractorsContinuation(
-        mapper, cluster_in_slice, par_weight, group_config
+        mapper, featurizer, cluster_in_slice, par_weight, group_config
     )
 end
 
@@ -36,22 +38,20 @@ function basins_fractions_continuation(
         continuation::ClusteringAttractorsContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )
-    (; mapper, cluster_in_slice, par_weight, group_config) = continuation
+    (; mapper, featurizer, cluster_in_slice, par_weight, group_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
-    keys,  pindex, vecs, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, show_progress)
+    features, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, featurizer, show_progress)
 
-    dists = _get_dist_matrix(vecs, pindex, prange, par_weight, cluster_in_slice, group_config)
-
-    cluster_labels = _cluster_across_parameters(dists, vecs, group_config)
-
-    _label_fractions!(cluster_labels, n, keys, pindex, prange, f_curves, att_info)
+    clustered_labels = cluster_all_features(features, group_config, par_weight; prange, samples_per_parameter)
+    
+    j_curves = _label_fractions(clustered_labels, f_curves, att_info)
 
     return f_curves, att_info
 end
 
 
-function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress)
+function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, featurizer, show_progress)
     progress = ProgressMeter.Progress(n;
         desc="Generating features: ", enabled=show_progress
     )
@@ -70,18 +70,19 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
         push!(attractors_info, deepcopy(mapper.bsn_nfo.attractors))
         ProgressMeter.next!(progress)
     end
-    # collect Datasets
-    vec_att = Dataset[]
-    par_index = Int64[]
-    key_array = Int64[]
-    for (k,att) in enumerate(attractors_info)
-        for a in att
-            push!(vec_att, a[2])
-            push!(key_array, a[1])
-            push!(par_index, k)
+
+    # Set up containers
+    example_feature = featurizer(first(values(attractors_info[1])))
+    features = typeof(example_feature)[]
+    # Transform original data into sequential vectors
+    for i in eachindex(fractions_curves)
+        ai = attractors_info[i]
+        for k in keys(ai)
+            push!(features, featurizer(ai[k]))
         end
     end
-    return key_array, par_index, vec_att, fractions_curves, attractors_info
+
+    return features, fractions_curves, attractors_info
 end
 
 
@@ -102,40 +103,38 @@ function _get_dist_matrix(vec_att, p_index, p_range, par_weight, cluster_in_slic
     return dists
 end
 
-function _cluster_across_parameters(dists, vecs, group_config)
-    gc = group_config
-    # DO THE OPTIMIZATION HERE
-    # cluster with dbscan
-    # ϵ_optimal =  _extract_ϵ_optimal(vecs, gc)
-    ϵ_optimal =  gc.optimal_radius_method
-    cluster_labels = _cluster_distances_into_labels(dists, ϵ_optimal, gc.min_neighbors)
-    # dbscanresult = dbscan(dists, 0.3, 1)
-    # cluster_labels = cluster_assignment(dbscanresult)
-    return cluster_labels
-end
+function _label_fractions(cluster_labels, fractions_curves, attractors_info)
 
-function _label_fractions!(cluster_labels, n, key_array, pindex, prange, fractions_curves, attractors_info)
-    # And finally collect/group stuff into their dictionaries
-    c = 0; next_label = maximum(cluster_labels) + 1
-    for i in 1:n
-        l = sum(pindex .== i)
-        current_labels = view(cluster_labels, c+1:c+l)
-        d = Dict()
-        for k in c+1:c+l
-            kk = key_array[k] # Fetch original key number 
-            if cluster_labels[k] == -1
-                # if the attractor is in the junk cluster we give it a proper number
-                push!(d, kk => next_label) 
-                next_label += 1
-            else
-                push!(d, kk => cluster_labels[k])
-            end
+    original_labels = keytype(first(fractions_curves))[]
+    parameter_idxs = Int[]
+    unlabeled_fractions = zeros(P)
+# Transform original data into sequential vectors
+    for i in eachindex(fractions_curves)
+        fs = fractions_curves[i]
+        ai = attractors_info[i]
+        A = length(ai)
+        append!(parameter_idxs, (i for _ in 1:A))
+        unlabeled_fractions[i] = get(fs, -1, 0.0)
+        for k in keys(ai)
+            push!(original_labels, k)
         end
-        swap_dict_keys!(fractions_curves[i], d)
-        swap_dict_keys!(attractors_info[i], d)
-        c += l
     end
 
-    return fractions_curves, attractors_info
+# Anyways, time to reconstruct the joint fractions
+    joint_fractions = [Dict{Int,Float64}() for _ in 1:P]
+    current_p_idx = 0
+    for j in eachindex(clustered_labels)
+        new_label = clustered_labels[j]
+        p_idx = parameter_idxs[j]
+        if p_idx > current_p_idx
+            current_p_idx += 1
+            joint_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
+        end
+        d = joint_fractions[current_p_idx]
+        orig_frac = get(fractions_curves[current_p_idx], original_labels[j], 0)
+        d[new_label] = get(d, new_label, 0) + orig_frac
+    end
+
+    return joint_fractions
 end
 
