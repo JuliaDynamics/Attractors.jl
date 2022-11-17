@@ -45,7 +45,7 @@ function basins_fractions_continuation(
 
     cluster_labels = cluster_all_features(features, group_config, par_weight; prange = pindex, samples_per_parameter = 1, cluster_in_slice)
 
-    j_curves = _label_fractions(cluster_labels, f_curves, att_info)
+    j_curves = _label_fractions(cluster_labels, f_curves, att_info, pindex)
 
     return f_curves, att_info, j_curves
 end
@@ -88,29 +88,26 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
 end
 
 
-function _label_fractions(clustered_labels, fractions_curves, attractors_info)
+function _label_fractions(clustered_labels, fractions_curves, attractors_info, pindex)
     P = length(fractions_curves)
     original_labels = keytype(first(fractions_curves))[]
-    parameter_idxs = Int[]
     unlabeled_fractions = zeros(P)
-# Transform original data into sequential vectors
+    # Transform original data into sequential vectors
     for i in eachindex(fractions_curves)
         fs = fractions_curves[i]
         ai = attractors_info[i]
-        A = length(ai)
-        append!(parameter_idxs, (i for _ in 1:A))
         unlabeled_fractions[i] = get(fs, -1, 0.0)
         for k in keys(ai)
             push!(original_labels, k)
         end
     end
 
-# Anyways, time to reconstruct the joint fractions
+    # Anyways, time to reconstruct the joint fractions
     joint_fractions = [Dict{Int,Float64}() for _ in 1:P]
     current_p_idx = 0
     for j in eachindex(clustered_labels)
         new_label = clustered_labels[j]
-        p_idx = parameter_idxs[j]
+        p_idx = pindex[j]
         if p_idx > current_p_idx
             current_p_idx += 1
             joint_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
