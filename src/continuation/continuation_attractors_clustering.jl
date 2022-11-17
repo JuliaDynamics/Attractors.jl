@@ -41,13 +41,13 @@ function basins_fractions_continuation(
     (; mapper, featurizer, cluster_in_slice, par_weight, group_config) = continuation
     spp, n = samples_per_parameter, length(prange)
 
-    features, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, featurizer, show_progress)
+    features, pindex, f_curves, att_info = _get_attractors_prange(mapper, ics, n, spp, prange, pidx, featurizer, show_progress)
 
-    clustered_labels = cluster_all_features(features, group_config, par_weight; prange, samples_per_parameter)
-    
+    clustered_labels = cluster_all_features(features, group_config, par_weight; prange = pindex, samples_per_parameter = 1, cluster_in_slice)
+    @show clustered_labels    
     j_curves = _label_fractions(clustered_labels, f_curves, att_info)
 
-    return f_curves, att_info
+    return f_curves, att_info, j_curves
 end
 
 
@@ -74,37 +74,23 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
     # Set up containers
     example_feature = featurizer(first(values(attractors_info[1])))
     features = typeof(example_feature)[]
+    parameter_idxs = Int[]
     # Transform original data into sequential vectors
     for i in eachindex(fractions_curves)
         ai = attractors_info[i]
+        A = length(ai)
+        append!(parameter_idxs, (i for _ in 1:A))
         for k in keys(ai)
             push!(features, featurizer(ai[k]))
         end
-    end
-
-    return features, fractions_curves, attractors_info
+     end
+# features = 1;
+    return features, parameter_idxs, fractions_curves, attractors_info
 end
 
 
-function _get_dist_matrix(vec_att, p_index, p_range, par_weight, cluster_in_slice, group_config::GroupViaClustering)
-    metric = group_config.clust_distance_metric
-    # Construct distance matrix
-    dists = pairwise(metric, vec_att; symmetric = true)
-    par_weight = 1/norm(p_range[end]-p_range[1])
-    for (k,pk) in enumerate(p_index)
-        for (j,pj) in enumerate(p_index)
-            dists[k,j] += par_weight*norm(p_range[pk]-p_range[pj])
-            # Add a weight to the dist if we do not want to cluster for the same parameter slice
-            if p_range[pk] == p_range[pj]
-                dists[k,j] += cluster_in_slice
-            end
-        end
-    end
-    return dists
-end
-
-function _label_fractions(cluster_labels, fractions_curves, attractors_info)
-
+function _label_fractions(clustered_labels, fractions_curves, attractors_info)
+    P = length(fractions_curves)
     original_labels = keytype(first(fractions_curves))[]
     parameter_idxs = Int[]
     unlabeled_fractions = zeros(P)

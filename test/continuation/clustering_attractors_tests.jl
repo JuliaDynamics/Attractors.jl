@@ -2,7 +2,7 @@ using Test, Attractors
 using Attractors.DynamicalSystemsBase
 using Random
 
-@testset "Clustering Attractors: Henon map" begin
+# @testset "Clustering Attractors: Henon map" begin
     ds = Systems.henon(; b = -0.9, a = 1.4)
     prange = range(0.6, 1.1; length = 10)
     pidx = 1; spp = 1000
@@ -15,9 +15,9 @@ using Random
     dts_dis(x,y)= dataset_distance(x,y, Hausdorff())
     gc = GroupViaClustering(;clust_distance_metric = dts_dis, optimal_radius_method = 1., min_neighbors = 1)
     continuation = ClusteringAttractorsContinuation(mapper; par_weight = 1., group_config = gc)
-    fs, att = basins_fractions_continuation(
+    fs, att, fsj = basins_fractions_continuation(
         continuation,  prange, pidx, sampler; 
-        show_progress = false, samples_per_parameter = spp)
+        show_progress = true, samples_per_parameter = spp)
     
     ## RECURENCE CONTINUATION
     sampler, = statespace_sampler(Random.MersenneTwister(1234); min_bounds = minimum.(grid), max_bounds = maximum.(grid))

@@ -97,7 +97,7 @@ end
 function cluster_all_features(
         features, clust_config, par_weight;
         prange = nothing, use_mmap = false, show_progress = true,
-        samples_per_parameter = 100,
+        samples_per_parameter = 100, cluster_in_slice = 0. 
     )
     # The distance matrix can get very large so we allow  memory map based array
     if use_mmap
@@ -108,7 +108,7 @@ function cluster_all_features(
     end
     progress = ProgressMeter.ProgressUnknown(desc="Clustering", enabled=show_progress)
     ProgressMeter.next!(progress)
-    _get_dist_matrix!(features, dists, prange, samples_per_parameter, par_weight, clust_config)
+    _get_dist_matrix!(features, dists, prange, samples_per_parameter, par_weight, clust_config, cluster_in_slice)
     ProgressMeter.next!(progress)
     cluster_labels = _cluster_across_parameters(dists, features, clust_config)
     ProgressMeter.finish!(progress)
@@ -134,7 +134,7 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
 end
 
 
-function _get_dist_matrix!(features, dists, prange, spp, par_weight, clust_config)
+function _get_dist_matrix!(features, dists, prange, spp, par_weight, clust_config, cluster_in_slice)
     # Construct distance matrix
     metric = clust_config.clust_distance_metric
     pairwise!(metric, dists, features; symmetric = true)
@@ -142,13 +142,19 @@ function _get_dist_matrix!(features, dists, prange, spp, par_weight, clust_confi
     # Parameter range is normalized from 0 to 1.
     if par_weight ≠ 0
         isnothing(prange) && error("`par_weight` isn't 0, but `prange` isn't given!")
+        par_weight = par_weight/abs(prange[end]-prange[1])
         par_array = kron(range(0,1,length(prange)), ones(spp))
         @inbounds for k in eachindex(par_array)
             for j in eachindex(par_array)
                 dists[k,j] += par_weight*abs(par_array[k] - par_array[j])
+                # Add a weight to the dist if we do not want to cluster for the same parameter slice
+                if par_array[k] == par_array[j]
+                    dists[k,j] += cluster_in_slice
+                end
             end
         end
     end
+    @show dists
 end
 
 function _cluster_across_parameters(dists, features, cc::GroupViaClustering)
