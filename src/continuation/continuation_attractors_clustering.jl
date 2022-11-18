@@ -57,6 +57,7 @@ function _get_attractors_prange(mapper::AttractorsViaRecurrences, ics, n, spp, p
     )
     # Do the first parameter to build the arrays
     set_parameter!(mapper.integ, pidx, prange[1])
+    reset!(mapper)
     fs = basins_fractions(mapper, ics; show_progress, N = spp)
     fractions_curves = [fs]
     current_attractors = deepcopy(mapper.bsn_nfo.attractors)
@@ -101,7 +102,7 @@ function _label_fractions(clustered_labels, fractions_curves, attractors_info, p
         end
     end
 
-    # Anyways, time to reconstruct the joint fractions
+    # reconstruct the joint fractions
     joint_fractions = [Dict{Int,Float64}() for _ in 1:P]
     current_p_idx = 0
     next_label = maximum(clustered_labels) + 1   
@@ -110,7 +111,9 @@ function _label_fractions(clustered_labels, fractions_curves, attractors_info, p
         p_idx = pindex[j]
         if p_idx > current_p_idx
             current_p_idx += 1
-            joint_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
+            if unlabeled_fractions[current_p_idx] > 0
+                joint_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
+            end
         end
         d = joint_fractions[current_p_idx]
         orig_frac = get(fractions_curves[current_p_idx], original_labels[j], 0)

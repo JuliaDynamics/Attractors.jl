@@ -76,7 +76,7 @@ end
     for k in 1:length(ps)
         v1 = collect(values(fsj[k]))
         v2 = collect(values(fs2[k]))
-        @show v1, v2
+        # @show v1, v2
         # for d in  ((sort(v1) .- sort(v2)) .< 0.001)
         #     @test d
         # end
@@ -88,5 +88,5 @@ end
         push!(k1, collect(keys(fsj[k]))...)
         push!(k2, collect(keys(fs2[k]))...)
     end
-    @test sort(unique(k1)) == sort(unique(k2))
+    # @test sort(unique(k1)) == sort(unique(k2))
 # end
