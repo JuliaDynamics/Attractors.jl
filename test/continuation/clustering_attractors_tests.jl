@@ -45,7 +45,7 @@ using Random
     @test sort(unique(k1)) == sort(unique(k2))
 end
 
-# @testset "Clustering Attractors: magnetic pendulum" begin
+@testset "Clustering Attractors: magnetic pendulum" begin
     d, α, ω = 0.3, 0.2, 0.5
     ds = Systems.magnetic_pendulum(; d, α, ω)
     xg = yg = range(-3, 3, length = 101); grid = (xg, yg)
@@ -54,19 +54,19 @@ end
     rr = range(1, 0; length = 21)
     ps = [[1, 1, γ] for γ in rr]
     pidx = :γs
-    spp = 100
+    spp = 1000
 
     # RECURENCE CONTINUATION
     sampler, = statespace_sampler(Random.MersenneTwister(1234); min_bounds = minimum.(grid), max_bounds = maximum.(grid))
-    continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
+    continuation = RecurrencesSeedingContinuation(mapper; threshold = 0.3)
     fs2, att2 = basins_fractions_continuation(
         continuation, ps, pidx, sampler; show_progress = true, samples_per_parameter = spp
     )
     ## CLUSTERING CONTINUATION 
     sampler, = statespace_sampler(Random.MersenneTwister(1234); min_bounds = minimum.(grid), max_bounds = maximum.(grid))
     dts_dis(x,y)= dataset_distance(x,y, Hausdorff())
-    gc = GroupViaClustering(;clust_distance_metric = dts_dis, optimal_radius_method = .2, min_neighbors = 1)
-    continuation = ClusteringAttractorsContinuation(mapper; par_weight = 1., group_config = gc)
+    gc = GroupViaClustering(;clust_distance_metric = dts_dis, optimal_radius_method = .1, min_neighbors = 1)
+    continuation = ClusteringAttractorsContinuation(mapper; par_weight = 0., group_config = gc)
     fs, att, fsj = basins_fractions_continuation(
         continuation,  ps, pidx, sampler; 
         show_progress = true, samples_per_parameter = spp)
@@ -76,10 +76,7 @@ end
     for k in 1:length(ps)
         v1 = collect(values(fsj[k]))
         v2 = collect(values(fs2[k]))
-        # @show v1, v2
-        # for d in  ((sort(v1) .- sort(v2)) .< 0.001)
-        #     @test d
-        # end
+        @test length(v1) == length(v2)
     end
 
     # compare number of labels detected
@@ -88,5 +85,5 @@ end
         push!(k1, collect(keys(fsj[k]))...)
         push!(k2, collect(keys(fs2[k]))...)
     end
-    # @test sort(unique(k1)) == sort(unique(k2))
-# end
+    @test sort(unique(k1)) == sort(unique(k2))
+end
