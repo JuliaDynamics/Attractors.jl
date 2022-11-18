@@ -17,7 +17,7 @@ using Random
     continuation = ClusteringAttractorsContinuation(mapper; par_weight = 1., group_config = gc)
     fs, att, fsj = basins_fractions_continuation(
         continuation,  prange, pidx, sampler; 
-        show_progress = true, samples_per_parameter = spp)
+        show_progress = false, samples_per_parameter = spp)
     
     ## RECURENCE CONTINUATION
     sampler, = statespace_sampler(Random.MersenneTwister(1234); min_bounds = minimum.(grid), max_bounds = maximum.(grid))
@@ -60,7 +60,7 @@ end
     sampler, = statespace_sampler(Random.MersenneTwister(1234); min_bounds = minimum.(grid), max_bounds = maximum.(grid))
     continuation = RecurrencesSeedingContinuation(mapper; threshold = 0.3)
     fs2, att2 = basins_fractions_continuation(
-        continuation, ps, pidx, sampler; show_progress = true, samples_per_parameter = spp
+        continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = spp
     )
     ## CLUSTERING CONTINUATION 
     sampler, = statespace_sampler(Random.MersenneTwister(1234); min_bounds = minimum.(grid), max_bounds = maximum.(grid))
@@ -69,7 +69,7 @@ end
     continuation = ClusteringAttractorsContinuation(mapper; par_weight = 0., group_config = gc)
     fs, att, fsj = basins_fractions_continuation(
         continuation,  ps, pidx, sampler; 
-        show_progress = true, samples_per_parameter = spp)
+        show_progress = false, samples_per_parameter = spp)
     
      
     # Compare fractions 
