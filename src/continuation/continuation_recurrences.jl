@@ -45,7 +45,6 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
     seeds = round(Int, log(10, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
     return (rand(rng, attractor.data) for _ in 1:seeds)
-    # return (rand(attractor.data) for _ in 1:seeds)
 end
 
 function basins_fractions_continuation(
