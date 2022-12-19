@@ -1,5 +1,6 @@
 export RecurrencesSeedingContinuation
 import ProgressMeter
+using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
@@ -39,11 +40,11 @@ function RecurrencesSeedingContinuation(
     )
 end
 
-function _default_seeding_process(attractor::AbstractDataset)
+function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
-    return (rand(attractor.data) for _ in 1:seeds)
+    return (rand(rng, attractor.data) for _ in 1:seeds)
 end
 
 function basins_fractions_continuation(
