@@ -10,36 +10,33 @@ end
 
 """
     GroupAcrossParameterContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
-A method for [`basins_fractions_continuation`](@ref).
-It uses clustering across of features across a parameter range, potentially weighted
-by the distance in parameter space. Its input `mapper` must have
-a `GroupByClustering` as its grouping configuration.
-This is the original "MCBB" continuation method described in [^Gelbrecht2020],
-besides the improvements of clustering accuracy and performance done by
-the developer team of Attractors.jl.
 
-## Keyword Arguments
+A method for [`basins_fractions_continuation`](@ref).
+It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
+and hence requires an instance of that mapper as an input.
+When used in [`basins_fractions_continuation`](@ref), features are extracted
+and then grouped across a parameter range. Said differently, all features
+of all initial conditions across all parameter values are put into the same "pool"
+and then grouped as dictated by the `group_config` of the mapper.
+
+## Keyword arguments
 - `info_extraction::Function` a function that takes as an input a vector of features
   (corresponding to a cluster) and returns a description of the cluster.
   By default, the centroid of the cluster is used.
-- `par_weight = 0` The distance matrix between features has a special extra weight that
-  is proportional to the distance `|p[i] - p[j]|` between the parameters used when
-  extracting features. This keyword argument is the weight coeficient that ponderates
-  the distance matrix. Notice that the range of parameters is normalized from 0 to 1
-  such that the largest distance in the parameter space is 1. The normalization is done
-  because the feature space is also (by default) normalized to 0-1.
-- `use_mmap = false` this parameter whether the feature distance matrix should be computed
-  in memory or on the disk using memory map. Should be used if a matrix with side
-  `length(prange)*samples_per_parameter` exceeds available memory.
+- `par_weight = 0`: See below the section on MCBB.
 
-## Description
+## MCBB special version
+If the chosen grouping method is [`GroupViaClustering`](@ref), the additional keyword
+`par_weight::Real` can be used. If it is `> 0`, the distance matrix between features
+obtains an extra weight that is proportional to the distance `par_weight*|p[i] - p[j]|`
+between the parameters used when extracting features.
+The range of parameters is normalized to 0-1
+such that the largest distance in the parameter space is 1. The normalization is done
+because the feature space is also (by default) normalized to 0-1.
 
-The method first integrates and computes a set of statistics on the trajectories, for example
-the mean and standard deviation of the trajectory data points. Once all the featured statistics
-have been  computed, the algorithm computes the distance between each feature. A special weight
-term is added so that the distance between features with different parameters is increased.
-It helps to discriminate between attractors with very different parameters. At last, the
-distance matrix is clustered with the DBSCAN algorithm.
+This version of the algorithm is the original "MCBB" continuation method described
+in [^Gelbrecht2020], besides the improvements of clustering accuracy and performance
+done by the developer team of Attractors.jl.
 
 [^Gelbrecht2021]:
     Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
