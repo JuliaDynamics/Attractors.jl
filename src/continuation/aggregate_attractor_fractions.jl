@@ -21,6 +21,7 @@ Put example in actual docs.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description
    of the features. I.e., exactly as in [`GroupAcrossParameterContinuation`](@ref).
+   The 5th argument is optional and defaults to the centroid of the features.
 
 ## Return
 1. `aggregated_fractions`: same as `fractions_curves` but now contains the fractions of the
@@ -41,14 +42,10 @@ function aggregate_attractor_fractions(
     aggregated_fractions = reconstruct_joint_fractions(
         fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
-    # TODO: Remove label -1 if it is empty in all configurations
-
+    remove_minus_1_if_possible!(aggregated_fractions)
     aggregated_info = info_of_grouped_features(features, grouped_labels, info_extraction)
     return aggregated_fractions, aggregated_info
 end
-
-# TODO: I also need to return information about the grouped features. Same way as in
-# the continuation method.
 
 function refactor_into_sequential_features(fractions_curves, attractors_info, featurizer)
     # Set up containers
@@ -105,4 +102,17 @@ function info_of_grouped_features(features, grouped_labels, info_extraction)
             view(features, findall(isequal(id), grouped_labels))
         ) for id in ids
     )
+end
+
+function remove_minus_1_if_possible!(afs)
+    isthere = false
+    for fs in afs
+        isthere = get(fs, -1, 0) > 0
+        isthere && return
+    end
+    # no `-1`, we remove from everywhere
+    for fs in afs
+        delete!(fs, -1)
+    end
+    return
 end
