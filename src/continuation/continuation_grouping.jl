@@ -2,7 +2,7 @@ export GroupAcrossParameterContinuation
 import ProgressMeter
 import Mmap
 
-struct GroupAcrossParameterContinuation{A, E} <: BasinsFractionContinuation
+struct GroupAcrossParameterContinuation{A<:AttractorsViaFeautirizing, E} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64
@@ -47,11 +47,6 @@ function GroupAcrossParameterContinuation(
         info_extraction = mean_across_features,
         par_weight = 0.0,
     )
-    if !(mapper.group_config isa GroupViaClustering)
-        throw(ArgumentError(
-            "This method needs `GroupViaClustering` as the grouping configuration."
-        ))
-    end
     return GroupAcrossParameterContinuation(
         mapper, info_extraction, par_weight
     )
