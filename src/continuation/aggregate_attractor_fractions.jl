@@ -13,10 +13,8 @@ space, are grouped into one attractor. Thus, the fractions of their basins are a
 
 For example... (add here Kalels example for ecosystem dynamics).
 
-
 ## Input
 The function accepts the following input arguments:
-
 
 ## Return
 joint_fractions
@@ -33,6 +31,7 @@ function aggregate_attractor_fractions(
     joint_fractions = reconstruct_joint_fractions(
         fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
+    # TODO: Remove label -1 if it is empty in all configurations.
     return joint_fractions
 end
 
