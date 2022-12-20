@@ -17,7 +17,7 @@ For example... (add here Kalels example for ecosystem dynamics).
 The function accepts the following input arguments:
 
 ## Return
-joint_fractions
+aggregated_fractions
 """
 function aggregate_attractor_fractions(
         fractions_curves, attractors_info, featurizer, group_config
@@ -28,11 +28,11 @@ function aggregate_attractor_fractions(
 
     grouped_labels = group_features(features, group_config)
 
-    joint_fractions = reconstruct_joint_fractions(
+    aggregated_fractions = reconstruct_joint_fractions(
         fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
     # TODO: Remove label -1 if it is empty in all configurations.
-    return joint_fractions
+    return aggregated_fractions
 end
 
 # TODO: I also need to return information about the grouped features. Same way as in
@@ -67,18 +67,18 @@ end
 function reconstruct_joint_fractions(
         fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
-    joint_fractions = [Dict{Int,Float64}() for _ in 1:length(fractions_curves)]
+    aggregated_fractions = [Dict{Int,Float64}() for _ in 1:length(fractions_curves)]
     current_p_idx = 0
     for j in eachindex(grouped_labels)
         new_label = grouped_labels[j]
         p_idx = parameter_idxs[j]
         if p_idx > current_p_idx
             current_p_idx += 1
-            joint_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
+            aggregated_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
         end
-        d = joint_fractions[current_p_idx]
+        d = aggregated_fractions[current_p_idx]
         orig_frac = get(fractions_curves[current_p_idx], original_labels[j], 0)
         d[new_label] = get(d, new_label, 0) + orig_frac
     end
-    return joint_fractions
+    return aggregated_fractions
 end
