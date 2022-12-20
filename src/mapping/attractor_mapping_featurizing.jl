@@ -1,19 +1,11 @@
 export AttractorsViaFeaturizing, group_features, extract_features
 
 # Flexible mapping of initial conditions into "attractors" by featurizing
-# and grouping using arbitrary grouping configurations. The only thing
-# necessary for a new grouping configuration is to:
-# 1. make a new type and subtype `GroupingConfig`.
-# 2. Extend the function `group_features(features, config)` documented below.
-#    If the grouping allows for mapping individual initial conditions to IDs,
-#    then instead extend the **internal function** `feature_to_group(feature, config)`.
-#    You can still extend `group_features` as well if there are any performance benefits
-# 3. Include the new grouping file in the `grouping/all_grouping_configs.jl`
+# and grouping using arbitrary grouping configurations.
 
 #####################################################################################
 # Structs and documentation string
 #####################################################################################
-abstract type GroupingConfig end
 include("grouping/all_grouping_configs.jl")
 
 struct AttractorsViaFeaturizing{I, G<:GroupingConfig, T, F} <: AttractorMapper
@@ -65,7 +57,8 @@ The method thus relies on the user having at least some basic idea about what at
 to expect in order to pick the right features, and the right way to group them,
 in contrast to [`AttractorsViaRecurrences`](@ref).
 
-The following configuration structs can be used to decide how the features are grouped:
+The following configuration structs can be used to decide how the features are grouped.
+They all subtype [`GroupingConfig`](@ref) which defines an extendable interface.
 - [`GroupViaClustering`](@ref)
 - [`GroupViaNearestFeature`](@ref), which allows `id = mapper(u0)`
 - [`GroupViaHistogram`](@ref), which allows `id = mapper(u0)`

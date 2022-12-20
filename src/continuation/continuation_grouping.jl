@@ -2,7 +2,7 @@ export GroupAcrossParameterContinuation
 import ProgressMeter
 import Mmap
 
-struct GroupAcrossParameterContinuation{A<:AttractorsViaFeautirizing, E} <: BasinsFractionContinuation
+struct GroupAcrossParameterContinuation{A<:AttractorsViaFeaturizing, E} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64
@@ -27,7 +27,7 @@ and then grouped as dictated by the `group_config` of the mapper.
 
 ## MCBB special version
 If the chosen grouping method is [`GroupViaClustering`](@ref), the additional keyword
-`par_weight::Real` can be used. If it is `> 0`, the distance matrix between features
+`par_weight::Real` can be used. If it is ≠ 0, the distance matrix between features
 obtains an extra weight that is proportional to the distance `par_weight*|p[i] - p[j]|`
 between the parameters used when extracting features.
 The range of parameters is normalized to 0-1
