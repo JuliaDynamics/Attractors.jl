@@ -126,7 +126,14 @@ end
 #####################################################################################
 # API funtion (group features)
 #####################################################################################
-function group_features(features::Vector{<:AbstractVector}, config::GroupViaClustering)
+# The keywords `par_weight, plength, spp` enable the "for-free" implementation of the
+# MCBB algorithm (weighting the distance matrix by parameter value as well).
+# The keyword version of this function is only called in
+# `GroupingAcrossParametersContinuation` and is not part of public API!
+function group_features(
+        features::Vector{<:AbstractVector}, config::GroupViaClustering;
+        par_weight::Real = 0, plength::Int = 1, spp::Int = 1,
+    )
     nfeats = length(features); dimfeats = length(features[1])
     if dimfeats ≥ nfeats
         throw(ArgumentError("""
@@ -138,12 +145,14 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         features = _rescale_to_01(features)
     end
     ϵ_optimal = _extract_ϵ_optimal(features, config)
-    distances = _distance_matrix(features, config)
+    distances = _distance_matrix(features, config; par_weight, plength, spp)
     labels = _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
     return labels
 end
 
-function _distance_matrix(features, config::GroupViaClustering)
+function _distance_matrix(features, config::GroupViaClustering;
+        par_weight::Real = 0, plength::Int = 1, spp::Int = 1
+    )
     metric = config.clust_distance_metric
     L = length(features)
     if config.use_mmap
@@ -153,6 +162,21 @@ function _distance_matrix(features, config::GroupViaClustering)
         dists = zeros(L, L)
     end
     pairwise!(metric, dists, features; symmetric = true)
+    if par_weight ≠ 0 # weight distance matrix by parameter value
+        par_vector = kron(range(0, 1, plength), ones(spp))
+        length(par_vector) ≠ size(dists, 1) && error("Feature size doesn't match.")
+        @inbounds for k in eachindex(par_vector)
+            # We can optimize the loop here due to symmetry of the metric.
+            # Instead of going over all `j` we go over `(k+1)` to end,
+            # and also add value to transpose. (also assume that if j=k, distance is 0)
+            for j in (k+1):size(dists, 1)
+                # TODO: Shouldn't we use `metric` here instead of `abs`?
+                pdist = par_weight*abs(par_vector[k] - par_vector[j])
+                dists[k,j] += pdist
+                dists[j,k] += pdist
+            end
+        end
+    end
     return dists
 end
 
@@ -173,7 +197,7 @@ function _extract_ϵ_optimal(features, config::GroupViaClustering)
     elseif optimal_radius_method isa Real
         ϵ_optimal = optimal_radius_method
     else
-        error("Specified optimal_radius_method is incorrect. Please specify the radius
+        error("Specified `optimal_radius_method` is incorrect. Please specify the radius
         directly as a Real number or the method to compute it as a String")
     end
     return ϵ_optimal
