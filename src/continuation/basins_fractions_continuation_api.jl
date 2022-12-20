@@ -8,7 +8,7 @@ abstract type BasinsFractionContinuation end
 
 """
    basins_fractions_continuation(continuation, prange, pidx, ics; kwargs...)
-Find and continue attractors and/or the fractions of their basins of attraction
+Find and continue attractors and the fractions of their basins of attraction
 across a parameter range.
 The given `continuation` contains a reference to a dynamical system,
 as well as how to find its attractors. I.e., it contains an [`AttractorMapper`](@ref).
@@ -24,7 +24,7 @@ Current continuation methods are:
   ```
   sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
   ```
-- [`ClusteringAcrossParametersContinuation`](@ref).
+- [`GroupAcrossParameterContinuation`](@ref).
 
 Return:
 1. `fractions_curves <: Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.

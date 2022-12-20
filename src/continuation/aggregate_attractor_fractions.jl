@@ -2,25 +2,35 @@ export aggregate_attractor_fractions
 
 """
     aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, group_config
+        fractions_curves, attractors_info, featurizer, group_config [, info_extraction]
     )
 
 Aggregate the already-estimated curves of fractions of basins of attraction of similar
 attractors using the same pipeline used by [`GroupAcrossParameterContinuation`](@ref).
 The most typical application of this function is to transform the output of
 [`RecurrencesSeedingContinuation`](@ref) so that similar attractors, even across parameter
-space, are grouped into one attractor. Thus, the fractions of their basins are aggregated.
+space, are grouped into one "attractor". Thus, the fractions of their basins are aggregated.
 
 For example... (add here Kalels example for ecosystem dynamics).
+Put example in actual docs.
 
 ## Input
-The function accepts the following input arguments:
+1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
+2. `attractors_info`: a vector of dictionaries mapping labels to attractors.
+3. `featurizer`: a 1-argument function to map an attractor into a feature `SVector`.
+4. `group_config`: a subtype of [`GroupingConfig`](@ref).
+5. `info_extraction`: a function accepting a vector of features and returning a description
+   of the features. I.e., exactly as in [`GroupAcrossParameterContinuation`](@ref).
 
 ## Return
-aggregated_fractions
+1. `aggregated_fractions`: same as `fractions_curves` but now contains the fractions of the
+   aggregated attractors.
+2. `aggregated_info`: dictionary mapping the new labels of `aggregated_fractions` to the
+   extracted information using `info_extraction`.
 """
 function aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, group_config
+        fractions_curves, attractors_info, featurizer, group_config,
+        info_extraction = mean_across_features # function from grouping continuation
     )
 
     original_labels, unlabeled_fractions, parameter_idxs, features =
@@ -31,8 +41,10 @@ function aggregate_attractor_fractions(
     aggregated_fractions = reconstruct_joint_fractions(
         fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
-    # TODO: Remove label -1 if it is empty in all configurations.
-    return aggregated_fractions
+    # TODO: Remove label -1 if it is empty in all configurations
+
+    aggregated_info = info_of_grouped_features(features, grouped_labels, info_extraction)
+    return aggregated_fractions, aggregated_info
 end
 
 # TODO: I also need to return information about the grouped features. Same way as in
@@ -81,4 +93,16 @@ function reconstruct_joint_fractions(
         d[new_label] = get(d, new_label, 0) + orig_frac
     end
     return aggregated_fractions
+end
+
+function info_of_grouped_features(features, grouped_labels, info_extraction)
+    ids = sort!(unique(grouped_labels))
+    # remove -1 if it's there
+    if ids[1] == -1; popfirst!(ids); end
+    # extract the infos
+    Dict(
+        id => info_extraction(
+            view(features, findall(isequal(id), grouped_labels))
+        ) for id in ids
+    )
 end
