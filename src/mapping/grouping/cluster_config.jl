@@ -13,29 +13,36 @@ MCBB[^Gelbrecht2021]. Several options on clustering are available, see keywords 
 The defaults are a significant improvement over existing literature, see Description.
 
 ## Keyword arguments
+
 * `clust_distance_metric = Euclidean()`: metric to be used in the clustering.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 * `min_neighbors = 10`: minimum number of neighbors (i.e. of similar features) each
   feature needs to have in order to be considered in a cluster (fewer than this, it is
   labeled as an outlier, `-1`).
-* `optimal_radius_method::Union{Real, String} = "silhouettes_optim"`: if a real number, it
-  is the radius used to cluster features in the unsupervised method. Otherwise, it
-  determines the method used to automatically determine that radius. Possible
-  values are:
-  - `"silhouettes"`: Performs a linear (sequential) search for the radius that maximizes a
-    statistic of the silhouette values of clusters (typically the mean). This can be chosen
-    with `silhouette_statistic`. The linear search may take some time to finish. To
-    increase speed, the number of radii iterated through can be reduced by decreasing
-    `num_attempts_radius` (see its entry below).
-  - `"silhouettes_optim"`: Same as `"silhouettes"` but performs an optimized search via
-    Optim.jl. It's faster than `"silhouettes"`, with typically the same accuracy (the
-    search here is not guaranteed to always find the global maximum, though it typically
-    gets close).
-  - `"knee"`: chooses the the radius according to the knee (a.k.a. elbow,
-    highest-derivative method) and is quicker, though generally leading to much worse
-    clustering. It requires that `min_neighbors` > 1.
+* `use_mmap = false`: whether to use an on-disk map for creating the distance matrix
+  of the features. Useful when the features are so many where a matrix with side their
+  length would not fit to memory.
+
+
 ### Keywords for optimal radius estimation
+
+* `optimal_radius_method::Union{Real, String} = "silhouettes_optim"`: if a real number, it
+is the radius used to cluster features in the unsupervised method. Otherwise, it
+determines the method used to automatically determine that radius. Possible
+values are:
+    - `"silhouettes"`: Performs a linear (sequential) search for the radius that maximizes a
+        statistic of the silhouette values of clusters (typically the mean). This can be chosen
+        with `silhouette_statistic`. The linear search may take some time to finish. To
+        increase speed, the number of radii iterated through can be reduced by decreasing
+        `num_attempts_radius` (see its entry below).
+    - `"silhouettes_optim"`: Same as `"silhouettes"` but performs an optimized search via
+        Optim.jl. It's faster than `"silhouettes"`, with typically the same accuracy (the
+        search here is not guaranteed to always find the global maximum, though it typically
+        gets close).
+    - `"knee"`: chooses the the radius according to the knee (a.k.a. elbow,
+        highest-derivative method) and is quicker, though generally leading to much worse
+        clustering. It requires that `min_neighbors` > 1.
 * `num_attempts_radius = 100`: number of radii that the `optimal_radius_method` will try
   out in its iterative procedure. Higher values increase the accuracy of clustering,
   though not necessarily much, while always reducing speed.
@@ -98,6 +105,7 @@ struct GroupViaClustering{R<:Union{Real, String}, M<:Metric, F<:Function} <: Gro
     num_attempts_radius::Int
     silhouette_statistic::F
     max_used_features::Int
+    use_mmap::Bool
 end
 
 function GroupViaClustering(;
@@ -105,11 +113,13 @@ function GroupViaClustering(;
         rescale_features=true, num_attempts_radius=100,
         optimal_radius_method::Union{Real, String} = "silhouettes_optim",
         silhouette_statistic = mean, max_used_features = 0,
+        use_mmap = false,
     )
     return GroupViaClustering(
         clust_distance_metric, min_neighbors,
         rescale_features, optimal_radius_method,
-        num_attempts_radius, silhouette_statistic, max_used_features
+        num_attempts_radius, silhouette_statistic, max_used_features,
+        use_mmap,
     )
 end
 
@@ -128,8 +138,22 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         features = _rescale_to_01(features)
     end
     ϵ_optimal = _extract_ϵ_optimal(features, config)
-    distances = pairwise(features, config.metric)
-    return _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
+    distances = _distance_matrix(features, config)
+    labels = _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
+    return labels
+end
+
+function _distance_matrix(features, config::GroupViaClustering)
+    metric = config.clust_distance_metric
+    L = length(features)
+    if config.use_mmap
+        pth, s = mktemp()
+        dists = Mmap.mmap(s, Matrix{Float32}, (L, L))
+    else
+        dists = zeros(L, L)
+    end
+    pairwise!(metric, dists, features; symmetric = true)
+    return dists
 end
 
 function _extract_ϵ_optimal(features, config::GroupViaClustering)
