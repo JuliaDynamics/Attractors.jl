@@ -18,8 +18,11 @@ using Statistics, Random, Test
     end
     attractor_pool = [[0 0], [10 10], [20 20]];
     correct_labels = [1,1,1,1, 2,2,2,1,2,3,3,3,3,1]
-    a = attractor_pool[correct_labels]; correct_labels_infinite_threshold = deepcopy(correct_labels);
-    a[end] = [50 5]; correct_labels[end] = -1; correct_labels_infinite_threshold[end] = 3;
+    a = attractor_pool[correct_labels]
+    correct_labels_infinite_threshold = deepcopy(correct_labels)
+    a[end] = [50 5]
+    correct_labels[end] = -1
+    correct_labels_infinite_threshold[end] = 3
     attractors = Dict(1:length(a) .=> Dataset.(a; warn = false));
 
     ### silhouettes and real
