@@ -28,12 +28,15 @@ Initialize a `mapper` that maps initial conditions to attractors using a featuri
 grouping approach. This is a supercase of the featurizing and clustering approach that
 is utilized by bSTAB[^Stender2021] and MCBB[^Gelbrecht2021].
 See [`AttractorMapper`](@ref) for how to use the `mapper`.
-This `mapper` allows the syntax `mapper(u0)` only for some `grouping_config` types,
-see below.
+This `mapper` also allows the syntax `mapper(u0)` but only if the `grouping_config`
+is not `GroupViaClustering`.
 
 `featurizer` is a function that takes as an input an integrated trajectory `A::Dataset` and
 the corresponding time vector `t` and returns an `SVector{<:Real}` of features describing the
 trajectory. It is important to use static vectors for better performance.
+
+`grouping_config` is an instance of any subtype of [`GroupingConfig`](@ref) and decides
+how features will be grouped into attractors, see below.
 
 See also the intermediate functions [`extract_features`](@ref) and [`group_features`](@ref),
 which can be utilized when wanting to work directly with features.
@@ -56,12 +59,6 @@ and hence each initial condition is labelled according to the group it is part o
 The method thus relies on the user having at least some basic idea about what attractors
 to expect in order to pick the right features, and the right way to group them,
 in contrast to [`AttractorsViaRecurrences`](@ref).
-
-The following configuration structs can be used to decide how the features are grouped.
-They all subtype [`GroupingConfig`](@ref) which defines an extendable interface.
-- [`GroupViaClustering`](@ref)
-- [`GroupViaNearestFeature`](@ref), which allows `id = mapper(u0)`
-- [`GroupViaHistogram`](@ref), which allows `id = mapper(u0)`
 
 [^Stender2021]:
     Stender & Hoffmann 2021, [bSTAB: an open-source software for computing the basin

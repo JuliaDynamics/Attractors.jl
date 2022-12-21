@@ -17,6 +17,8 @@ Put example in actual docs.
 ## Input
 1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
 2. `attractors_info`: a vector of dictionaries mapping labels to attractors.
+   1st and 2nd argument are exactly like the return values of
+   [`basins_fractions_continuation`](@ref) with [`RecurrencesSeedingContinuation`](@ref).
 3. `featurizer`: a 1-argument function to map an attractor into a feature `SVector`.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description

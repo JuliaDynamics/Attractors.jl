@@ -128,10 +128,11 @@ end
 Find the optimal radius ϵ of a point neighborhood for use in DBSCAN through the elbow method
 (knee method, highest derivative method).
 """
-function optimal_radius_dbscan_knee(features, min_neighbors, metric)
+function optimal_radius_dbscan_knee(_features::Vector, min_neighbors, metric)
+    features = Dataset(_features)
     tree = searchstructure(KDTree, features, metric)
     # Get distances, excluding distance to self (hence the Theiler window)
-    d,n = size(features) 
+    d, n = size(features)
     features_vec = [features[:,j] for j=1:n]
     _, distances = bulksearch(tree, features_vec, NeighborNumber(min_neighbors), Theiler(0))
     meandistances = map(mean, distances)
@@ -150,7 +151,7 @@ method for `AttractorsViaFeaturizing`. The basic idea is to iteratively search f
 leads to the best clustering, as characterized by quantifiers known as silhouettes.
 """
 function optimal_radius_dbscan_silhouette_original(features, min_neighbors, metric; num_attempts_radius=200)
-    d,n = size(features) 
+    d,n = size(features)
     feat_ranges = maximum(features, dims = d)[:,1] .- minimum(features, dims = d)[:,1];
     ϵ_grid = range(minimum(feat_ranges)/num_attempts_radius, minimum(feat_ranges), length=num_attempts_radius)
     s_grid = zeros(size(ϵ_grid)) # average silhouette values (which we want to maximize)

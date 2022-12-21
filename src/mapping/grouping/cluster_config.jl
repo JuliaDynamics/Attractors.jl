@@ -28,9 +28,8 @@ The defaults are a significant improvement over existing literature, see Descrip
 ### Keywords for optimal radius estimation
 
 * `optimal_radius_method::Union{Real, String} = "silhouettes_optim"`: if a real number, it
-is the radius used to cluster features in the unsupervised method. Otherwise, it
-determines the method used to automatically determine that radius. Possible
-values are:
+  is the radius used to cluster features. Otherwise, it determines the method used to
+  automatically determine that radius. Possible values are:
     - `"silhouettes"`: Performs a linear (sequential) search for the radius that maximizes a
         statistic of the silhouette values of clusters (typically the mean). This can be chosen
         with `silhouette_statistic`. The linear search may take some time to finish. To
