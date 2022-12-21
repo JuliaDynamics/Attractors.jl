@@ -11,13 +11,13 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("mapping/attractor_mapping.jl")
     end
 
-    @testset "analysis" begin
+    @testset "basins analysis" begin
         testfile("basins/tipping_points_tests.jl")
         testfile("basins/uncertainty_tests.jl")
     end
 
     @testset "continuation" begin
-        testfile("continuation/matching_attractors_tests.jl")
+        testfile("continuation/matching_attractors.jl")
         testfile("continuation/recurrences_continuation_tests.jl")
         testfile("continuation/clustering_continuation_tests.jl")
     end

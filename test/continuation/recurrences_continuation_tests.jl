@@ -1,3 +1,5 @@
+DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
+
 using Test, Attractors
 using Attractors.DynamicalSystemsBase
 using Random
@@ -72,7 +74,8 @@ using Random
     end
 end
 
-# %%
+if DO_EXTENSIVE_TESTS
+
 @testset "Henon map" begin
     ds = Systems.henon(; b = 0.3, a = 1.4)
     psorig = range(1.2, 1.25; length = 101)
@@ -159,7 +162,6 @@ end
     # end
 end
 
-# %%
 @testset "non-found attractors" begin
     # This is standard henon map
     ds = Systems.henon(; b = 0.3, a = 1.4)
@@ -235,5 +237,7 @@ end
         end
         @test sum(values(fs)) ≈ 1
     end
+
+end
 
 end
