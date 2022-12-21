@@ -1,3 +1,9 @@
+# Additional tests may be run in this test suite according to an environment variable
+# `ATTRACTORS_EXTENSIVE_TESTS` which can be true or false.
+# If false, a small, but representative subset of tests is used.
+
+# ENV["ATTRACTORS_EXTENSIVE_TESTS"] = true or false (set externally)
+
 using Test
 
 defaultname(file) = uppercasefirst(replace(splitext(basename(file))[1], '_' => ' '))
@@ -18,7 +24,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
 
     @testset "continuation" begin
         testfile("continuation/matching_attractors.jl")
-        testfile("continuation/recurrences_continuation_tests.jl")
-        testfile("continuation/clustering_continuation_tests.jl")
+        testfile("continuation/recurrences_continuation.jl")
+        testfile("continuation/grouping_continuation.jl")
     end
 end

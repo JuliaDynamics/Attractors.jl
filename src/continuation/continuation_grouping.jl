@@ -75,7 +75,7 @@ function basins_fractions_continuation(
     # also by parameter value, i.e., making the parameter value a feature)
     # It calls a special `group_features` function that also incorporates the
     # parameter value (see below). Otherwise, we call normal `group_features`.
-    if mapper.group_config isa GroupViaClustering && mapper.group_config.par_weight ≠ 0
+    if mapper.group_config isa GroupViaClustering && par_weight ≠ 0
         labels = group_features(features, mapper.group_config; par_weight, plength = n, spp)
 
     else
