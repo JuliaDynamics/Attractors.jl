@@ -4,6 +4,8 @@ using Test, Attractors
 using Attractors.DynamicalSystemsBase
 using Random
 
+# TODO: Add a Histogram test with the competition dynamics model
+
 @testset "Dummy bistable map" begin
 
     function dumb_map(dz, z, p, n)
@@ -28,12 +30,12 @@ using Random
     ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 
     sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = [-3., -3.], max_bounds = [3., 3.])
+        min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
 
     rrange = range(0., 2; length = 20)
     ridx = 1
 
-    featurizer(a, t) = a[end,:]
+    featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
     continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.)
@@ -61,19 +63,19 @@ end
 
 if DO_EXTENSIVE_TESTS
 
-    @testset "Henon map" begin
+    @testset "Henon period doubling" begin
 
+        # Notice special parameter values:
         ds = Systems.henon(; b = -0.9, a = 1.4)
-        psorig = range(0.6, 1.1; length = 10)
+        ps = range(0.6, 1.1; length = 10)
         pidx = 1
         sampler, = statespace_sampler(Random.MersenneTwister(1234);
             min_bounds = [-2,-2], max_bounds = [2,2]
         )
 
-        ps = psorig
         # Feature based on period.
         function featurizer(a, t)
-            if abs(a[end,1]) > 100 || isnan(a[end,1])
+            if any(isnan, a[end]) || abs(a[end,1]) > 100
                 return [100]
             end
             tol = 1e-5
@@ -91,16 +93,16 @@ if DO_EXTENSIVE_TESTS
         mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
         continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.0)
         fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
-            continuation, psorig, pidx, sampler;
+            continuation, ps, pidx, sampler;
             samples_per_parameter = 1000, show_progress = false
         )
 
-        for (i, p) in enumerate(psorig)
+        for (i, p) in enumerate(ps)
             fs = fractions_curves[i]
             if p < 0.9
                 k = sort!(collect(keys(fs)))
                 @test length(k) == 2
-            elseif p > 1.
+            elseif p > 1.0 # (coexistence of period 1 and 3)
                 k = sort!(collect(keys(fs)))
                 @test length(k) == 3
             end

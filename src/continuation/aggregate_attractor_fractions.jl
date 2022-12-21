@@ -11,6 +11,9 @@ The most typical application of this function is to transform the output of
 [`RecurrencesSeedingContinuation`](@ref) so that similar attractors, even across parameter
 space, are grouped into one "attractor". Thus, the fractions of their basins are aggregated.
 
+You could also use this function to aggregate attractors and their fractions even in
+a single parameter configuration, i.e., using the output of [`basins_fractions`](@ref).
+
 For example... (add here Kalels example for ecosystem dynamics).
 Put example in actual docs.
 
@@ -18,8 +21,11 @@ Put example in actual docs.
 1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
 2. `attractors_info`: a vector of dictionaries mapping labels to attractors.
    1st and 2nd argument are exactly like the return values of
-   [`basins_fractions_continuation`](@ref) with [`RecurrencesSeedingContinuation`](@ref).
+   [`basins_fractions_continuation`](@ref) with [`RecurrencesSeedingContinuation`](@ref)
+   (or, they can be the return of [`basins_fractions`](@ref)).
 3. `featurizer`: a 1-argument function to map an attractor into a feature `SVector`.
+   Notice that you can use `identity` if the input "attractors" aren't actually attractors
+   but already features or something else that can be grouped directly.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description
    of the features. I.e., exactly as in [`GroupAcrossParameterContinuation`](@ref).
@@ -32,7 +38,7 @@ Put example in actual docs.
    extracted information using `info_extraction`.
 """
 function aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, group_config,
+        fractions_curves::Vector, attractors_info::Vector, featurizer, group_config,
         info_extraction = mean_across_features # function from grouping continuation
     )
 
@@ -48,6 +54,14 @@ function aggregate_attractor_fractions(
     aggregated_info = info_of_grouped_features(features, grouped_labels, info_extraction)
     return aggregated_fractions, aggregated_info
 end
+# convenience wrapper for only single input
+function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args...)
+    aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
+        [fractions], [attractors], args...
+    )
+    return aggregated_fractions[1], aggregated_info[1]
+end
+
 
 function refactor_into_sequential_features(fractions_curves, attractors_info, featurizer)
     # Set up containers
