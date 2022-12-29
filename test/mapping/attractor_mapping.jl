@@ -151,8 +151,8 @@ end
 
     function featurizer(A, t)
         # `g` is the number of boxes needed to cover the set
-        probs = probabilities(ValueHistogram(A, 0.1), A)
-        g = exp(entropy(Renyi(0), probs))
+        probs = probabilities(ValueHistogram(0.1), A)
+        g = exp(entropy(Renyi(; q = 0), probs))
         return SVector(g, minimum(A[:,1]))
     end
 
@@ -176,7 +176,7 @@ if DO_EXTENSIVE_TESTS
         ]
         expected_fs_raw = Dict(2 => 0.511, 1 => 0.489)
         function featurizer(A, t)
-            return @SVector[A[end][1], A[end][2]]
+            return @SVector [A[end][1], A[end][2]]
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -199,7 +199,7 @@ if DO_EXTENSIVE_TESTS
         expected_fs_raw = Dict(2 => 0.318, 3 => 0.347, 1 => 0.335)
 
         function featurizer(A, t)
-            return @SVector[A[end][1], A[end][2]]
+            return @SVector [A[end][1], A[end][2]]
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
@@ -222,7 +222,7 @@ if DO_EXTENSIVE_TESTS
         expected_fs_raw = Dict(2 => 0.29, 3 => 0.237, 1 => 0.473)
         function thomas_featurizer(A, t)
             x, y = columns(A)
-            return @SVector[minimum(x), minimum(y)]
+            return @SVector [minimum(x), minimum(y)]
         end
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)

@@ -128,13 +128,12 @@ the system's symmetry.
 
 
 ## Basin fractions continuation in the magnetic pendulum
-This is perhaps the simplest application of [`basins_fractions_continuation`](@ref).
+Perhaps the simplest application of [`basins_fractions_continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
+
+
 
 TODO: Write it.
 
-## An example with attractors via featurizing
-
-TODO:
 
 ## 3D basins via recurrences
 To showcase the true power of [`AttractorsViaRecurrences`](@ref) we need to use a system whose attractors span higher-dimensional space. An example is
@@ -168,7 +167,7 @@ The basins of attraction are very complicated. We can try to visualize them by a
 
 ```@raw html
 <video width="75%" height="auto" controls autoplay loop>
-<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/chaos/cyclical_basins.mp4?raw=true" type="video/mp4">
+<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/cyclical_basins.mp4?raw=true" type="video/mp4">
 </video>
 ```
 
@@ -176,7 +175,7 @@ Then, we visualize the attractors to obtain:
 
 ```@raw html
 <video width="75%" height="auto" controls autoplay loop>
-<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/chaos/cyclical_attractors.mp4?raw=true" type="video/mp4">
+<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/cyclical_attractors.mp4?raw=true" type="video/mp4">
 </video>
 ```
 
@@ -218,19 +217,20 @@ In this advanced example we utilize both [`RecurrencesSeededContinuation`](@ref)
 The final goal is to show the percentage of how much of the state space leads to the extinction or not of a pre-determined species, as we vary a parameter. The model however displays extreme multistability, a feature we want to measure and preserve before aggregating information into "extinct or not".
 
 To measure and preserve this we will apply [`RecurrencesSeededContinuation`](@ref) as-is first. Then we can aggregate information. First we have
-```@example MAIN
-using Attractors, DynamicalSystemsBase, OrdinaryDiffEq
+```julia
+using Attractors, OrdinaryDiffEq
 using Random: Xoshiro
 # arguments to algorithms
 samples_per_parameter = 1000
 total_parameter_values = 101
-prange = range(0.2, 0.3; length = total_parameter_values)
 diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9, maxiters = Inf)
 recurrences_kwargs = (; Δt= 1.0, mx_chk_fnd_att=9, diffeq);
 # initialize dynamical systerm and sampler
 ds = Systems.multispecies_competition() # 8-dimensional by default
 xg = range(0, 60; length = 300)
 grid = ntuple(x -> xg, 8)
+prange = range(0.2, 0.3; length = total_parameter_values)
+pidx = :D
 sampler, = statespace_sampler(Xoshiro(1234);
     min_bounds = minimum.(grid), max_bounds = maximum.(grid)
 )
@@ -244,25 +244,14 @@ fractions_curves, attractors_info = basins_fractions_continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );
-```
-_the above example is not actually run when building the docs, because it takes about 30 minutes to complete depending on the computer; we load precomputed results instead_
-
-Let's visualize the fractions now:
-
-```@setup MAIN
-# load data
-import Downloads, JLD2
-link = "https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/examples_data/multispecies_competition_fractions_curves.jld2"
-file = Downloads.download(link, tempname()*".jld2")
-data = JLD2.load(file)
-fractions_curves = data["fractions_curves"]
-attractors_info = data["attractors_info"]
+Main.basins_fractions_plot(fractions_curves, prange; separatorwidth = 1)
 ```
 
-```@example MAIN
-basins_fractions_plot(fractions_curves, prange; separatorwidth = 1)
-```
-as you can see, the system has extreme multistability with 64 unique attractors
+![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
+
+_this  example is not actually run when building the docs, because it takes about 30 minutes to complete depending on the computer; we load precomputed results instead_
+
+As you can see, the system has extreme multistability with 64 unique attractors
 (according to the default matching behavior in [`RecurrencesSeededContinuation`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
 One could also isolate a specific parameter slice, and to the same as what we do in
 the [Fractality of 2D basins of the (4D) magnetic pendulum](@ref) example, to prove that the basin boundaries are fractal, thereby indeed confirming the paper title "Fundamental Unpredictability".
@@ -270,7 +259,7 @@ the [Fractality of 2D basins of the (4D) magnetic pendulum](@ref) example, to pr
 Regardless, we now want to continue our analysis to provide a figure similar to the
 above but only with two colors: fractions of attractors where a species is extinct or not. Here's how:
 
-```@example MAIN
+```julia
 species = 3 # species we care about its existence
 
 featurizer = (A) -> begin
@@ -289,3 +278,12 @@ aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
 basins_fractions_plot(aggregated_fractions, prange; separatorwidth = 1,
 labels = Dict(1 => "extinct", 2 => "alive"), colors = ["green", "black"])
 ```
+
+![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions_aggr.png)
+
+(in hindsight, the labels are reversed; attractor 1 is the alive one)
+
+
+## An example with attractors via featurizing
+
+TODO: example of using AttractorsViaFeaturizing and GroupAcrossParameterContinuation.

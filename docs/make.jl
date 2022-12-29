@@ -55,6 +55,7 @@ makedocs(
     pages = PAGES,
     doctest = CI,
     draft = false,
+    expandfirst = ["index.md"], #  this is the first script that loads colorscheme
 )
 
 if CI
