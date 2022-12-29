@@ -132,6 +132,8 @@ Perhaps the simplest application of [`basins_fractions_continuation`](@ref) is t
 
 
 
+
+
 TODO: Write it.
 
 
@@ -284,6 +286,7 @@ labels = Dict(1 => "extinct", 2 => "alive"), colors = ["green", "black"])
 (in hindsight, the labels are reversed; attractor 1 is the alive one)
 
 
-## An example with attractors via featurizing
+## Featurizing and grouping across parameters (MCBB)
+Here we showcase the example of the Monte Carlo Basin Bifurcation publication using a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) For this, we will use [`GroupAcrossParametersContinuation`](@ref) while also providing a `par_weight` keyword.
 
-TODO: example of using AttractorsViaFeaturizing and GroupAcrossParameterContinuation.
+TODO: Write the example.

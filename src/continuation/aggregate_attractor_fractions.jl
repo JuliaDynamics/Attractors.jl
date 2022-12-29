@@ -6,7 +6,7 @@ export aggregate_attractor_fractions
     )
 
 Aggregate the already-estimated curves of fractions of basins of attraction of similar
-attractors using the same pipeline used by [`GroupAcrossParameterContinuation`](@ref).
+attractors using the same pipeline used by [`GroupingConfig`](@ref).
 The most typical application of this function is to transform the output of
 [`RecurrencesSeedingContinuation`](@ref) so that similar attractors, even across parameter
 space, are grouped into one "attractor". Thus, the fractions of their basins are aggregated.
@@ -16,16 +16,13 @@ a single parameter configuration, i.e., using the output of [`basins_fractions`]
 
 This function is useful in cases where you want the accuracy and performance of
 [`AttractorsViaRecurrences`](@ref), but you also want the convenience of "grouping"
-similar attractrors of [`AttractorsViaFeaturizing`](@ref) for presentation or
+similar attractrors like in [`AttractorsViaFeaturizing`](@ref) for presentation or
 analysis purposes. For example, a high dimesional model of competition dynamics
 across multispecies may have extreme multistability. After finding this multistability
 However, one may care
 about aggregating all attractors into two groups: where a given species is
 extinct or not. This is the example highlighted in our documentation,
 in [Extinction of a species in a multistable competition model](@ref).
-
-For example... (add here Kalels example for ecosystem dynamics).
-Put example in actual docs.
 
 ## Input
 1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
