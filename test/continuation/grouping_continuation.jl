@@ -9,11 +9,10 @@ using Random
 @testset "Dummy bistable map" begin
 
     function dumb_map(dz, z, p, n)
-        x,y = z
+        x, y = z
         r = p[1]
-
         if r < 0.5
-            dz[1] = dz[2] = 0.
+            dz[1] = dz[2] = 0.0
         else
             if x > 0
                 dz[1] = r
@@ -32,7 +31,7 @@ using Random
     sampler, = statespace_sampler(Random.MersenneTwister(1234);
         min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
 
-    rrange = range(0., 2; length = 20)
+    rrange = range(0, 2; length = 20)
     ridx = 1
 
     featurizer(a, t) = a[end]

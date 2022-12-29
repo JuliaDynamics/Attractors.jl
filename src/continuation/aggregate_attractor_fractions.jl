@@ -14,6 +14,16 @@ space, are grouped into one "attractor". Thus, the fractions of their basins are
 You could also use this function to aggregate attractors and their fractions even in
 a single parameter configuration, i.e., using the output of [`basins_fractions`](@ref).
 
+This function is useful in cases where you want the accuracy and performance of
+[`AttractorsViaRecurrences`](@ref), but you also want the convenience of "grouping"
+similar attractrors of [`AttractorsViaFeaturizing`](@ref) for presentation or
+analysis purposes. For example, a high dimesional model of competition dynamics
+across multispecies may have extreme multistability. After finding this multistability
+However, one may care
+about aggregating all attractors into two groups: where a given species is
+extinct or not. This is the example highlighted in our documentation,
+in [Extinction of a species in a multistable competition model](@ref).
+
 For example... (add here Kalels example for ecosystem dynamics).
 Put example in actual docs.
 

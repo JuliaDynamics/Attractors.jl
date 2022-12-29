@@ -18,7 +18,8 @@ The defaults are a significant improvement over existing literature, see Descrip
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 * `min_neighbors = 10`: minimum number of neighbors (i.e. of similar features) each
-  feature needs to have in order to be considered in a cluster (fewer than this, it is
+  feature needs to have, including counting its own self,
+  in order to be considered in a cluster (fewer than this, it is
   labeled as an outlier, `-1`).
 * `use_mmap = false`: whether to use an on-disk map for creating the distance matrix
   of the features. Useful when the features are so many where a matrix with side their
@@ -71,7 +72,7 @@ quantifier for the quality of each cluster. This quantifier is the silhouette va
 each identified cluster. A silhouette value measures how similar a point is to the cluster
 it currently belongs to, compared to the other clusters, and ranges from -1 (worst
 matching) to +1 (ideal matching). If only one cluster is found, the assigned silhouette is
-0. So for each attempted radius in the search the clusters are computed, their silhouettes
+zero. So for each attempted radius in the search the clusters are computed, their silhouettes
 calculated, and the statistic of these silhouettes computed. The algorithm then finds the
 radius that leads to the maximum such statistic. For `optimal_radius_method =
 "silhouettes"`, the search is done linearly, from a minimum to a maximum candidate radius

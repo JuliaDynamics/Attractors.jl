@@ -7,7 +7,8 @@ export basins_fractions_continuation
 abstract type BasinsFractionContinuation end
 
 """
-   basins_fractions_continuation(continuation, prange, pidx, ics; kwargs...)
+    basins_fractions_continuation(continuation, prange, pidx, ics; kwargs...)
+
 Find and continue attractors and the fractions of their basins of attraction
 across a parameter range.
 The given `continuation` contains a reference to a dynamical system,
@@ -18,15 +19,8 @@ for the parameter of the system with index `pidx`.
 `ics` is as in [`basins_fractions`](@ref), i.e., it is either a function generating
 initial conditions or a dataset containing them.
 
-Current continuation methods are:
-- [`RecurrencesSeedingContinuation`](@ref). For this sampler, `ics` is optional.
-  If not given, one is created using the `grid` of [`AttractorsViaRecurrences`](@ref):
-  ```
-  sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
-  ```
-- [`GroupAcrossParameterContinuation`](@ref).
+## Return
 
-Return:
 1. `fractions_curves <: Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
    `fractions_curves[i]` is a dictionary mapping attractor IDs to their basin fraction
    at the `i`-th parameter.
@@ -35,9 +29,20 @@ Return:
    attractor at the `i`-th parameter.
    The type of information stored depends on the chosen continuation method.
 
-The keyword arguments accepted are:
-* `samples_per_parameter = 100`: Amount of random samples drawn for each parameter value.
+## Keyword arguments
+
+* `samples_per_parameter = 100`: Amount of initial conditions sampled at each parameter.
 * `show_progress = true`: Whether to show a progress bar for the process.
+
+## Continuation methods
+
+- [`RecurrencesSeedingContinuation`](@ref). For this sampler, `ics` is optional.
+  If not given, one is created using the `grid` of [`AttractorsViaRecurrences`](@ref):
+  ```
+  sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+  ```
+- [`GroupAcrossParameterContinuation`](@ref).
+
 """
 function basins_fractions_continuation end
 

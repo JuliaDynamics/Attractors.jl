@@ -1,12 +1,13 @@
-# Standard stuff
 cd(@__DIR__)
+using Pkg
+Pkg.activate(@__DIR__)
 CI = get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
 using Documenter
 using DocumenterTools: Themes
 ENV["JULIA_DEBUG"] = "Documenter"
 using CairoMakie
-# Packages specific to these docs
 using Attractors
+using Attractors.StateSpaceSets
 
 # %% JuliaDynamics theme
 # It includes themeing for the HTML build
@@ -41,7 +42,7 @@ PAGES = [
 include("style.jl")
 
 makedocs(
-    modules = [Attractors, Attractors.DelayEmbeddings],
+    modules = [Attractors, StateSpaceSets],
     format = Documenter.HTML(
         prettyurls = CI,
         assets = [
@@ -53,7 +54,7 @@ makedocs(
     authors = "George Datseris, Kalel Rossi, Alexandre Wagemakers",
     pages = PAGES,
     doctest = CI,
-    draft = true,
+    draft = false,
 )
 
 if CI

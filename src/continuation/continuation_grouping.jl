@@ -18,6 +18,8 @@ When used in [`basins_fractions_continuation`](@ref), features are extracted
 and then grouped across a parameter range. Said differently, all features
 of all initial conditions across all parameter values are put into the same "pool"
 and then grouped as dictated by the `group_config` of the mapper.
+After the grouping is finished the feature label fractions are distributed
+to each parameter value they came from.
 
 ## Keyword arguments
 - `info_extraction::Function` a function that takes as an input a vector of features
