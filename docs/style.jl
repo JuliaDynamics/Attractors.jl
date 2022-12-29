@@ -135,9 +135,11 @@ function colors_from_keys(ukeys)
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
+    @show ukeys
     bands = [zeros(length(prange)) for _ in ukeys]
     for i in eachindex(fractions_curves)
         for (j, k) in enumerate(ukeys)
+            @show i, j, k
             bands[j][i] = get(fractions_curves[i], k, 0)
         end
     end

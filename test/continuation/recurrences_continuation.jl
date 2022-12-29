@@ -138,19 +138,19 @@ if DO_EXTENSIVE_TESTS
     end
 
     # unique keys
-    unique_keys = Attractors.unique_keys(attractors_info)
+    ukeys = Attractors.unique_keys(attractors_info)
     # We must have 4 attractors: initial chaotic, period 14 in the middle,
     # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
     # Since we retract keys, we have 1:4
-    @test unique_keys == 1:4
+    @test ukeys == 1:4
 
     # # Animation of henon attractors
     # using GLMakie
     # fig = Figure(); display(fig)
     # ax = Axis(fig[1,1]; limits = (-2,2,-1,1))
-    # colors = Dict(k => Cycled(i) for (i, k) in enumerate(unique_keys))
-    # att_obs = Dict(k => Observable(Point2f[]) for k in unique_keys)
-    # for k in unique_keys
+    # colors = Dict(k => Cycled(i) for (i, k) in enumerate(ukeys))
+    # att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
+    # for k in ukeys
     #     scatter!(ax, att_obs[k]; color = colors[k],
     #     label = "$k", markersize = 8)
     # end
@@ -168,7 +168,7 @@ if DO_EXTENSIVE_TESTS
     #         notify(att_obs[k])
     #     end
     #     # also ensure that attractors that don't exist are cleared
-    #     for k in setdiff(unique_keys, collect(keys(attractors)))
+    #     for k in setdiff(ukeys, collect(keys(attractors)))
     #         att_obs[k][] = Point2f[]; notify(att_obs[k])
     #     end
     # end
