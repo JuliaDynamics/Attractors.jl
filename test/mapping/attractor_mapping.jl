@@ -9,7 +9,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 using Test
 using Attractors
 using Attractors.DynamicalSystemsBase
-using Attractors.DelayEmbeddings
+using Attractors.StateSpaceSets
 using LinearAlgebra
 using OrdinaryDiffEq
 using Random
@@ -47,7 +47,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         for k in keys(fs)
             @test 0 ≤ fs[k] ≤ 1
         end
-        @test sum(values(fs)) == 1
+        @test sum(values(fs)) ≈ 1 atol=1e-14
 
         # Precise test with known initial conditions
         fs, labels, approx_atts = basins_fractions(mapper, ics; show_progress = false)
@@ -81,17 +81,12 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 
     @testset "Featurizing, clustering" begin
-        radius_methods = if DO_EXTENSIVE_TESTS
-            ["silhouettes", "silhouettes_optim"]
-        else
-            ["silhouettes_optim"]
-        end
-        for optimal_radius_method in radius_methods
-            config = GroupViaClustering(; num_attempts_radius=20, optimal_radius_method)
-            mapper = AttractorsViaFeaturizing(ds, featurizer, config; diffeq, Ttr = 500)
-            test_basins_fractions(mapper;
-            err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3])
-        end
+        optimal_radius_method = "silhouettes_optim"
+        config = GroupViaClustering(; num_attempts_radius=20, optimal_radius_method)
+        mapper = AttractorsViaFeaturizing(ds, featurizer, config; diffeq, Ttr = 500)
+        test_basins_fractions(mapper;
+            err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
+        )
     end
 
     @testset "Featurizing, nearest feature" begin
@@ -120,9 +115,10 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 end
 
-# %% Actual tests
+# Actual tests
+
 @testset "Henon map: discrete & divergence" begin
-    u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] #template ics
+    u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] # template ics
     ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
     xg = yg = range(-2.0, 2.0; length=100)
     grid = (xg, yg)
@@ -136,7 +132,6 @@ end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     max_distance = 20, ε = 1e-3)
 end
-
 
 @testset "Lorenz-84 system: interlaced close-by" begin
     F = 6.886; G = 1.347; a = 0.255; b = 4.0
@@ -156,9 +151,9 @@ end
 
     function featurizer(A, t)
         # `g` is the number of boxes needed to cover the set
-        probs = probabilities(A, ValueHistogram(0.1))
-        g = exp(entropy(Renyi(0), probs))
-        return @SVector[g, minimum(A[:,1])]
+        probs = probabilities(ValueHistogram(0.1), A)
+        g = exp(entropy(Renyi(; q = 0), probs))
+        return SVector(g, minimum(A[:,1]))
     end
 
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -181,7 +176,7 @@ if DO_EXTENSIVE_TESTS
         ]
         expected_fs_raw = Dict(2 => 0.511, 1 => 0.489)
         function featurizer(A, t)
-            return @SVector[A[end][1], A[end][2]]
+            return @SVector [A[end][1], A[end][2]]
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -204,7 +199,7 @@ if DO_EXTENSIVE_TESTS
         expected_fs_raw = Dict(2 => 0.318, 3 => 0.347, 1 => 0.335)
 
         function featurizer(A, t)
-            return @SVector[A[end][1], A[end][2]]
+            return @SVector [A[end][1], A[end][2]]
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
@@ -227,7 +222,7 @@ if DO_EXTENSIVE_TESTS
         expected_fs_raw = Dict(2 => 0.29, 3 => 0.237, 1 => 0.473)
         function thomas_featurizer(A, t)
             x, y = columns(A)
-            return @SVector[minimum(x), minimum(y)]
+            return @SVector [minimum(x), minimum(y)]
         end
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)

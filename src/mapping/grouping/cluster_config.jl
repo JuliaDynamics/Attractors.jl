@@ -13,29 +13,36 @@ MCBB[^Gelbrecht2021]. Several options on clustering are available, see keywords 
 The defaults are a significant improvement over existing literature, see Description.
 
 ## Keyword arguments
+
 * `clust_distance_metric = Euclidean()`: metric to be used in the clustering.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 * `min_neighbors = 10`: minimum number of neighbors (i.e. of similar features) each
-  feature needs to have in order to be considered in a cluster (fewer than this, it is
+  feature needs to have, including counting its own self,
+  in order to be considered in a cluster (fewer than this, it is
   labeled as an outlier, `-1`).
-* `optimal_radius_method::Union{Real, String} = "silhouettes_optim"`: if a real number, it
-  is the radius used to cluster features in the unsupervised method. Otherwise, it
-  determines the method used to automatically determine that radius. Possible
-  values are:
-  - `"silhouettes"`: Performs a linear (sequential) search for the radius that maximizes a
-    statistic of the silhouette values of clusters (typically the mean). This can be chosen
-    with `silhouette_statistic`. The linear search may take some time to finish. To
-    increase speed, the number of radii iterated through can be reduced by decreasing
-    `num_attempts_radius` (see its entry below).
-  - `"silhouettes_optim"`: Same as `"silhouettes"` but performs an optimized search via
-    Optim.jl. It's faster than `"silhouettes"`, with typically the same accuracy (the
-    search here is not guaranteed to always find the global maximum, though it typically
-    gets close).
-  - `"knee"`: chooses the the radius according to the knee (a.k.a. elbow,
-    highest-derivative method) and is quicker, though generally leading to much worse
-    clustering. It requires that `min_neighbors` > 1.
+* `use_mmap = false`: whether to use an on-disk map for creating the distance matrix
+  of the features. Useful when the features are so many where a matrix with side their
+  length would not fit to memory.
+
+
 ### Keywords for optimal radius estimation
+
+* `optimal_radius_method::Union{Real, String} = "silhouettes_optim"`: if a real number, it
+  is the radius used to cluster features. Otherwise, it determines the method used to
+  automatically determine that radius. Possible values are:
+    - `"silhouettes"`: Performs a linear (sequential) search for the radius that maximizes a
+        statistic of the silhouette values of clusters (typically the mean). This can be chosen
+        with `silhouette_statistic`. The linear search may take some time to finish. To
+        increase speed, the number of radii iterated through can be reduced by decreasing
+        `num_attempts_radius` (see its entry below).
+    - `"silhouettes_optim"`: Same as `"silhouettes"` but performs an optimized search via
+        Optim.jl. It's faster than `"silhouettes"`, with typically the same accuracy (the
+        search here is not guaranteed to always find the global maximum, though it typically
+        gets close).
+    - `"knee"`: chooses the the radius according to the knee (a.k.a. elbow,
+        highest-derivative method) and is quicker, though generally leading to much worse
+        clustering. It requires that `min_neighbors` > 1.
 * `num_attempts_radius = 100`: number of radii that the `optimal_radius_method` will try
   out in its iterative procedure. Higher values increase the accuracy of clustering,
   though not necessarily much, while always reducing speed.
@@ -65,7 +72,7 @@ quantifier for the quality of each cluster. This quantifier is the silhouette va
 each identified cluster. A silhouette value measures how similar a point is to the cluster
 it currently belongs to, compared to the other clusters, and ranges from -1 (worst
 matching) to +1 (ideal matching). If only one cluster is found, the assigned silhouette is
-0. So for each attempted radius in the search the clusters are computed, their silhouettes
+zero. So for each attempted radius in the search the clusters are computed, their silhouettes
 calculated, and the statistic of these silhouettes computed. The algorithm then finds the
 radius that leads to the maximum such statistic. For `optimal_radius_method =
 "silhouettes"`, the search is done linearly, from a minimum to a maximum candidate radius
@@ -98,6 +105,7 @@ struct GroupViaClustering{R<:Union{Real, String}, M<:Metric, F<:Function} <: Gro
     num_attempts_radius::Int
     silhouette_statistic::F
     max_used_features::Int
+    use_mmap::Bool
 end
 
 function GroupViaClustering(;
@@ -105,18 +113,27 @@ function GroupViaClustering(;
         rescale_features=true, num_attempts_radius=100,
         optimal_radius_method::Union{Real, String} = "silhouettes_optim",
         silhouette_statistic = mean, max_used_features = 0,
+        use_mmap = false,
     )
     return GroupViaClustering(
         clust_distance_metric, min_neighbors,
         rescale_features, optimal_radius_method,
-        num_attempts_radius, silhouette_statistic, max_used_features
+        num_attempts_radius, silhouette_statistic, max_used_features,
+        use_mmap,
     )
 end
 
 #####################################################################################
 # API funtion (group features)
 #####################################################################################
-function group_features(features::Vector{<:AbstractVector}, config::GroupViaClustering)
+# The keywords `par_weight, plength, spp` enable the "for-free" implementation of the
+# MCBB algorithm (weighting the distance matrix by parameter value as well).
+# The keyword version of this function is only called in
+# `GroupingAcrossParametersContinuation` and is not part of public API!
+function group_features(
+        features::Vector{<:AbstractVector}, config::GroupViaClustering;
+        par_weight::Real = 0, plength::Int = 1, spp::Int = 1,
+    )
     nfeats = length(features); dimfeats = length(features[1])
     if dimfeats ≥ nfeats
         throw(ArgumentError("""
@@ -128,8 +145,39 @@ function group_features(features::Vector{<:AbstractVector}, config::GroupViaClus
         features = _rescale_to_01(features)
     end
     ϵ_optimal = _extract_ϵ_optimal(features, config)
-    distances = pairwise(features, config.metric)
-    return _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
+    distances = _distance_matrix(features, config; par_weight, plength, spp)
+    labels = _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
+    return labels
+end
+
+function _distance_matrix(features, config::GroupViaClustering;
+        par_weight::Real = 0, plength::Int = 1, spp::Int = 1
+    )
+    metric = config.clust_distance_metric
+    L = length(features)
+    if config.use_mmap
+        pth, s = mktemp()
+        dists = Mmap.mmap(s, Matrix{Float32}, (L, L))
+    else
+        dists = zeros(L, L)
+    end
+    pairwise!(metric, dists, features; symmetric = true)
+    if par_weight ≠ 0 # weight distance matrix by parameter value
+        par_vector = kron(range(0, 1, plength), ones(spp))
+        length(par_vector) ≠ size(dists, 1) && error("Feature size doesn't match.")
+        @inbounds for k in eachindex(par_vector)
+            # We can optimize the loop here due to symmetry of the metric.
+            # Instead of going over all `j` we go over `(k+1)` to end,
+            # and also add value to transpose. (also assume that if j=k, distance is 0)
+            for j in (k+1):size(dists, 1)
+                # TODO: Shouldn't we use `metric` here instead of `abs`?
+                pdist = par_weight*abs(par_vector[k] - par_vector[j])
+                dists[k,j] += pdist
+                dists[j,k] += pdist
+            end
+        end
+    end
+    return dists
 end
 
 function _extract_ϵ_optimal(features, config::GroupViaClustering)
@@ -149,7 +197,7 @@ function _extract_ϵ_optimal(features, config::GroupViaClustering)
     elseif optimal_radius_method isa Real
         ϵ_optimal = optimal_radius_method
     else
-        error("Specified optimal_radius_method is incorrect. Please specify the radius
+        error("Specified `optimal_radius_method` is incorrect. Please specify the radius
         directly as a Real number or the method to compute it as a String")
     end
     return ϵ_optimal

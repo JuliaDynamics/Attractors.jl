@@ -1,6 +1,18 @@
 # Attractor & Basins Continuation
 
-## Matching
+
+## Basins continuation API
+```@docs
+basins_fractions_continuation
+```
+
+## Recurrences continuation (best)
+
+```@docs
+RecurrencesSeedingContinuation
+```
+
+## Matching attractors
 ```@docs
 match_attractor_ids!
 replacement_map
@@ -9,8 +21,12 @@ datasets_sets_distances
 match_basins_ids!
 ```
 
-## Continuation
+## Aggregating attractors and fractions
 ```@docs
-basins_fractions_continuation
-RecurrencesSeedingContinuation
+aggregate_attractor_fractions
+```
+
+## Grouping continuation
+```@docs
+GroupAcrossParameterContinuation
 ```

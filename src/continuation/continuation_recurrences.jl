@@ -16,7 +16,10 @@ end
     RecurrencesSeedingContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 A method for [`basins_fractions_continuation`](@ref).
 It uses seeding of previous attractors to find new ones, which is the main performance
-bottleneck. Will write more once we have the paper going.
+bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
+as the system parameter is increased.
+
+Will write more once we have the paper going.
 
 ## Keyword Arguments
 - `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
@@ -49,7 +52,7 @@ end
 
 function basins_fractions_continuation(
         continuation::RecurrencesSeedingContinuation,
-        prange, pidx, ics::Function = _ics_from_grid(continuation);
+        prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,
     )
     # show_progress && @info "Starting basins fraction continuation."

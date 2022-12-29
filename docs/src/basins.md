@@ -29,6 +29,8 @@ uncertainty_exponent
 ```
 
 ## Tipping points
+This page discusses functionality related with tipping points in dynamical systems with known rule. If instead you are interested in identifying tipping points in measured timeseries, have a look at [TransitionIndicators.jl](https://github.com/JuliaDynamics/TransitionIndicators.jl).
+
 ```@docs
 tipping_probabilities
 ```
