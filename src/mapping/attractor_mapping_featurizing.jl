@@ -102,8 +102,7 @@ function feature_to_group(feature, group_config::GroupingConfig)
     """))
 end
 
-DynamicalSystemsBase.get_rule_for_print(m::AttractorsViaFeaturizing) =
-get_rule_for_print(m.ds)
+DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = rulestring(m.ds)
 
 function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     ps = generic_mapper_print(io, mapper)
