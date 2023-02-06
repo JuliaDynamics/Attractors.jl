@@ -15,8 +15,10 @@ export AttractorMapper,
 #########################################################################################
 """
     AttractorMapper(ds::GeneralizedDynamicalSystem, args...; kwargs...) → mapper
+
 Subtypes of `AttractorMapper` are structures that map initial conditions of `ds` to
 attractors. Currently available mapping methods:
+
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref)
@@ -32,6 +34,7 @@ and this will on the fly compute and return the label of the attractor `u0` conv
 The mappers that can do this are:
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
+* [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref) configuration.
 """
 abstract type AttractorMapper end
 
