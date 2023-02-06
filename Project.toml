@@ -6,10 +6,10 @@ version = "0.1.0"
 
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
+ComplexityMeasures = "ed8fcbec-b94c-44b6-89df-898894ad9591"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
-Entropies = "ed8fcbec-b94c-44b6-89df-898894ad9591"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Mmap = "a63ad114-7e13-5084-954f-fe012c677804"
 Neighborhood = "645ca80c-8b79-4109-87ea-e1f58159d116"
@@ -21,10 +21,10 @@ StateSpaceSets = "40b095a5-5852-4c12-98c7-d43bf788e795"
 
 [compat]
 Clustering = "0.14"
+ComplexityMeasures = "2"
 Distances = "0.7, 0.8, 0.9, 0.10"
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
 # DynamicalSystemsBase = "2.9.0"
-# Entropies = "2"
 Neighborhood = "0.2.2"
 Optim = "1.7"
 ProgressMeter = "1.7"

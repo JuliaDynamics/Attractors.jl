@@ -1,4 +1,4 @@
-using Entropies: FixedRectangularBinning, probabilities_and_outcomes
+using ComplexityMeasures: FixedRectangularBinning, probabilities_and_outcomes
 export GroupViaHistogram
 export FixedRectangularBinning
 
