@@ -129,10 +129,10 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
 
     tst_res = :smooth
     if Ŝbb < (Sbb_s - σ_sbb) ||  Ŝbb > (σ_sbb + Sbb_s + δub)
-        println("Fractal boundary for size of box ε=", ε)
+        # println("Fractal boundary for size of box ε=", ε)
         tst_res = :fractal
     else
-        println("Smooth boundary for size of box ε=", ε)
+        # println("Smooth boundary for size of box ε=", ε)
         tst_res = :smooth
     end
 

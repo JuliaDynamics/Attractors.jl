@@ -1,5 +1,6 @@
 export RecurrencesSeedingContinuation
 import ProgressMeter
+using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
@@ -15,7 +16,10 @@ end
     RecurrencesSeedingContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 A method for [`basins_fractions_continuation`](@ref).
 It uses seeding of previous attractors to find new ones, which is the main performance
-bottleneck. Will write more once we have the paper going.
+bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
+as the system parameter is increased.
+
+Will write more once we have the paper going.
 
 ## Keyword Arguments
 - `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
@@ -39,16 +43,16 @@ function RecurrencesSeedingContinuation(
     )
 end
 
-function _default_seeding_process(attractor::AbstractDataset)
+function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
-    return (rand(attractor.data) for _ in 1:seeds)
+    return (rand(rng, attractor.data) for _ in 1:seeds)
 end
 
 function basins_fractions_continuation(
         continuation::RecurrencesSeedingContinuation,
-        prange, pidx, ics::Function = _ics_from_grid(continuation);
+        prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,
     )
     # show_progress && @info "Starting basins fraction continuation."

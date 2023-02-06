@@ -2,8 +2,6 @@ using Attractors
 using Test
 using OrdinaryDiffEq
 
-@testset "Uncertainty exponent" begin
-
 @testset "orginal paper" begin
     ds = Systems.grebogi_map(rand(2))
     θg = range(0, 2π, length = 251)
@@ -63,6 +61,4 @@ end
     basin, attractors = basins_of_attraction(mapper; show_progress = false)
     test_res, Sbb = basins_fractal_test(basin; ε = 5)
     @test test_res == :smooth
-end
-
 end

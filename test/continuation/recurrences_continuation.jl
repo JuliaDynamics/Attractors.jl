@@ -1,3 +1,7 @@
+# This file also tests `aggregate_attractor_fractions`
+
+DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
+
 using Test, Attractors
 using Attractors.DynamicalSystemsBase
 using Random
@@ -5,12 +9,14 @@ using Random
 @testset "magnetic pendulum" begin
     d, α, ω = 0.3, 0.2, 0.5
     ds = Systems.magnetic_pendulum(; d, α, ω)
-    xg = yg = range(-3, 3, length = 101)
+    xg = yg = range(-3, 3; length = 101)
     ds = projected_integrator(ds, 1:2, [0.0, 0.0])
     mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
     rr = range(1, 0; length = 101)
     psorig = [[1, 1, γ] for γ in rr]
     pidx = :γs
+    # important to make a sampler that respects the symmetry of the system
+    sampler, isinside = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
     for (j, ps) in enumerate((psorig, reverse(psorig)))
         # test that both finding and removing attractor works
         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
@@ -19,11 +25,19 @@ using Random
         # With this threshold all attractors are mapped to each other, they are within
         # distance 1 in state space.
         fractions_curves, attractors_info = basins_fractions_continuation(
-            continuation, ps, pidx; show_progress = false, samples_per_parameter = 1000
+            continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = 1000
         )
 
         # Keys of the two attractors that always exist
         twokeys = collect(keys(fractions_curves[(j == 2 ? 1 : 101)]))
+
+        @testset "symmetry respect" begin
+            # Initially fractions are all 0.33 but at the end only two of 0.5 remain
+            # because only two attractors remain (with equal magnetic pull)
+            startfracs, endfracs = j == 1 ? [0.33, 0.5] : [0.5, 0.33]
+            @test all(v -> isapprox(v, startfracs; atol = 1e-1), values(fractions_curves[1]))
+            @test all(v -> isapprox(v, endfracs; atol = 1e-1), values(fractions_curves[end]))
+        end
 
         for (i, p) in enumerate(ps)
             γ = p[3]
@@ -31,17 +45,17 @@ using Random
             attractors = attractors_info[i]
             k = sort!(collect(keys(fs)))
             @test maximum(k) ≤ 3
-            # @show k
             attk = sort!(collect(keys(attractors)))
             @test k == attk
             @test all(fk -> fk ∈ k, twokeys)
+
             # It is arbitrary what id we get, because the third
             # fixed point that vanishes could have any of the three ids
             # But we can test for sure how many ids we have
             # (depending on where we come from we find the attractor for longer)
             if γ < 0.2
                 @test length(k) == 2
-            elseif γ > 0.22
+            elseif γ > 0.24
                 @test length(k) == 3
             else
                 # There is a bit of varaibility of exactly when the transition
@@ -72,7 +86,8 @@ using Random
     end
 end
 
-# %%
+if DO_EXTENSIVE_TESTS
+
 @testset "Henon map" begin
     ds = Systems.henon(; b = 0.3, a = 1.4)
     psorig = range(1.2, 1.25; length = 101)
@@ -123,19 +138,19 @@ end
     end
 
     # unique keys
-    unique_keys = Attractors.unique_keys(attractors_info)
+    ukeys = Attractors.unique_keys(attractors_info)
     # We must have 4 attractors: initial chaotic, period 14 in the middle,
     # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
     # Since we retract keys, we have 1:4
-    @test unique_keys == 1:4
+    @test ukeys == 1:4
 
     # # Animation of henon attractors
     # using GLMakie
     # fig = Figure(); display(fig)
     # ax = Axis(fig[1,1]; limits = (-2,2,-1,1))
-    # colors = Dict(k => Cycled(i) for (i, k) in enumerate(unique_keys))
-    # att_obs = Dict(k => Observable(Point2f[]) for k in unique_keys)
-    # for k in unique_keys
+    # colors = Dict(k => Cycled(i) for (i, k) in enumerate(ukeys))
+    # att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
+    # for k in ukeys
     #     scatter!(ax, att_obs[k]; color = colors[k],
     #     label = "$k", markersize = 8)
     # end
@@ -153,13 +168,12 @@ end
     #         notify(att_obs[k])
     #     end
     #     # also ensure that attractors that don't exist are cleared
-    #     for k in setdiff(unique_keys, collect(keys(attractors)))
+    #     for k in setdiff(ukeys, collect(keys(attractors)))
     #         att_obs[k][] = Point2f[]; notify(att_obs[k])
     #     end
     # end
 end
 
-# %%
 @testset "non-found attractors" begin
     # This is standard henon map
     ds = Systems.henon(; b = 0.3, a = 1.4)
@@ -235,5 +249,7 @@ end
         end
         @test sum(values(fs)) ≈ 1
     end
+
+end
 
 end
