@@ -98,7 +98,7 @@ This is an internal function.
 """
 function feature_to_group(feature, group_config::GroupingConfig)
     throw(ArgumentError("""
-        `feature_to_group` not implemented for config $(nameof(typeof(group_config)))
+        `feature_to_group` not implemented for config $(nameof(typeof(group_config))).
     """))
 end
 
