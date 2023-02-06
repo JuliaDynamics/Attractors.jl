@@ -1,5 +1,6 @@
 """
     AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict [, ε]; kwargs...)
+
 Map initial conditions to attractors based on whether the trajectory reaches `ε`-distance
 close to any of the user-provided `attractors`. They have to be in a form of a dictionary
 mapping attractor labels to `Dataset`s containing the attractors.
@@ -20,7 +21,7 @@ the method can also be called _supervised_.
 
 ## Keywords
 * `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
-* `Δt = 1`: Integration step time (only valid for continuous systems).
+* `Δt = 1`: Step time given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
@@ -30,8 +31,8 @@ the method can also be called _supervised_.
 * `diffeq = NamedTuple()`: Keywords propagated to DifferentialEquations.jl
   (only valid for continuous systems).
 """
-struct AttractorsViaProximity{I, AK, D, T, N, K} <: AttractorMapper
-    integ::I
+struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorMapper
+    ds::DS
     attractors::Dict{AK, Dataset{D, T}}
     ε::Float64
     Δt::N
@@ -43,13 +44,13 @@ struct AttractorsViaProximity{I, AK, D, T, N, K} <: AttractorMapper
     idx::Vector{Int}
     maxdist::Float64
 end
-function AttractorsViaProximity(ds, attractors::Dict, ε = nothing;
+function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
         Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, diffeq = NamedTuple(),
         verbose = false, kwargs...
     )
     @assert dimension(ds) == dimension(first(attractors)[2])
     search_trees = Dict(k => KDTree(att.data, Euclidean()) for (k, att) in attractors)
-    integ = integrator(ds; diffeq)
+
     if isnothing(ε)
         ε = _deduce_ε_from_attractors(attractors, search_trees, verbose)
     else
@@ -57,7 +58,7 @@ function AttractorsViaProximity(ds, attractors::Dict, ε = nothing;
     end
 
     mapper = AttractorsViaProximity(
-        integ, attractors,
+        ds, attractors,
         ε, Δt, eltype(Δt)(Ttr), mx_chk_lost, horizon_limit,
         search_trees, [Inf], [0], 0.0,
     )
@@ -103,14 +104,14 @@ end
 
 
 function (mapper::AttractorsViaProximity)(u0; show_progress = false)
-    reinit!(mapper.integ, u0)
+    reinit!(mapper.ds, u0)
     maxdist = 0.0
-    mapper.Ttr > 0 && step!(mapper.integ, mapper.Ttr)
+    mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0
     while lost_count < mapper.mx_chk_lost
-        step!(mapper.integ, mapper.Δt)
+        step!(mapper.ds, mapper.Δt)
         lost_count += 1
-        u = get_state(mapper.integ)
+        u = get_state(mapper.ds)
         for (k, tree) in mapper.search_trees # this is a `Dict`
             Neighborhood.NearestNeighbors.knn_point!(
                 tree, u, false, mapper.dist, mapper.idx, Neighborhood.alwaysfalse
@@ -128,7 +129,7 @@ end
 
 function Base.show(io::IO, mapper::AttractorsViaProximity)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" type: ", ps), nameof(typeof(mapper.integ)))
+    println(io, rpad(" type: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" ε: ", ps), mapper.ε)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)
