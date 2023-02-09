@@ -10,7 +10,7 @@ using Random
     d, α, ω = 0.3, 0.2, 0.5
     ds = Systems.magnetic_pendulum(; d, α, ω)
     xg = yg = range(-3, 3; length = 101)
-    ds = projected_integrator(ds, 1:2, [0.0, 0.0])
+    ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
     mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
     rr = range(1, 0; length = 101)
     psorig = [[1, 1, γ] for γ in rr]

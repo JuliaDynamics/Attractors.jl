@@ -3,19 +3,19 @@ include("sparse_arrays.jl")
 # Type definition and documentation
 #####################################################################################
 """
-    AttractorsViaRecurrences(ds::GeneralizedDynamicalSystem, grid::Tuple; kwargs...)
-Map initial conditions to attractors by identifying attractors on the fly based on
+    AttractorsViaRecurrences(ds::DynamicalSystem, grid::Tuple; kwargs...)
+
+Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
 recurrences in the state space, as outlined by Datseris & Wagemakers[^Datseris2022].
-Works for any case encapsulated by [`GeneralizedDynamicalSystem`](@ref).
 
 `grid` is a tuple of ranges partitioning the state space so that a finite state
 machine can operate on top of it. For example
 `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)` for a two-dimensional
 system. The grid has to be the same dimensionality as the state space, use a
-[`projected_integrator`](@ref) if you want to search for attractors in a lower
+[`ProjectedDynamicalSystem`](@ref) if you want to search for attractors in a lower
 dimensional subspace.
 
-## Keyword Arguments
+## Keyword arguments
 * `sparse = true`: control the interval representation of the state space grid. If true,
    uses a sparse array, whose memory usage is in general more efficient than a regular
    array obtained with `sparse=false`. In practice, the sparse representation should
@@ -23,23 +23,16 @@ dimensional subspace.
    dimensional systems and for computing the full [`basins_of_attraction`](@ref) the
    non-sparse version should be used.
 
-### Integrator configuration
-* `Ttr = 0`: This keyword arguments allows to skip a transient before the recurrence
-  routine begins. It is useful for some high dimensional systems to speed up the
-  convergence to the attractor.
-* `Δt`: Approximate time step of the integrator, which is `1` for discrete time systems.
+### Time evolution configuration
+* `Ttr = 0`: Skip a transient before the recurrence routine begins.
+* `Δt`: Approximate integration time step (second argument of the `step!` function).
+  It is `1` for discrete time systems.
   For continuous systems, an automatic value is calculated using
   [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
   much smaller than the typical integrator internal step size in case of adaptive
-  integrators. In that case use `stop_at_Δt = true`.
-* `diffeq = NamedTuple()`: Keyword arguments propagated to [`integrator`](@ref). Only
-  valid for continuous time systems. It is recommended to choose high accuracy
-  solvers for this application, e.g. `diffeq = (alg=Vern9(), reltol=1e-9, abstol=1e-9)`.
-* `stop_at_Δt = false`: control whether the integrator advances exactly `Δt` time points
-   with each step or not. Should only be used if `Δt` is smaller than the typical integrator
-   step (for continuous time systems). Being true slows down performance significantly but
-   increases accuracy drastically, especially in the case of limit cycle attractors,
-   but only if the automatic value of `Δt` is used.
+  integrators. In such cases, it is much better to use non-adaptive ODE solvers
+  with a small step size, e.g., `diffeq = (alg = Tsit5(), adaptive = false, dt = 0.001)`
+  (and also give `Δt = dt` in this case for best performance)
 
 ### Finite state machine configuration
 * `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
@@ -69,6 +62,7 @@ dimensional subspace.
 
 
 ## Description
+
 An initial condition given to an instance of `AttractorsViaRecurrences` is iterated
 based on the integrator corresponding to `ds`. A recurrence in the state space means
 that the trajectory has converged to an attractor. This is the basis for finding attractors.
@@ -105,32 +99,31 @@ The iteration of a given initial condition continues until one of the following 
     G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*,
     [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
-struct AttractorsViaRecurrences{I, B, G, K} <: AttractorMapper
-    integ::I
+struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
+    ds::DS
     bsn_nfo::B
     grid::G
     kwargs::K
 end
 
-
-function AttractorsViaRecurrences(ds::GeneralizedDynamicalSystem, grid;
-        Δt = nothing, diffeq = NamedTuple(), sparse = true,
-        stop_at_Δt = false, kwargs...)
-    bsn_nfo, integ = basininfo_and_integ(ds, grid, Δt, diffeq, sparse, stop_at_Δt)
-    return AttractorsViaRecurrences(integ, bsn_nfo, grid, kwargs)
+function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
+        Δt = nothing, sparse = true, kwargs...
+    )
+    bsn_nfo = initialize_basin_info(ds, grid, Δt, sparse)
+    return AttractorsViaRecurrences(ds, bsn_nfo, grid, kwargs)
 end
 
 function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
     # Call low level code of `basins_of_attraction` function. Notice that in this
     # call signature the interal basins info array of the mapper is NOT updated.
-    lab = get_label_ic!(mapper.bsn_nfo, mapper.integ, u0; show_progress, mapper.kwargs...)
+    lab = get_label_ic!(mapper.bsn_nfo, mapper.ds, u0; show_progress, mapper.kwargs...)
     # Transform to integers indexing from odd-even indexing
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
 
 function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" type: ", ps), nameof(typeof(mapper.integ)))
+    println(io, rpad(" type: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.attractors)
     println(io, rpad(" grid: ", ps), mapper.grid)
     return
@@ -173,7 +166,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
             show_progress && ProgressMeter.update!(progress, k)
             y0 = generate_ic_on_grid(grid, ind)
             basins[ind] = get_label_ic!(
-                mapper.bsn_nfo, mapper.integ, y0; show_progress, mapper.kwargs...
+                mapper.bsn_nfo, mapper.ds, y0; show_progress, mapper.kwargs...
             )
         end
     end
@@ -189,12 +182,12 @@ end
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-mutable struct BasinsInfo{D, IF, T, Q, A <: AbstractArray{Int32, D}}
+mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
     basins::A # sparse or dense
     grid_steps::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
     grid_minima::SVector{D, Float64}
-    iter_f!::IF
+    Δt::Δ
     state::Symbol
     current_att_label::Int
     visited_cell::Int
@@ -206,24 +199,17 @@ mutable struct BasinsInfo{D, IF, T, Q, A <: AbstractArray{Int32, D}}
     visited_list::Q
 end
 
-function basininfo_and_integ(
-        ds::GeneralizedDynamicalSystem, grid, Δt, diffeq, sparse, stop_at_Δt
+function initialize_basin_info(
+        ds::DynamicalSystem, grid, Δtt, sparse,
     )
-    integ = integrator(ds; diffeq)
-    isdiscrete = isdiscretetime(integ)
-    Δt = isnothing(Δt) ? automatic_Δt_basins(integ, grid) : Δt
-    iter_f! = if (isdiscrete && Δt == 1)
-        (integ) -> step!(integ)
+    Δt = if isnothing(Δtt)
+        isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
     else
-        (integ) -> step!(integ, Δt, stop_at_Δt)
+        Δtt
     end
-    bsn_nfo = init_bsn_nfo(grid, integ, iter_f!, sparse)
-    return bsn_nfo, integ
-end
 
-function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
-    D = length(get_state(integ))
-    T = eltype(get_state(integ))
+    D = length(current_state(ds))
+    T = eltype(current_state(ds))
     G = length(grid)
     # D == G || error("Grid and dynamical system do not have the same dimension!")
     grid_steps = step.(grid)
@@ -239,7 +225,7 @@ function init_bsn_nfo(grid::Tuple, integ, iter_f!::Function, sparse::Bool)
         SVector{G, Float64}(grid_steps),
         SVector{G, Float64}(grid_maxima),
         SVector{G, Float64}(grid_minima),
-        iter_f!,
+        Δt,
         :att_search,
         2,4,0,1,0,0,
         Dict{Int32, Dataset{D, T}}(),
@@ -254,7 +240,8 @@ using LinearAlgebra
 
 
 """
-    automatic_Δt_basins(integ, grid; N = 5000) → Δt
+    automatic_Δt_basins(ds::DynamicalSystem, grid; N = 5000) → Δt
+
 Calculate an optimal `Δt` value for [`basins_of_attraction`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
 points of the grid. The average `f` is then compared with the diagonal length of a grid
@@ -268,30 +255,29 @@ as `mx_chk_hit_bas` need to be increased drastically.
 Also, `Δt` that is smaller than the internal step size of the integrator will cause
 a performance drop.
 """
-function automatic_Δt_basins(integ, grid; N = 5000)
-    isdiscretetime(integ) && return 1
-    if integ isa DynamicalSystemsBase.ProjectedIntegrator
+function automatic_Δt_basins(ds, grid; N = 5000)
+    isdiscretetime(ds) && return 1
+    if ds isa ProjectedDynamicalSystem
         # TODO:
-        error("Automatic Δt finding is not implemented yet for projected integrators.")
+        error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
     end
     steps = step.(grid)
     s = sqrt(sum(x^2 for x in steps)) # diagonal length of a cell
     indices = CartesianIndices(length.(grid))
     random_points = [generate_ic_on_grid(grid, ind) for ind in rand(indices, N)]
     dudt = 0.0
-    udummy = copy(get_state(integ))
-    for p in random_points
-        reinit!(integ, p)
-        deriv = if get_state(integ) isa SVector
-            integ.f(integ.u, integ.p, 0.0)
+    udummy = copy(current_state(ds))
+    f, p = dynamic_rule(ds), current_parameters(ds)
+    for point in random_points
+        deriv = if !isinplace(ds)
+            f(point, p, 0.0)
         else
-            integ.f(udummy, integ.u, integ.p, 0.0)
+            f(udummy, point, p, 0.0)
             udummy
         end
         dudt += norm(deriv)
     end
     Δt = 10*s*N/dudt
-    @info "Automatic Δt estimation yielded Δt = $(Δt)"
     return Δt
 end
 
@@ -300,7 +286,8 @@ end
 # Implementation of the Finite State Machine (low level code)
 #####################################################################################
 """
-    get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; kwargs...) -> ic_label
+    get_label_ic!(bsn_nfo::BasinsInfo, ds, u0; kwargs...) -> ic_label
+
 Return the label of the attractor that the initial condition `u0` converges to,
 or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exceeding
 `mx_chk_safety`).
@@ -308,13 +295,14 @@ or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exc
 Notice the numbering system `cell_label` is as in `_identify_basin_of_cell!`
 so before the label processing done in e.g., `basins_of_attraction`.
 """
-function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; mx_chk_safety = Int(1e6), Ttr = 0, kwargs...)
+function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
+        mx_chk_safety = Int(1e6), Ttr = 0, kwargs...
+    )
     # This routine identifies the attractor using the previously defined basin.
-    # reinitialize integrator
-    reinit!(integ, u0)
-    if Ttr > 0
-        step!(integ, Ttr)
-    end
+
+    # reinitialize everything
+    reinit!(ds, u0)
+    Ttr > 0 && step!(ds, Ttr)
     reset_basins_counters!(bsn_nfo)
     cell_label = 0
     bsn_nfo.safety_counter = 0
@@ -332,30 +320,30 @@ function get_label_ic!(bsn_nfo::BasinsInfo, integ, u0; mx_chk_safety = Int(1e6),
             # It may be that the grid is not fine enough and attractors intersect in the
             # same cell, or `mx_chk_safety` is not high enough for a very fine grid.
             # Here are some info on current status:\n
-            # state: $(get_state(integ)),\n
-            # parameters: $(get_parameters(integ)).
+            # state: $(current_state(ds)),\n
+            # parameters: $(current_parameters(ds)).
             # """
             return -1
         end
 
-        bsn_nfo.iter_f!(integ)
-        new_y = get_state(integ)
+        step!(ds, bsn_nfo.Δt)
+        new_y = current_state(ds)
         # The internal function `_possibly_reduced_state` exists solely to
         # accommodate the special case of a Poincare map with the grid defined
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
-        y = _possibly_reduced_state(new_y, integ, bsn_nfo.grid_minima)
+        y = _possibly_reduced_state(new_y, ds, bsn_nfo.grid_minima)
         n = basin_cell_index(y, bsn_nfo)
-        u = get_state(integ) # in case we need the full state to save the attractor
+        u = current_state(ds) # in case we need the full state to save the attractor
         cell_label = _identify_basin_of_cell!(bsn_nfo, n, u; kwargs...)
     end
     return cell_label
 end
 
 # TODO: Once this is removed, the check D == G below needs to be adjusted.
-_possibly_reduced_state(y, integ, grid) = y
-function _possibly_reduced_state(y, integ::PoincareMap, grid)
-    if integ.planecrossing.plane isa Tuple && length(grid) == dimension(integ)-1
-        return y[integ.diffidxs]
+_possibly_reduced_state(y, ds, grid) = y
+function _possibly_reduced_state(y, ds::PoincareMap, grid)
+    if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
+        return y[ds.diffidxs]
     else
         return y
     end
@@ -479,8 +467,8 @@ function _identify_basin_of_cell!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{D, IF, T},
-    u_full_state, show_progress = true) where {D, IF, T}
+function store_attractor!(bsn_nfo::BasinsInfo{D, Δ, T},
+    u_full_state, show_progress = true) where {D, Δ, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
