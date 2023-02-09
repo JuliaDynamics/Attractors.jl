@@ -31,9 +31,8 @@ dimensional subspace.
   [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
   much smaller than the typical integrator internal step size in case of adaptive
   integrators. In such cases, it is much better to use non-adaptive ODE solvers
-  with a small step size, e.g., `diffeq = (alg = Tsit5(), adaptive = false, dt = 0.001)`.
-  Also, generally speaking it is recommended to choose high accuracy solvers for continuous
-  time system integration, e.g., `diffeq = (alg=Vern9(), reltol=1e-9, abstol=1e-9)`.
+  with a small step size, e.g., `diffeq = (alg = Tsit5(), adaptive = false, dt = 0.001)`
+  (and also give `Δt = dt` in this case for best performance)
 
 ### Finite state machine configuration
 * `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
@@ -201,7 +200,7 @@ mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
 end
 
 function initialize_basin_info(
-        ds::DynamicalSystem, grid, Δtt, sparse
+        ds::DynamicalSystem, grid, Δtt, sparse,
     )
     Δt = if isnothing(Δtt)
         isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
@@ -270,10 +269,10 @@ function automatic_Δt_basins(ds, grid; N = 5000)
     udummy = copy(current_state(ds))
     f, p = dynamic_rule(ds), current_parameters(ds)
     for point in random_points
-        deriv = if !isinplace(ds) isa SVector
+        deriv = if !isinplace(ds)
             f(point, p, 0.0)
         else
-            f(point, u, p, 0.0)
+            f(udummy, point, p, 0.0)
             udummy
         end
         dudt += norm(deriv)
