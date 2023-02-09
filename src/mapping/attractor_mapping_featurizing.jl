@@ -157,8 +157,9 @@ end
 
 function extract_features_single(mapper, ics; show_progress = true, N = 1000)
     N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs
-    first_feature = extract_feature(mapper.ds, ic, mapper)
+    first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
+    feature_vector[1] = first_feature
     progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled=show_progress)
     for i ∈ 1:N
         ic = _get_ic(ics,i)
@@ -175,10 +176,11 @@ function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
     N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs
     systems = [deepcopy(mapper.ds) for _ in 1:(Threads.nthreads() - 1)]
     pushfirst!(systems, mapper.ds)
-    first_feature = extract_feature(mapper.ds, ic, mapper)
+    first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
+    feature_vector[1] = first_feature
     progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled=show_progress)
-    Threads.@threads for i ∈ 1:N
+    Threads.@threads for i ∈ 2:N
         ds = systems[Threads.threadid()]
         ic = _get_ic(ics, i)
         feature_vector[i] = extract_feature(ds, ic, mapper)
@@ -196,6 +198,6 @@ end
 
 function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
     uidxs = unique(i -> labels[i], 1:length(labels))
-    return Dict(labels[i] => trajectory(mapper.integ, mapper.total, ics[i];
+    return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
     Ttr = mapper.Ttr, Δt = mapper.Δt) for i in uidxs if i ≠ -1)
 end

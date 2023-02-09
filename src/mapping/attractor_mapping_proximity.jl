@@ -100,7 +100,8 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
 end
 
 
-function (mapper::AttractorsViaProximity)(u0)
+# TODO: Implement `show_progress`
+function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     reinit!(mapper.ds, u0)
     maxdist = 0.0
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
