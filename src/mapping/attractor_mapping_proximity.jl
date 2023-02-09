@@ -28,8 +28,6 @@ the method can also be called _supervised_.
 * `mx_chk_lost = 1000`: If the integrator has been stepped this many times without
   coming `ε`-near to any attractor,  it is assumed
   that the trajectory diverged (gets labelled as `-1`).
-* `diffeq = NamedTuple()`: Keywords propagated to DifferentialEquations.jl
-  (only valid for continuous systems).
 """
 struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorMapper
     ds::DS
@@ -45,8 +43,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorM
     maxdist::Float64
 end
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
-        Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, diffeq = NamedTuple(),
-        verbose = false, kwargs...
+        Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, verbose = false
     )
     @assert dimension(ds) == dimension(first(attractors)[2])
     search_trees = Dict(k => KDTree(att.data, Euclidean()) for (k, att) in attractors)
@@ -103,7 +100,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
 end
 
 
-function (mapper::AttractorsViaProximity)(u0; show_progress = false)
+function (mapper::AttractorsViaProximity)(u0)
     reinit!(mapper.ds, u0)
     maxdist = 0.0
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
