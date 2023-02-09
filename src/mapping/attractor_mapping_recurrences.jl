@@ -327,7 +327,7 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             return -1
         end
 
-        bsn_nfo.step!(ds, bsn_nfo.Δt)
+        step!(ds, bsn_nfo.Δt)
         new_y = current_state(ds)
         # The internal function `_possibly_reduced_state` exists solely to
         # accommodate the special case of a Poincare map with the grid defined

@@ -14,9 +14,13 @@ export AttractorMapper,
 # AttractorMapper structure definition
 #########################################################################################
 """
-    AttractorMapper(ds::GeneralizedDynamicalSystem, args...; kwargs...) → mapper
+    AttractorMapper(ds::DynamicalSystem, args...; kwargs...) → mapper
+
 Subtypes of `AttractorMapper` are structures that map initial conditions of `ds` to
-attractors. Currently available mapping methods:
+attractors. The type of `ds` cannot be [`ParallelDynamicalSystem`](@ref) or
+[`TangentDynamicalSystem`](@ref) (because it doesn't make sense).
+
+Currently available mapping methods:
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref)
@@ -40,7 +44,7 @@ function generic_mapper_print(io, mapper)
     ps = 14
     text = "$(nameof(typeof(mapper)))"
     println(io, text)
-    println(io, rpad(" rule f: ", ps), rulestring(mapper))
+    println(io, rpad(" rule f: ", ps), DynamicalSystemsBase.rulestring(mapper))
     return ps
 end
 Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
