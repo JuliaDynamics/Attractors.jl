@@ -112,7 +112,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
 end
 
 # Actual tests
-
 @testset "Henon map: discrete & divergence" begin
     u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] # template ics
     ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
