@@ -26,6 +26,7 @@ AttractorsViaFeaturizing
 ```@docs
 GroupingConfig
 GroupViaClustering
+GroupViaHistogram
 GroupViaNearestFeature
 ```
 
