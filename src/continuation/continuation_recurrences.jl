@@ -42,7 +42,7 @@ function RecurrencesSeedingContinuation(
         mapper, method, threshold, seeds_from_attractor, info_extraction
     )
 end
-@show 
+@show
 function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
@@ -63,10 +63,10 @@ function basins_fractions_continuation(
     spp = samples_per_parameter
     (; mapper, method, threshold) = continuation
     # first parameter is run in isolation, as it has no prior to seed from
-    labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, prange[1], [], spp)
+    current_atts, fs = get_attractors_and_fractions(mapper, continuation, ics, pidx, prange[1], [], spp)
     prev_atts = deepcopy(current_atts)
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
-    fractions_curves = [basins_fractions(labels)]
+    fractions_curves = [fs]
     get_info = attractors -> Dict(
         k => continuation.info_extraction(att) for (k, att) in attractors
     )
@@ -76,22 +76,15 @@ function basins_fractions_continuation(
 
     # Continue loop over all remaining parameters
     for p in prange[2:end]
-        labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, spp)
-        fs = basins_fractions(labels)
-        if !isempty(current_atts) && !isempty(prev_atts)
-            # If there are any attractors,
-            # match with previous attractors before storing anything!
-            rmap = match_attractor_ids!(
-                current_atts, prev_atts; method, threshold
-            )
-            swap_dict_keys!(fs, rmap)
-        end
-        # Then do the remaining setup for storing and next step
+        current_atts, fs = get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, spp)
         push!(fractions_curves, fs)
         push!(attractors_info, get_info(current_atts))
         overwrite_dict!(prev_atts, current_atts)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
+
+    match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
+
     # Normalize to smaller available integers for user convenience
     rmap = retract_keys_to_consecutive(fractions_curves)
     for (da, df) in zip(attractors_info, fractions_curves)
@@ -150,7 +143,7 @@ function seed_attractors(prev_attractors, mapper, continuation)
     return seeded_fs
 end
 
-function get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, N)
+function get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, N)
     set_parameter!(mapper.integ, pidx, p)
     reset!(mapper)
     labels = seed_attractors(prev_atts, mapper, continuation)
@@ -160,8 +153,22 @@ function get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts
         lab = mapper(ic; show_progress = false)
         push!(labels, lab)
     end
-    return labels, mapper.bsn_nfo.attractors
+    return mapper.bsn_nfo.attractors, basins_fractions(labels)
 end
+
+
+function match_attractors_forward!(attractors, fractions, method, threshold)
+    n = length(attractors)
+    for k in 2:n
+        if !isempty(attractors[k]) && !isempty(attractors[k-1])
+            # If there are any attractors,
+            # match with previous attractors before storing anything!
+            rmap = match_attractor_ids!(attractors[k], attractors[k-1]; method, threshold)
+            swap_dict_keys!(fractions[k], rmap)
+        end
+    end
+end
+
 
 _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractDataset, i) = ics[i]
@@ -179,7 +186,7 @@ function basins_fractions_continuation_group(
     n, spp = length(prange), samples_per_parameter
     (; mapper, method, threshold) = continuation
 
-    
+
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
 
     labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, prange[1], [], spp)
@@ -192,6 +199,22 @@ function basins_fractions_continuation_group(
         overwrite_dict!(prev_atts, current_atts)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
+
+    keys, features = refactor_into_sequential_features(att_v, featurizer)
+
     # Normalize to smaller available integers for user convenience
     return fractions_curves, attractors_info
+end
+
+
+function refactor_into_sequential_features(attractors_info, featurizer)
+    # Set up containers
+    example_feature = featurizer(first(values(attractors_info[1])))
+    features = typeof(example_feature)[]
+    # Transform original data into sequential vectors
+    for k in keys(attractors_info)
+        push!(original_labels, k)
+        push!(features, featurizer(ai[k]))
+    end
+    return original_labels, features
 end
