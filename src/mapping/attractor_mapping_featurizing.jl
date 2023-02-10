@@ -79,7 +79,7 @@ function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
     )
 end
 
-DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = rulestring(m.ds)
+DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsBase.rulestring(m.ds)
 
 function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     ps = generic_mapper_print(io, mapper)

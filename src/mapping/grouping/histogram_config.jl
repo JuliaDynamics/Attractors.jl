@@ -1,4 +1,4 @@
-using ComplexityMeasures: FixedRectangularBinning, probabilities_and_outcomes
+using ComplexityMeasures: FixedRectangularBinning, RectangularBinEncoding, encode
 export GroupViaHistogram
 export FixedRectangularBinning
 
@@ -17,7 +17,7 @@ struct GroupViaHistogram{E<:RectangularBinEncoding} <: GroupingConfig
 end
 
 function GroupViaHistogram(binning::FixedRectangularBinning)
-    enc = RectangularBinEncoder(binning)
+    enc = RectangularBinEncoding(binning)
     return GroupViaHistogram(enc)
 end
 
