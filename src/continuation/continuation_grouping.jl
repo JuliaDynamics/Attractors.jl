@@ -71,6 +71,7 @@ function basins_fractions_continuation(
     )
     (; mapper, info_extraction, par_weight) = continuation
     spp, n = samples_per_parameter, length(prange)
+
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
     # This is a special clause for implementing the MCBB algorithm (weighting
@@ -79,7 +80,6 @@ function basins_fractions_continuation(
     # parameter value (see below). Otherwise, we call normal `group_features`.
     if mapper.group_config isa GroupViaClustering && par_weight ≠ 0
         labels = group_features(features, mapper.group_config; par_weight, plength = n, spp)
-
     else
         labels = group_features(features, mapper.group_config)
     end
@@ -87,6 +87,7 @@ function basins_fractions_continuation(
     label_fractions_across_parameter(labels, n, spp, features[1], info_extraction)
     return fractions_curves, attractors_info
 end
+
 
 function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
     progress = ProgressMeter.Progress(n;
@@ -125,4 +126,21 @@ function label_fractions_across_parameter(labels, n, spp, feature, info_extracti
         )
     end
     return fractions_curves, attractors_info
+end
+
+
+
+function _get_features_prange(mapper::AttractorsViaRecurrences, ics, n, spp, prange, pidx, show_progress)
+    progress = ProgressMeter.Progress(n;
+        desc="Generating features", enabled=show_progress, offset = 2,
+    )
+    labels = zeros(Int, n*spp)
+    # Collect features
+    for (i, p) in enumerate(prange)
+        set_parameter!(mapper.integ, pidx, p)
+        current_features = extract_features(mapper, ics; show_progress, N = spp)
+        features[((i - 1)*spp + 1):i*spp] .= current_features
+        ProgressMeter.next!(progress)
+    end
+    return features
 end

@@ -42,7 +42,7 @@ function RecurrencesSeedingContinuation(
         mapper, method, threshold, seeds_from_attractor, info_extraction
     )
 end
-
+@show 
 function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
@@ -60,59 +60,36 @@ function basins_fractions_continuation(
     progress = ProgressMeter.Progress(length(prange);
         desc="Continuating basins fractions:", enabled=show_progress
     )
-
+    spp = samples_per_parameter
     (; mapper, method, threshold) = continuation
     # first parameter is run in isolation, as it has no prior to seed from
-    set_parameter!(mapper.integ, pidx, prange[1])
-    fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+    labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, prange[1], [], spp)
+    prev_atts = deepcopy(current_atts)
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
-    fractions_curves = [fs]
-    # Furthermore some info about the attractors is stored and returned
-    prev_attractors = deepcopy(mapper.bsn_nfo.attractors)
+    fractions_curves = [basins_fractions(labels)]
     get_info = attractors -> Dict(
         k => continuation.info_extraction(att) for (k, att) in attractors
     )
-    info = get_info(prev_attractors)
+    info = get_info(prev_atts)
     attractors_info = [info]
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
+
     # Continue loop over all remaining parameters
     for p in prange[2:end]
-        set_parameter!(mapper.integ, pidx, p)
-        reset!(mapper)
-        # Seed initial conditions from previous attractors
-        # Notice that one of the things that happens here is some attractors have
-        # really small basins. We find them with the seeding process here, but the
-        # subsequent random sampling in `basins_fractions` doesn't. This leads to
-        # having keys in `mapper.bsn_nfo.attractors` that do not exist in the computed
-        # fractions. The fix is easy: we add the initial conditions mapped from
-        # seeding to the fractions using an internal argument.
-        seeded_fs = Dict{Int, Int}()
-        for att in values(prev_attractors)
-            for u0 in continuation.seeds_from_attractor(att)
-                # We map the initial condition to an attractor, but we don't care
-                # about which attractor we go to. This is just so that the internal
-                # array of `AttractorsViaRecurrences` registers the attractors
-                label = mapper(u0; show_progress = false)
-                seeded_fs[label] = get(seeded_fs, label, 0) + 1
-            end
-        end
-        # Now perform basin fractions estimation as normal, utilizing found attractors
-        fs = basins_fractions(mapper, ics;
-            additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
-        )
-        current_attractors = mapper.bsn_nfo.attractors
-        if !isempty(current_attractors) && !isempty(prev_attractors)
+        labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, spp)
+        fs = basins_fractions(labels)
+        if !isempty(current_atts) && !isempty(prev_atts)
             # If there are any attractors,
             # match with previous attractors before storing anything!
             rmap = match_attractor_ids!(
-                current_attractors, prev_attractors; method, threshold
+                current_atts, prev_atts; method, threshold
             )
             swap_dict_keys!(fs, rmap)
         end
         # Then do the remaining setup for storing and next step
         push!(fractions_curves, fs)
-        push!(attractors_info, get_info(current_attractors))
-        overwrite_dict!(prev_attractors, current_attractors)
+        push!(attractors_info, get_info(current_atts))
+        overwrite_dict!(prev_atts, current_atts)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     # Normalize to smaller available integers for user convenience
@@ -124,8 +101,8 @@ function basins_fractions_continuation(
     return fractions_curves, attractors_info
 end
 
-function reset!(mapper::AttractorsViaRecurrences)
-    empty!(mapper.bsn_nfo.attractors)
+function reset!(mapper::AttractorsViaRecurrences; reset_att = true)
+    (reset_att == true) && empty!(mapper.bsn_nfo.attractors)
     if mapper.bsn_nfo.basins isa Array
         mapper.bsn_nfo.basins .= 0
     else
@@ -150,4 +127,71 @@ end
 function _ics_from_grid(grid::Tuple)
     sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
     return sampler
+end
+
+# Seed initial conditions from previous attractors
+# Notice that one of the things that happens here is some attractors have
+# really small basins. We find them with the seeding process here, but the
+# subsequent random sampling in `basins_fractions` doesn't. This leads to
+# having keys in `mapper.bsn_nfo.attractors` that do not exist in the computed
+# fractions. The fix is easy: we add the initial conditions mapped from
+# seeding to the fractions using an internal argument.
+function seed_attractors(prev_attractors, mapper, continuation)
+    seeded_fs = Vector{Int}()
+    for att in values(prev_attractors)
+        for u0 in continuation.seeds_from_attractor(att)
+            # We map the initial condition to an attractor, but we don't care
+            # about which attractor we go to. This is just so that the internal
+            # array of `AttractorsViaRecurrences` registers the attractors
+            label = mapper(u0; show_progress = false)
+            push!(seeded_fs, label)
+        end
+    end
+    return seeded_fs
+end
+
+function get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, N)
+    set_parameter!(mapper.integ, pidx, p)
+    reset!(mapper)
+    labels = seed_attractors(prev_atts, mapper, continuation)
+    # Now perform basin fractions estimation as normal, utilizing found attractors
+    for i ∈ 1:N
+        ic = _get_ic(ics, i)
+        lab = mapper(ic; show_progress = false)
+        push!(labels, lab)
+    end
+    return labels, mapper.bsn_nfo.attractors
+end
+
+_get_ic(ics::Function, i) = ics()
+_get_ic(ics::AbstractDataset, i) = ics[i]
+
+function basins_fractions_continuation_group(
+        continuation::RecurrencesSeedingContinuation,
+        prange, pidx, ics = _ics_from_grid(continuation);
+        samples_per_parameter = 100, show_progress = true,
+    )
+    # show_progress && @info "Starting basins fraction continuation."
+    # show_progress && @info "p = $(prange[1])"
+    progress = ProgressMeter.Progress(length(prange);
+        desc="Continuating basins fractions:", enabled=show_progress
+    )
+    n, spp = length(prange), samples_per_parameter
+    (; mapper, method, threshold) = continuation
+
+    
+    ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
+
+    labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, prange[1], [], spp)
+    att_v = deepcopy(current_atts)
+    # Continue loop over all remaining parameters
+    for p in prange[2:end]
+        lbs, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, spp)
+        push!(att_v,current_atts)
+        push!(labels,lbs)
+        overwrite_dict!(prev_atts, current_atts)
+        ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
+    end
+    # Normalize to smaller available integers for user convenience
+    return fractions_curves, attractors_info
 end
