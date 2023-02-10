@@ -22,6 +22,7 @@ function GroupViaHistogram(binning::FixedRectangularBinning)
 end
 
 function feature_to_group(feature, config::GroupViaHistogram)
-    enc = config.encoding
-    return encode(enc, feature)
+    # The `encode` interface perfectly satisfies the grouping interface.
+    # How convenient. It's as if someone had the foresight to make these things work...
+    return encode(config.encoding, feature)
 end
