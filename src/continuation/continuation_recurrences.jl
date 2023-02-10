@@ -83,19 +83,14 @@ function basins_fractions_continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
+    # Do the matching from one parameter to the next.
     match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
 
-    # Normalize to smaller available integers for user convenience
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
-    end
     return fractions_curves, attractors_info
 end
 
-function reset!(mapper::AttractorsViaRecurrences; reset_att = true)
-    (reset_att == true) && empty!(mapper.bsn_nfo.attractors)
+function reset!(mapper::AttractorsViaRecurrences)
+    empty!(mapper.bsn_nfo.attractors)
     if mapper.bsn_nfo.basins isa Array
         mapper.bsn_nfo.basins .= 0
     else
@@ -143,7 +138,7 @@ function seed_attractors(prev_attractors, mapper, continuation)
     return seeded_fs
 end
 
-function get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, N)
+function get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, N)
     set_parameter!(mapper.integ, pidx, p)
     reset!(mapper)
     labels = seed_attractors(prev_atts, mapper, continuation)
@@ -153,7 +148,15 @@ function get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_a
         lab = mapper(ic; show_progress = false)
         push!(labels, lab)
     end
-    return mapper.bsn_nfo.attractors, basins_fractions(labels)
+    return mapper.bsn_nfo.attractors, labels
+end
+
+_get_ic(ics::Function, i) = ics()
+_get_ic(ics::AbstractDataset, i) = ics[i]
+
+function get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, N)
+    attractors, labels = get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, N)
+    return attractors, basins_fractions(labels)
 end
 
 
@@ -167,11 +170,15 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
             swap_dict_keys!(fractions[k], rmap)
         end
     end
+    # Normalize to smaller available integers for user convenience
+    rmap = retract_keys_to_consecutive(fractions)
+    for (da, df) in zip(attractors, fractions)
+        swap_dict_keys!(da, rmap)
+        swap_dict_keys!(df, rmap)
+    end
 end
 
 
-_get_ic(ics::Function, i) = ics()
-_get_ic(ics::AbstractDataset, i) = ics[i]
 
 function basins_fractions_continuation_group(
         continuation::RecurrencesSeedingContinuation,
@@ -189,32 +196,58 @@ function basins_fractions_continuation_group(
 
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
 
-    labels, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, prange[1], [], spp)
-    att_v = deepcopy(current_atts)
+    prev_atts, labels  = get_attractors_and_labels(mapper, continuation, ics, pidx, prange[1], [], spp)
+    att_v = deepcopy(prev_atts)
     # Continue loop over all remaining parameters
     for p in prange[2:end]
-        lbs, current_atts = get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, spp)
-        push!(att_v,current_atts)
-        push!(labels,lbs)
+        current_atts, lbs = get_attractors_and_labels(mapper, continuation, ics, pidx, p, prev_atts, spp)
+        merge!(att_v, current_atts)
+        push!(labels, lbs...)
         overwrite_dict!(prev_atts, current_atts)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
-    keys, features = refactor_into_sequential_features(att_v, featurizer)
+    # Now rename the labels, get the fractions and pack attractors.
+    grouped_labels, keys = group_attractors(att_v, 0.001)
+    grouped_labels .+= maximum(keys)
+    @show grouped_labels
+    @show keys
+    for (k,group_lab)  in enumerate(grouped_labels)
+        if group_lab != -1
+            att_num = keys[k]
+            labels[labels .== att_num] .= grouped_labels[k]
+        end
+    end
 
+@show     fractions_curves = get_fractions(labels, n, spp)
+    # attractors_info = info_of_grouped_features(att_v, grouped_labels, continuation.info_extraction)
     # Normalize to smaller available integers for user convenience
-    return fractions_curves, attractors_info
+    return fractions_curves, att_v
 end
 
 
-function refactor_into_sequential_features(attractors_info, featurizer)
-    # Set up containers
-    example_feature = featurizer(first(values(attractors_info[1])))
-    features = typeof(example_feature)[]
-    # Transform original data into sequential vectors
-    for k in keys(attractors_info)
-        push!(original_labels, k)
-        push!(features, featurizer(ai[k]))
+function group_attractors(att_v, threshold)
+    distances = datasets_sets_distances(att_v, att_v) 
+    dist_mat = zeros(length(distances),length(distances))
+    att_keys = Vector{Int}()
+    for i in keys(distances)
+        push!(att_keys, i)
+        for j in keys(distances[i])
+            dist_mat[i,j] =  distances[i][j]
+        end
     end
-    return original_labels, features
+    group_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
+    return group_labels, att_keys
+end
+
+function get_fractions(labels, n, spp)
+    # finally we collect/group stuff into their dictionaries
+    fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
+   for i in 1:n
+        current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
+        current_ids = unique(current_labels)
+        # getting fractions is easy; use API function that takes in arrays
+        fractions_curves[i] = basins_fractions(current_labels, current_ids)
+    end
+    return fractions_curves
 end
