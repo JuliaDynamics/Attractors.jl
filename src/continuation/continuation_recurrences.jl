@@ -63,7 +63,7 @@ function basins_fractions_continuation(
 
     (; mapper, method, threshold) = continuation
     # first parameter is run in isolation, as it has no prior to seed from
-    set_parameter!(mapper.integ, pidx, prange[1])
+    set_parameter!(mapper.ds, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_curves = [fs]
@@ -77,7 +77,7 @@ function basins_fractions_continuation(
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
     # Continue loop over all remaining parameters
     for p in prange[2:end]
-        set_parameter!(mapper.integ, pidx, p)
+        set_parameter!(mapper.ds, pidx, p)
         reset!(mapper)
         # Seed initial conditions from previous attractors
         # Notice that one of the things that happens here is some attractors have

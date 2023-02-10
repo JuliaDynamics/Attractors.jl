@@ -1,5 +1,5 @@
 [deps]
-Entropies = "ed8fcbec-b94c-44b6-89df-898894ad9591"
+ComplexityMeasures = "ab4b797d-85ee-42ba-b621-05d793b346a2"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
