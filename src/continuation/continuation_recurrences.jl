@@ -79,10 +79,11 @@ function basins_fractions_continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
-    # Do the matching from one parameter to the next.
     if group_method == :matching
+        # Do the matching from one parameter to the next.
         match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
     elseif group_method == :grouping
+        # Group over the all range of parameters
         fractions_curves, attractors_info = group_attractors(attractors_info, labels, n, spp, threshold)
     end
 
@@ -168,18 +169,13 @@ end
 
 
 function group_attractors(attractors, labels, n, spp, threshold)
-
     # Compute distances. 
     att = merge(attractors...)
     distances = datasets_sets_distances(att, att) 
-    dist_mat = zeros(length(distances),length(distances))
-    att_keys = Vector{Int}()
-    for i in keys(distances)
-        push!(att_keys, i)
-        for j in keys(distances[i])
-            dist_mat[i,j] =  distances[i][j]
-        end
-    end
+    dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]
+    att_keys = collect(keys(distances))
+
+    # Do the clustering with custom threshold
     grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
 
     # Now rename the labels, get the fractions and pack attractors.
@@ -190,7 +186,16 @@ function group_attractors(attractors, labels, n, spp, threshold)
             labels[labels .== att_num] .= grouped_labels[k]
         end
     end
+
     fractions_curves, attractors_nfo = label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, att)
+
+    # rename dict
+    rmap = retract_keys_to_consecutive(fractions_curves)
+    for df in fractions_curves
+        swap_dict_keys!(df, rmap)
+    end
+    swap_dict_keys!(attractors_nfo, rmap)
+
     return fractions_curves, attractors_nfo
 end
 
@@ -199,7 +204,6 @@ function label_fractions_across_parameter(labels, grouped_labels, att_keys, n, s
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     for i in 1:n
         current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
-        current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_curves[i] = basins_fractions(current_labels)
     end
