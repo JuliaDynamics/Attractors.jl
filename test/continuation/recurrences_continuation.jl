@@ -228,11 +228,30 @@ end
     rrange = range(0., 2; length = 20)
     ridx = 1
     continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3)
-    # fractions_curves, a = Attractors.basins_fractions_continuation(
-    #     continuation, rrange, ridx, sampler;
-    #     show_progress = false, samples_per_parameter = 1000
-    # )
+    fractions_curves, a = Attractors.basins_fractions_continuation(
+        continuation, rrange, ridx, sampler;
+        show_progress = false, samples_per_parameter = 1000
+    )
+    
+    # Forward matching tests 
+    for (i, r) in enumerate(rrange)
 
+        fs = fractions_curves[i]
+        if r < 0.5
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 1
+        else
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 2
+            v = values(fs)
+            for f in v
+                @test (0.4 < f < 0.6)
+            end
+        end
+        @test sum(values(fs)) ≈ 1
+    end
+
+    # Grouping tests
     fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
