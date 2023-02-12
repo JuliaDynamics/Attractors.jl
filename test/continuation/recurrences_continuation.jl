@@ -6,85 +6,85 @@ using Test, Attractors
 using Attractors.DynamicalSystemsBase
 using Random
 
-# @testset "magnetic pendulum" begin
-#     d, α, ω = 0.3, 0.2, 0.5
-#     ds = Systems.magnetic_pendulum(; d, α, ω)
-#     xg = yg = range(-3, 3; length = 101)
-#     ds = projected_integrator(ds, 1:2, [0.0, 0.0])
-#     mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
-#     rr = range(1, 0; length = 101)
-#     psorig = [[1, 1, γ] for γ in rr]
-#     pidx = :γs
-#     # important to make a sampler that respects the symmetry of the system
-#     sampler, isinside = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
-#     for (j, ps) in enumerate((psorig, reverse(psorig)))
-#         # test that both finding and removing attractor works
-#         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
+@testset "magnetic pendulum" begin
+    d, α, ω = 0.3, 0.2, 0.5
+    ds = Systems.magnetic_pendulum(; d, α, ω)
+    xg = yg = range(-3, 3; length = 101)
+    ds = projected_integrator(ds, 1:2, [0.0, 0.0])
+    mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
+    rr = range(1, 0; length = 101)
+    psorig = [[1, 1, γ] for γ in rr]
+    pidx = :γs
+    # important to make a sampler that respects the symmetry of the system
+    sampler, isinside = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
+    for (j, ps) in enumerate((psorig, reverse(psorig)))
+        # test that both finding and removing attractor works
+        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
 
-#         continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
-#         # With this threshold all attractors are mapped to each other, they are within
-#         # distance 1 in state space.
-#         fractions_curves, attractors_info = basins_fractions_continuation(
-#             continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = 1000
-#         )
+        continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
+        # With this threshold all attractors are mapped to each other, they are within
+        # distance 1 in state space.
+        fractions_curves, attractors_info = basins_fractions_continuation(
+            continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = 1000
+        )
 
-#         # Keys of the two attractors that always exist
-#         twokeys = collect(keys(fractions_curves[(j == 2 ? 1 : 101)]))
+        # Keys of the two attractors that always exist
+        twokeys = collect(keys(fractions_curves[(j == 2 ? 1 : 101)]))
 
-#         @testset "symmetry respect" begin
-#             # Initially fractions are all 0.33 but at the end only two of 0.5 remain
-#             # because only two attractors remain (with equal magnetic pull)
-#             startfracs, endfracs = j == 1 ? [0.33, 0.5] : [0.5, 0.33]
-#             @test all(v -> isapprox(v, startfracs; atol = 1e-1), values(fractions_curves[1]))
-#             @test all(v -> isapprox(v, endfracs; atol = 1e-1), values(fractions_curves[end]))
-#         end
+        @testset "symmetry respect" begin
+            # Initially fractions are all 0.33 but at the end only two of 0.5 remain
+            # because only two attractors remain (with equal magnetic pull)
+            startfracs, endfracs = j == 1 ? [0.33, 0.5] : [0.5, 0.33]
+            @test all(v -> isapprox(v, startfracs; atol = 1e-1), values(fractions_curves[1]))
+            @test all(v -> isapprox(v, endfracs; atol = 1e-1), values(fractions_curves[end]))
+        end
 
-#         for (i, p) in enumerate(ps)
-#             γ = p[3]
-#             fs = fractions_curves[i]
-#             attractors = attractors_info[i]
-#             k = sort!(collect(keys(fs)))
-#             @test maximum(k) ≤ 3
-#             attk = sort!(collect(keys(attractors)))
-#             @test k == attk
-#             @test all(fk -> fk ∈ k, twokeys)
+        for (i, p) in enumerate(ps)
+            γ = p[3]
+            fs = fractions_curves[i]
+            attractors = attractors_info[i]
+            k = sort!(collect(keys(fs)))
+            @test maximum(k) ≤ 3
+            attk = sort!(collect(keys(attractors)))
+            @test k == attk
+            @test all(fk -> fk ∈ k, twokeys)
 
-#             # It is arbitrary what id we get, because the third
-#             # fixed point that vanishes could have any of the three ids
-#             # But we can test for sure how many ids we have
-#             # (depending on where we come from we find the attractor for longer)
-#             if γ < 0.2
-#                 @test length(k) == 2
-#             elseif γ > 0.24
-#                 @test length(k) == 3
-#             else
-#                 # There is a bit of varaibility of exactly when the transition
-#                 # occurs, and also depends on randomness for when we get exactly 0
-#                 # fraction for one of the attractors
-#                 @test length(k) ∈ (2, 3)
-#             end
-#             @test sum(values(fs)) ≈ 1
-#         end
-#         # # Plot code for fractions
-#         # using GLMakie
-#         # x = [fs[finalkeys[1]] for fs in fractions_curves]
-#         # y = [fs[finalkeys[2]] for fs in fractions_curves]
-#         # z = zeros(length(x))
-#         # fig = Figure(resolution = (400, 300))
-#         # ax = Axis(fig[1,1])
-#         # display(fig)
-#         # γs = [p[3] for p in ps]
-#         # band!(ax, γs, z, x; color = Cycled(1), label = "1")
-#         # band!(ax, γs, x, x .+ y; color = Cycled(2), label  = "2")
-#         # band!(ax, γs, x .+ y, 1; color = Cycled(3), label = "3")
-#         # xlims!(ax, 0, 1)
-#         # ylims!(ax, 0, 1)
-#         # ax.ylabel = "fractions"
-#         # ax.xlabel = "magnet strength"
-#         # axislegend(ax)
-#         # Makie.save("magnetic_fracs.png", fig; px_per_unit = 4)
-#     end
-# end
+            # It is arbitrary what id we get, because the third
+            # fixed point that vanishes could have any of the three ids
+            # But we can test for sure how many ids we have
+            # (depending on where we come from we find the attractor for longer)
+            if γ < 0.2
+                @test length(k) == 2
+            elseif γ > 0.24
+                @test length(k) == 3
+            else
+                # There is a bit of varaibility of exactly when the transition
+                # occurs, and also depends on randomness for when we get exactly 0
+                # fraction for one of the attractors
+                @test length(k) ∈ (2, 3)
+            end
+            @test sum(values(fs)) ≈ 1
+        end
+        # # Plot code for fractions
+        # using GLMakie
+        # x = [fs[finalkeys[1]] for fs in fractions_curves]
+        # y = [fs[finalkeys[2]] for fs in fractions_curves]
+        # z = zeros(length(x))
+        # fig = Figure(resolution = (400, 300))
+        # ax = Axis(fig[1,1])
+        # display(fig)
+        # γs = [p[3] for p in ps]
+        # band!(ax, γs, z, x; color = Cycled(1), label = "1")
+        # band!(ax, γs, x, x .+ y; color = Cycled(2), label  = "2")
+        # band!(ax, γs, x .+ y, 1; color = Cycled(3), label = "3")
+        # xlims!(ax, 0, 1)
+        # ylims!(ax, 0, 1)
+        # ax.ylabel = "fractions"
+        # ax.xlabel = "magnet strength"
+        # axislegend(ax)
+        # Makie.save("magnetic_fracs.png", fig; px_per_unit = 4)
+    end
+end
 
 if DO_EXTENSIVE_TESTS
 
@@ -233,9 +233,10 @@ end
         show_progress = false, samples_per_parameter = 1000
     )
 
-    # fractions_curves, a = Attractors.basins_fractions_continuation_group(
+    # fractions_curves, a = Attractors.basins_fractions_continuation(
     #     continuation, rrange, ridx, sampler;
-    #     show_progress = false, samples_per_parameter = 1000
+    #     show_progress = false, samples_per_parameter = 1000,
+    #     group_method = :grouping
     # )
 
     for (i, r) in enumerate(rrange)

@@ -64,27 +64,27 @@ function basins_fractions_continuation(
         k => continuation.info_extraction(att) for (k, att) in attractors
     )
 
+    # Gather labels, fractions and attractors doing the seeding process for each parameter. 
     sav_labs = (group_method == :grouping) 
     sav_labs && (labels = Vector{Int}(undef, n*spp))
-    # first parameter is run in isolation, as it has no prior to seed from
-    current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation, ics, pidx, prange[1], [], spp)
-    prev_atts = deepcopy(current_atts)
-    fractions_curves = [fs]
-    attractors_info = [get_info(prev_atts)]
-    ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
-    sav_labs && (labels[1:spp] .= lab)
-    # Continue loop over all remaining parameters
-    for (i,p) in enumerate(prange[2:end])
+    fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
+    attractors_info = Vector{Dict{Int32, Dataset{2, Float64}}}(undef, n)
+    prev_atts = Dict()
+    for (i,p) in enumerate(prange)
         current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, spp)
-        push!(fractions_curves, fs)
-        push!(attractors_info, get_info(current_atts))
+        fractions_curves[i] = fs
+        attractors_info[i] =  get_info(current_atts)
         sav_labs && (labels[((i - 1)*spp + 1):i*spp] .= lab)
         overwrite_dict!(prev_atts, current_atts)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
     # Do the matching from one parameter to the next.
-    match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
+    if group_method == :matching
+        match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
+    elseif group_method == :grouping
+        fractions_curves, attractors_info = group_attractors(attractors_info, labels, n, spp, threshold)
+    end
 
     return fractions_curves, attractors_info
 end
@@ -167,10 +167,11 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
 end
 
 
-function group_attractors(attractors, label, threshold)
+function group_attractors(attractors, labels, n, spp, threshold)
 
     # Compute distances. 
-    distances = datasets_sets_distances(att_v, att_v) 
+    att = merge(attractors...)
+    distances = datasets_sets_distances(att, att) 
     dist_mat = zeros(length(distances),length(distances))
     att_keys = Vector{Int}()
     for i in keys(distances)
@@ -179,54 +180,36 @@ function group_attractors(attractors, label, threshold)
             dist_mat[i,j] =  distances[i][j]
         end
     end
-    group_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
+    grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
 
     # Now rename the labels, get the fractions and pack attractors.
-    grouped_labels, keys = group_attractors(att_v, 0.001)
-    grouped_labels .+= maximum(keys)
-    @show grouped_labels
-    @show keys
+    grouped_labels .+= maximum(att_keys)
     for (k,group_lab)  in enumerate(grouped_labels)
         if group_lab != -1
-            att_num = keys[k]
+            att_num = att_keys[k]
             labels[labels .== att_num] .= grouped_labels[k]
         end
     end
-
-    fractions_curves = get_fractions(labels, n, spp)
-    return fractions_curves
+    fractions_curves, attractors_nfo = label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, att)
+    return fractions_curves, attractors_nfo
 end
 
-function get_fractions(labels, n, spp)
+function label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, attractors)
     # finally we collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
-   for i in 1:n
+    for i in 1:n
         current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
         current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_curves[i] = basins_fractions(current_labels)
     end
-    return fractions_curves
-end
-
-
-function label_fractions_across_parameter(labels, n, spp, feature, info_extraction)
-    # finally we collect/group stuff into their dictionaries
-    fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
-    dummy_info = info_extraction(feature)
-    attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
-    for i in 1:n
-        # Here we know which indices correspond to which parameter value
-        # because they are sequentially increased every `spp`
-        # (steps per parameter)
-        current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
-        current_ids = unique(current_labels)
-        # getting fractions is easy; use API function that takes in arrays
-        fractions_curves[i] = basins_fractions(current_labels)
-        attractors_info[i] = Dict(
-            id => info_extraction(
-                view(current_labels, findall(isequal(id), current_labels))
-            ) for id in current_ids
+    
+    unq_lb = unique(grouped_labels)
+    attractors_info = Dict{Int, typeof(attractors)}()
+    for j in eachindex(unq_lb)
+        ind = findall(grouped_labels .== unq_lb[j]) 
+        attractors_info[unq_lb[j]] = Dict(
+            id => values(attractors[id]) for id in att_keys[ind]
         )
     end
     return fractions_curves, attractors_info
