@@ -228,15 +228,15 @@ end
     rrange = range(0., 2; length = 20)
     ridx = 1
     continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3)
-    #fractions_curves, a = Attractors.basins_fractions_continuation(
-    #    continuation, rrange, ridx, sampler;
-    #    show_progress = false, samples_per_parameter = 1000
-    #)
-
-    fractions_curves, a = Attractors.basins_fractions_continuation_group(
+    fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000
     )
+
+    # fractions_curves, a = Attractors.basins_fractions_continuation_group(
+    #     continuation, rrange, ridx, sampler;
+    #     show_progress = false, samples_per_parameter = 1000
+    # )
 
     for (i, r) in enumerate(rrange)
 

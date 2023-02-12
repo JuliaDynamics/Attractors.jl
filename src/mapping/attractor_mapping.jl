@@ -81,10 +81,11 @@ See [`AttractorMapper`](@ref) for all possible `mapper` types.
 * `show_progress = true`: Display a progress bar of the process.
 """
 function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractDataset, Function};
-        show_progress = true, N = 1000, additional_fs::Dict = Dict(),
-    )
+        show_progress = true, N = 1000, additional_fs::Vector{Int} = [],
+        return_all_info = false)
     used_dataset = ics isa AbstractDataset
     N = used_dataset ? size(ics, 1) : N
+    if return_all_info; used_dataset =  true; end 
     if show_progress
         progress=ProgressMeter.Progress(N; desc="Mapping initial conditions to attractors:")
     end
@@ -100,11 +101,11 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractDataset, F
         show_progress && next!(progress)
     end
     # the non-public-API `additional_fs` is used in the continuation methods
-    additive_dict_merge!(fs, additional_fs)
-    N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
+    for l in additional_fs; fs[l] = get(fs, l, 0) + 1; end
     # Transform count into fraction
+    N += length(additional_fs)
     ffs = Dict(k => v/N for (k, v) in fs)
-    if used_dataset
+    if used_dataset 
         attractors = extract_attractors(mapper, labels, ics)
         return ffs, labels, attractors
     else
