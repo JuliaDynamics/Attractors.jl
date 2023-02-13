@@ -179,13 +179,10 @@ function group_attractors(attractors, labels, n, spp, threshold)
     grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
 
     # Now rename the labels, get the fractions and pack attractors.
-    grouped_labels .+= maximum(att_keys)
-    for (k,group_lab)  in enumerate(grouped_labels)
-        if group_lab != -1
-            att_num = att_keys[k]
-            labels[labels .== att_num] .= grouped_labels[k]
-        end
-    end
+    postve_lab = findall(grouped_labels .> 0) 
+    grouped_labels[postve_lab] .+= maximum(att_keys)
+    rmap = [ att_keys[k] => grouped_labels[k] for k in postve_lab]
+    replace!(labels, rmap...) 
 
     fractions_curves, attractors_nfo = label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, att)
 
@@ -204,17 +201,21 @@ function label_fractions_across_parameter(labels, grouped_labels, att_keys, n, s
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     for i in 1:n
         current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
-        # getting fractions is easy; use API function that takes in arrays
         fractions_curves[i] = basins_fractions(current_labels)
     end
     
-    unq_lb = unique(grouped_labels)
     attractors_info = Dict{Int, typeof(attractors)}()
-    for j in eachindex(unq_lb)
-        ind = findall(grouped_labels .== unq_lb[j]) 
-        attractors_info[unq_lb[j]] = Dict(
+    for lab in unique(grouped_labels)
+        ind = findall(grouped_labels .== lab) 
+        attractors_info[lab] = Dict(
             id => values(attractors[id]) for id in att_keys[ind]
         )
     end
+    
+    # Store also unclassified attractors, they kept their original keys
+    for k in findall(grouped_labels .== -1) 
+        attractors_info[att_keys[k]] = attractors[att_keys[k]]
+    end
+
     return fractions_curves, attractors_info
 end
