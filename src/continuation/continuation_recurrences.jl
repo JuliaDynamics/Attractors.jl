@@ -42,7 +42,7 @@ function RecurrencesSeedingContinuation(
         mapper, method, threshold, seeds_from_attractor, info_extraction
     )
 end
-@show
+
 function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
@@ -68,7 +68,7 @@ function basins_fractions_continuation(
     sav_labs = (group_method == :grouping) 
     sav_labs && (labels = Vector{Int}(undef, n*spp))
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
-    attractors_info = Vector{Dict{Int32, Dataset{2, Float64}}}(undef, n)
+    attractors_info = Vector{Dict}(undef, n)
     prev_atts = Dict()
     for (i,p) in enumerate(prange)
         current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, spp)
@@ -79,12 +79,14 @@ function basins_fractions_continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
+    @show typeof(attractors_info)
+
     if group_method == :matching
         # Do the matching from one parameter to the next.
         match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
     elseif group_method == :grouping
         # Group over the all range of parameters
-        fractions_curves, attractors_info = group_attractors(attractors_info, labels, n, spp, threshold)
+        fractions_curves, attractors_info = group_attractors(attractors_info, labels, n, spp, method, threshold)
     end
 
     return fractions_curves, attractors_info
@@ -168,11 +170,11 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
 end
 
 
-function group_attractors(attractors, labels, n, spp, threshold)
+function group_attractors(attractors, labels, n, spp, method,  threshold)
     # Compute distances. 
     att = merge(attractors...)
     # Do the clustering with custom threshold
-    att_keys, grouped_labels = clustering(att, threshold)
+    att_keys, grouped_labels = clustering(att, method, threshold)
 
     # Now rename the labels, get the fractions and pack attractors.
     postve_lab = findall(grouped_labels .> 0) 
@@ -193,8 +195,8 @@ function group_attractors(attractors, labels, n, spp, threshold)
 end
 
 
-function clustering(att::Dict, threshold)
-    distances = datasets_sets_distances(att, att) 
+function clustering(att::Dict, method, threshold)
+    distances = datasets_sets_distances(att, att, method) 
     dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]
     att_keys = collect(keys(distances))
     grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)

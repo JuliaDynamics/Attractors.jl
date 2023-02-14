@@ -205,11 +205,9 @@ end
             dz[1] = dz[2] = 0.0
         else
             if x > 0
-                dz[1] = r
-                dz[2] = r
+                dz[1] = dz[2] = r
             else
-                dz[1] = -r
-                dz[2] = -r
+                dz[1] = dz[2] = -r
             end
         end
         return
@@ -251,35 +249,9 @@ end
         @test sum(values(fs)) ≈ 1
     end
 
-    # Grouping tests
-    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
-    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.1)
-    fractions_curves, a = Attractors.basins_fractions_continuation(
-        continuation, rrange, ridx, sampler;
-        show_progress = false, samples_per_parameter = 1000,
-        group_method = :grouping
-    )
-
-    for (i, r) in enumerate(rrange)
-
-        fs = fractions_curves[i]
-        if r < 0.5
-            k = sort!(collect(keys(fs)))
-            @test length(k) == 1
-        else
-            k = sort!(collect(keys(fs)))
-            @test length(k) == 2
-            v = values(fs)
-            for f in v
-                @test (0.4 < f < 0.6)
-            end
-        end
-        @test sum(values(fs)) ≈ 1
-    end
-
 end
 
-@testset "Multistable map" begin
+@testset "Multistable grouping map" begin
     # This is a fake multistable map helps at testing the grouping 
     # capabilities
     function dumb_map(dz, z, p, n)
@@ -345,6 +317,63 @@ end
             v = values(fs)
             for f in v
                 @test (1/10 < f < 1/6)
+            end
+        end
+        @test sum(values(fs)) ≈ 1
+    end
+
+end
+
+@testset "Featuring attractors map" begin
+    # This is a fake bistable map that has two equilibrium points
+    # for r > 0.5. It has predictable fractions.
+    function dumb_map(dz, z, p, n)
+        x,y = z
+        r = p[1]
+        if r < 0.5
+            dz[1] = dz[2] = 0.0
+        else
+            if x > 0
+                dz[1] = dz[2] = r
+            else
+                dz[1] = dz[2] = -r
+            end
+        end
+        return
+    end
+
+    r = 1.
+    ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
+    yg = xg = range(-10., 10, length = 100)
+    grid = (xg,yg)
+    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+
+    sampler, = statespace_sampler(Random.MersenneTwister(1234);
+        min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+
+    rrange = range(0., 2; length = 20)
+    ridx = 1
+    info(x) = mean(x) 
+    method(a,d) = sqrt(sum(a .- d).^2) 
+    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3, info_extraction = info, method = method)
+    fractions_curves, a = Attractors.basins_fractions_continuation(
+        continuation, rrange, ridx, sampler;
+        show_progress = false, samples_per_parameter = 1000, group_method = :grouping
+    )
+    
+    # Forward matching tests 
+    for (i, r) in enumerate(rrange)
+
+        fs = fractions_curves[i]
+        if r < 0.5
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 1
+        else
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 2
+            v = values(fs)
+            for f in v
+                @test (0.4 < f < 0.6)
             end
         end
         @test sum(values(fs)) ≈ 1
