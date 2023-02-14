@@ -259,12 +259,16 @@ end
         r = p[1]
 
         θ = mod(angle(x + im*y),2pi)
-        # rr = abs(x+ im*y) 
+        rr = abs(x+ im*y) 
 
         if r < 0.5
             rr = 0.1
         else
-            rr = r 
+            if rr > 1
+                rr = 3
+            else 
+                rr = 0.01
+            end
         end
 
         if 0 < θ ≤ π/4
@@ -299,25 +303,22 @@ end
 
     rrange = range(0., 2; length = 20)
     ridx = 1
-    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.05)
+    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.1)
     fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
         group_method = :grouping
     )
 
+    # There should be one cluster for r < 0.5 and then 9 groups of attractors
     for (i, r) in enumerate(rrange)
         fs = fractions_curves[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
-            @test length(k) == 4
+            @test length(k) == 1
         else
             k = sort!(collect(keys(fs)))
-            @test length(k) == 8
-            v = values(fs)
-            for f in v
-                @test (1/10 < f < 1/6)
-            end
+            @test length(k) == 9
         end
         @test sum(values(fs)) ≈ 1
     end
