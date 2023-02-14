@@ -171,12 +171,8 @@ end
 function group_attractors(attractors, labels, n, spp, threshold)
     # Compute distances. 
     att = merge(attractors...)
-    distances = datasets_sets_distances(att, att) 
-    dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]
-    att_keys = collect(keys(distances))
-
     # Do the clustering with custom threshold
-    grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
+    att_keys, grouped_labels = clustering(att, threshold)
 
     # Now rename the labels, get the fractions and pack attractors.
     postve_lab = findall(grouped_labels .> 0) 
@@ -195,6 +191,16 @@ function group_attractors(attractors, labels, n, spp, threshold)
 
     return fractions_curves, attractors_nfo
 end
+
+
+function clustering(att::Dict, threshold)
+    distances = datasets_sets_distances(att, att) 
+    dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]
+    att_keys = collect(keys(distances))
+    grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
+    return att_keys, grouped_labels
+end
+
 
 function label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, attractors)
     # finally we collect/group stuff into their dictionaries

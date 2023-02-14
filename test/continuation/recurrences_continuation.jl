@@ -252,6 +252,8 @@ end
     end
 
     # Grouping tests
+    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.1)
     fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
@@ -270,6 +272,79 @@ end
             v = values(fs)
             for f in v
                 @test (0.4 < f < 0.6)
+            end
+        end
+        @test sum(values(fs)) ≈ 1
+    end
+
+end
+
+@testset "Multistable map" begin
+    # This is a fake multistable map helps at testing the grouping 
+    # capabilities
+    function dumb_map(dz, z, p, n)
+        x,y = z
+        r = p[1]
+
+        θ = mod(angle(x + im*y),2pi)
+        # rr = abs(x+ im*y) 
+
+        if r < 0.5
+            rr = 0.1
+        else
+            rr = r 
+        end
+
+        if 0 < θ ≤ π/4
+           x = rr*cos(π/8); y = rr*sin(π/8)
+        elseif π/4 < θ ≤ π/2
+            x = rr*cos(3π/8); y = rr*sin(3π/8)
+        elseif π/2 < θ ≤ 3π/4
+            x = rr*cos(5π/8); y = rr*sin(5π/8)
+        elseif 3π/4 < θ ≤ π
+            x = rr*cos(7π/8); y = rr*sin(7π/8)
+        elseif π < θ ≤ 5π/4
+            x = rr*cos(9π/8); y = rr*sin(9π/8)
+        elseif 5π/4 < θ ≤ 6π/4
+            x = rr*cos(11π/8); y = rr*sin(11π/8)
+        elseif 6π/4 < θ ≤ 7π/4
+            x = rr*cos(13π/8); y = rr*sin(13π/8)
+        elseif 7π/4 < θ ≤ 8π/4
+            x = rr*cos(15π/8); y = rr*sin(15π/8)
+        end
+        dz[1]= x; dz[2] = y
+        return
+    end
+
+    r = 0.3
+    ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r], (J,z,dz,n) -> nothing)
+    yg = xg = range(-10., 10, length = 100)
+    grid = (xg,yg)
+    mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+
+    sampler, = statespace_sampler(Random.MersenneTwister(1234);
+        min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+
+    rrange = range(0., 2; length = 20)
+    ridx = 1
+    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.05)
+    fractions_curves, a = Attractors.basins_fractions_continuation(
+        continuation, rrange, ridx, sampler;
+        show_progress = false, samples_per_parameter = 1000,
+        group_method = :grouping
+    )
+
+    for (i, r) in enumerate(rrange)
+        fs = fractions_curves[i]
+        if r < 0.5
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 4
+        else
+            k = sort!(collect(keys(fs)))
+            @test length(k) == 8
+            v = values(fs)
+            for f in v
+                @test (1/10 < f < 1/6)
             end
         end
         @test sum(values(fs)) ≈ 1
