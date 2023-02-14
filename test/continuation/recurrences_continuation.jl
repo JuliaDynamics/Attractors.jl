@@ -261,6 +261,10 @@ end
         θ = mod(angle(x + im*y),2pi)
         rr = abs(x+ im*y) 
 
+        # This map works as follows: for the parameter r< 0.5 there are 
+        # 8 attractors close to the origin (radius 0.1)
+        # For r > 0.5 there are 8 attractors very close to the origin (radius 0.01
+        # and 8 attractors far away and well separated. 
         if r < 0.5
             rr = 0.1
         else
