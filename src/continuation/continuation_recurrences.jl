@@ -79,8 +79,6 @@ function basins_fractions_continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
-    @show typeof(attractors_info)
-
     if group_method == :matching
         # Do the matching from one parameter to the next.
         match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
@@ -171,12 +169,12 @@ end
 
 
 function group_attractors(attractors, labels, n, spp, method,  threshold)
-    # Compute distances. 
     att = merge(attractors...)
     # Do the clustering with custom threshold
     att_keys, grouped_labels = clustering(att, method, threshold)
 
-    # Now rename the labels, get the fractions and pack attractors.
+    # Now rename the labels (we ignore -1 in grouped labels), 
+    # get the fractions and pack attractors.
     postve_lab = findall(grouped_labels .> 0) 
     grouped_labels[postve_lab] .+= maximum(att_keys)
     rmap = [ att_keys[k] => grouped_labels[k] for k in postve_lab]
