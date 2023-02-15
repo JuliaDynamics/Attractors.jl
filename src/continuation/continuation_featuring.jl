@@ -87,7 +87,6 @@ function basins_fractions_continuation(
         labels = group_features(features, mapper.group_config)
     end
 
-
     if group_method == :matching
         # Do the matching from one parameter to the next.
         fractions_curves, attractors_info = match_parameter_slice(features, mapper.group_config, n, spp, 
@@ -143,17 +142,19 @@ end
 
 function match_parameter_slice(features, group_config, n, spp, info_extraction, method, threshold)
     max_label = 0 
-    features_info = Vector{Dict}(undef, n)
+    features_info = Vector{Dict{Int, typeof(Dataset(features[1:2]))}}(undef, n)
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction(features[1])
     attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
     for i in 1:n
         slice_feats = features[((i - 1)*spp + 1):i*spp] 
+        # Group features in the same parameter slice. 
         labels = group_features(slice_feats, group_config)
         postve_lab = findall(labels .> 0) 
+        # Give labels unique numbers
         labels[postve_lab] .+= max_label
         max_label = maximum(labels)
-        vec_info = Dict()
+        vec_info = eltype(features_info)()
         for j in unique(labels[postve_lab])
             ind = findall(labels .== j)
             vec_info[j] = Dataset(slice_feats[ind])
@@ -161,9 +162,9 @@ function match_parameter_slice(features, group_config, n, spp, info_extraction, 
         features_info[i] = vec_info 
         fractions_curves[i] = basins_fractions(labels)
         if i > 1 && !isempty(features_info[i]) && !isempty(features_info[i-1])
+            # Match groups of features between two slices. 
             rmap = match_attractor_ids!(features_info[i], features_info[i-1]; method, threshold)
             swap_dict_keys!(fractions_curves[i], rmap)
-            replace!(labels, rmap...)
         end
 
         attractors_info[i] = Dict(
