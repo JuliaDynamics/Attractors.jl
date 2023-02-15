@@ -133,5 +133,25 @@ if DO_EXTENSIVE_TESTS
             @test sum(values(fs)) ≈ 1
         end
 
+        mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
+        continuation = FeaturingContinuation(mapper; par_weight = 1.0)
+        fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
+            continuation, ps, pidx, sampler;
+            samples_per_parameter = 1000, show_progress = false, 
+            group_method = :matching 
+        )
+
+        for (i, p) in enumerate(ps)
+            fs = fractions_curves[i]
+            if p < 0.9
+                k = sort!(collect(keys(fs)))
+                @test length(k) == 2
+            elseif p > 1.0 # (coexistence of period 1 and 3)
+                k = sort!(collect(keys(fs)))
+                @test length(k) == 3
+            end
+            @test sum(values(fs)) ≈ 1
+        end
+
     end
 end
