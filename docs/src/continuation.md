@@ -9,7 +9,7 @@ basins_fractions_continuation
 ## Recurrences continuation (best)
 
 ```@docs
-RecurrencesSeedingContinuation
+RecurrencesContinuation
 ```
 
 ## Matching attractors
@@ -28,5 +28,5 @@ aggregate_attractor_fractions
 
 ## Grouping continuation
 ```@docs
-GroupAcrossParameterContinuation
+FeaturingContinuation
 ```

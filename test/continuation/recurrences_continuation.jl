@@ -21,7 +21,7 @@ using Random
 #         # test that both finding and removing attractor works
 #         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
 
-#         continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
+#         continuation = RecurrencesContinuation(mapper; threshold = Inf)
 #         # With this threshold all attractors are mapped to each other, they are within
 #         # distance 1 in state space.
 #         fractions_curves, attractors_info = basins_fractions_continuation(
@@ -117,7 +117,7 @@ if DO_EXTENSIVE_TESTS
         mx_chk_fnd_att = 3000,
         mx_chk_loc_att = 3000
     )
-    continuation = RecurrencesSeedingContinuation(mapper;
+    continuation = RecurrencesContinuation(mapper;
         threshold = 0.99, method = distance_function
     )
     ps = psorig
@@ -185,7 +185,7 @@ end
         min_bounds = [-2,-2], max_bounds = [2,2]
     )
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
-    continuation = RecurrencesSeedingContinuation(mapper)
+    continuation = RecurrencesContinuation(mapper)
     fractions_curves, attractors_info = basins_fractions_continuation(
         continuation, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
@@ -225,7 +225,7 @@ end
 
     rrange = range(0., 2; length = 20)
     ridx = 1
-    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3)
+    continuation = Attractors.RecurrencesContinuation(mapper; threshold = 0.3)
     fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000
@@ -233,7 +233,6 @@ end
     
     # Forward matching tests 
     for (i, r) in enumerate(rrange)
-
         fs = fractions_curves[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
@@ -307,7 +306,7 @@ end
 
     rrange = range(0., 2; length = 20)
     ridx = 1
-    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.1)
+    continuation = Attractors.RecurrencesContinuation(mapper; threshold = 0.1)
     fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
@@ -329,7 +328,7 @@ end
 
 end
 
-@testset "Featuring attractors" begin
+@testset "Featurizing and grouping attractors" begin
     # This is a fake bistable map that has two equilibrium points
     # for r > 0.5. It has predictable fractions.
     function dumb_map(dz, z, p, n)
@@ -358,9 +357,10 @@ end
 
     rrange = range(0., 2; length = 20)
     ridx = 1
+    using StatsBase
     info(x) = mean(x) 
     method(a,d) = sqrt(sum(a .- d).^2) 
-    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3, info_extraction = info, method = method)
+    continuation = Attractors.RecurrencesContinuation(mapper; threshold = 0.3, info_extraction = info, method = method)
     fractions_curves, a = Attractors.basins_fractions_continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000, group_method = :grouping
@@ -368,7 +368,6 @@ end
     
     # Forward matching tests 
     for (i, r) in enumerate(rrange)
-
         fs = fractions_curves[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
@@ -383,7 +382,6 @@ end
         end
         @test sum(values(fs)) ≈ 1
     end
-
 end
 
 end

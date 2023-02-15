@@ -1,10 +1,10 @@
-export RecurrencesSeedingContinuation
+export RecurrencesContinuation
 import ProgressMeter
 using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesSeedingContinuation{A, M, S, E} <: BasinsFractionContinuation
+struct RecurrencesContinuation{A, M, S, E} <: BasinsFractionContinuation
     mapper::A
     method::M
     threshold::Float64
@@ -13,7 +13,7 @@ struct RecurrencesSeedingContinuation{A, M, S, E} <: BasinsFractionContinuation
 end
 
 """
-    RecurrencesSeedingContinuation(mapper::AttractorsViaRecurrences; kwargs...)
+    RecurrencesContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 A method for [`basins_fractions_continuation`](@ref).
 It uses seeding of previous attractors to find new ones, which is the main performance
 bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
@@ -33,12 +33,12 @@ Will write more once we have the paper going.
   to how many points the attractors themselves contain. A maximum of `10` seeds is done
   per attractor.
 """
-function RecurrencesSeedingContinuation(
+function RecurrencesContinuation(
         mapper::AttractorsViaRecurrences; method = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
-    return RecurrencesSeedingContinuation(
+    return RecurrencesContinuation(
         mapper, method, threshold, seeds_from_attractor, info_extraction
     )
 end
@@ -51,7 +51,7 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
 end
 
 function basins_fractions_continuation(
-        continuation::RecurrencesSeedingContinuation,
+        continuation::RecurrencesContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true, group_method = :matching
     )
@@ -64,8 +64,8 @@ function basins_fractions_continuation(
         k => continuation.info_extraction(att) for (k, att) in attractors
     )
 
-    # Gather labels, fractions and attractors doing the seeding process for each parameter. 
-    sav_labs = (group_method == :grouping) 
+    # Gather labels, fractions and attractors doing the seeding process for each parameter.
+    sav_labs = (group_method == :grouping)
     sav_labs && (labels = Vector{Int}(undef, n*spp))
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     attractors_info = Vector{Dict}(undef, n)
@@ -109,7 +109,7 @@ function reset!(mapper::AttractorsViaRecurrences)
     return
 end
 
-function _ics_from_grid(continuation::RecurrencesSeedingContinuation)
+function _ics_from_grid(continuation::RecurrencesContinuation)
     return _ics_from_grid(continuation.mapper.grid)
 end
 
@@ -173,14 +173,14 @@ function group_attractors(attractors, labels, n, spp, method,  threshold)
     # Do the clustering with custom threshold
     att_keys, grouped_labels = clustering(att, method, threshold)
 
-    # Now rename the labels (we ignore -1 in grouped labels), 
+    # Now rename the labels (we ignore -1 in grouped labels),
     # get the fractions and pack attractors.
-    postve_lab = findall(grouped_labels .> 0) 
+    postve_lab = findall(grouped_labels .> 0)
     grouped_labels[postve_lab] .+= maximum(att_keys)
     rmap = [ att_keys[k] => grouped_labels[k] for k in postve_lab]
-    replace!(labels, rmap...) 
+    replace!(labels, rmap...)
 
-    fractions_curves, attractors_nfo = label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, att)
+    fractions_curves, attractors_nfo = label_fractions(labels, grouped_labels, att_keys, n, spp, att)
 
     # rename dict
     rmap = retract_keys_to_consecutive(fractions_curves)
@@ -194,7 +194,7 @@ end
 
 
 function clustering(att::Dict, method, threshold)
-    distances = datasets_sets_distances(att, att, method) 
+    distances = datasets_sets_distances(att, att, method)
     dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]
     att_keys = collect(keys(distances))
     grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
@@ -202,24 +202,24 @@ function clustering(att::Dict, method, threshold)
 end
 
 
-function label_fractions_across_parameter(labels, grouped_labels, att_keys, n, spp, attractors)
+function label_fractions(labels, grouped_labels, att_keys, n, spp, attractors)
     # finally we collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     for i in 1:n
         current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
         fractions_curves[i] = basins_fractions(current_labels)
     end
-    
+
     attractors_info = Dict{Int, typeof(attractors)}()
     for lab in unique(grouped_labels)
-        ind = findall(grouped_labels .== lab) 
+        ind = findall(grouped_labels .== lab)
         attractors_info[lab] = Dict(
             id => values(attractors[id]) for id in att_keys[ind]
         )
     end
-    
+
     # Store also unclassified attractors, they kept their original keys
-    for k in findall(grouped_labels .== -1) 
+    for k in findall(grouped_labels .== -1)
         attractors_info[att_keys[k]] = attractors[att_keys[k]]
     end
 
