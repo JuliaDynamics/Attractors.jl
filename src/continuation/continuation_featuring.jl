@@ -77,21 +77,21 @@ function basins_fractions_continuation(
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
-    # This is a special clause for implementing the MCBB algorithm (weighting
-    # also by parameter value, i.e., making the parameter value a feature)
-    # It calls a special `group_features` function that also incorporates the
-    # parameter value (see below). Otherwise, we call normal `group_features`.
-    if mapper.group_config isa GroupViaClustering && par_weight ≠ 0
-        labels = group_features(features, mapper.group_config; par_weight, plength = n, spp)
-    else
-        labels = group_features(features, mapper.group_config)
-    end
-
     if group_method == :matching
         # Do the matching from one parameter to the next.
-        fractions_curves, attractors_info = match_parameter_slice(features, mapper.group_config, n, spp, 
-            info_extraction, method, threshold)
+        fractions_curves, attractors_info = match_parameter_slice(features, 
+            mapper.group_config, n, spp, info_extraction, method, threshold)
     elseif group_method == :grouping
+        # This is a special clause for implementing the MCBB algorithm (weighting
+        # also by parameter value, i.e., making the parameter value a feature)
+        # It calls a special `group_features` function that also incorporates the
+        # parameter value (see below). Otherwise, we call normal `group_features`.
+        if mapper.group_config isa GroupViaClustering && par_weight ≠ 0
+            labels = group_features(features, mapper.group_config; par_weight, plength = n, spp)
+        else
+            labels = group_features(features, mapper.group_config)
+        end
+
         # Group over the all range of parameters
         fractions_curves, attractors_info = label_fractions_across_parameter(labels, 
             n, spp, features, info_extraction)
@@ -168,9 +168,7 @@ function match_parameter_slice(features, group_config, n, spp, info_extraction, 
             a[1] => info_extraction(a[2]) for a in vec_info
         )
     end
-    
     match_attractors_forward!(features_info, fractions_curves, method, threshold)
-    
     return fractions_curves, attractors_info
 end
 
