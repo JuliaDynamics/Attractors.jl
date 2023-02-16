@@ -365,7 +365,7 @@ end
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000, group_method = :grouping
     )
-    
+@show a    
     # Forward matching tests 
     for (i, r) in enumerate(rrange)
         fs = fractions_curves[i]

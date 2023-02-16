@@ -94,7 +94,7 @@ function basins_fractions_continuation(
     elseif group_method == :grouping
         # Group over the all range of parameters
         fractions_curves, attractors_info = label_fractions_across_parameter(labels, 
-            n, spp, features[1], info_extraction)
+            n, spp, features, info_extraction)
     end
     
     return fractions_curves, attractors_info
@@ -118,24 +118,26 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
     return features
 end
 
-function label_fractions_across_parameter(labels, n, spp, feature, info_extraction)
+function label_fractions_across_parameter(labels, n, spp, features, info_extraction)
     # finally we collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
-    dummy_info = info_extraction(feature)
+    dummy_info = info_extraction(features[1:2])
     attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
     for i in 1:n
         # Here we know which indices correspond to which parameter value
         # because they are sequentially increased every `spp`
         # (steps per parameter)
         current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
+        slice_feats = view(features, ((i - 1)*spp + 1):i*spp)
         current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_curves[i] = basins_fractions(current_labels, current_ids)
-        attractors_info[i] = Dict(
-            id => info_extraction(
-                view(current_labels, findall(isequal(id), current_labels))
-            ) for id in current_ids
-        )
+        vec_info = eltype(attractors_info)()
+        for j in current_ids
+            ind = findall(current_labels .== j)
+            vec_info[j] = info_extraction(slice_feats[ind])
+        end
+        attractors_info[i] = vec_info
     end
     return fractions_curves, attractors_info
 end

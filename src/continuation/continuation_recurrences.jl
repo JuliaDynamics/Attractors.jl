@@ -71,7 +71,8 @@ function basins_fractions_continuation(
     attractors_info = Vector{Dict}(undef, n)
     prev_atts = Dict()
     for (i,p) in enumerate(prange)
-        current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_atts, spp)
+        current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation, 
+            ics, pidx, p, prev_atts, spp)
         fractions_curves[i] = fs
         attractors_info[i] =  get_info(current_atts)
         sav_labs && (labels[((i - 1)*spp + 1):i*spp] .= lab)
@@ -84,7 +85,15 @@ function basins_fractions_continuation(
         match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
     elseif group_method == :grouping
         # Group over the all range of parameters
-        fractions_curves, attractors_info = group_attractors(attractors_info, labels, n, spp, method, threshold)
+        group_attractors!(attractors_info, labels, 
+            fractions_curves, n, spp, method, threshold)
+    end
+
+    # Normalize to smaller available integers for user convenience
+    rmap = retract_keys_to_consecutive(fractions_curves)
+    for (da, df) in zip(attractors_info, fractions_curves)
+        swap_dict_keys!(da, rmap)
+        swap_dict_keys!(df, rmap)
     end
 
     return fractions_curves, attractors_info
@@ -159,16 +168,11 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
             swap_dict_keys!(fractions[k], rmap)
         end
     end
-    # Normalize to smaller available integers for user convenience
-    rmap = retract_keys_to_consecutive(fractions)
-    for (da, df) in zip(attractors, fractions)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
-    end
 end
 
 
-function group_attractors(attractors, labels, n, spp, method,  threshold)
+function group_attractors!(attractors, labels, fractions_curves, n, 
+    spp, method,  threshold)
     att = merge(attractors...)
     # Do the clustering with custom threshold
     att_keys, grouped_labels = clustering(att, method, threshold)
@@ -177,19 +181,14 @@ function group_attractors(attractors, labels, n, spp, method,  threshold)
     # get the fractions and pack attractors.
     postve_lab = findall(grouped_labels .> 0)
     grouped_labels[postve_lab] .+= maximum(att_keys)
-    rmap = [ att_keys[k] => grouped_labels[k] for k in postve_lab]
+    rmap = Dict( att_keys[k] => grouped_labels[k] for k in postve_lab)
     replace!(labels, rmap...)
-
-    fractions_curves, attractors_nfo = label_fractions(labels, grouped_labels, att_keys, n, spp, att)
-
-    # rename dict
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for df in fractions_curves
-        swap_dict_keys!(df, rmap)
+    for k in eachindex(attractors)
+        swap_dict_keys!(attractors[k], rmap)
     end
-    swap_dict_keys!(attractors_nfo, rmap)
 
-    return fractions_curves, attractors_nfo
+    label_fractions!(labels, n, spp, fractions_curves)
+
 end
 
 
@@ -202,26 +201,10 @@ function clustering(att::Dict, method, threshold)
 end
 
 
-function label_fractions(labels, grouped_labels, att_keys, n, spp, attractors)
+function label_fractions!(labels, n, spp, fractions_curves)
     # finally we collect/group stuff into their dictionaries
-    fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     for i in 1:n
         current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
         fractions_curves[i] = basins_fractions(current_labels)
     end
-
-    attractors_info = Dict{Int, typeof(attractors)}()
-    for lab in unique(grouped_labels)
-        ind = findall(grouped_labels .== lab)
-        attractors_info[lab] = Dict(
-            id => values(attractors[id]) for id in att_keys[ind]
-        )
-    end
-
-    # Store also unclassified attractors, they kept their original keys
-    for k in findall(grouped_labels .== -1)
-        attractors_info[att_keys[k]] = attractors[att_keys[k]]
-    end
-
-    return fractions_curves, attractors_info
 end
