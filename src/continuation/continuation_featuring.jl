@@ -163,16 +163,14 @@ function match_parameter_slice(features, group_config, n, spp, info_extraction, 
         end
         features_info[i] = vec_info 
         fractions_curves[i] = basins_fractions(labels)
-        if i > 1 && !isempty(features_info[i]) && !isempty(features_info[i-1])
-            # Match groups of features between two slices. 
-            rmap = match_attractor_ids!(features_info[i], features_info[i-1]; method, threshold)
-            swap_dict_keys!(fractions_curves[i], rmap)
-        end
 
         attractors_info[i] = Dict(
             a[1] => info_extraction(a[2]) for a in vec_info
         )
     end
+    
+    match_attractors_forward!(features_info, fractions_curves, method, threshold)
+    
     return fractions_curves, attractors_info
 end
 
