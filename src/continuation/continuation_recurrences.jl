@@ -183,11 +183,13 @@ function group_attractors!(attractors, labels, fractions_curves, n,
     grouped_labels[postve_lab] .+= maximum(att_keys)
     rmap = Dict( att_keys[k] => grouped_labels[k] for k in postve_lab)
     replace!(labels, rmap...)
-    for k in eachindex(attractors)
-        swap_dict_keys!(attractors[k], rmap)
-    end
 
-    label_fractions!(labels, n, spp, fractions_curves)
+    # finally we collect/group stuff into their dictionaries
+    for i in 1:n
+        swap_dict_keys!(attractors[i], rmap)
+        current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
+        fractions_curves[i] = basins_fractions(current_labels)
+    end
 
 end
 
@@ -201,10 +203,3 @@ function clustering(att::Dict, method, threshold)
 end
 
 
-function label_fractions!(labels, n, spp, fractions_curves)
-    # finally we collect/group stuff into their dictionaries
-    for i in 1:n
-        current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
-        fractions_curves[i] = basins_fractions(current_labels)
-    end
-end
