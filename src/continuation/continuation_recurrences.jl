@@ -71,7 +71,7 @@ function basins_fractions_continuation(
     attractors_info = Vector{Dict}(undef, n)
     prev_atts = Dict()
     for (i,p) in enumerate(prange)
-        current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation, 
+        current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation,
             ics, pidx, p, prev_atts, spp)
         fractions_curves[i] = fs
         attractors_info[i] =  get_info(current_atts)
@@ -85,7 +85,7 @@ function basins_fractions_continuation(
         match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
     elseif group_method == :grouping
         # Group over the all range of parameters
-        group_attractors!(attractors_info, labels, 
+        group_attractors!(attractors_info, labels,
             fractions_curves, n, spp, method, threshold)
     end
 
@@ -171,7 +171,7 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
 end
 
 
-function group_attractors!(attractors, labels, fractions_curves, n, 
+function group_attractors!(attractors, labels, fractions_curves, n,
     spp, method,  threshold)
     att = merge(attractors...)
     # Do the clustering with custom threshold
@@ -201,5 +201,3 @@ function clustering(att::Dict, method, threshold)
     grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
     return att_keys, grouped_labels
 end
-
-

@@ -194,25 +194,25 @@ end
 end
 
 @testset "Multistable grouping map" begin
-    # This is a fake multistable map helps at testing the grouping 
+    # This is a fake multistable map helps at testing the grouping
     # capabilities
     function dumb_map(dz, z, p, n)
         x,y = z
         r = p[1]
 
         θ = mod(angle(x + im*y),2pi)
-        rr = abs(x+ im*y) 
+        rr = abs(x+ im*y)
 
-        # This map works as follows: for the parameter r< 0.5 there are 
+        # This map works as follows: for the parameter r< 0.5 there are
         # 8 attractors close to the origin (radius 0.1)
         # For r > 0.5 there are 8 attractors very close to the origin (radius 0.01
-        # and 8 attractors far away and well separated. 
+        # and 8 attractors far away and well separated.
         if r < 0.5
             rr = 0.1
         else
             if rr > 1
                 rr = 3
-            else 
+            else
                 rr = 0.01
             end
         end
@@ -265,7 +265,7 @@ end
 
     rrange = range(0., 2; length = 20)
     ridx = 1
-    # Test several methods 
+    # Test several methods
     methods = [:grouping, :matching, :featurizing]
     frac_results = [ [1,9], [4, 12], [4,12]]
     for (k,m) in enumerate(methods)
@@ -273,16 +273,16 @@ end
         mapper = Attractors.AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
         if m == :featurizing
             using StatsBase
-            info(x) = mean(x) 
-            dist(a,d) = sqrt(sum(a .- d).^2) 
+            info(x) = mean(x)
+            dist(a,d) = sqrt(sum(a .- d).^2)
             continuation = Attractors.RecurrencesContinuation(mapper; threshold = 0.3, info_extraction = info, method = dist)
-        else  
+        else
             continuation = Attractors.RecurrencesContinuation(mapper; threshold = 0.1)
         end
         fractions_curves, a = Attractors.basins_fractions_continuation(
             continuation, rrange, ridx, sampler;
             show_progress = false, samples_per_parameter = 1000,
-            group_method = m 
+            group_method = m
         )
         test_fs(fractions_curves, rrange, frac_results[k])
     end

@@ -56,13 +56,13 @@ In this section we will calculate the basins of attraction of the four-dimension
 
 ```@example MAIN
 ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
-psys = projected_integrator(ds, [1, 2], [0.0, 0.0])
+psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 ```
 
 For this systems we know the attractors are close to the magnet positions, so we can just do
 ```@example MAIN
-attractors = Dict(i => Dataset([ds.f.magnets[i]]) for i in 1:3)
-mapper = AttractorsViaProximity(psys, attractors; sparse = false)
+attractors = Dict(i => Dataset([dynamic_rule(ds).magnets[i]]) for i in 1:3)
+mapper = AttractorsViaProximity(psys, attractors)
 ```
 
 and as before, get the basins of attraction

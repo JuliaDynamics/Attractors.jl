@@ -110,7 +110,7 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
     features = Vector{typeof(feature[1])}(undef, n*spp)
     # Collect features
     for (i, p) in enumerate(prange)
-        set_parameter!(mapper.integ, pidx, p)
+        set_parameter!(mapper.ds, pidx, p)
         current_features = extract_features(mapper, ics; show_progress, N = spp)
         features[((i - 1)*spp + 1):i*spp] .= current_features
         ProgressMeter.next!(progress)

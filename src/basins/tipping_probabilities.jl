@@ -1,8 +1,8 @@
 export tipping_probabilities
 
-
 """
     tipping_probabilities(basins_before, basins_after) → P
+
 Return the tipping probabilities of the computed basins before and after a change
 in the system parameters (or time forcing), according to the definition of[^Kaszás2019].
 

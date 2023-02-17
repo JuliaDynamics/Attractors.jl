@@ -1,7 +1,6 @@
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
 using Test, Attractors
-using Attractors.DynamicalSystemsBase
 using Random
 
 # TODO: Add a Histogram test with the competition dynamics model

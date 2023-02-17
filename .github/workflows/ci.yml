@@ -50,7 +50,6 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
-          Pkg.add(PackageSpec(; name="Entropies", rev="main"))
           Pkg.add(PackageSpec(; name="DynamicalSystemsBase", rev="main"))
 
       - uses: julia-actions/julia-runtest@v1
