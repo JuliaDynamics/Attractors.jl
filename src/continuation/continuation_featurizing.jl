@@ -1,8 +1,8 @@
-export FeaturingContinuation
+export FeaturizingContinuation
 import ProgressMeter
 import Mmap
 
-struct FeaturingContinuation{A<:AttractorsViaFeaturizing, E, M} <: BasinsFractionContinuation
+struct FeaturizingContinuation{A<:AttractorsViaFeaturizing, E, M} <: BasinsFractionContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64
@@ -11,7 +11,7 @@ struct FeaturingContinuation{A<:AttractorsViaFeaturizing, E, M} <: BasinsFractio
 end
 
 """
-    FeaturingContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
+    FeaturizingContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
 
 A method for [`basins_fractions_continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
@@ -46,13 +46,13 @@ done by the developer team of Attractors.jl.
     Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
     [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
-function FeaturingContinuation(
+function FeaturizingContinuation(
         mapper::AttractorsViaFeaturizing;
         info_extraction = mean_across_features,
         par_weight = 0.0, method = Centroid(),
         threshold = Inf,
     )
-    return FeaturingContinuation(
+    return FeaturizingContinuation(
         mapper, info_extraction, par_weight, method, threshold
     )
 end
@@ -69,7 +69,7 @@ function mean_across_features(fs)
 end
 
 function basins_fractions_continuation(
-        continuation::FeaturingContinuation, prange, pidx, ics;
+        continuation::FeaturizingContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100, group_method = :grouping
     )
     (; mapper, info_extraction, par_weight, method, threshold) = continuation
@@ -79,7 +79,7 @@ function basins_fractions_continuation(
 
     if group_method == :matching
         # Do the matching from one parameter to the next.
-        fractions_curves, attractors_info = match_parameter_slice(features, 
+        fractions_curves, attractors_info = match_parameter_slice(features,
             mapper.group_config, n, spp, info_extraction, method, threshold)
     elseif group_method == :grouping
         # This is a special clause for implementing the MCBB algorithm (weighting
@@ -93,10 +93,10 @@ function basins_fractions_continuation(
         end
 
         # Group over the all range of parameters
-        fractions_curves, attractors_info = label_fractions_across_parameter(labels, 
+        fractions_curves, attractors_info = label_fractions_across_parameter(labels,
             n, spp, features, info_extraction)
     end
-    
+
     return fractions_curves, attractors_info
 end
 
@@ -143,16 +143,16 @@ function label_fractions_across_parameter(labels, n, spp, features, info_extract
 end
 
 function match_parameter_slice(features, group_config, n, spp, info_extraction, method, threshold)
-    max_label = 0 
+    max_label = 0
     features_info = Vector{Dict{Int, typeof(Dataset(features[1:2]))}}(undef, n)
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction(features[1])
     attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
     for i in 1:n
-        slice_feats = features[((i - 1)*spp + 1):i*spp] 
-        # Group features in the same parameter slice. 
+        slice_feats = features[((i - 1)*spp + 1):i*spp]
+        # Group features in the same parameter slice.
         labels = group_features(slice_feats, group_config)
-        postve_lab = findall(labels .> 0) 
+        postve_lab = findall(labels .> 0)
         # Give labels unique numbers
         labels[postve_lab] .+= max_label
         max_label = maximum(labels)
@@ -161,7 +161,7 @@ function match_parameter_slice(features, group_config, n, spp, info_extraction, 
             ind = findall(labels .== j)
             vec_info[j] = Dataset(slice_feats[ind])
         end
-        features_info[i] = vec_info 
+        features_info[i] = vec_info
         fractions_curves[i] = basins_fractions(labels)
 
         attractors_info[i] = Dict(
@@ -171,4 +171,3 @@ function match_parameter_slice(features, group_config, n, spp, info_extraction, 
     match_attractors_forward!(features_info, fractions_curves, method, threshold)
     return fractions_curves, attractors_info
 end
-

@@ -35,7 +35,7 @@ in [Extinction of a species in a multistable competition model](@ref).
    but already features or something else that can be grouped directly.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description
-   of the features. I.e., exactly as in [`FeaturingContinuation`](@ref).
+   of the features. I.e., exactly as in [`FeaturizingContinuation`](@ref).
    The 5th argument is optional and defaults to the centroid of the features.
 
 ## Return

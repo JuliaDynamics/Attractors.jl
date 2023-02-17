@@ -25,6 +25,6 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     @testset "continuation" begin
         testfile("continuation/matching_attractors.jl")
         testfile("continuation/recurrences_continuation.jl")
-        testfile("continuation/featuring_continuation.jl")
+        testfile("continuation/featurizing_continuation.jl")
     end
 end

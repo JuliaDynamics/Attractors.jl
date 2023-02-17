@@ -37,7 +37,7 @@ using Random
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-    continuation = FeaturingContinuation(mapper; par_weight = 1.)
+    continuation = FeaturizingContinuation(mapper; par_weight = 1.)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler; show_progress = false)
 
@@ -62,7 +62,7 @@ using Random
 
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 0.1, max_used_features = 100)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-    continuation = FeaturingContinuation(mapper; par_weight = 1., threshold = 0.3)
+    continuation = FeaturizingContinuation(mapper; par_weight = 1., threshold = 0.3)
     fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
     continuation, rrange, ridx, sampler; group_method = :matching, show_progress = false)
 
@@ -115,7 +115,7 @@ if DO_EXTENSIVE_TESTS
         end
         clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.)
         mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
-        continuation = FeaturingContinuation(mapper; par_weight = 1.0)
+        continuation = FeaturizingContinuation(mapper; par_weight = 1.0)
         fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
             continuation, ps, pidx, sampler;
             samples_per_parameter = 1000, show_progress = false
@@ -134,7 +134,7 @@ if DO_EXTENSIVE_TESTS
         end
 
         mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
-        continuation = FeaturingContinuation(mapper; par_weight = 1.0)
+        continuation = FeaturizingContinuation(mapper; par_weight = 1.0)
         fractions_curves, attractors_info = Attractors.basins_fractions_continuation(
             continuation, ps, pidx, sampler;
             samples_per_parameter = 1000, show_progress = false, 

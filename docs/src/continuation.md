@@ -28,5 +28,5 @@ aggregate_attractor_fractions
 
 ## Grouping continuation
 ```@docs
-FeaturingContinuation
+FeaturizingContinuation
 ```

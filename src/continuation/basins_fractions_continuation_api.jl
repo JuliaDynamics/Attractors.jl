@@ -41,12 +41,12 @@ initial conditions or a dataset containing them.
   ```
   sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
   ```
-- [`FeaturingContinuation`](@ref).
+- [`FeaturizingContinuation`](@ref).
 
 """
 function basins_fractions_continuation end
 
 include("match_attractor_ids.jl")
 include("continuation_recurrences.jl")
-include("continuation_featuring.jl")
+include("continuation_featurizing.jl")
 include("aggregate_attractor_fractions.jl")
