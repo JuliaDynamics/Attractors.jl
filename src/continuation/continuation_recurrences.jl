@@ -14,12 +14,23 @@ end
 
 """
     RecurrencesContinuation(mapper::AttractorsViaRecurrences; kwargs...)
-A method for [`basins_fractions_continuation`](@ref).
+A method for [`basins_fractions_continuation`](@ref). It performs a continuation using a
+mapper from [`AttractorsViaRecurrences`](@ref). The method uses two different 
+continuation method: 
+
+- Attractors are grouped across a parameor a single parameter slice. The continuation
+is performed by matching the labelled attractors from one parameter slice to the next 
+using the special distance `method`. The threshold   
+- The attractors are grouped over the full parameter range. Said differently, all 
+attractors of all initial conditions across all parameter values are put into the same 
+"pool" and then grouped using the DBSCAN algorithm. After the grouping is finished the 
+feature label fractions are distributedi to each parameter value they came from.
+The optimal radius parameter for the DBSCAN algorithm is set though the threshold 
+keyword argument. 
+
 It uses seeding of previous attractors to find new ones, which is the main performance
 bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
 as the system parameter is increased.
-
-Will write more once we have the paper going.
 
 ## Keyword Arguments
 - `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
@@ -50,6 +61,23 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
     return (rand(rng, attractor.data) for _ in 1:seeds)
 end
 
+"""
+    basins_fractions_continuation(continuation::RecurrencesContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
+
+Performs the continuation using a `mapper` from [`AttractorsViaRecurrences`](@ref) that 
+maps an initial condition to an attractor. The structure `continuation` is a instance of [`RecurrencesContinuation`](@ref) that contains the information of the dynamical system. 
+
+`prange` is the range of parameters for the continuation. 
+`pidx` is the number or name of the parameter in the dynamical system.    
+`ics` is a grid of initial conditions or a dedicated function that generates initial 
+conditions in the state space.  
+
+RecurrencesContinuation Keyword Arguments
+- `show_progress = true`: print information on the current computation. 
+- `samples_per_parameter = 100`: number of initial conditions to process per parameter. 
+- `group_method = :grouping`: selects the method to perform the continuation. `:grouping` 
+is meant to group the features accross the parameter range while `:matching` will match the clusters of attractors from one parameter slice to the next. 
+"""
 function basins_fractions_continuation(
         continuation::RecurrencesContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
@@ -157,7 +185,9 @@ function get_attractors_and_fractions(mapper, continuation, ics, pidx, p, prev_a
     return att, fs, lab
 end
 
-
+# This function matches the attractors from one parameter slice to the next. 
+# increasing the value of the parameter. Other matching are possible. For example 
+# backward. 
 function match_attractors_forward!(attractors, fractions, method, threshold)
     n = length(attractors)
     for k in 2:n
@@ -170,7 +200,8 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
     end
 end
 
-
+# This function groups the attractors using the DBSCAN algorithm. The optimal 
+# radius for the algorithm is set by threshold.
 function group_attractors!(attractors, labels, fractions_curves, n,
     spp, method,  threshold)
     att = merge(attractors...)
@@ -193,7 +224,8 @@ function group_attractors!(attractors, labels, fractions_curves, n,
 
 end
 
-
+# DBSCAN algorithm performed using the low-level function 
+# _cluster_distances_into_labels
 function clustering(att::Dict, method, threshold)
     distances = datasets_sets_distances(att, att, method)
     dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]

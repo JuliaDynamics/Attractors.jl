@@ -17,17 +17,29 @@ A method for [`basins_fractions_continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
 and hence requires an instance of that mapper as an input.
 When used in [`basins_fractions_continuation`](@ref), features are extracted
-and then grouped across a parameter range. Said differently, all features
+in order to aproximate a continuation of the attractors accross the parameter space. 
+
+Different methods of continuation are implemented namely: 
+
+- Features are grouped across a parameter range. Said differently, all features
 of all initial conditions across all parameter values are put into the same "pool"
 and then grouped as dictated by the `group_config` of the mapper.
 After the grouping is finished the feature label fractions are distributed
 to each parameter value they came from.
+- The features are grouped and labeled for a single parameter slice. The continuation
+is performed by matching the labelled features from one parameter slice to the next 
+using the special distance `method`.  
+- The labelled features are grouped using an histogram binning. TODO 
 
 ## Keyword arguments
 - `info_extraction::Function` a function that takes as an input a vector of features
   (corresponding to a cluster) and returns a description of the cluster.
   By default, the centroid of the cluster is used.
 - `par_weight = 0`: See below the section on MCBB.
+- `method = Centroid()`: the default distance to compute the distance between two groups 
+of features. 
+- `threshold = Inf`: this is the threshold set to match the clusters of features between them. 
+When set to Inf the smallest distance is selected between them. 
 
 ## MCBB special version
 If the chosen grouping method is [`GroupViaClustering`](@ref), the additional keyword
@@ -68,6 +80,23 @@ function mean_across_features(fs)
     return means ./ N
 end
 
+"""
+    basins_fractions_continuation(continuation::FeaturizingContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
+
+Performs the continuation using a `mapper` from [`AttractorsViaFeaturizing`](@ref) that 
+maps an initial condition to a feature. The structure `continuation` is a instance of [`FeaturizingContinuation`](@ref) that contains the information of the dynamical system. 
+
+`prange` is the range of parameters for the continuation. 
+`pidx` is the number or name of the parameter in the dynamical system.    
+`ics` is a grid of initial conditions or a dedicated function that generates initial 
+conditions in the state space.  
+
+## Keyword Arguments
+- `show_progress = true`: print information on the current computation. 
+- `samples_per_parameter = 100`: number of initial conditions to process per parameter. 
+- `group_method = :grouping`: selects the method to perform the continuation. `:grouping` 
+is meant to group the features accross the parameter range while `:matching` will match the clusters of features from one parameter slice to the next. 
+"""
 function basins_fractions_continuation(
         continuation::FeaturizingContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100, group_method = :grouping
@@ -100,7 +129,7 @@ function basins_fractions_continuation(
     return fractions_curves, attractors_info
 end
 
-
+# This function computes the trajectory and map them to a feature. 
 function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
     progress = ProgressMeter.Progress(n;
         desc="Generating features", enabled=show_progress, offset = 2,
@@ -118,8 +147,9 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
     return features
 end
 
+ 
+# This function collect/group stuff into their dictionaries
 function label_fractions_across_parameter(labels, n, spp, features, info_extraction)
-    # finally we collect/group stuff into their dictionaries
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction(features[1:2])
     attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
@@ -142,6 +172,8 @@ function label_fractions_across_parameter(labels, n, spp, features, info_extract
     return fractions_curves, attractors_info
 end
 
+# This function groups the feature for each parameter and the clusters of features are
+# compared between each slice. 
 function match_parameter_slice(features, group_config, n, spp, info_extraction, method, threshold)
     max_label = 0
     features_info = Vector{Dict{Int, typeof(Dataset(features[1:2]))}}(undef, n)
