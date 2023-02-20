@@ -132,45 +132,45 @@ end
     max_distance = 20, ε = 1e-3)
 end
 
-@testset "Lorenz-84 system: interlaced close-by" begin
-    F = 6.886; G = 1.347; a = 0.255; b = 4.0
-    function lorenz84_rule(u, p, t)
-        F, G, a, b = p
-        x, y, z = u
-        dx = -y^2 -z^2 -a*x + a*F
-        dy = x*y - y - b*x*z + G
-        dz = b*x*y + x*z - z
-        return SVector{3}(dx, dy, dz)
-    end
-    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-    ds = CoupledODEs(lorenz84_rule, fill(0.1, 3), [F, G, a, b]; diffeq)
-
-    u0s = [
-        1 => [2.0, 1, 0], # periodic
-        2 => [-2.0, 1, 0], # chaotic
-        3 => [0, 1.5, 1.0], # fixed point
-    ]
-    M = 200; z = 3
-    xg = yg = zg = range(-z, z; length = M)
-    grid = (xg, yg, zg)
-    expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
-
-    using ComplexityMeasures
-
-    function featurizer(A, t)
-        # `g` is the number of boxes needed to cover the set
-        probs = probabilities(ValueHistogram(0.1), A)
-        g = exp(entropy(Renyi(; q = 0), probs))
-        return SVector(g, minimum(A[:,1]))
-    end
-
-    test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20)
-end
-
-
 # Okay, all of these aren't fundamentally new tests.
 if DO_EXTENSIVE_TESTS
+
+    @testset "Lorenz-84 system: interlaced close-by" begin
+        F = 6.886; G = 1.347; a = 0.255; b = 4.0
+        function lorenz84_rule(u, p, t)
+            F, G, a, b = p
+            x, y, z = u
+            dx = -y^2 -z^2 -a*x + a*F
+            dy = x*y - y - b*x*z + G
+            dz = b*x*y + x*z - z
+            return SVector{3}(dx, dy, dz)
+        end
+        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+        ds = CoupledODEs(lorenz84_rule, fill(0.1, 3), [F, G, a, b]; diffeq)
+
+        u0s = [
+            1 => [2.0, 1, 0], # periodic
+            2 => [-2.0, 1, 0], # chaotic
+            3 => [0, 1.5, 1.0], # fixed point
+        ]
+        M = 200; z = 3
+        xg = yg = zg = range(-z, z; length = M)
+        grid = (xg, yg, zg)
+        expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
+
+        using ComplexityMeasures
+
+        function featurizer(A, t)
+            # `g` is the number of boxes needed to cover the set
+            probs = probabilities(ValueHistogram(0.1), A)
+            g = exp(entropy(Renyi(; q = 0), probs))
+            return SVector(g, minimum(A[:,1]))
+        end
+
+        test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
+        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20)
+    end
+
     @testset "Duffing oscillator: stroboscopic map" begin
         @inbounds function duffing_rule(x, p, t)
             ω, f, d, β = p
