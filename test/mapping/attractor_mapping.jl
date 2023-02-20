@@ -142,15 +142,14 @@ end
         dz = b*x*y + x*z - z
         return SVector{3}(dx, dy, dz)
     end
-    ds = CoupledODEs(lorenz84_rule, fill(0.1, 3), [F, G, a, b])
+    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+    ds = CoupledODEs(lorenz84_rule, fill(0.1, 3), [F, G, a, b]; diffeq)
 
     u0s = [
         1 => [2.0, 1, 0], # periodic
         2 => [-2.0, 1, 0], # chaotic
         3 => [0, 1.5, 1.0], # fixed point
     ]
-    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-    ds = CoupledODEs(ODEProblem(ds), diffeq)
     M = 200; z = 3
     xg = yg = zg = range(-z, z; length = M)
     grid = (xg, yg, zg)
