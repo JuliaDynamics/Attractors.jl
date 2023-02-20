@@ -94,23 +94,23 @@ conditions in the state space.
 ## Keyword Arguments
 - `show_progress = true`: print information on the current computation. 
 - `samples_per_parameter = 100`: number of initial conditions to process per parameter. 
-- `group_method = :grouping`: selects the method to perform the continuation. `:grouping` 
+- `cont_method = :grouping`: selects the method to perform the continuation. `:grouping` 
 is meant to group the features accross the parameter range while `:matching` will match the clusters of features from one parameter slice to the next. 
 """
 function basins_fractions_continuation(
         continuation::FeaturizingContinuation, prange, pidx, ics;
-        show_progress = true, samples_per_parameter = 100, group_method = :grouping
+        show_progress = true, samples_per_parameter = 100, cont_method = :grouping
     )
     (; mapper, info_extraction, par_weight, method, threshold) = continuation
     spp, n = samples_per_parameter, length(prange)
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
 
-    if group_method == :matching
+    if cont_method == :matching
         # Do the matching from one parameter to the next.
         fractions_curves, attractors_info = match_parameter_slice(features,
             mapper.group_config, n, spp, info_extraction, method, threshold)
-    elseif group_method == :grouping
+    elseif cont_method == :grouping
         # This is a special clause for implementing the MCBB algorithm (weighting
         # also by parameter value, i.e., making the parameter value a feature)
         # It calls a special `group_features` function that also incorporates the

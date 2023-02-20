@@ -75,13 +75,13 @@ conditions in the state space.
 RecurrencesContinuation Keyword Arguments
 - `show_progress = true`: print information on the current computation. 
 - `samples_per_parameter = 100`: number of initial conditions to process per parameter. 
-- `group_method = :grouping`: selects the method to perform the continuation. `:grouping` 
+- `cont_method = :grouping`: selects the method to perform the continuation. `:grouping` 
 is meant to group the features accross the parameter range while `:matching` will match the clusters of attractors from one parameter slice to the next. 
 """
 function basins_fractions_continuation(
         continuation::RecurrencesContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
-        samples_per_parameter = 100, show_progress = true, group_method = :matching
+        samples_per_parameter = 100, show_progress = true, cont_method = :matching
     )
     progress = ProgressMeter.Progress(length(prange);
         desc="Continuating basins fractions:", enabled=show_progress
@@ -93,7 +93,7 @@ function basins_fractions_continuation(
     )
 
     # Gather labels, fractions and attractors doing the seeding process for each parameter.
-    sav_labs = (group_method == :grouping)
+    sav_labs = (cont_method == :grouping)
     sav_labs && (labels = Vector{Int}(undef, n*spp))
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     attractors_info = Vector{Dict}(undef, n)
@@ -108,10 +108,10 @@ function basins_fractions_continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
-    if group_method == :matching
+    if cont_method == :matching
         # Do the matching from one parameter to the next.
         match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
-    elseif group_method == :grouping
+    elseif cont_method == :grouping
         # Group over the all range of parameters
         group_attractors!(attractors_info, labels,
             fractions_curves, n, spp, method, threshold)
