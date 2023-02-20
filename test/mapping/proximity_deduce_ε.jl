@@ -1,9 +1,10 @@
 using Attractors
-using Attractors.DynamicalSystemsBase
 using Test
 
 @testset "Proximity deduce ε" begin
-    ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
+    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+    henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+    ds = henon()
     @testset "single attractor, no ε" begin
         attractors = Dict(1 => trajectory(ds, 10000, [0.0, 0.0]; Δt = 1, Ttr=100)[1])
         mapper = AttractorsViaProximity(ds, attractors)

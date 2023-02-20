@@ -12,6 +12,7 @@ using LinearAlgebra
 using OrdinaryDiffEq: Vern9
 using Random
 using Statistics
+using PredefinedDynamicalSystems: Systems
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -114,7 +115,10 @@ end
 # Actual tests
 @testset "Henon map: discrete & divergence" begin
     u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] # template ics
-    ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
+    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+    henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+    ds = henon()
+
     xg = yg = range(-2.0, 2.0; length=100)
     grid = (xg, yg)
     expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
@@ -128,39 +132,54 @@ end
     max_distance = 20, ε = 1e-3)
 end
 
-@testset "Lorenz-84 system: interlaced close-by" begin
-    F = 6.886; G = 1.347; a = 0.255; b = 4.0
-    ds = Systems.lorenz84(; F, G, a, b)
-    u0s = [
-        1 => [2.0, 1, 0], # periodic
-        2 => [-2.0, 1, 0], # chaotic
-        3 => [0, 1.5, 1.0], # fixed point
-    ]
-    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-    ds = CoupledODEs(ODEProblem(ds), diffeq)
-    M = 200; z = 3
-    xg = yg = zg = range(-z, z; length = M)
-    grid = (xg, yg, zg)
-    expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
-
-    using ComplexityMeasures
-
-    function featurizer(A, t)
-        # `g` is the number of boxes needed to cover the set
-        probs = probabilities(ValueHistogram(0.1), A)
-        g = exp(entropy(Renyi(; q = 0), probs))
-        return SVector(g, minimum(A[:,1]))
-    end
-
-    test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20)
-end
-
-
 # Okay, all of these aren't fundamentally new tests.
 if DO_EXTENSIVE_TESTS
+
+    @testset "Lorenz-84 system: interlaced close-by" begin
+        F = 6.886; G = 1.347; a = 0.255; b = 4.0
+        function lorenz84_rule(u, p, t)
+            F, G, a, b = p
+            x, y, z = u
+            dx = -y^2 -z^2 -a*x + a*F
+            dy = x*y - y - b*x*z + G
+            dz = b*x*y + x*z - z
+            return SVector{3}(dx, dy, dz)
+        end
+        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+        ds = CoupledODEs(lorenz84_rule, fill(0.1, 3), [F, G, a, b]; diffeq)
+
+        u0s = [
+            1 => [2.0, 1, 0], # periodic
+            2 => [-2.0, 1, 0], # chaotic
+            3 => [0, 1.5, 1.0], # fixed point
+        ]
+        M = 200; z = 3
+        xg = yg = zg = range(-z, z; length = M)
+        grid = (xg, yg, zg)
+        expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
+
+        using ComplexityMeasures
+
+        function featurizer(A, t)
+            # `g` is the number of boxes needed to cover the set
+            probs = probabilities(ValueHistogram(0.1), A)
+            g = exp(entropy(Renyi(; q = 0), probs))
+            return SVector(g, minimum(A[:,1]))
+        end
+
+        test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
+        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20)
+    end
+
     @testset "Duffing oscillator: stroboscopic map" begin
-        ds = Systems.duffing([0.1, 0.25]; ω = 1.0, f = 0.2, d = 0.15, β = -1)
+        @inbounds function duffing_rule(x, p, t)
+            ω, f, d, β = p
+            dx1 = x[2]
+            dx2 = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
+            return SVector(dx1, dx2)
+        end
+        ds = CoupledODEs(duffing_rule, [0.1, 0.25], [1.0, 0.2, 0.15, -1])
+
         xg = yg = range(-2.2, 2.2; length=200)
         grid = (xg, yg)
         diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
@@ -181,6 +200,7 @@ if DO_EXTENSIVE_TESTS
 
 
     @testset "Magnetic pendulum: projected system" begin
+        # TODO: replace this!
         ds = Systems.magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3)
         xg = range(-2,2,length = 201)
         yg = range(-2,2,length = 201)
@@ -203,7 +223,16 @@ if DO_EXTENSIVE_TESTS
 
 
     @testset "Thomas cyclical: Poincaré map" begin
-        ds = Systems.thomas_cyclical(b = 0.1665)
+        function thomas_rule(u, p, t)
+            x,y,z = u
+            b = p[1]
+            xdot = sin(y) - b*x
+            ydot = sin(z) - b*y
+            zdot = sin(x) - b*z
+            return SVector{3}(xdot, ydot, zdot)
+        end
+        ds = CoupledODEs(thomas_rule, [1.0, 0, 0], [0.1665])
+
         xg = yg = range(-6.0, 6.0; length = 100) # important, don't use 101 here, because
         # the dynamical system has some fixed points ON the hyperplane.
         grid = (xg, yg)
