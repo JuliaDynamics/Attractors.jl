@@ -81,17 +81,17 @@ RecurrencesContinuation Keyword Arguments
 is meant to group the features accross the parameter range while `:matching` will match the clusters of attractors from one parameter slice to the next.
 """
 function continuation(
-        continuation::RecurrencesContinuation,
-        prange, pidx, ics = _ics_from_grid(continuation);
+        rc::RecurrencesContinuation,
+        prange, pidx, ics = _ics_from_grid(rc);
         samples_per_parameter = 100, show_progress = true, cont_method = :matching
     )
     progress = ProgressMeter.Progress(length(prange);
         desc="Continuating basins fractions:", enabled=show_progress
     )
     n, spp = length(prange), samples_per_parameter
-    (; mapper, method, threshold) = continuation
+    (; mapper, method, threshold) = rc
     get_info = attractors -> Dict(
-        k => continuation.info_extraction(att) for (k, att) in attractors
+        k => rc.info_extraction(att) for (k, att) in attractors
     )
 
     # Gather labels, fractions and attractors doing the seeding process for each parameter.
@@ -101,7 +101,7 @@ function continuation(
     attractors_info = Vector{Dict}(undef, n)
     prev_atts = Dict()
     for (i,p) in enumerate(prange)
-        current_atts, fs, lab = get_attractors_and_fractions(mapper, continuation,
+        current_atts, fs, lab = get_attractors_and_fractions(mapper, rc,
             ics, pidx, p, prev_atts, spp)
         fractions_curves[i] = fs
         attractors_info[i] =  get_info(current_atts)

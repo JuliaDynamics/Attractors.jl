@@ -105,10 +105,10 @@ conditions in the state space.
 is meant to group the features accross the parameter range while `:matching` will match the clusters of features from one parameter slice to the next.
 """
 function continuation(
-        continuation::FeaturizingContinuation, prange, pidx, ics;
+        fc::FeaturizingContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100, cont_method = :grouping
     )
-    (; mapper, info_extraction, par_weight, method, threshold) = continuation
+    (; mapper, info_extraction, par_weight, method, threshold) = fc
     spp, n = samples_per_parameter, length(prange)
 
     features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)

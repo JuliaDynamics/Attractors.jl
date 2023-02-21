@@ -1,15 +1,20 @@
 export continuation
 
-# In the end, it is better to have a continuation type that contains
-# how to match, because there are other keywords that always go into the
-# continuation... Like in the recurrences the keyword of seeds per attractor,
-# or in the clustering some other stuff like the parameter scaling
+"""
+   AttractorsBasinsContinuation
 
+Supertype of continuation methods given to [`continuation`](@ref).
+Possible subtypes are:
 
+- [`RecurrencesContinuation`](@ref)
+- [`FeaturizingContinuation`](@ref)
+
+These are given to the main [`continuation`](@ref) function.
+"""
 abstract type AttractorsBasinsContinuation end
 
 """
-    continuation(continuation, prange, pidx, ics; kwargs...)
+   continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
 
 Find and continue attractors and the fractions of their basins of attraction
 across a parameter range.
