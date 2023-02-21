@@ -14,6 +14,20 @@ These are given to the main [`continuation`](@ref) function.
 abstract type AttractorsBasinsContinuation end
 
 """
+   MatchingMethod
+
+Supertype of types specifying how to match attractors/features in [`continuation`](@ref).
+Concrete subtypes are given as options when instantiating an
+[`AttractorsBasinsContinuation`](@ref) subtype.
+
+Possible subtypes are:
+
+- [`ParameterSliceCrossDistance`](@ref)
+- [`ClusterOverAllParameters`](@ref)
+"""
+abstract type MatchingMethod end
+
+"""
    continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
 
 Find and continue attractors and the fractions of their basins of attraction

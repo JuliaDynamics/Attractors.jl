@@ -187,9 +187,6 @@ function match_attractors_forward!(attractors, fractions, method, threshold)
     end
 end
 
-# TODO: What does it even mean to "group attractors with DBSCAN"...????
-# attractors have several points. What does it mean that attractors can form clusters???
-
 # This function groups the attractors using the DBSCAN algorithm. The optimal
 # radius for the algorithm is set by threshold.
 function group_attractors!(attractors, labels, fractions_curves, n,
