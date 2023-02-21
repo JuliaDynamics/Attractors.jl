@@ -35,7 +35,7 @@ in [Extinction of a species in a multistable competition model](@ref).
    _However_, you may also use the DBSCAN clustering approach here to group attractors
    based on their state space distance (the [`set_distance`](@ref)).
    For this, use `identity` as `featurizer`, and use
-   `clust_distance_metric = (A, B) -> set_distance(A, B)` when initializing the
+   `clust_distance_metric = set_distance` when initializing the
    [`GroupViaClustering`](@ref) configuration.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description

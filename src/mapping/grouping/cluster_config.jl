@@ -99,7 +99,7 @@ than the `"silhouette"` methods.
     Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
     Should (Still) Use DBSCAN
 """
-struct GroupViaClustering{R<:Union{Real, String}, M<:Metric, F<:Function} <: GroupingConfig
+struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingConfig
     clust_distance_metric::M
     min_neighbors::Int
     rescale_features::Bool
@@ -133,7 +133,7 @@ end
 # The keyword version of this function is only called in
 # `GroupingAcrossParametersContinuation` and is not part of public API!
 function group_features(
-        features::Vector{<:AbstractVector}, config::GroupViaClustering;
+        features, config::GroupViaClustering;
         par_weight::Real = 0, plength::Int = 1, spp::Int = 1,
     )
     nfeats = length(features); dimfeats = length(features[1])
@@ -168,8 +168,8 @@ function _distance_matrix(features, config::GroupViaClustering;
     else # it is any arbitrary distance function, e.g., used in aggregating attractors
         @inbounds for i in eachindex(features)
             Threads.@threads for j in i:length(features)
-                distances[i, j] = metric(features[i], features[j])
-                distances[j, i] = distances[i, j] # symmetry
+                dists[i, j] = metric(features[i], features[j])
+                dists[j, i] = dists[i, j] # symmetry
             end
         end
     end
@@ -225,13 +225,8 @@ end
 """
 Do "min-max" rescaling of vector of feature vectors so that its values span `[0,1]`.
 """
-function _rescale_to_01(features::Vector{<:SVector})
-    dataset = Dataset(features) # To access min-maxima
-    mini, maxi = minmaxima(dataset)
-    return map(f -> f .* (maxi .- mini) .+ mini, features)
-end
-function _rescale_to_01(features::Vector{<:Vector})
-    dataset = Dataset(features) # To access min-maxima
+_rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(Dataset(features))
+function _rescale_to_01(features::AbstractDataset)
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
