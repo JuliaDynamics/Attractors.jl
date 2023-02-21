@@ -26,7 +26,7 @@ the different parameters) with different IDs.
 `match_attractors_ids!` tries to "match" them by modifying the attractor IDs,
 i.e., the keys of the given dictionaries.
 
-The matching happens according to the output of the [`setsofsets_distance`](@ref)
+The matching happens according to the output of the [`setsofsets_distances`](@ref)
 function with the keyword `distance`. distance` can be whatever that function accepts.
 Attractors are then match according to distance, with unique mapping.
 The closest attractors (before and after) are mapped to each
@@ -57,7 +57,7 @@ Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_attractor_ids!`](@ref).
 """
 function replacement_map(a₊::Dict, a₋::Dict; distance = Centroid(), threshold = Inf)
-    distances = setsofsets_distance(a₊, a₋, distance)
+    distances = setsofsets_distances(a₊, a₋, distance)
     keys₊, keys₋ = keys.((a₊, a₋))
     replacement_map(keys₊, keys₋, distances::Dict, threshold)
 end
