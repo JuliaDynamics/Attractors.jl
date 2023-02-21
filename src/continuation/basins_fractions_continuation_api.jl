@@ -56,10 +56,37 @@ Supertype of types specifying how to match attractors/features in [`continuation
 Concrete subtypes are given as options when instantiating an
 [`AttractorsBasinsContinuation`](@ref) subtype.
 
-Possible subtypes are:
+Below we outline the possible matching options. To understand them, you need to abstract
+an attractor and a vector of feature vectors into the same thing: a [`StateSpaceSet`](@ref).
+Attractors are what is found by [`AttractorsViaRecurrences`](@ref).
+Vectors of features (which are also essentially [`StateSpaceSet`](@ref)),
+is what is found by [`AttractorsViaFeaturizing`](@ref) because all features that
+get assigned the same label form a vector of features.
 
-- [`ParameterSliceCrossDistance`](@ref)
-- [`ClusterOverAllParameters`](@ref)
+Let a/f/set mean either an attractor or a vector of feature vectors with same label.
+So, a/f/set means a [`StateSpaceSet'](@ref).
+
+The matching of a/f/sets across parameter values is dictactated by the following
+subtypes of `MatchingMethod`:
+
+- `ParameterSliceCrossDistance()`: At each parameter slice beyond the first, the new
+  a/f/sets are matched to the previous a/f/sets found in the previous parameter value
+  by a direct call to the [`match_attractor_ids!`](@ref) function. Hence, the matching
+  of a/f/sets here works "slice by slice" on the parameter axis and the a/f/sets
+  that are closest to each other (in state space, but for two different parameter values)
+  get assigned the same label.
+
+- `ClusterOverAllParameters()`: There is a slight difference of how this works
+  The a/f/sets are grouped over the full parameter range
+  using a DBSCAN clustering. A distance matrix is created over all a/f/sets across
+  parameter values, using the [`set_distance`](@ref) function. This distance matrix
+  is given to DBSCAN, and the output is clusterred attractors. Now each cluster may
+  include attractors across different parameter values. After the clustering is finished
+  the cluster label fractions are distributed to each parameter value they came from.
+
+TODO: This is WRONG!!! The `ClusterOverAllParameters` is something completely
+different in the Recurrences and the Featurizing versions...
+
 """
 abstract type MatchingMethod end
 

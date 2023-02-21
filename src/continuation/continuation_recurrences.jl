@@ -36,22 +36,6 @@ the same ID. The matching process is based on distances attractors (= sets in st
 have between each other. The function that computes these distances is
 [`setsofsets_distances`](@ref) (please read that docstring before continuing).
 
-The matching depends on the type of the keyword `matching_method` as follows:
-
-- `ParameterSliceCrossDistance`: At each parameter slice beyond the first, the new
-  attractors are matched to the previous attractors found in the previous parameter value
-  by a direct call to the [`match_attractor_ids!`](@ref) function. Hence, the matching
-  of attractors here works "slice by slice" on the parameter axis and the attractors
-  that are closest to each other (in state space, but for two different parameter values)
-  get assigned the same label.
-
-- `ClusterOverAllParameters`: The attractors are grouped over the full parameter range
-  using a DBSCAN clustering. A distance matrix is created over all attractors across
-  parameter values, using the [`set_distance`](@ref) function. This distance matrix
-  is given to DBSCAN, and the output is clusterred attractors. Now each cluster may
-  include attractors across different parameter values. After the clustering is finished
-  the cluster label fractions are distributed to each parameter value they came from.
-
 ## Keyword arguments
 
 - `matching_method = ParameterSliceCrossDistance()`: see description above.
