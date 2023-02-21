@@ -23,10 +23,6 @@ however, one may care about aggregating all attractors into two groups: where a 
 species is extinct or not. This is the example highlighted in our documentation,
 in [Extinction of a species in a multistable competition model](@ref).
 
-*Note:* you can even use the DBSCAN clustering approach here to group attractors.
-Use `identity` as `featurizer`, and use
-`clust_distance_metric = (A, B) -> set_distance(A, B)` when initializing the
-[`GroupViaClustering`](@ref) configuration.
 
 ## Input
 
@@ -35,9 +31,13 @@ Use `identity` as `featurizer`, and use
    1st and 2nd argument are exactly like the return values of
    [`continuation`](@ref) with [`RecurrencesSeededContinuation`](@ref)
    (or, they can be the return of [`basins_fractions`](@ref)).
-3. `featurizer`: a 1-argument function to map an attractor into a feature `SVector`.
-   Notice that you can use `identity` if the input "attractors" aren't actually attractors
-   but already features or something else that can be grouped directly.
+3. `featurizer`: a 1-argument function to map an attractor into an appropriate feature
+   to be grouped later. Features expected by [`GroupingConfig`](@ref) are `SVector`.
+   _However_, you may also use the DBSCAN clustering approach here to group attractors
+   based on their state space distance (the [`set_distance`](@ref)).
+   For this, use `identity` as `featurizer`, and use
+   `clust_distance_metric = (A, B) -> set_distance(A, B)` when initializing the
+   [`GroupViaClustering`](@ref) configuration.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description
    of the features. I.e., exactly as in [`GroupAcrossParameterContinuation`](@ref).
