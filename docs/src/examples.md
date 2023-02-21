@@ -128,7 +128,7 @@ the system's symmetry.
 
 
 ## Basin fractions continuation in the magnetic pendulum
-Perhaps the simplest application of [`basins_fractions_continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
+Perhaps the simplest application of [`continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
 
 
 
@@ -242,7 +242,7 @@ mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # NOTE: in a realistic applicaiton the threshold should not be infinite,
 # but some sensible distance in state space units
 continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
-fractions_curves, attractors_info = basins_fractions_continuation(
+fractions_curves, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );

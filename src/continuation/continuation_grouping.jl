@@ -2,7 +2,7 @@ export GroupAcrossParameterContinuation
 import ProgressMeter
 import Mmap
 
-struct GroupAcrossParameterContinuation{A<:AttractorsViaFeaturizing, E} <: BasinsFractionContinuation
+struct GroupAcrossParameterContinuation{A<:AttractorsViaFeaturizing, E} <: AttractorsBasinsContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64
@@ -11,10 +11,10 @@ end
 """
     GroupAcrossParameterContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
 
-A method for [`basins_fractions_continuation`](@ref).
+A method for [`continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
 and hence requires an instance of that mapper as an input.
-When used in [`basins_fractions_continuation`](@ref), features are extracted
+When used in [`continuation`](@ref), features are extracted
 and then grouped across a parameter range. Said differently, all features
 of all initial conditions across all parameter values are put into the same "pool"
 and then grouped as dictated by the `group_config` of the mapper.
@@ -65,7 +65,7 @@ function mean_across_features(fs)
     return means ./ N
 end
 
-function basins_fractions_continuation(
+function continuation(
         continuation::GroupAcrossParameterContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )

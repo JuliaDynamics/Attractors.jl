@@ -4,7 +4,7 @@ using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesSeedingContinuation{A, M, S, E} <: BasinsFractionContinuation
+struct RecurrencesSeedingContinuation{A, M, S, E} <: AttractorsBasinsContinuation
     mapper::A
     method::M
     threshold::Float64
@@ -14,7 +14,7 @@ end
 
 """
     RecurrencesSeedingContinuation(mapper::AttractorsViaRecurrences; kwargs...)
-A method for [`basins_fractions_continuation`](@ref).
+A method for [`continuation`](@ref).
 It uses seeding of previous attractors to find new ones, which is the main performance
 bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
 as the system parameter is increased.
@@ -26,7 +26,7 @@ Will write more once we have the paper going.
   used to match attractors between each parameter slice.
 - `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`basins_fractions_continuation`](@ref).
+  `attractors_info` in [`continuation`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample some points from existing attractors according
@@ -50,7 +50,7 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
     return (rand(rng, attractor.data) for _ in 1:seeds)
 end
 
-function basins_fractions_continuation(
+function continuation(
         continuation::RecurrencesSeedingContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,

@@ -1,13 +1,13 @@
-export basins_fractions_continuation
+export continuation
 
 # In the end, it is better to have a continuation type that contains
 # how to match, because there are other keywords that always go into the
 # continuation... Like in the recurrences the keyword of seeds per attractor,
 # or in the clustering some other stuff like the parameter scaling
-abstract type BasinsFractionContinuation end
+abstract type AttractorsBasinsContinuation end
 
 """
-    basins_fractions_continuation(continuation, prange, pidx, ics; kwargs...)
+   continuation(continuation, prange, pidx, ics; kwargs...)
 
 Find and continue attractors and the fractions of their basins of attraction
 across a parameter range.
@@ -44,7 +44,7 @@ initial conditions or a dataset containing them.
 - [`GroupAcrossParameterContinuation`](@ref).
 
 """
-function basins_fractions_continuation end
+function continuation end
 
 include("match_attractor_ids.jl")
 include("continuation_recurrences.jl")
