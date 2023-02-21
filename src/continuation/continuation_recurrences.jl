@@ -2,11 +2,11 @@ export RecurrencesSeedingContinuation
 import ProgressMeter
 using Random: MersenneTwister
 
-# The recurrences based method is rather flexible because it works
+# The recurrences based distance is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
 struct RecurrencesSeedingContinuation{A, M, S, E} <: AttractorsBasinsContinuation
     mapper::A
-    method::M
+    distance::M
     threshold::Float64
     seeds_from_attractor::S
     info_extraction::E
@@ -55,12 +55,12 @@ get assigned the same label.
   per attractor.
 """
 function RecurrencesSeedingContinuation(
-        mapper::AttractorsViaRecurrences; method = Centroid(),
+        mapper::AttractorsViaRecurrences; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
     return RecurrencesSeedingContinuation(
-        mapper, method, threshold, seeds_from_attractor, info_extraction
+        mapper, distance, threshold, seeds_from_attractor, info_extraction
     )
 end
 
@@ -82,7 +82,7 @@ function continuation(
         desc="Continuating basins fractions:", enabled=show_progress
     )
 
-    (; mapper, method, threshold) = continuation
+    (; mapper, distance, threshold) = continuation
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
@@ -126,7 +126,7 @@ function continuation(
             # If there are any attractors,
             # match with previous attractors before storing anything!
             rmap = match_attractor_ids!(
-                current_attractors, prev_attractors; method, threshold
+                current_attractors, prev_attractors; distance, threshold
             )
             swap_dict_keys!(fs, rmap)
         end
