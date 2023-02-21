@@ -4,9 +4,9 @@ using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesContinuation{A, M, S, E} <: AttractorsBasinsContinuation
+struct RecurrencesContinuation{A, D, S, E} <: AttractorsBasinsContinuation
     mapper::A
-    method::M
+    distance::D
     threshold::Float64
     seeds_from_attractor::S
     info_extraction::E
@@ -14,6 +14,7 @@ end
 
 """
     RecurrencesContinuation(mapper::AttractorsViaRecurrences; kwargs...)
+
 A method for [`continuation`](@ref). It performs a continuation using a
 mapper from [`AttractorsViaRecurrences`](@ref). The method uses two different
 continuation method:
@@ -33,7 +34,7 @@ bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
 as the system parameter is increased.
 
 ## Keyword Arguments
-- `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
+- `distance, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
   used to match attractors between each parameter slice.
 - `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
   and outputs whatever information should be stored. It is used to return the
@@ -45,12 +46,12 @@ as the system parameter is increased.
   per attractor.
 """
 function RecurrencesContinuation(
-        mapper::AttractorsViaRecurrences; method = Centroid(),
+        mapper::AttractorsViaRecurrences; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
     return RecurrencesContinuation(
-        mapper, method, threshold, seeds_from_attractor, info_extraction
+        mapper, distance, threshold, seeds_from_attractor, info_extraction
     )
 end
 
@@ -73,7 +74,7 @@ function continuation(
         desc="Continuating basins fractions:", enabled=show_progress
     )
     n, spp = length(prange), samples_per_parameter
-    (; mapper, method, threshold) = rc
+    (; mapper, distance, threshold) = rc
     get_info = attractors -> Dict(
         k => rc.info_extraction(att) for (k, att) in attractors
     )
@@ -96,11 +97,11 @@ function continuation(
 
     if cont_method == :matching
         # Do the matching from one parameter to the next.
-        match_attractors_forward!(attractors_info, fractions_curves, method, threshold)
+        match_attractors_forward!(attractors_info, fractions_curves, distance, threshold)
     elseif cont_method == :grouping
         # Group over the all range of parameters
         group_attractors!(attractors_info, labels,
-            fractions_curves, n, spp, method, threshold)
+            fractions_curves, n, spp, distance, threshold)
     end
 
     # Normalize to smaller available integers for user convenience
@@ -175,13 +176,13 @@ end
 # This function matches the attractors from one parameter slice to the next.
 # increasing the value of the parameter. Other matching are possible. For example
 # backward.
-function match_attractors_forward!(attractors, fractions, method, threshold)
+function match_attractors_forward!(attractors, fractions, distance, threshold)
     n = length(attractors)
     for k in 2:n
         if !isempty(attractors[k]) && !isempty(attractors[k-1])
             # If there are any attractors,
             # match with previous attractors before storing anything!
-            rmap = match_attractor_ids!(attractors[k], attractors[k-1]; method, threshold)
+            rmap = match_attractor_ids!(attractors[k], attractors[k-1]; distance = distance, threshold)
             swap_dict_keys!(fractions[k], rmap)
         end
     end
@@ -190,10 +191,10 @@ end
 # This function groups the attractors using the DBSCAN algorithm. The optimal
 # radius for the algorithm is set by threshold.
 function group_attractors!(attractors, labels, fractions_curves, n,
-    spp, method,  threshold)
+    spp, distance,  threshold)
     att = merge(attractors...)
     # Do the clustering with custom threshold
-    att_keys, grouped_labels = clustering(att, method, threshold)
+    att_keys, grouped_labels = clustering(att, distance, threshold)
 
     # Now rename the labels (we ignore -1 in grouped labels),
     # get the fractions and pack attractors.
@@ -213,8 +214,8 @@ end
 
 # DBSCAN algorithm performed using the low-level function
 # _cluster_distances_into_labels
-function clustering(att::Dict, method, threshold)
-    distances = datasets_sets_distances(att, att, method)
+function clustering(att::Dict, distance, threshold)
+    distances = datasets_sets_distances(att, att, distance)
     dist_mat = [distances[i][j] for i in keys(distances), j in keys(distances)]
     att_keys = collect(keys(distances))
     grouped_labels = _cluster_distances_into_labels(dist_mat, threshold, 1)
