@@ -1,7 +1,11 @@
 # Attractor & Basins Continuation
 
+## A new type of continuation and bifurcation analysis
 
-## Basins continuation API
+If you are familiar with the term "continuation"...
+
+
+## Continuation API
 ```@docs
 continuation
 ```
@@ -16,7 +20,7 @@ RecurrencesSeededContinuation
 ```@docs
 match_attractor_ids!
 replacement_map
-dataset_distance
+set_distance
 setsofsets_distance
 match_basins_ids!
 ```

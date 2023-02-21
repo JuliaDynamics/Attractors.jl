@@ -11,6 +11,7 @@ using Reexport
 @reexport using StateSpaceSets
 @reexport using DynamicalSystemsBase
 
+# main files that import other files
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
 include("basins/basins.jl")

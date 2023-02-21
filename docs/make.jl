@@ -3,7 +3,7 @@ using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.StateSpaceSets
 
-PAGES = [
+pages = [
     "index.md",
     "attractors.md",
     "basins.md",
