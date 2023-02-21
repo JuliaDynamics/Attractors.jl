@@ -298,6 +298,7 @@ end
 
 
 @testset "magnetic pendulum" begin
+    using PredefinedDynamicalSystems
     d, α, ω = 0.3, 0.2, 0.5
     ds = Systems.magnetic_pendulum(; d, α, ω)
     xg = yg = range(-3, 3; length = 101)

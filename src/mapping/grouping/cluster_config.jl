@@ -227,7 +227,7 @@ Do "min-max" rescaling of vector of feature vectors so that its values span `[0,
 """
 _rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(Dataset(features))
 function _rescale_to_01(features::AbstractDataset)
-    mini, maxi = minmaxima(dataset)
+    mini, maxi = minmaxima(features)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
 
