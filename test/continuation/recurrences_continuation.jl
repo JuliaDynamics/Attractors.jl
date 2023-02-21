@@ -159,7 +159,7 @@ end
     # Lastly, test the rather special case of clustering, using the distance
     # matrix of the actual attractors
     featurizer = identity
-    info_extraction = identity
+    info_extraction = vector -> mean(mean(x) for x in vector)
     clust_distance_metric = set_distance
     cconfig = GroupViaClustering(;
         clust_distance_metric,
@@ -170,13 +170,27 @@ end
         fractions_curves, attractors_info, featurizer, cconfig, info_extraction
     )
     test_fs(aggr_fracs, rrange, [1, 9])
+    # all attractors near the origin became one:
+    @test aggr_fracs[1] == Dict(1 => 1.0)
+    # We have 9 attractors, and test that their location
+    # is where we expect: 1 at the origin, which includes
+    # and 8 scattered around
+    vals = collect(values(aggr_info))
+    vals = [round.(x; digits = 2) for x in vals]
+    sort!(vals)
+    @test length(vals) == 9
+    for x in vals
+        sx = sort(abs.(x))
+        @test (sx == [0, 0] || sx == [1.15, 2.77])
+    end
 
 end
 
 if DO_EXTENSIVE_TESTS
 
 @testset "Henon map" begin
-    ds = Systems.henon(; b = 0.3, a = 1.4)
+    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+    ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
     psorig = range(1.2, 1.25; length = 101)
     # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
     # (you can see this by launching our wonderful `interactive_orbitdiagram` app).
@@ -204,12 +218,12 @@ if DO_EXTENSIVE_TESTS
         mx_chk_fnd_att = 3000,
         mx_chk_loc_att = 3000
     )
-    continuation = RecurrencesSeededContinuation(mapper;
-        threshold = 0.99, method = distance_function
+    rsc = RecurrencesSeededContinuation(mapper;
+        threshold = 0.99, distance = distance_function
     )
     ps = psorig
     fractions_curves, attractors_info = continuation(
-        continuation, ps, pidx, sampler;
+        rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
 
@@ -273,9 +287,10 @@ end
         min_bounds = [-2,-2], max_bounds = [2,2]
     )
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
-    continuation = RecurrencesSeededContinuation(mapper)
+    rsc = RecurrencesSeededContinuation(mapper)
+
     fractions_curves, attractors_info = continuation(
-        continuation, ps, pidx, sampler;
+        rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
     @test all(i -> isempty(i), attractors_info)

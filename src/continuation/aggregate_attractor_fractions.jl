@@ -32,11 +32,6 @@ in [Extinction of a species in a multistable competition model](@ref).
    (or, they can be the return of [`basins_fractions`](@ref)).
 3. `featurizer`: a 1-argument function to map an attractor into an appropriate feature
    to be grouped later. Features expected by [`GroupingConfig`](@ref) are `SVector`.
-   _However_, you may also use the DBSCAN clustering approach here to group attractors
-   based on their state space distance (the [`set_distance`](@ref)).
-   For this, use `identity` as `featurizer`, and use
-   `clust_distance_metric = set_distance` when initializing the
-   [`GroupViaClustering`](@ref) configuration.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description
    of the features. I.e., exactly as in [`GroupAcrossParameterContinuation`](@ref).
@@ -48,6 +43,20 @@ in [Extinction of a species in a multistable competition model](@ref).
    aggregated attractors.
 2. `aggregated_info`: dictionary mapping the new labels of `aggregated_fractions` to the
    extracted information using `info_extraction`.
+
+## Clustering attractors directly
+
+_(this is rather advanced)_
+
+You may also use the DBSCAN clustering approach here to group attractors
+based on their state space distance (the [`set_distance`](@ref)) by making a distance
+matrix as expected by the DBSCAN implementation.
+For this, use `identity` as `featurizer`, and choose [`GroupViaClustering`](@ref)
+as the `group_config` with `clust_distance_metric = set_distance` and provide a numerical
+value for `optimal_radius_method` when initializing the [`GroupViaClustering`](@ref),
+and also, for the `info_extraction` argument, you now need to provide a function that
+expects a _vector of `StateSpaceSet`s_ and outputs a descriptor.
+E.g., `info_extraction = vector -> mean(mean(x) for x in vector)`.
 """
 function aggregate_attractor_fractions(
         fractions_curves::Vector, attractors_info::Vector, featurizer, group_config,
