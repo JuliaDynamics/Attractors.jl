@@ -166,8 +166,12 @@ function _distance_matrix(features, config::GroupViaClustering;
     if metric isa Metric # then the `pairwise` function is valid
         pairwise!(metric, dists, features; symmetric = true)
     else # it is any arbitrary distance function, e.g., used in aggregating attractors
-        # TODO:
-        pairwise_optimized()
+        for i in eachindex(features)
+            for j in i:length(features)
+                distances[i, j] = metric(features[i], features[j])
+                distances[j, i] = distances[i, j] # symmetry
+            end
+        end
     end
 
     if par_weight ≠ 0 # weight distance matrix by parameter value
