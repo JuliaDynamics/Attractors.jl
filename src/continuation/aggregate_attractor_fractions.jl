@@ -23,7 +23,6 @@ however, one may care about aggregating all attractors into two groups: where a 
 species is extinct or not. This is the example highlighted in our documentation,
 in [Extinction of a species in a multistable competition model](@ref).
 
-
 ## Input
 
 1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
