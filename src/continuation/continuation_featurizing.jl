@@ -165,7 +165,7 @@ end
 # compared between each slice.
 function match_parameter_slice(features, group_config, n, spp, info_extraction, method, threshold)
     max_label = 0
-    features_info = Vector{Dict{Int, typeof(Dataset(features[1:2]))}}(undef, n)
+    features_info = Vector{Dict{Int, typeof(StateSpaceSet(features[1:2]))}}(undef, n)
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction(features[1])
     attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
@@ -180,7 +180,7 @@ function match_parameter_slice(features, group_config, n, spp, info_extraction, 
         vec_info = eltype(features_info)()
         for j in unique(labels[postve_lab])
             ind = findall(labels .== j)
-            vec_info[j] = Dataset(slice_feats[ind])
+            vec_info[j] = StateSpaceSet(slice_feats[ind])
         end
         features_info[i] = vec_info
         fractions_curves[i] = basins_fractions(labels)

@@ -61,7 +61,7 @@ psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 
 For this systems we know the attractors are close to the magnet positions, so we can just do
 ```@example MAIN
-attractors = Dict(i => Dataset([dynamic_rule(ds).magnets[i]]) for i in 1:3)
+attractors = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
 mapper = AttractorsViaProximity(psys, attractors)
 ```
 
@@ -156,13 +156,13 @@ basins, attractors = basins_of_attraction(mapper)
 attractors
 ```
 ```
-Dict{Int16, Dataset{3, Float64}} with 5 entries:
-  5 => 3-dimensional Dataset{Float64} with 1 points
-  4 => 3-dimensional Dataset{Float64} with 379 points
-  6 => 3-dimensional Dataset{Float64} with 1 points
-  2 => 3-dimensional Dataset{Float64} with 538 points
-  3 => 3-dimensional Dataset{Float64} with 537 points
-  1 => 3-dimensional Dataset{Float64} with 1 points
+Dict{Int16, StateSpaceSet{3, Float64}} with 5 entries:
+  5 => 3-dimensional StateSpaceSet{Float64} with 1 points
+  4 => 3-dimensional StateSpaceSet{Float64} with 379 points
+  6 => 3-dimensional StateSpaceSet{Float64} with 1 points
+  2 => 3-dimensional StateSpaceSet{Float64} with 538 points
+  3 => 3-dimensional StateSpaceSet{Float64} with 537 points
+  1 => 3-dimensional StateSpaceSet{Float64} with 1 points
 ```
 
 The basins of attraction are very complicated. We can try to visualize them by animating the 2D slices at each z value, to obtain:

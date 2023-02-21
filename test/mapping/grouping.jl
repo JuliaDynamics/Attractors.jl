@@ -23,7 +23,7 @@ using Statistics, Random, Test
     a[end] = [50 5]
     correct_labels[end] = -1
     correct_labels_infinite_threshold[end] = 3
-    attractors = Dict(1:length(a) .=> Dataset.(a; warn = false));
+    attractors = Dict(1:length(a) .=> StateSpaceSet.(a; warn = false));
 
     ### silhouettes and real
     @testset "method=$(optimal_radius_method)" for optimal_radius_method in ["silhouettes", "silhouettes_optim", 5.0]
@@ -40,7 +40,7 @@ using Statistics, Random, Test
         correct_labels_knee = [1,1,1,1,2,2,2,1,2,3,3,3,3,1,2,2,2,2,2,3,3,3,3,3,3,1,1,1,1,1] #smaller number of features works even worse
         Random.seed!(1)
         a = [attractor_pool[label] + 0.2*rand(Float64, (1,2)) for label in correct_labels_knee]
-        attractors_knee = Dict(1:length(a) .=> Dataset.(a; warn = false));
+        attractors_knee = Dict(1:length(a) .=> StateSpaceSet.(a; warn = false));
         clusterspecs = GroupViaClustering( optimal_radius_method="knee",
         min_neighbors=4, rescale_features=false)
         clust_labels = cluster_datasets(featurizer, [], attractors_knee, clusterspecs)

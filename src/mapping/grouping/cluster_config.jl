@@ -214,12 +214,12 @@ end
 Do "min-max" rescaling of vector of feature vectors so that its values span `[0,1]`.
 """
 function _rescale_to_01(features::Vector{<:SVector})
-    dataset = Dataset(features) # To access min-maxima
+    dataset = StateSpaceSet(features) # To access min-maxima
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
 function _rescale_to_01(features::Vector{<:Vector})
-    dataset = Dataset(features) # To access min-maxima
+    dataset = StateSpaceSet(features) # To access min-maxima
     mini, maxi = minmaxima(dataset)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end

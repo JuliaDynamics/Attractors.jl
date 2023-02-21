@@ -1,7 +1,8 @@
 # Attractor & Basins Continuation
 
 
-## Basins continuation API
+## Main continuation function
+
 ```@docs
 continuation
 ```
@@ -16,8 +17,8 @@ RecurrencesContinuation
 ```@docs
 match_attractor_ids!
 replacement_map
-dataset_distance
-datasets_sets_distances
+set_distance
+setsofsets_distance
 match_basins_ids!
 ```
 

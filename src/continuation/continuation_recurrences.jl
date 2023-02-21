@@ -36,7 +36,7 @@ as the system parameter is increased.
 ## Keyword Arguments
 - `distance, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
   used to match attractors between each parameter slice.
-- `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
+- `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
   `attractors_info` in [`continuation`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
@@ -55,7 +55,7 @@ function RecurrencesContinuation(
     )
 end
 
-function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
+function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)

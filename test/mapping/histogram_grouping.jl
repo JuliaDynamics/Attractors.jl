@@ -30,7 +30,7 @@ expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
 sampler, = statespace_sampler(Random.MersenneTwister(1234);
 min_bounds = minimum.(grid), max_bounds = maximum.(grid)
 )
-ics = Dataset([sampler() for i in 1:1000])
+ics = StateSpaceSet([sampler() for i in 1:1000])
 
 fs, labels, approx_atts = basins_fractions(mapper, ics; show_progress = false)
 @test length(keys(fs)) == 2
