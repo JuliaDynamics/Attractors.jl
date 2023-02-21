@@ -13,10 +13,10 @@ end
 """
     FeaturizingContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
 
-A method for [`basins_fractions_continuation`](@ref).
+A method for [`continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
 and hence requires an instance of that mapper as an input.
-When used in [`basins_fractions_continuation`](@ref), features are extracted
+When used in [`continuation`](@ref), features are extracted
 in order to aproximate a continuation of the attractors accross the parameter space.
 
 Different methods of continuation are implemented namely:
@@ -85,10 +85,10 @@ end
 
 # TODO:
 # Alright so these docstrings are the same, so we only need one docstring for
-# `basins_fractions_continuation`. And we probably rename the function
+# `continuation`. And we probably rename the function
 # to `attractors_basins_continuation`.
 """
-    basins_fractions_continuation(continuation::FeaturizingContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
+    continuation(continuation::FeaturizingContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
 
 Performs the continuation using a `mapper` from [`AttractorsViaFeaturizing`](@ref) that
 maps an initial condition to a feature. The structure `continuation` is a instance of [`FeaturizingContinuation`](@ref) that contains the information of the dynamical system.
@@ -104,7 +104,7 @@ conditions in the state space.
 - `cont_method = :grouping`: selects the method to perform the continuation. `:grouping`
 is meant to group the features accross the parameter range while `:matching` will match the clusters of features from one parameter slice to the next.
 """
-function basins_fractions_continuation(
+function continuation(
         continuation::FeaturizingContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100, cont_method = :grouping
     )

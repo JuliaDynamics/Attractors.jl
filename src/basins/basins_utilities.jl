@@ -7,7 +7,7 @@ Return a dictionary that maps attractor IDs to their relative fractions.
 
 In[^Menck2013] the authors use these fractions to quantify the stability of a basin of
 attraction, and specifically how it changes when a parameter is changed.
-For this, see [`basins_fractions_continuation`](@ref).
+For this, see [`continuation`](@ref).
 
 [^Menck2013]:
     Menck, Heitzig, Marwan & Kurths. How basin stability complements the linear

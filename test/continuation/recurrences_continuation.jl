@@ -24,7 +24,7 @@ using Random
 #         continuation = RecurrencesContinuation(mapper; threshold = Inf)
 #         # With this threshold all attractors are mapped to each other, they are within
 #         # distance 1 in state space.
-#         fractions_curves, attractors_info = basins_fractions_continuation(
+#         fractions_curves, attractors_info = continuation(
 #             continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = 1000
 #         )
 
@@ -121,7 +121,7 @@ if DO_EXTENSIVE_TESTS
         threshold = 0.99, method = distance_function
     )
     ps = psorig
-    fractions_curves, attractors_info = basins_fractions_continuation(
+    fractions_curves, attractors_info = continuation(
         continuation, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
@@ -186,7 +186,7 @@ end
     )
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     continuation = RecurrencesContinuation(mapper)
-    fractions_curves, attractors_info = basins_fractions_continuation(
+    fractions_curves, attractors_info = continuation(
         continuation, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
@@ -279,7 +279,7 @@ end
         else
             continuation = Attractors.RecurrencesContinuation(mapper; threshold = 0.1)
         end
-        fractions_curves, a = Attractors.basins_fractions_continuation(
+        fractions_curves, a = Attractors.continuation(
             continuation, rrange, ridx, sampler;
             show_progress = false, samples_per_parameter = 1000,
             group_method = m

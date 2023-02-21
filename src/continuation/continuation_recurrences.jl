@@ -14,7 +14,7 @@ end
 
 """
     RecurrencesContinuation(mapper::AttractorsViaRecurrences; kwargs...)
-A method for [`basins_fractions_continuation`](@ref). It performs a continuation using a
+A method for [`continuation`](@ref). It performs a continuation using a
 mapper from [`AttractorsViaRecurrences`](@ref). The method uses two different
 continuation method:
 
@@ -37,7 +37,7 @@ as the system parameter is increased.
   used to match attractors between each parameter slice.
 - `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`basins_fractions_continuation`](@ref).
+  `attractors_info` in [`continuation`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample some points from existing attractors according
@@ -64,7 +64,7 @@ end
 # TODO:
 # Alright so these docstrings are the same
 """
-    basins_fractions_continuation(continuation::RecurrencesContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
+    continuation(continuation::RecurrencesContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
 
 Performs the continuation using a `mapper` from [`AttractorsViaRecurrences`](@ref) that
 maps an initial condition to an attractor. The structure `continuation` is a instance of [`RecurrencesContinuation`](@ref) that contains the information of the dynamical system.
@@ -80,7 +80,7 @@ RecurrencesContinuation Keyword Arguments
 - `cont_method = :grouping`: selects the method to perform the continuation. `:grouping`
 is meant to group the features accross the parameter range while `:matching` will match the clusters of attractors from one parameter slice to the next.
 """
-function basins_fractions_continuation(
+function continuation(
         continuation::RecurrencesContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true, cont_method = :matching

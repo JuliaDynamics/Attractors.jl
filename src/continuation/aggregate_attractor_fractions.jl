@@ -28,7 +28,7 @@ in [Extinction of a species in a multistable competition model](@ref).
 1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
 2. `attractors_info`: a vector of dictionaries mapping labels to attractors.
    1st and 2nd argument are exactly like the return values of
-   [`basins_fractions_continuation`](@ref) with [`RecurrencesContinuation`](@ref)
+   [`continuation`](@ref) with [`RecurrencesContinuation`](@ref)
    (or, they can be the return of [`basins_fractions`](@ref)).
 3. `featurizer`: a 1-argument function to map an attractor into a feature `SVector`.
    Notice that you can use `identity` if the input "attractors" aren't actually attractors
