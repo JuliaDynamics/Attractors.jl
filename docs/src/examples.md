@@ -241,7 +241,7 @@ mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
 # NOTE: in a realistic applicaiton the threshold should not be infinite,
 # but some sensible distance in state space units
-continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
+continuation = RecurrencesSeededContinuation(mapper; threshold = Inf)
 fractions_curves, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter

@@ -9,7 +9,7 @@ continuation
 ## Recurrences continuation (best)
 
 ```@docs
-RecurrencesSeedingContinuation
+RecurrencesSeededContinuation
 ```
 
 ## Matching attractors

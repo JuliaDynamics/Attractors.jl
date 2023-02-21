@@ -21,7 +21,7 @@ using Random
         # test that both finding and removing attractor works
         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
 
-        continuation = RecurrencesSeedingContinuation(mapper; threshold = Inf)
+        continuation = RecurrencesSeededContinuation(mapper; threshold = Inf)
         # With this threshold all attractors are mapped to each other, they are within
         # distance 1 in state space.
         fractions_curves, attractors_info = continuation(
@@ -117,7 +117,7 @@ if DO_EXTENSIVE_TESTS
         mx_chk_fnd_att = 3000,
         mx_chk_loc_att = 3000
     )
-    continuation = RecurrencesSeedingContinuation(mapper;
+    continuation = RecurrencesSeededContinuation(mapper;
         threshold = 0.99, method = distance_function
     )
     ps = psorig
@@ -185,7 +185,7 @@ end
         min_bounds = [-2,-2], max_bounds = [2,2]
     )
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
-    continuation = RecurrencesSeedingContinuation(mapper)
+    continuation = RecurrencesSeededContinuation(mapper)
     fractions_curves, attractors_info = continuation(
         continuation, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
@@ -227,7 +227,7 @@ end
 
     rrange = range(0., 2; length = 20)
     ridx = 1
-    continuation = Attractors.RecurrencesSeedingContinuation(mapper; threshold = 0.3)
+    continuation = Attractors.RecurrencesSeededContinuation(mapper; threshold = 0.3)
     fractions_curves, a = Attractors.continuation(
         continuation, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000

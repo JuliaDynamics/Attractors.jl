@@ -1,10 +1,10 @@
-export RecurrencesSeedingContinuation
+export RecurrencesSeededContinuation
 import ProgressMeter
 using Random: MersenneTwister
 
 # The recurrences based distance is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesSeedingContinuation{A, M, S, E} <: AttractorsBasinsContinuation
+struct RecurrencesSeededContinuation{A, M, S, E} <: AttractorsBasinsContinuation
     mapper::A
     distance::M
     threshold::Float64
@@ -56,12 +56,12 @@ get assigned the same label.
   to how many points the attractors themselves contain. A maximum of `10` seeds is done
   per attractor.
 """
-function RecurrencesSeedingContinuation(
+function RecurrencesSeededContinuation(
         mapper::AttractorsViaRecurrences; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
-    return RecurrencesSeedingContinuation(
+    return RecurrencesSeededContinuation(
         mapper, distance, threshold, seeds_from_attractor, info_extraction
     )
 end
@@ -74,7 +74,7 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
 end
 
 function continuation(
-        continuation::RecurrencesSeedingContinuation,
+        continuation::RecurrencesSeededContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,
     )
@@ -166,7 +166,7 @@ function reset!(mapper::AttractorsViaRecurrences)
     return
 end
 
-function _ics_from_grid(continuation::RecurrencesSeedingContinuation)
+function _ics_from_grid(continuation::RecurrencesSeededContinuation)
     return _ics_from_grid(continuation.mapper.grid)
 end
 
