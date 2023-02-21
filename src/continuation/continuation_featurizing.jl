@@ -83,27 +83,9 @@ function mean_across_features(fs)
     return means ./ N
 end
 
-# TODO:
-# Alright so these docstrings are the same, so we only need one docstring for
-# `continuation`. And we probably rename the function
-# to `attractors_basins_continuation`.
-"""
-    continuation(continuation::FeaturizingContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
 
-Performs the continuation using a `mapper` from [`AttractorsViaFeaturizing`](@ref) that
-maps an initial condition to a feature. The structure `continuation` is a instance of [`FeaturizingContinuation`](@ref) that contains the information of the dynamical system.
 
-`prange` is the range of parameters for the continuation.
-`pidx` is the number or name of the parameter in the dynamical system.
-`ics` is a grid of initial conditions or a dedicated function that generates initial
-conditions in the state space.
 
-## Keyword Arguments
-- `show_progress = true`: print information on the current computation.
-- `samples_per_parameter = 100`: number of initial conditions to process per parameter.
-- `cont_method = :grouping`: selects the method to perform the continuation. `:grouping`
-is meant to group the features accross the parameter range while `:matching` will match the clusters of features from one parameter slice to the next.
-"""
 function continuation(
         fc::FeaturizingContinuation, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100, cont_method = :grouping

@@ -61,25 +61,9 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
     return (rand(rng, attractor.data) for _ in 1:seeds)
 end
 
-# TODO:
-# Alright so these docstrings are the same
-"""
-    continuation(continuation::RecurrencesContinuation, prange, pidx, ics; kwargs...) → fractions_curves::Dict, attractors_info::Dict
 
-Performs the continuation using a `mapper` from [`AttractorsViaRecurrences`](@ref) that
-maps an initial condition to an attractor. The structure `continuation` is a instance of [`RecurrencesContinuation`](@ref) that contains the information of the dynamical system.
 
-`prange` is the range of parameters for the continuation.
-`pidx` is the number or name of the parameter in the dynamical system.
-`ics` is a grid of initial conditions or a dedicated function that generates initial
-conditions in the state space.
 
-RecurrencesContinuation Keyword Arguments
-- `show_progress = true`: print information on the current computation.
-- `samples_per_parameter = 100`: number of initial conditions to process per parameter.
-- `cont_method = :grouping`: selects the method to perform the continuation. `:grouping`
-is meant to group the features accross the parameter range while `:matching` will match the clusters of attractors from one parameter slice to the next.
-"""
 function continuation(
         rc::RecurrencesContinuation,
         prange, pidx, ics = _ics_from_grid(rc);
