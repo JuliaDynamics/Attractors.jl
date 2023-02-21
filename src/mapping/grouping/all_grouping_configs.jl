@@ -35,7 +35,7 @@ Group the given vector of feature vectors according to the configuration and ret
 the labels (vector of equal length as `features`).
 See [`AttractorsViaFeaturizing`](@ref) for possible configurations.
 """
-function group_features(features::Vector{<:AbstractVector}, group_config::GroupingConfig)
+function group_features(features, group_config::GroupingConfig)
     return map(f -> feature_to_group(f, group_config), features)
 end
 

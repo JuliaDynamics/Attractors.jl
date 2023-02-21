@@ -14,7 +14,9 @@ The defaults are a significant improvement over existing literature, see Descrip
 
 ## Keyword arguments
 
-* `clust_distance_metric = Euclidean()`: metric to be used in the clustering.
+* `clust_distance_metric = Euclidean()`: A metric to be used in the clustering.
+  It can be any function `f(a, b)` that returns the distance between vectors
+  `a, b`. All metrics from Distances.jl can be used here.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 * `min_neighbors = 10`: minimum number of neighbors (i.e. of similar features) each
@@ -97,7 +99,7 @@ than the `"silhouette"` methods.
     Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
     Should (Still) Use DBSCAN
 """
-struct GroupViaClustering{R<:Union{Real, String}, M<:Metric, F<:Function} <: GroupingConfig
+struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingConfig
     clust_distance_metric::M
     min_neighbors::Int
     rescale_features::Bool
@@ -131,7 +133,7 @@ end
 # The keyword version of this function is only called in
 # `GroupingAcrossParametersContinuation` and is not part of public API!
 function group_features(
-        features::Vector{<:AbstractVector}, config::GroupViaClustering;
+        features, config::GroupViaClustering;
         par_weight::Real = 0, plength::Int = 1, spp::Int = 1,
     )
     nfeats = length(features); dimfeats = length(features[1])
@@ -161,7 +163,17 @@ function _distance_matrix(features, config::GroupViaClustering;
     else
         dists = zeros(L, L)
     end
-    pairwise!(metric, dists, features; symmetric = true)
+    if metric isa Metric # then the `pairwise` function is valid
+        pairwise!(metric, dists, features; symmetric = true)
+    else # it is any arbitrary distance function, e.g., used in aggregating attractors
+        @inbounds for i in eachindex(features)
+            Threads.@threads for j in i:length(features)
+                dists[i, j] = metric(features[i], features[j])
+                dists[j, i] = dists[i, j] # symmetry
+            end
+        end
+    end
+
     if par_weight ≠ 0 # weight distance matrix by parameter value
         par_vector = kron(range(0, 1, plength), ones(spp))
         length(par_vector) ≠ size(dists, 1) && error("Feature size doesn't match.")
@@ -213,14 +225,9 @@ end
 """
 Do "min-max" rescaling of vector of feature vectors so that its values span `[0,1]`.
 """
-function _rescale_to_01(features::Vector{<:SVector})
-    dataset = Dataset(features) # To access min-maxima
-    mini, maxi = minmaxima(dataset)
-    return map(f -> f .* (maxi .- mini) .+ mini, features)
-end
-function _rescale_to_01(features::Vector{<:Vector})
-    dataset = Dataset(features) # To access min-maxima
-    mini, maxi = minmaxima(dataset)
+_rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(Dataset(features))
+function _rescale_to_01(features::AbstractDataset)
+    mini, maxi = minmaxima(features)
     return map(f -> f .* (maxi .- mini) .+ mini, features)
 end
 

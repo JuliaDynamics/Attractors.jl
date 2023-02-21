@@ -5,7 +5,8 @@ export match_attractor_ids!, match_basins_ids!, replacement_map
 # Matching attractors and key swapping business
 ###########################################################################################
 """
-    match_attractor_ids!(a₊::AbstractDict, a₋; method = Centroid(), threshold = Inf)
+    match_attractor_ids!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
+
 Given dictionaries `a₊, a₋` mapping IDs to attractors (`Dataset` instances),
 match attractor IDs in dictionary `a₊` so that its attractors that are the closest to
 those in dictionary `a₋` get assigned the same key as in `a₋`.
@@ -25,8 +26,8 @@ the different parameters) with different IDs.
 `match_attractors_ids!` tries to "match" them by modifying the attractor IDs,
 i.e., the keys of the given dictionaries.
 
-The matching happens according to the output of the [`setsofsets_distance`](@ref)
-function with the keyword `method`. method` can be whatever that function accepts.
+The matching happens according to the output of the [`setsofsets_distances`](@ref)
+function with the keyword `distance`. distance` can be whatever that function accepts.
 Attractors are then match according to distance, with unique mapping.
 The closest attractors (before and after) are mapped to each
 other, and are removed from the matching pool, and then the next pair with least
@@ -51,12 +52,12 @@ function match_attractor_ids!(as::Vector{<:Dict}; kwargs...)
 end
 
 """
-    replacement_map(a₊, a₋; method = Centroid(), threshold = Inf) → rmap
+    replacement_map(a₊, a₋; distance = Centroid(), threshold = Inf) → rmap
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_attractor_ids!`](@ref).
 """
-function replacement_map(a₊::Dict, a₋::Dict; method = Centroid(), threshold = Inf)
-    distances = setsofsets_distance(a₊, a₋, method)
+function replacement_map(a₊::Dict, a₋::Dict; distance = Centroid(), threshold = Inf)
+    distances = setsofsets_distances(a₊, a₋, distance)
     keys₊, keys₋ = keys.((a₊, a₋))
     replacement_map(keys₊, keys₋, distances::Dict, threshold)
 end

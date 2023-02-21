@@ -3,13 +3,13 @@
 
 ## Basins continuation API
 ```@docs
-basins_fractions_continuation
+continuation
 ```
 
 ## Recurrences continuation (best)
 
 ```@docs
-RecurrencesSeedingContinuation
+RecurrencesSeededContinuation
 ```
 
 ## Matching attractors

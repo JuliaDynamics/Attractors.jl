@@ -1,45 +1,68 @@
-export RecurrencesSeedingContinuation
+export RecurrencesSeededContinuation
 import ProgressMeter
 using Random: MersenneTwister
 
-# The recurrences based method is rather flexible because it works
+# The recurrences based distance is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesSeedingContinuation{A, M, S, E} <: BasinsFractionContinuation
+struct RecurrencesSeededContinuation{A, M, S, E} <: AttractorsBasinsContinuation
     mapper::A
-    method::M
+    distance::M
     threshold::Float64
     seeds_from_attractor::S
     info_extraction::E
 end
 
 """
-    RecurrencesSeedingContinuation(mapper::AttractorsViaRecurrences; kwargs...)
-A method for [`basins_fractions_continuation`](@ref).
-It uses seeding of previous attractors to find new ones, which is the main performance
-bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
-as the system parameter is increased.
+    RecurrencesSeededContinuation <: AttractorsBasinsContinuation
+    RecurrencesSeededContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 
-Will write more once we have the paper going.
+A method for [`continuation`](@ref). TODO: Cite our preprint here.
 
-## Keyword Arguments
-- `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
-  used to match attractors between each parameter slice.
-- `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
+## Description
+
+At the first parameter slice attractors and their fractions are found as described in the
+[`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
+At each subsequent parameter slice,
+new attractors are found by seeding initial conditions from the previously found
+attractors and then piping these initial conditions through the recurrences algorithm
+of the `mapper`. Seeding initial conditions close to previous attractors accelerates
+the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
+After the attractors are found, their fractions are computed by running new initial
+conditions through the [`AttractorsViaRecurrences`](@ref) mapper.
+This process continues until all parameter values are exhausted and for each parameter
+value the attractors and their fractions are found.
+
+Then, the different attractors across parameters are matched so that they have
+the same ID. The matching process is based on distances between attractors.
+The function that computes these distances is
+[`setsofsets_distances`](@ref) and the matching function
+is [`match_attractor_ids!`](@ref) (please read those docstrings as well).
+
+At each parameter slice beyond the first, the new
+attractors are matched to the previous attractors found in the previous parameter value
+by a direct call to the [`match_attractor_ids!`](@ref) function. Hence, the matching
+of attractors here works "slice by slice" on the parameter axis and the attractors
+that are closest to each other (in state space, but for two different parameter values)
+get assigned the same label.
+
+## Keyword arguments
+- `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
+- `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`basins_fractions_continuation`](@ref).
+  `attractors_info` in [`continuation`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample some points from existing attractors according
   to how many points the attractors themselves contain. A maximum of `10` seeds is done
   per attractor.
 """
-function RecurrencesSeedingContinuation(
-        mapper::AttractorsViaRecurrences; method = Centroid(),
+function RecurrencesSeededContinuation(
+        mapper::AttractorsViaRecurrences; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
-    return RecurrencesSeedingContinuation(
-        mapper, method, threshold, seeds_from_attractor, info_extraction
+    return RecurrencesSeededContinuation(
+        mapper, distance, threshold, seeds_from_attractor, info_extraction
     )
 end
 
@@ -50,8 +73,8 @@ function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwis
     return (rand(rng, attractor.data) for _ in 1:seeds)
 end
 
-function basins_fractions_continuation(
-        continuation::RecurrencesSeedingContinuation,
+function continuation(
+        continuation::RecurrencesSeededContinuation,
         prange, pidx, ics = _ics_from_grid(continuation);
         samples_per_parameter = 100, show_progress = true,
     )
@@ -61,7 +84,7 @@ function basins_fractions_continuation(
         desc="Continuating basins fractions:", enabled=show_progress
     )
 
-    (; mapper, method, threshold) = continuation
+    (; mapper, distance, threshold) = continuation
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
@@ -105,7 +128,7 @@ function basins_fractions_continuation(
             # If there are any attractors,
             # match with previous attractors before storing anything!
             rmap = match_attractor_ids!(
-                current_attractors, prev_attractors; method, threshold
+                current_attractors, prev_attractors; distance, threshold
             )
             swap_dict_keys!(fs, rmap)
         end
@@ -143,7 +166,7 @@ function reset!(mapper::AttractorsViaRecurrences)
     return
 end
 
-function _ics_from_grid(continuation::RecurrencesSeedingContinuation)
+function _ics_from_grid(continuation::RecurrencesSeededContinuation)
     return _ics_from_grid(continuation.mapper.grid)
 end
 
