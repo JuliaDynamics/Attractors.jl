@@ -17,9 +17,16 @@ RecurrencesContinuation
 ```@docs
 match_attractor_ids!
 replacement_map
-set_distance
-setsofsets_distance
 match_basins_ids!
+```
+
+## Distances between attractors/features
+```@docs
+set_distance
+setsofsets_distances
+Centroid
+Hausdorff
+StrictlyMinimumDistance
 ```
 
 ## Aggregating attractors and fractions

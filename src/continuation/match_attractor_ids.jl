@@ -14,11 +14,11 @@ Typically the +,- mean after and before some change of parameter of a system.
 
 Return the replacement map, a dictionary mapping old keys of `a₊` to
 the new ones that they were mapped to. You can obtain this map, without modifying
-the dictionaries, by directly calling the [`replacement_map`](@ref) function directly.
+the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 
 ## Description
 
-When finding attractors and their fractions in DynamicalSystems.jl,
+When finding attractors and their fractions in Attractors.jl,
 different attractors get assigned different IDs. However
 which attractor gets which ID is somewhat arbitrary. Finding the attractors of the
 same system for slightly different parameters could label "similar" attractors (at
@@ -26,7 +26,7 @@ the different parameters) with different IDs.
 `match_attractors_ids!` tries to "match" them by modifying the attractor IDs,
 i.e., the keys of the given dictionaries.
 
-The matching happens according to the output of the [`setsofsets_distance`](@ref)
+The matching happens according to the output of the [`setsofsets_distances`](@ref)
 function with the keyword `method`. method` can be whatever that function accepts.
 Attractors are then match according to distance, with unique mapping.
 The closest attractors (before and after) are mapped to each
@@ -53,11 +53,12 @@ end
 
 """
     replacement_map(a₊, a₋; method = Centroid(), threshold = Inf) → rmap
+
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_attractor_ids!`](@ref).
 """
 function replacement_map(a₊::Dict, a₋::Dict; method = Centroid(), threshold = Inf)
-    distances = setsofsets_distance(a₊, a₋, method)
+    distances = setsofsets_distances(a₊, a₋, method)
     keys₊, keys₋ = keys.((a₊, a₋))
     replacement_map(keys₊, keys₋, distances::Dict, threshold)
 end
@@ -115,10 +116,11 @@ end
 ###########################################################################################
 """
     match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
+
 Similar to [`match_attractor_ids!`](@ref) but operate on basin arrays instead
 (the arrays typically returned by [`basins_of_attraction`](@ref)).
 
-This method matches IDs of attractors whose basins of attraction before and after `b₋,b₊`
+This method matches IDs of attractors whose basins of attraction before and after `b₋, b₊`
 have the most overlap (in pixels). This overlap is normalized in 0-1 (with 1 meaning
 100% overlap of pixels). The `threshold` in this case is compared to the inverse
 of the overlap (so, for `threshold = 2` attractors that have less than 50% overlap get

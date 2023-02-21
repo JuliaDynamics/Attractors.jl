@@ -4,38 +4,61 @@ using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesContinuation{A, D, S, E} <: AttractorsBasinsContinuation
+struct RecurrencesContinuation{A, D, S, E, M} <: AttractorsBasinsContinuation
     mapper::A
     distance::D
     threshold::Float64
     seeds_from_attractor::S
     info_extraction::E
+    matching_method::M
 end
 
 """
+    RecurrencesContinuation <: AttractorsBasinsContinuation
     RecurrencesContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 
-A method for [`continuation`](@ref). It performs a continuation using a
-mapper from [`AttractorsViaRecurrences`](@ref). The method uses two different
-continuation method:
+A method for [`continuation`](@ref). TODO: Cite our preprint here.
 
-- Attractors are grouped across a parameor a single parameter slice. The continuation
-is performed by matching the labelled attractors from one parameter slice to the next
-using the special distance `method`. The threshold
-- The attractors are grouped over the full parameter range. Said differently, all
-attractors of all initial conditions across all parameter values are put into the same
-"pool" and then grouped using the DBSCAN algorithm. After the grouping is finished the
-feature label fractions are distributedi to each parameter value they came from.
-The optimal radius parameter for the DBSCAN algorithm is set though the threshold
-keyword argument.
+## Description
 
-It uses seeding of previous attractors to find new ones, which is the main performance
-bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
-as the system parameter is increased.
+At the first parameter slice attractors are found as described in the
+[`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
+At each subsequent parameter slice,
+new attractors are found by seeding initial conditions from the previously found
+attractors and then piping these initial conditions through the recurrences algorithm
+of the `mapper`. Seeding initial conditions close to previous attractors accelerates
+the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
+This process continues until all parameter values are exhausted and for each parameter
+value the attractors and their fractions are found.
 
-## Keyword Arguments
-- `distance, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
-  used to match attractors between each parameter slice.
+Then, the different attractors across parameters are matched so that they have
+the same ID. The matching process is based on distances attractors (= sets in state space)
+have between each other. The function that computes these distances is
+[`setsofsets_distances`](@ref) (please read that docstring before continuing).
+
+The matching depends on the type of the keyword `matching_method` as follows:
+
+- `ParameterSliceCrossDistance`: At each parameter slice beyond the first, the new
+  attractors are matched to the previous attractors found in the previous parameter value
+  by a direct call to the [`match_attractor_ids!`](@ref) function. Hence, the matching
+  of attractors here works "slice by slice" on the parameter axis and the attractors
+  that are closest to each other (in state space, but for two different parameter values)
+  get assigned the same label.
+
+- `ClusterOverAllParameters`: The attractors are grouped over the full parameter range
+  using a DBSCAN clustering. A distance matrix is created over all attractors across
+  parameter values, using the [`set_distance`](@ref) function. This distance matrix
+  is given to DBSCAN, and the output is clusterred attractors. Now each cluster may
+  include attractors across different parameter values. After the clustering is finished
+  the cluster label fractions are distributed to each parameter value they came from.
+
+## Keyword arguments
+
+- `matching_method = ParameterSliceCrossDistance()`: see description above.
+- `distance = Centroid()`: the distance used in [`set_distance`](@ref) or
+  [`setsofsets_distances`](@ref)` to provide a distance for matching attractors.
+- `threshold = Inf`: given to [`match_attractor_ids!`](@ref) if
+  `matching_method isa ParameterSliceCrossDistance`.
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
   `attractors_info` in [`continuation`](@ref).
@@ -48,10 +71,11 @@ as the system parameter is increased.
 function RecurrencesContinuation(
         mapper::AttractorsViaRecurrences; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
-        info_extraction = identity
+        info_extraction = identity, matching_method = ParameterSliceCrossDistance(),
     )
     return RecurrencesContinuation(
-        mapper, distance, threshold, seeds_from_attractor, info_extraction
+        mapper, distance, threshold, seeds_from_attractor, info_extraction,
+        matching_method,
     )
 end
 
@@ -68,7 +92,7 @@ end
 function continuation(
         rc::RecurrencesContinuation,
         prange, pidx, ics = _ics_from_grid(rc);
-        samples_per_parameter = 100, show_progress = true, cont_method = :matching
+        samples_per_parameter = 100, show_progress = true, matching_method = :matching
     )
     progress = ProgressMeter.Progress(length(prange);
         desc="Continuating basins fractions:", enabled=show_progress
@@ -78,9 +102,10 @@ function continuation(
     get_info = attractors -> Dict(
         k => rc.info_extraction(att) for (k, att) in attractors
     )
+    matching_method = rc.matching_method
 
     # Gather labels, fractions and attractors doing the seeding process for each parameter.
-    sav_labs = (cont_method == :grouping)
+    sav_labs = (matching_method isa ClusterOverAllParameters)
     sav_labs && (labels = Vector{Int}(undef, n*spp))
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     attractors_info = Vector{Dict}(undef, n)
@@ -95,10 +120,10 @@ function continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
 
-    if cont_method == :matching
+    if matching_method isa ParameterSliceCrossDistance
         # Do the matching from one parameter to the next.
         match_attractors_forward!(attractors_info, fractions_curves, distance, threshold)
-    elseif cont_method == :grouping
+    elseif matching_method isa ClusterOverAllParameters
         # Group over the all range of parameters
         group_attractors!(attractors_info, labels,
             fractions_curves, n, spp, distance, threshold)

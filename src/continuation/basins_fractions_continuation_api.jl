@@ -10,22 +10,10 @@ Possible subtypes are:
 - [`FeaturizingContinuation`](@ref)
 
 These are given to the main [`continuation`](@ref) function.
+These types can also obtain a [`MatchingMethod`](@ref) that instructs how
+to match attractor IDs across the different parameters.
 """
 abstract type AttractorsBasinsContinuation end
-
-"""
-   MatchingMethod
-
-Supertype of types specifying how to match attractors/features in [`continuation`](@ref).
-Concrete subtypes are given as options when instantiating an
-[`AttractorsBasinsContinuation`](@ref) subtype.
-
-Possible subtypes are:
-
-- [`ParameterSliceCrossDistance`](@ref)
-- [`ClusterOverAllParameters`](@ref)
-"""
-abstract type MatchingMethod end
 
 """
    continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
@@ -58,11 +46,27 @@ initial conditions or a set containing them.
 
 - `show_progress = true`: display a progress bar of the computation.
 * `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter.
-- `cont_method = :grouping`: selects the method to perform the continuation. `:grouping`
-  is meant to group the features accross the parameter range while `:matching` will match
-  the clusters of attractors from one parameter slice to the next.
 """
 function continuation end
+
+"""
+   MatchingMethod
+
+Supertype of types specifying how to match attractors/features in [`continuation`](@ref).
+Concrete subtypes are given as options when instantiating an
+[`AttractorsBasinsContinuation`](@ref) subtype.
+
+Possible subtypes are:
+
+- [`ParameterSliceCrossDistance`](@ref)
+- [`ClusterOverAllParameters`](@ref)
+"""
+abstract type MatchingMethod end
+
+struct ParameterSliceCrossDistance end
+
+struct ClusterOverAllParameters end
+
 
 include("match_attractor_ids.jl")
 include("continuation_recurrences.jl")
