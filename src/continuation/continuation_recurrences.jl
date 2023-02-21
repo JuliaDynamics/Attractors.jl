@@ -13,18 +13,39 @@ struct RecurrencesSeedingContinuation{A, M, S, E} <: AttractorsBasinsContinuatio
 end
 
 """
-    RecurrencesSeedingContinuation(mapper::AttractorsViaRecurrences; kwargs...)
-A method for [`continuation`](@ref).
-It uses seeding of previous attractors to find new ones, which is the main performance
-bottleneck. The method uses [`match_attractor_ids!`](@ref) to match attractors
-as the system parameter is increased.
+    RecurrencesSeededContinuation <: AttractorsBasinsContinuation
+    RecurrencesSeededContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 
-Will write more once we have the paper going.
+A method for [`continuation`](@ref). TODO: Cite our preprint here.
 
-## Keyword Arguments
-- `method, threshold`: Given to [`match_attractor_ids!`](@ref) which is the function
-  used to match attractors between each parameter slice.
-- `info_extraction = identity`: A function that takes as an input an attractor (`Dataset`)
+## Description
+
+At the first parameter slice attractors are found as described in the
+[`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
+At each subsequent parameter slice,
+new attractors are found by seeding initial conditions from the previously found
+attractors and then piping these initial conditions through the recurrences algorithm
+of the `mapper`. Seeding initial conditions close to previous attractors accelerates
+the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
+This process continues until all parameter values are exhausted and for each parameter
+value the attractors and their fractions are found.
+
+Then, the different attractors across parameters are matched so that they have
+the same ID. The matching process is based on distances attractors (= sets in state space)
+have between each other. The function that computes these distances is
+[`setsofsets_distances`](@ref) and the matching function
+is [`match_attractor_ids!`](@ref) please read those docstrings before continuing).
+
+At each parameter slice beyond the first, the new
+attractors are matched to the previous attractors found in the previous parameter value
+by a direct call to the [`match_attractor_ids!`](@ref) function. Hence, the matching
+of attractors here works "slice by slice" on the parameter axis and the attractors
+that are closest to each other (in state space, but for two different parameter values)
+get assigned the same label.
+
+## Keyword arguments
+- `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
+- `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
   `attractors_info` in [`continuation`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
