@@ -76,7 +76,7 @@ subtypes of `MatchingMethod`:
   that are closest to each other (in state space, but for two different parameter values)
   get assigned the same label.
 
-- `ClusterOverAllParameters()`: There is a slight difference of how this works
+- `ClusterDistanceMatrix()`: There is a slight difference of how this works
   The a/f/sets are grouped over the full parameter range
   using a DBSCAN clustering. A distance matrix is created over all a/f/sets across
   parameter values, using the [`set_distance`](@ref) function. This distance matrix
@@ -84,7 +84,7 @@ subtypes of `MatchingMethod`:
   include attractors across different parameter values. After the clustering is finished
   the cluster label fractions are distributed to each parameter value they came from.
 
-TODO: This is WRONG!!! The `ClusterOverAllParameters` is something completely
+TODO: This is WRONG!!! The `ClusterDistanceMatrix` is something completely
 different in the Recurrences and the Featurizing versions...
 
 """
@@ -92,7 +92,7 @@ abstract type MatchingMethod end
 
 struct ParameterSliceCrossDistance end
 
-struct ClusterOverAllParameters end
+struct ClusterDistanceMatrix end
 
 
 include("match_attractor_ids.jl")

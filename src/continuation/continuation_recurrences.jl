@@ -89,7 +89,7 @@ function continuation(
     matching_method = rc.matching_method
 
     # Gather labels, fractions and attractors doing the seeding process for each parameter.
-    sav_labs = (matching_method isa ClusterOverAllParameters)
+    sav_labs = (matching_method isa ClusterDistanceMatrix)
     sav_labs && (labels = Vector{Int}(undef, n*spp))
     fractions_curves = Vector{Dict{Int, Float64}}(undef, n)
     attractors_info = Vector{Dict}(undef, n)
@@ -107,7 +107,7 @@ function continuation(
     if matching_method isa ParameterSliceCrossDistance
         # Do the matching from one parameter to the next.
         match_attractors_forward!(attractors_info, fractions_curves, distance, threshold)
-    elseif matching_method isa ClusterOverAllParameters
+    elseif matching_method isa ClusterDistanceMatrix
         # Group over the all range of parameters
         group_attractors!(attractors_info, labels,
             fractions_curves, n, spp, distance, threshold)
