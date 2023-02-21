@@ -2,7 +2,7 @@ export FeaturizingContinuation
 import ProgressMeter
 import Mmap
 
-struct FeaturizingContinuation{A<:AttractorsViaFeaturizing, E, M} <: BasinsFractionContinuation
+struct FeaturizingContinuation{A<:AttractorsViaFeaturizing, E, M} <: AttractorsBasinsContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64

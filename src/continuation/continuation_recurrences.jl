@@ -4,7 +4,7 @@ using Random: MersenneTwister
 
 # The recurrences based method is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesContinuation{A, M, S, E} <: BasinsFractionContinuation
+struct RecurrencesContinuation{A, M, S, E} <: AttractorsBasinsContinuation
     mapper::A
     method::M
     threshold::Float64

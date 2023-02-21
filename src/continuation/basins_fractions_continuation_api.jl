@@ -4,7 +4,7 @@ export basins_fractions_continuation
 # how to match, because there are other keywords that always go into the
 # continuation... Like in the recurrences the keyword of seeds per attractor,
 # or in the clustering some other stuff like the parameter scaling
-abstract type BasinsFractionContinuation end
+abstract type AttractorsBasinsContinuation end
 
 """
     basins_fractions_continuation(continuation, prange, pidx, ics; kwargs...)
