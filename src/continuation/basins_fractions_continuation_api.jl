@@ -76,8 +76,7 @@ subtypes of `MatchingMethod`:
   that are closest to each other (in state space, but for two different parameter values)
   get assigned the same label.
 
-- `ClusterDistanceMatrix()`: There is a slight difference of how this works
-  The a/f/sets are grouped over the full parameter range
+- `ClusterDistanceMatrix()`: The a/f/sets are grouped over the full parameter range
   using a DBSCAN clustering. A distance matrix is created over all a/f/sets across
   parameter values, using the [`set_distance`](@ref) function. This distance matrix
   is given to DBSCAN, and the output is clusterred attractors. Now each cluster may
