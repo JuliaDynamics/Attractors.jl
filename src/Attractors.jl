@@ -1,11 +1,11 @@
-"""
-A module for finding attractors of dynamical systems,
-their basins and their boundaries,
-and continuing attractors and their basins across parameters.
-
-Part of [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/).
-"""
 module Attractors
+
+# Use the README as the module docs
+@doc let
+    path = joinpath(dirname(@__DIR__), "README.md")
+    include_dependency(path)
+    read(path, String)
+end Attractors
 
 using Reexport
 @reexport using StateSpaceSets
