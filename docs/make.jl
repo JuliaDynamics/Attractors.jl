@@ -1,6 +1,4 @@
 cd(@__DIR__)
-using Pkg
-Pkg.activate(@__DIR__)
 CI = get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
 using Documenter
 using DocumenterTools: Themes
