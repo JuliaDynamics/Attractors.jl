@@ -14,7 +14,9 @@ The defaults are a significant improvement over existing literature, see Descrip
 
 ## Keyword arguments
 
-* `clust_distance_metric = Euclidean()`: metric to be used in the clustering.
+* `clust_distance_metric = Euclidean()`: A metric to be used in the clustering.
+  It can be any function `f(a, b)` that returns the distance between vectors
+  `a, b`. All metrics from Distances.jl can be used here.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 * `min_neighbors = 10`: minimum number of neighbors (i.e. of similar features) each
@@ -161,7 +163,13 @@ function _distance_matrix(features, config::GroupViaClustering;
     else
         dists = zeros(L, L)
     end
-    pairwise!(metric, dists, features; symmetric = true)
+    if metric isa Metric # then the `pairwise` function is valid
+        pairwise!(metric, dists, features; symmetric = true)
+    else # it is any arbitrary distance function, e.g., used in aggregating attractors
+        # TODO:
+        pairwise_optimized()
+    end
+
     if par_weight ≠ 0 # weight distance matrix by parameter value
         par_vector = kron(range(0, 1, plength), ones(spp))
         length(par_vector) ≠ size(dists, 1) && error("Feature size doesn't match.")
