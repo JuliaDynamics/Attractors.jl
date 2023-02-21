@@ -20,21 +20,23 @@ A method for [`continuation`](@ref). TODO: Cite our preprint here.
 
 ## Description
 
-At the first parameter slice attractors are found as described in the
+At the first parameter slice attractors and their fractions are found as described in the
 [`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
 At each subsequent parameter slice,
 new attractors are found by seeding initial conditions from the previously found
 attractors and then piping these initial conditions through the recurrences algorithm
 of the `mapper`. Seeding initial conditions close to previous attractors accelerates
 the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
+After the attractors are found, their fractions are computed by running new initial
+conditions through the [`AttractorsViaRecurrences`](@ref) mapper.
 This process continues until all parameter values are exhausted and for each parameter
 value the attractors and their fractions are found.
 
 Then, the different attractors across parameters are matched so that they have
-the same ID. The matching process is based on distances attractors (= sets in state space)
-have between each other. The function that computes these distances is
+the same ID. The matching process is based on distances between attractors.
+The function that computes these distances is
 [`setsofsets_distances`](@ref) and the matching function
-is [`match_attractor_ids!`](@ref) please read those docstrings before continuing).
+is [`match_attractor_ids!`](@ref) (please read those docstrings as well).
 
 At each parameter slice beyond the first, the new
 attractors are matched to the previous attractors found in the previous parameter value
