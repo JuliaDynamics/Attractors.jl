@@ -6,7 +6,7 @@ Attractors
 
 ```@setup MAIN
 using CairoMakie, Attractors
-include("../style.jl")
+include("../basins_plotting.jl")
 ```
 
 ## Outline of Attractors.jl

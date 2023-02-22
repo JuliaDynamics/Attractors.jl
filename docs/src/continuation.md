@@ -26,7 +26,7 @@ RecurrencesSeededContinuation
 match_attractor_ids!
 replacement_map
 set_distance
-setsofsets_distance
+setsofsets_distances
 match_basins_ids!
 ```
 

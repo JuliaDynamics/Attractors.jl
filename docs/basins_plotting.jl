@@ -61,6 +61,12 @@ function plot_attractors(attractors::Dict;  access = [1,2], markersize = 12)
     return fig
 end
 
+function basins_fractions_plot(fractions_curves, prange; kwargs...)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    basins_fractions_plot!(ax, fractions_curves, prange; kwargs...)
+    return fig
+end
 
 """
     basins_fractions_plot!(ax::Axis, fractions_curves, prange; kwargs...)
@@ -71,29 +77,26 @@ Keywords:
 ```julia
 labels = Dict(ukeys .=> ukeys),
 colors = colors_from_keys(ukeys),
-separatorwidth = 0.5,
+separatorwidth = 1,
 separatorcolor = "white",
 add_legend = length(ukeys) < 8,
 ```
 """
-function basins_fractions_plot(fractions_curves, prange; kwargs...)
-    fig = Figure()
-    ax = Axis(fig[1,1])
-    basins_fractions_plot!(ax, fractions_curves, prange; kwargs...)
-    return fig
-end
-
 function basins_fractions_plot!(ax, fractions_curves, prange;
         ukeys = unique_keys(fractions_curves), # internal argument
         labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
-        separatorwidth = 0.5, separatorcolor = "white",
+        separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 8,
     )
+    if !(prange isa AbstractVector{<:Real})
+        error("!(prange <: AbstractVector{<:Real})")
+    end
     bands = fractions_to_cumulative(fractions_curves, prange, ukeys)
     for (j, k) in enumerate(ukeys)
         if j == 1
             l, u = 0, bands[j]
+            l = fill(0f0, length(u))
         else
             l, u = bands[j-1], bands[j]
         end
@@ -117,11 +120,9 @@ function colors_from_keys(ukeys)
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
-    @show ukeys
     bands = [zeros(length(prange)) for _ in ukeys]
     for i in eachindex(fractions_curves)
         for (j, k) in enumerate(ukeys)
-            @show i, j, k
             bands[j][i] = get(fractions_curves[i], k, 0)
         end
     end
