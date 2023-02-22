@@ -325,7 +325,7 @@ _this example is not actually run when building the docs, because it takes about
 
 As you can see, the system has extreme multistability with 64 unique attractors
 (according to the default matching behavior in [`RecurrencesSeededContinuation`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
-One could also isolate a specific parameter slice, and to the same as what we do in
+One could also isolate a specific parameter slice, and do the same as what we do in
 the [Fractality of 2D basins of the (4D) magnetic pendulum](@ref) example, to prove that the basin boundaries are fractal, thereby indeed confirming the paper title "Fundamental Unpredictability".
 
 Regardless, we now want to continue our analysis to provide a figure similar to the
@@ -347,8 +347,10 @@ aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
     fractions_curves, attractors_info, featurizer, groupingconfig
 )
 
-Main.basins_fractions_plot(aggregated_fractions, prange; separatorwidth = 1,
-labels = Dict(1 => "extinct", 2 => "alive"), colors = ["green", "black"])
+Main.basins_fractions_plot(aggregated_fractions, prange;
+    separatorwidth = 1, colors = ["green", "black"],
+    labels = Dict(1 => "extinct", 2 => "alive"),
+)
 ```
 
 ![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions_aggr.png)
