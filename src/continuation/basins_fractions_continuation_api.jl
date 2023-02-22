@@ -7,7 +7,7 @@ export continuation
 abstract type AttractorsBasinsContinuation end
 
 """
-   continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
+    continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
 
 Find and continue attractors (or feature-based representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
@@ -15,11 +15,11 @@ and the fractions of their basins of attraction across a parameter range.
 The continuation type `abc` is a subtype of [`AttractorsBasinsContinuation`](@ref)
 and contains an [`AttractorMapper`](@ref). The mapper contains information
 on how to find the attractors and basins of a dynamical system. Additional
-arguments and keyword arguments given when creating `abc` further tune the continuation.
+arguments and keyword arguments given when creating `abc` further tune the continuation
+and how attractors are matched across different parameter values.
 
-In the `continuation` function, the basin fractions and the attractors (or some representation
-of them in the case of featurizing) are continued across the parameter range `prange`,
-for the parameter of the system with index `pidx`.
+The basin fractions and the attractors (or some representation of them) are continued
+across the parameter range `prange`, for the parameter of the system with index `pidx`.
 `ics` is as in [`basins_fractions`](@ref), i.e., it is either a function generating
 initial conditions or a set containing them.
 
