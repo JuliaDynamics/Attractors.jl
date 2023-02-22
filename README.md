@@ -4,6 +4,7 @@
 [![CI](https://github.com/JuliaDynamics/Attractors.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/Attractors.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/JuliaDynamics/Attractors.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/Attractors.jl)
 [![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/Attractors)](https://pkgs.genieframework.com?packages=Attractors)
+[![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/ChaosTools)](https://pkgs.genieframework.com?packages=ChaosTools)
 
 A Julia module for finding attractors of dynamical systems,
 their basins and their boundaries, fractal properties of the boundaries,
