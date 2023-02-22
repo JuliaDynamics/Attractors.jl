@@ -1,4 +1,4 @@
-export continuation
+export continuation, AttractorsBasinsContinuation
 
 # In the end, it is better to have a continuation type that contains
 # how to match, because there are other keywords that always go into the
@@ -12,7 +12,7 @@ abstract type AttractorsBasinsContinuation end
 Find and continue attractors (or feature-based representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
 
-The continuation type `abc` is a subtype of [`AttractorsBasinsContinuation`](@ref)
+The continuation type `abc` is a subtype of `AttractorsBasinsContinuation`
 and contains an [`AttractorMapper`](@ref). The mapper contains information
 on how to find the attractors and basins of a dynamical system. Additional
 arguments and keyword arguments given when creating `abc` further tune the continuation
@@ -22,6 +22,11 @@ The basin fractions and the attractors (or some representation of them) are cont
 across the parameter range `prange`, for the parameter of the system with index `pidx`.
 `ics` is as in [`basins_fractions`](@ref), i.e., it is either a function generating
 initial conditions or a set containing them.
+
+Possible subtypes of `AttractorsBasinsContinuation` are:
+
+- [`RecurrencesSeededContinuation`](@ref)
+- [`GroupAcrossParameterContinuation`](@ref)
 
 ## Return
 

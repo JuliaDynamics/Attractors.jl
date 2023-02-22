@@ -22,7 +22,7 @@ After the grouping is finished the feature label fractions are distributed
 to each parameter value they came from.
 
 ## Keyword arguments
-- `info_extraction::Function` a function that takes as an input a vector of features
+- `info_extraction::Function` a function that takes as an input a vector of feature-vectors
   (corresponding to a cluster) and returns a description of the cluster.
   By default, the centroid of the cluster is used.
 - `par_weight = 0`: See below the section on MCBB.
