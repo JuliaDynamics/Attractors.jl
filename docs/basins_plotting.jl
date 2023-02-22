@@ -1,45 +1,5 @@
-# This file is included in `index.md`
+# Functions dedicated into plotting basins related stuff
 
-# %% Color theme definitions
-mutable struct CyclicContainer
-    c::Vector
-    n::Int
-end
-CyclicContainer(c) = CyclicContainer(c, 0)
-
-Base.length(c::CyclicContainer) = length(c.c)
-Base.iterate(c::CyclicContainer, state=1) = Base.iterate(c.c, state)
-Base.getindex(c::CyclicContainer, i) = c.c[mod1(i, length(c))]
-Base.getindex(c::CyclicContainer, i::AbstractRange) = c.c[i]
-
-function Base.getindex(c::CyclicContainer)
-    c.n += 1
-    c[c.n]
-end
-
-COLORSCHEME = [
-    "#7143E0",
-    "#191E44",
-    "#0A9A84",
-    "#C0A12B",
-    "#701B80",
-    "#2E6137",
-]
-
-COLORS = CyclicContainer(COLORSCHEME)
-LINESTYLES = CyclicContainer(["-", ":", "--", "-."])
-
-# %% Makie styling
-# other styling elements for Makie
-set_theme!(;
-    palette = (color = COLORSCHEME,),
-    fontsize = 22,
-    figure_padding = 4,
-    resolution = (1000, 500),
-    linewidth = 3.0,
-)
-
-# %% Plotting default functions for basin stuff
 function animate_attractors_continuation(
         ds, attractors_info, prange, pidx;
         savename = "test.mp4", access = [1,2],
@@ -101,17 +61,42 @@ function plot_attractors(attractors::Dict;  access = [1,2], markersize = 12)
     return fig
 end
 
+function basins_fractions_plot(fractions_curves, prange; kwargs...)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    basins_fractions_plot!(ax, fractions_curves, prange; kwargs...)
+    return fig
+end
+
+"""
+    basins_fractions_plot!(ax::Axis, fractions_curves, prange; kwargs...)
+
+Plot the fractions of basins of attraction versus a parameter range,
+i.e., visualize the output of [`continuation`](@ref).
+Keywords:
+```julia
+labels = Dict(ukeys .=> ukeys),
+colors = colors_from_keys(ukeys),
+separatorwidth = 1,
+separatorcolor = "white",
+add_legend = length(ukeys) < 8,
+```
+"""
 function basins_fractions_plot!(ax, fractions_curves, prange;
         ukeys = unique_keys(fractions_curves), # internal argument
         labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
-        separatorwidth = 0, separatorcolor = "white",
+        separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 8,
     )
+    if !(prange isa AbstractVector{<:Real})
+        error("!(prange <: AbstractVector{<:Real})")
+    end
     bands = fractions_to_cumulative(fractions_curves, prange, ukeys)
     for (j, k) in enumerate(ukeys)
         if j == 1
             l, u = 0, bands[j]
+            l = fill(0f0, length(u))
         else
             l, u = bands[j-1], bands[j]
         end
@@ -135,11 +120,9 @@ function colors_from_keys(ukeys)
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
-    @show ukeys
     bands = [zeros(length(prange)) for _ in ukeys]
     for i in eachindex(fractions_curves)
         for (j, k) in enumerate(ukeys)
-            @show i, j, k
             bands[j][i] = get(fractions_curves[i], k, 0)
         end
     end
@@ -150,10 +133,3 @@ function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(f
     return bands
 end
 
-
-function basins_fractions_plot(fractions_curves, prange; kwargs...)
-    fig = Figure()
-    ax = Axis(fig[1,1])
-    basins_fractions_plot!(ax, fractions_curves, prange; kwargs...)
-    return fig
-end
