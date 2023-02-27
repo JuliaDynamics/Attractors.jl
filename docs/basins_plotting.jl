@@ -82,7 +82,7 @@ separatorcolor = "white",
 add_legend = length(ukeys) < 8,
 ```
 """
-function basins_fractions_plot!(ax, fractions_curves, prange;
+function basins_fractions_plot!(ax, fractions_curves, prange = 1:length(fractions_curves);
         ukeys = unique_keys(fractions_curves), # internal argument
         labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
