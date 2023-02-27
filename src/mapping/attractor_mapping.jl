@@ -85,14 +85,14 @@ See [`AttractorMapper`](@ref) for all possible `mapper` types.
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
-function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractDataset, Function};
+function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpaceSet, Function};
         show_progress = true, N = 1000, additional_fs::Dict = Dict(),
     )
-    used_dataset = ics isa AbstractDataset
+    used_dataset = ics isa AbstractStateSpaceSet
     N = used_dataset ? size(ics, 1) : N
-    if show_progress
-        progress=ProgressMeter.Progress(N; desc="Mapping initial conditions to attractors:")
-    end
+    progress = ProgressMeter.Progress(N;
+        desc="Mapping initial conditions to attractors:", enabled = show_progress
+    )
     fs = Dict{Int, Int}()
     used_dataset && (labels = Vector{Int}(undef, N))
     # TODO: If we want to parallelize this, then we need to initialize as many
@@ -102,7 +102,7 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractDataset, F
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
         used_dataset && (labels[i] = label)
-        show_progress && next!(progress)
+        show_progress && ProgressMeter.next!(progress)
     end
     # the non-public-API `additional_fs` is used in the continuation methods
     additive_dict_merge!(fs, additional_fs)
@@ -118,7 +118,7 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractDataset, F
 end
 
 _get_ic(ics::Function, i) = ics()
-_get_ic(ics::AbstractDataset, i) = ics[i]
+_get_ic(ics::AbstractStateSpaceSet, i) = ics[i]
 
 
 #########################################################################################
