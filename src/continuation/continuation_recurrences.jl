@@ -66,7 +66,7 @@ function RecurrencesSeededContinuation(
     )
 end
 
-function _default_seeding_process(attractor::AbstractDataset; rng = MersenneTwister(1))
+function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)

@@ -91,7 +91,7 @@ function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     return
 end
 
-ValidICS = Union{AbstractDataset, Function}
+ValidICS = Union{AbstractStateSpaceSet, Function}
 
 #####################################################################################
 # Extension of `AttractorMapper` API
@@ -104,7 +104,7 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
     features = extract_features(mapper, ics; show_progress, N)
     cluster_labels  = group_features(features, mapper.group_config)
     fs = basins_fractions(cluster_labels) # Vanilla fractions method with Array input
-    if typeof(ics) <: AbstractDataset
+    if typeof(ics) <: AbstractStateSpaceSet
         attractors = extract_attractors(mapper, cluster_labels, ics)
         return fs, cluster_labels, attractors
     else
