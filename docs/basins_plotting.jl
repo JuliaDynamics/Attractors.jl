@@ -144,7 +144,7 @@ end
 function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
         ukeys = unique_keys(attractors_info), # internal argument
         colors = colors_from_keys(ukeys),
-        attractor_name = (A) -> attractor_type(A),
+        labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
     )
     for i in eachindex(attractors_info)
@@ -156,10 +156,8 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
     end
     xlims!(ax, minimum(prange), maximum(prange))
     if add_legend
-        labels = create_attractor_names(ukeys, attractors_info, attractor_name)
+        labels = map(k -> labels[k], ukeys)
         ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
-        # axislegend(ax, ele, labels)
-        # Legend(fig[end+1, :], legend_elements, methods)
         # From the source code of `axislegend`:
         Legend(ax.parent, ele, labels;
             bbox = ax.scene.px_area,
@@ -189,10 +187,10 @@ function attractor_type(A)
     # return "$(l)"
 end
 
+# TODO: This function needs to be improved somehow
 function create_attractor_names(ukeys, attractors_info, attractor_name)
     map(ukeys) do k
         # find first attractor with this key
-        @show k
         di = findlast(d -> haskey(d, k), attractors_info)
         A = attractors_info[di][k]
         label = attractor_name(A)
