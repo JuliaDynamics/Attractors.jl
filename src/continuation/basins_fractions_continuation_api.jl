@@ -23,6 +23,8 @@ across the parameter range `prange`, for the parameter of the system with index 
 `ics` is as in [`basins_fractions`](@ref), i.e., it is either a function generating
 initial conditions or a set containing them.
 
+`ics` is the initial conditions as in [`basins_fractions`](@ref).
+
 Possible subtypes of `AttractorsBasinsContinuation` are:
 
 - [`RecurrencesSeededContinuation`](@ref)
@@ -41,7 +43,8 @@ Possible subtypes of `AttractorsBasinsContinuation` are:
 ## Keyword arguments
 
 - `show_progress = true`: display a progress bar of the computation.
-* `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter.
+* `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
+  if `ics` is a function.
 """
 function continuation end
 
