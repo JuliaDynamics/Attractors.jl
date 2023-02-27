@@ -86,6 +86,7 @@ function continuation(
     )
 
     (; mapper, distance, threshold) = rsc
+    reset!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)

@@ -215,8 +215,7 @@ function basins_attractors_curves_plot(fractions_curves, attractors_info, attrac
         delete!(colors, -1)
     end
     attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
-        ukeys, colors
+        ukeys, colors, add_legend = false, # coz its true for fractions
     )
     return fig
 end
-
