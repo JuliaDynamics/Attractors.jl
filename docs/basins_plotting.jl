@@ -61,15 +61,15 @@ function plot_attractors(attractors::Dict;  access = [1,2], markersize = 12)
     return fig
 end
 
-function basins_fractions_plot(fractions_curves, prange; kwargs...)
+function basins_curves_plot(fractions_curves, prange; kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
-    basins_fractions_plot!(ax, fractions_curves, prange; kwargs...)
+    basins_curves_plot!(ax, fractions_curves, prange; kwargs...)
     return fig
 end
 
 """
-    basins_fractions_plot!(ax::Axis, fractions_curves, prange; kwargs...)
+    basins_curves_plot!(ax::Axis, fractions_curves, prange; kwargs...)
 
 Plot the fractions of basins of attraction versus a parameter range,
 i.e., visualize the output of [`continuation`](@ref).
@@ -82,7 +82,7 @@ separatorcolor = "white",
 add_legend = length(ukeys) < 8,
 ```
 """
-function basins_fractions_plot!(ax, fractions_curves, prange = 1:length(fractions_curves);
+function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_curves);
         ukeys = unique_keys(fractions_curves), # internal argument
         labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
