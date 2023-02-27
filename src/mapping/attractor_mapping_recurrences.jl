@@ -195,7 +195,7 @@ mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    attractors::Dict{Int32, Dataset{D, T}}
+    attractors::Dict{Int32, StateSpaceSet{D, T}}
     visited_list::Q
 end
 
@@ -228,7 +228,7 @@ function initialize_basin_info(
         Δt,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int32, Dataset{D, T}}(),
+        Dict{Int32, StateSpaceSet{D, T}}(),
         Vector{CartesianIndex{G}}(),
     )
     reset_basins_counters!(bsn_nfo)
@@ -476,7 +476,7 @@ function store_attractor!(bsn_nfo::BasinsInfo{D, Δ, T},
         push!(bsn_nfo.attractors[attractor_id], V(u_full_state))
     else
         # initialize container for new attractor
-        bsn_nfo.attractors[attractor_id] = Dataset([V(u_full_state)])
+        bsn_nfo.attractors[attractor_id] = StateSpaceSet([V(u_full_state)])
     end
 end
 

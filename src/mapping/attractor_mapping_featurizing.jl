@@ -31,7 +31,7 @@ See [`AttractorMapper`](@ref) for how to use the `mapper`.
 This `mapper` also allows the syntax `mapper(u0)` but only if the `grouping_config`
 is _not_ `GroupViaClustering`.
 
-`featurizer` is a function that takes as an input an integrated trajectory `A::Dataset` and
+`featurizer` is a function that takes as an input an integrated trajectory `A::StateSpaceSet` and
 the corresponding time vector `t` and returns an `SVector{<:Real}` of features describing the
 trajectory. It is important to use static vectors for better performance.
 
@@ -123,7 +123,7 @@ import ProgressMeter
 
 Return a vector of the features of each initial condition in `ics` (as in
 [`basins_fractions`](@ref)), using the configuration of `mapper::AttractorsViaFeaturizing`.
-Keyword `N` is ignored if `ics isa Dataset`.
+Keyword `N` is ignored if `ics isa StateSpaceSet`.
 """
 function extract_features(mapper::AttractorsViaFeaturizing, args...; kwargs...)
     if !(mapper.threaded)

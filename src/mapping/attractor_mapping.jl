@@ -55,7 +55,7 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
 #########################################################################################
 # It works for all mappers that define the function-like-object behavior
 """
-    basins_fractions(mapper::AttractorMapper, ics::Union{Dataset, Function}; kwargs...)
+    basins_fractions(mapper::AttractorMapper, ics::Union{StateSpaceSet, Function}; kwargs...)
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
 stystem by mapping initial conditions to attractors using `mapper`
@@ -64,20 +64,20 @@ The fractions are simply the ratios of how many initial conditions ended up
 at each attractor.
 
 Initial conditions to use are defined by `ics`. It can be:
-* a `Dataset` of initial conditions, in which case all are used.
+* a `StateSpaceSet` of initial conditions, in which case all are used.
 * a 0-argument function `ics()` that spits out random initial conditions.
   Then `N` random initial conditions are chosen.
   See [`statespace_sampler`](@ref) to generate such functions.
 
 The returned arguments are `fs`.
-If `ics` is a `Dataset` then the `labels` of each initial condition and roughly approximated
+If `ics` is a `StateSpaceSet` then the `labels` of each initial condition and roughly approximated
 attractors are also returned: `fs, labels, attractors`.
 
 The output `fs` is a dictionary whose keys are the labels given to each attractor
 (always integers enumerating the different attractors), and the
 values are their respective fractions. The label `-1` is given to any initial condition
 where `mapper` could not match to an attractor (this depends on the `mapper` type).
-`attractors` has the same structure, mapping labels to `Dataset`s.
+`attractors` has the same structure, mapping labels to `StateSpaceSet`s.
 
 See [`AttractorMapper`](@ref) for all possible `mapper` types.
 
@@ -88,20 +88,20 @@ See [`AttractorMapper`](@ref) for all possible `mapper` types.
 function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpaceSet, Function};
         show_progress = true, N = 1000, additional_fs::Dict = Dict(),
     )
-    used_dataset = ics isa AbstractStateSpaceSet
-    N = used_dataset ? size(ics, 1) : N
+    used_StateSpaceSet = ics isa AbstractStateSpaceSet
+    N = used_StateSpaceSet ? size(ics, 1) : N
     progress = ProgressMeter.Progress(N;
         desc="Mapping initial conditions to attractors:", enabled = show_progress
     )
     fs = Dict{Int, Int}()
-    used_dataset && (labels = Vector{Int}(undef, N))
+    used_StateSpaceSet && (labels = Vector{Int}(undef, N))
     # TODO: If we want to parallelize this, then we need to initialize as many
     # mappers as threads. Use a `threading` keyword and `deepcopy(mapper)`
     for i ∈ 1:N
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
-        used_dataset && (labels[i] = label)
+        used_StateSpaceSet && (labels[i] = label)
         show_progress && ProgressMeter.next!(progress)
     end
     # the non-public-API `additional_fs` is used in the continuation methods
@@ -109,7 +109,7 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
     ffs = Dict(k => v/N for (k, v) in fs)
-    if used_dataset
+    if used_StateSpaceSet
         attractors = extract_attractors(mapper, labels, ics)
         return ffs, labels, attractors
     else
@@ -148,7 +148,7 @@ corresponding to the state space partitioning indicated by `grid`.
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     I = CartesianIndices(basins)
-    A = Dataset([generate_ic_on_grid(grid, i) for i in vec(I)])
+    A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
     fs, labels, attractors = basins_fractions(mapper, A; kwargs...)
     vec(basins) .= vec(labels)
     return basins, attractors
