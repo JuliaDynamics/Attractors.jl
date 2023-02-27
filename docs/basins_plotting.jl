@@ -84,8 +84,8 @@ add_legend = length(ukeys) < 8,
 """
 function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_curves);
         ukeys = unique_keys(fractions_curves), # internal argument
-        labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
         separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 7,
     )
@@ -100,7 +100,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
         else
             l, u = bands[j-1], bands[j]
         end
-        band!(ax, prange, l, u; color = colors[j], label = "$(labels[k])", linewidth = 4)
+        band!(ax, prange, l, u; color = colors[k], label = "$(labels[k])", linewidth = 4)
         if separatorwidth > 0 && j < length(ukeys)
             lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth)
         end
@@ -113,10 +113,11 @@ end
 using Random: Xoshiro
 function colors_from_keys(ukeys)
     if length(ukeys) ≤ length(COLORS)
-        COLORS
+        colors = [COLORS[i] for i in eachindex(ukeys)]
     else
-        shuffle!(Xoshiro(123), collect(cgrad(:darktest, length(ukeys); categorical = true)))
+        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, length(ukeys); categorical = true)))
     end
+    return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
@@ -153,9 +154,7 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
             scatter!(ax, prange[i], val; color = colors[k])
         end
     end
-    # Deduce names
     xlims!(ax, minimum(prange), maximum(prange))
-    # TODO: Add legend...
     if add_legend
         labels = create_attractor_names(ukeys, attractors_info, attractor_name)
         ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
@@ -193,9 +192,31 @@ end
 function create_attractor_names(ukeys, attractors_info, attractor_name)
     map(ukeys) do k
         # find first attractor with this key
+        @show k
         di = findlast(d -> haskey(d, k), attractors_info)
         A = attractors_info[di][k]
         label = attractor_name(A)
         return "$(k): $(label)"
     end
 end
+
+
+function basins_attractors_curves_plot(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(fractions_curves), # internal argument
+        colors = colors_from_keys(ukeys),
+    )
+    fig = Figure()
+    axb = Axis(fig[1,1])
+    axa = Axis(fig[2,1])
+    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
+    # Okay here we need to delete key `-1` if it exists:
+    if -1 ∈ ukeys
+        popfirst!(ukeys)
+        delete!(colors, -1)
+    end
+    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
+        ukeys, colors
+    )
+    return fig
+end
+
