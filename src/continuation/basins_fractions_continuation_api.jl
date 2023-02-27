@@ -23,7 +23,8 @@ across the parameter range `prange`, for the parameter of the system with index 
 `ics` is as in [`basins_fractions`](@ref), i.e., it is either a function generating
 initial conditions or a set containing them.
 
-`ics` is the initial conditions as in [`basins_fractions`](@ref).
+`ics` is a 0-argument function generating initial conditions for
+the dynamical system (as in [`basins_fractions`](@ref)).
 
 Possible subtypes of `AttractorsBasinsContinuation` are:
 

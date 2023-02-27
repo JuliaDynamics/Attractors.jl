@@ -16,7 +16,7 @@ end
     RecurrencesSeededContinuation <: AttractorsBasinsContinuation
     RecurrencesSeededContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 
-A method for [`continuation`](@ref). TODO: Cite our preprint here.
+A method for [`rsc`](@ref). TODO: Cite our preprint here.
 
 ## Description
 
@@ -49,7 +49,7 @@ get assigned the same label.
 - `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`continuation`](@ref).
+  `attractors_info` in [`rsc`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample some points from existing attractors according
@@ -74,17 +74,18 @@ function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = Mersen
 end
 
 function continuation(
-        continuation::RecurrencesSeededContinuation,
-        prange, pidx, ics = _ics_from_grid(continuation);
+        rsc::RecurrencesSeededContinuation,
+        prange, pidx, ics = _ics_from_grid(rsc);
         samples_per_parameter = 100, show_progress = true,
     )
-    # show_progress && @info "Starting basins fraction continuation."
-    # show_progress && @info "p = $(prange[1])"
+    if ics isa AbstractStateSpaceSet
+        error("`ics` needs to be a function.")
+    end
     progress = ProgressMeter.Progress(length(prange);
         desc="Continuating basins fractions:", enabled=show_progress
     )
 
-    (; mapper, distance, threshold) = continuation
+    (; mapper, distance, threshold) = rsc
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
@@ -93,7 +94,7 @@ function continuation(
     # Furthermore some info about the attractors is stored and returned
     prev_attractors = deepcopy(mapper.bsn_nfo.attractors)
     get_info = attractors -> Dict(
-        k => continuation.info_extraction(att) for (k, att) in attractors
+        k => rsc.info_extraction(att) for (k, att) in attractors
     )
     info = get_info(prev_attractors)
     attractors_info = [info]
@@ -111,7 +112,7 @@ function continuation(
         # seeding to the fractions using an internal argument.
         seeded_fs = Dict{Int, Int}()
         for att in values(prev_attractors)
-            for u0 in continuation.seeds_from_attractor(att)
+            for u0 in rsc.seeds_from_attractor(att)
                 # We map the initial condition to an attractor, but we don't care
                 # about which attractor we go to. This is just so that the internal
                 # array of `AttractorsViaRecurrences` registers the attractors
@@ -166,8 +167,8 @@ function reset!(mapper::AttractorsViaRecurrences)
     return
 end
 
-function _ics_from_grid(continuation::RecurrencesSeededContinuation)
-    return _ics_from_grid(continuation.mapper.grid)
+function _ics_from_grid(rsc::RecurrencesSeededContinuation)
+    return _ics_from_grid(rsc.mapper.grid)
 end
 
 function _ics_from_grid(grid::Tuple)
