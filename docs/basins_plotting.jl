@@ -87,7 +87,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
         labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
         separatorwidth = 1, separatorcolor = "white",
-        add_legend = length(ukeys) < 8,
+        add_legend = length(ukeys) < 7,
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
@@ -133,3 +133,69 @@ function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(f
     return bands
 end
 
+function attractors_curves_plot(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange; kwargs...)
+    return fig
+end
+
+function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(attractors_info), # internal argument
+        colors = colors_from_keys(ukeys),
+        attractor_name = (A) -> attractor_type(A),
+        add_legend = length(ukeys) < 7,
+    )
+    for i in eachindex(attractors_info)
+        attractors = attractors_info[i]
+        for (k, A) in attractors
+            val = attractor_to_real(A)
+            scatter!(ax, prange[i], val; color = colors[k])
+        end
+    end
+    # Deduce names
+    xlims!(ax, minimum(prange), maximum(prange))
+    # TODO: Add legend...
+    if add_legend
+        labels = create_attractor_names(ukeys, attractors_info, attractor_name)
+        ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
+        # axislegend(ax, ele, labels)
+        # Legend(fig[end+1, :], legend_elements, methods)
+        # From the source code of `axislegend`:
+        Legend(ax.parent, ele, labels;
+            bbox = ax.scene.px_area,
+            Makie.legend_position_to_aligns(:lt)...,
+            margin = (10, 10, 10, 10),
+        )
+    end
+    return
+end
+
+function attractor_type(A)
+    return "len=$(length(A))"
+    # if length(A) == 1
+    #     l =  "fixed p."
+    # else
+    #     # fractal dimension
+    #     D = grassberger_proccacia_dim(A)
+    #     @show D
+    #     if D < 0.1
+    #         l =  "fixed p."
+    #     elseif D < 1
+    #         l =  "limit c."
+    #     else
+    #         l =  "chaotic"
+    #     end
+    # end
+    # return "$(l)"
+end
+
+function create_attractor_names(ukeys, attractors_info, attractor_name)
+    map(ukeys) do k
+        # find first attractor with this key
+        di = findlast(d -> haskey(d, k), attractors_info)
+        A = attractors_info[di][k]
+        label = attractor_name(A)
+        return "$(k): $(label)"
+    end
+end
