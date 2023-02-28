@@ -53,7 +53,11 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
 #########################################################################################
 # It works for all mappers that define the function-like-object behavior
 """
-    basins_fractions(mapper::AttractorMapper, ics::Union{StateSpaceSet, Function}; kwargs...)
+    basins_fractions(
+        mapper::AttractorMapper,
+        ics::Union{StateSpaceSet, Function};
+        kwargs...
+    )
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
 stystem by mapping initial conditions to attractors using `mapper`
@@ -67,15 +71,19 @@ Initial conditions to use are defined by `ics`. It can be:
   Then `N` random initial conditions are chosen.
   See [`statespace_sampler`](@ref) to generate such functions.
 
-The returned arguments are `fs`.
-If `ics` is a `StateSpaceSet` then the `labels` of each initial condition and roughly approximated
-attractors are also returned: `fs, labels, attractors`.
+## Return
 
-The output `fs` is a dictionary whose keys are the labels given to each attractor
-(always integers enumerating the different attractors), and the
-values are their respective fractions. The label `-1` is given to any initial condition
-where `mapper` could not match to an attractor (this depends on the `mapper` type).
-`attractors` has the same structure, mapping labels to `StateSpaceSet`s.
+The function will always return the two values `fractions, attractors`,
+and, if `ics` is a `StateSpaceSet`, it will also return a third value `labels`, where:
+
+- `fractions` a dictionary whose keys are the labels given to each attractor
+  (always integers enumerating the different attractors), and whose
+  values are the respective basins fractions. The label `-1` is given to any initial condition
+  where `mapper` could not match to an attractor (this depends on the `mapper` type).
+- `attractors` has the same structure as `fractions`, mapping labels to `StateSpaceSet`s
+  (which are the found attractors or a representation of them)
+- `labels` is a _vector_, of equal length to `ics`, that contains the label each initial
+  condition was mapped to.
 
 See [`AttractorMapper`](@ref) for all possible `mapper` types.
 
