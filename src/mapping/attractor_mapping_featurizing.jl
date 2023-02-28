@@ -102,13 +102,13 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
         show_progress = true, N = 1000
     )
     features = extract_features(mapper, ics; show_progress, N)
-    cluster_labels  = group_features(features, mapper.group_config)
-    fs = basins_fractions(cluster_labels) # Vanilla fractions method with Array input
+    group_labels = group_features(features, mapper.group_config)
+    fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
+    attractors = extract_attractors(mapper, group_labels, ics)
     if typeof(ics) <: AbstractStateSpaceSet
-        attractors = extract_attractors(mapper, cluster_labels, ics)
-        return fs, cluster_labels, attractors
+        return fs, attractors, group_labels
     else
-        return fs
+        return fs, attractors
     end
 end
 
@@ -175,7 +175,7 @@ function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper
 end
 
 function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
-    uidxs = unique(i -> labels[i], 1:length(labels))
+    uidxs = unique(labels)
     return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
     Ttr = mapper.Ttr, Δt = mapper.Δt) for i in uidxs if i ≠ -1)
 end
