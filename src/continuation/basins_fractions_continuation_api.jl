@@ -44,8 +44,8 @@ Possible subtypes of `AttractorsBasinsContinuation` are:
 ## Keyword arguments
 
 - `show_progress = true`: display a progress bar of the computation.
-* `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
-  if `ics` is a function.
+- `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
+  from `ics`.
 """
 function continuation end
 
