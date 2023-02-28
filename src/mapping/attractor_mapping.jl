@@ -17,10 +17,8 @@ export AttractorMapper,
     AttractorMapper(ds::DynamicalSystem, args...; kwargs...) → mapper
 
 Subtypes of `AttractorMapper` are structures that map initial conditions of `ds` to
-attractors. The type of `ds` cannot be [`ParallelDynamicalSystem`](@ref) or
-[`TangentDynamicalSystem`](@ref) (because it doesn't make sense).
+attractors. Currently available mapping methods:
 
-Currently available mapping methods:
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref)
@@ -59,7 +57,7 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
 stystem by mapping initial conditions to attractors using `mapper`
-(which contains a reference to a [`GeneralizedDynamicalSystem`](@ref)).
+(which contains a reference to a [`DynamicalSystem`](@ref)).
 The fractions are simply the ratios of how many initial conditions ended up
 at each attractor.
 

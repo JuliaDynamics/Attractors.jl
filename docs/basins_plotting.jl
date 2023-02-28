@@ -215,5 +215,9 @@ function basins_attractors_curves_plot(fractions_curves, attractors_info, attrac
     attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
         ukeys, colors, add_legend = false, # coz its true for fractions
     )
+    hidexdecorations!(axb, ticks = false, grid = false)
+    axa.xlabel = "parameter"
+    axa.ylabel = "attractors"
+    axb.ylabel = "basins %"
     return fig
 end
