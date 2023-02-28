@@ -61,15 +61,15 @@ function plot_attractors(attractors::Dict;  access = [1,2], markersize = 12)
     return fig
 end
 
-function basins_fractions_plot(fractions_curves, prange; kwargs...)
+function basins_curves_plot(fractions_curves, prange; kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
-    basins_fractions_plot!(ax, fractions_curves, prange; kwargs...)
+    basins_curves_plot!(ax, fractions_curves, prange; kwargs...)
     return fig
 end
 
 """
-    basins_fractions_plot!(ax::Axis, fractions_curves, prange; kwargs...)
+    basins_curves_plot!(ax::Axis, fractions_curves, prange; kwargs...)
 
 Plot the fractions of basins of attraction versus a parameter range,
 i.e., visualize the output of [`continuation`](@ref).
@@ -82,12 +82,12 @@ separatorcolor = "white",
 add_legend = length(ukeys) < 8,
 ```
 """
-function basins_fractions_plot!(ax, fractions_curves, prange;
+function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_curves);
         ukeys = unique_keys(fractions_curves), # internal argument
-        labels = Dict(ukeys .=> ukeys),
         colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
         separatorwidth = 1, separatorcolor = "white",
-        add_legend = length(ukeys) < 8,
+        add_legend = length(ukeys) < 7,
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
@@ -100,7 +100,7 @@ function basins_fractions_plot!(ax, fractions_curves, prange;
         else
             l, u = bands[j-1], bands[j]
         end
-        band!(ax, prange, l, u; color = colors[j], label = "$(labels[k])", linewidth = 4)
+        band!(ax, prange, l, u; color = colors[k], label = "$(labels[k])", linewidth = 4)
         if separatorwidth > 0 && j < length(ukeys)
             lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth)
         end
@@ -113,10 +113,11 @@ end
 using Random: Xoshiro
 function colors_from_keys(ukeys)
     if length(ukeys) ≤ length(COLORS)
-        COLORS
+        colors = [COLORS[i] for i in eachindex(ukeys)]
     else
-        shuffle!(Xoshiro(123), collect(cgrad(:darktest, length(ukeys); categorical = true)))
+        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, length(ukeys); categorical = true)))
     end
+    return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
@@ -133,3 +134,90 @@ function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(f
     return bands
 end
 
+function attractors_curves_plot(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange; kwargs...)
+    return fig
+end
+
+function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(attractors_info), # internal argument
+        colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        add_legend = length(ukeys) < 7,
+    )
+    for i in eachindex(attractors_info)
+        attractors = attractors_info[i]
+        for (k, A) in attractors
+            val = attractor_to_real(A)
+            scatter!(ax, prange[i], val; color = colors[k])
+        end
+    end
+    xlims!(ax, minimum(prange), maximum(prange))
+    if add_legend
+        labels = map(k -> labels[k], ukeys)
+        ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
+        # From the source code of `axislegend`:
+        Legend(ax.parent, ele, labels;
+            bbox = ax.scene.px_area,
+            Makie.legend_position_to_aligns(:lt)...,
+            margin = (10, 10, 10, 10),
+        )
+    end
+    return
+end
+
+function attractor_type(A)
+    return "len=$(length(A))"
+    # if length(A) == 1
+    #     l =  "fixed p."
+    # else
+    #     # fractal dimension
+    #     D = grassberger_proccacia_dim(A)
+    #     @show D
+    #     if D < 0.1
+    #         l =  "fixed p."
+    #     elseif D < 1
+    #         l =  "limit c."
+    #     else
+    #         l =  "chaotic"
+    #     end
+    # end
+    # return "$(l)"
+end
+
+# TODO: This function needs to be improved somehow
+function create_attractor_names(ukeys, attractors_info, attractor_name)
+    map(ukeys) do k
+        # find first attractor with this key
+        di = findlast(d -> haskey(d, k), attractors_info)
+        A = attractors_info[di][k]
+        label = attractor_name(A)
+        return "$(k): $(label)"
+    end
+end
+
+
+function basins_attractors_curves_plot(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(fractions_curves), # internal argument
+        colors = colors_from_keys(ukeys),
+    )
+    fig = Figure()
+    axb = Axis(fig[1,1])
+    axa = Axis(fig[2,1])
+    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
+    # Okay here we need to delete key `-1` if it exists:
+    if -1 ∈ ukeys
+        popfirst!(ukeys)
+        delete!(colors, -1)
+    end
+    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
+        ukeys, colors, add_legend = false, # coz its true for fractions
+    )
+    hidexdecorations!(axb, ticks = false, grid = false)
+    axa.xlabel = "parameter"
+    axa.ylabel = "attractors"
+    axb.ylabel = "basins %"
+    return fig
+end

@@ -7,7 +7,7 @@ export match_attractor_ids!, match_basins_ids!, replacement_map
 """
     match_attractor_ids!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
 
-Given dictionaries `a₊, a₋` mapping IDs to attractors (`Dataset` instances),
+Given dictionaries `a₊, a₋` mapping IDs to attractors (`StateSpaceSet` instances),
 match attractor IDs in dictionary `a₊` so that its attractors that are the closest to
 those in dictionary `a₋` get assigned the same key as in `a₋`.
 Typically the +,- mean after and before some change of parameter of a system.

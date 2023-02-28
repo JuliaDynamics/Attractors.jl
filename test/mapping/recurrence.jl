@@ -43,7 +43,7 @@ using Random
 
         sampler, = Attractors.statespace_sampler(Random.MersenneTwister(1);
             min_bounds = [-0.5, 0], max_bounds = [0.5, 1])
-        ics = Dataset([sampler() for i in 1:1000])
+        ics = StateSpaceSet([sampler() for i in 1:1000])
 
         fs, labels, atts = basins_fractions(mapper, ics; show_progress=false)
         num_att = length(atts)
@@ -67,7 +67,7 @@ end
         sampler, = statespace_sampler(Random.MersenneTwister(1234);
             min_bounds = minimum.(grid), max_bounds = maximum.(grid)
         )
-            ics = Dataset([sampler() for i in 1:1000])
+            ics = StateSpaceSet([sampler() for i in 1:1000])
 
             mapper = AttractorsViaRecurrences(ds, grid; sparse=true, show_progress = false, kwargs...)
             fs_sparse, labels_sparse, approx_atts_sparse = basins_fractions(mapper, ics; show_progress = false)

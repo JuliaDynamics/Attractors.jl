@@ -3,7 +3,7 @@
 
 Map initial conditions to attractors based on whether the trajectory reaches `ε`-distance
 close to any of the user-provided `attractors`. They have to be in a form of a dictionary
-mapping attractor labels to `Dataset`s containing the attractors.
+mapping attractor labels to `StateSpaceSet`s containing the attractors.
 
 The system gets stepped, and at each step the minimum distance to all
 attractors is computed. If any of these distances is `< ε`, then the label of the nearest
@@ -11,7 +11,7 @@ attractor is returned.
 
 If an `ε::Real` is _not_ provided by the user, a value is computed
 automatically as half of the minimum distance between all attractors.
-This operation can be expensive for large attractor datasets.
+This operation can be expensive for large attractor StateSpaceSets.
 If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box containing
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
 an error is thrown.
@@ -31,7 +31,7 @@ the method can also be called _supervised_.
 """
 struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorMapper
     ds::DS
-    attractors::Dict{AK, Dataset{D, T}}
+    attractors::Dict{AK, StateSpaceSet{D, T}}
     ε::Float64
     Δt::N
     Ttr::N
@@ -67,8 +67,8 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1
         verbose && @info("Computing minimum distance between attractors to deduce `ε`...")
         # Minimum distance between attractors
-        # notice that we do not use `dataset_distance` because
-        # we have more than two datasets and want the absolute minimum distance
+        # notice that we do not use `StateSpaceSet_distance` because
+        # we have more than two StateSpaceSets and want the absolute minimum distance
         # between one of them.
         dist, idx = [Inf], [0]
         minε = Inf

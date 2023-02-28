@@ -91,7 +91,7 @@ function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
 end
 
 function features_ranges(features)
-    d = Dataset(features) # zero cost if `features` is a `Vector{<:SVector}`
+    d = StateSpaceSet(features) # zero cost if `features` is a `Vector{<:SVector}`
     mini, maxi = minmaxima(d)
     return maxi .- mini
 end
@@ -129,7 +129,7 @@ Find the optimal radius ϵ of a point neighborhood for use in DBSCAN through the
 (knee method, highest derivative method).
 """
 function optimal_radius_dbscan_knee(_features::Vector, min_neighbors, metric)
-    features = Dataset(_features)
+    features = StateSpaceSet(_features)
     tree = searchstructure(KDTree, features, metric)
     # Get distances, excluding distance to self (hence the Theiler window)
     d, n = size(features)

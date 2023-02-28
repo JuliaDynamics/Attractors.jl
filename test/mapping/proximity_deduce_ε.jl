@@ -12,15 +12,15 @@ using Test
     end
     @testset "two attractors, analytically known ε" begin
         attractors = Dict(
-            1 => Dataset([0 1.0]; warn = false),
-            2 => Dataset([0 2.0]; warn = false)
+            1 => StateSpaceSet([0 1.0]; warn = false),
+            2 => StateSpaceSet([0 2.0]; warn = false)
         )
         mapper = AttractorsViaProximity(ds, attractors)
         @test mapper.ε == 0.5
     end
     @testset "one attractor, single point (invalid)" begin
         attractors = Dict(
-            1 => Dataset([0 1.0]; warn = false),
+            1 => StateSpaceSet([0 1.0]; warn = false),
         )
         @test_throws ArgumentError AttractorsViaProximity(ds, attractors)
     end

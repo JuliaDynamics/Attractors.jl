@@ -26,7 +26,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     sampler, = statespace_sampler(Random.MersenneTwister(1234);
         min_bounds = minimum.(grid), max_bounds = maximum.(grid)
     )
-    ics = Dataset([sampler() for i in 1:1000])
+    ics = StateSpaceSet([sampler() for i in 1:1000])
     expected_fs = sort!(collect(values(expected_fs_raw)))
     known_ids = collect(u[1] for u in u0s)
     reduced_grid = map(g -> range(minimum(g), maximum(g); length = 10), grid)

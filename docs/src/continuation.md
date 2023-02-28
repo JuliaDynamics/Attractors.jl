@@ -13,7 +13,6 @@ A more detailed comparison of the methods will be provided soon in a paper we ar
 
 ```@docs
 continuation
-AttractorsBasinsContinuation
 ```
 
 ## Recurrences continuation (best)
