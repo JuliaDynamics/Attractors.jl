@@ -19,9 +19,8 @@ arguments and keyword arguments given when creating `abc` further tune the conti
 and how attractors are matched across different parameter values.
 
 The basin fractions and the attractors (or some representation of them) are continued
-across the parameter range `prange`, for the parameter of the system with index `pidx`.
-`ics` is as in [`basins_fractions`](@ref), i.e., it is either a function generating
-initial conditions or a set containing them.
+across the parameter range `prange`, for the parameter of the system with index `pidx`
+(any index valid in [`set_parameter!`](@ref) can be used).
 
 `ics` is a 0-argument function generating initial conditions for
 the dynamical system (as in [`basins_fractions`](@ref)).
