@@ -110,16 +110,16 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
         used_StateSpaceSet && (labels[i] = label)
         show_progress && ProgressMeter.next!(progress)
     end
-    # the non-public-API `additional_fs` is used in the continuation methods
+    # the non-public-API `additional_fs` i s used in the continuation methods
     additive_dict_merge!(fs, additional_fs)
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
     ffs = Dict(k => v/N for (k, v) in fs)
     attractors = extract_attractors(mapper)
     if used_StateSpaceSet
-        return ffs, attractors
-    else
         return ffs, attractors, labels
+    else
+        return ffs, attractors
     end
 end
 
@@ -155,7 +155,7 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     I = CartesianIndices(basins)
     A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
-    fs, labels, attractors = basins_fractions(mapper, A; kwargs...)
+    fs, attractors, labels = basins_fractions(mapper, A; kwargs...)
     vec(basins) .= vec(labels)
     return basins, attractors
 end
