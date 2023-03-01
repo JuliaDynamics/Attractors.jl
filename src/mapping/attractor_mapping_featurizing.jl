@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("grouping/all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, D, V} <: AttractorMapper
     ds::DS
     featurizer::F
     group_config::G
@@ -16,6 +16,7 @@ struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T} <:
     Δt::T
     total::T
     threaded::Bool
+    attractors::Dict{Int, StateSpaceSet{D, V}}
 end
 
 """
@@ -73,9 +74,11 @@ function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
         group_config::GroupingConfig = ClusteringGrouping();
         T=100, Ttr=100, Δt=1, threaded = true,
     )
+    D = dimension(ds)
+    T = eltype(current_state(ds))
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
-        ds, featurizer, group_config, Ttr, Δt, T, threaded
+        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,T}}(),
     )
 end
 
@@ -105,8 +108,10 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
     group_labels = group_features(features, mapper.group_config)
     fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
     if typeof(ics) <: AbstractStateSpaceSet
-        # TODO: Store attractors
+        # TODO: If we could somehow extract the used initial conditions from `ics` 7
+        # in case `ics` was a function, that would be cool...
         attractors = extract_attractors(mapper, group_labels, ics)
+        overwrite_dict!(mapper.attractors, attractors)
         return fs, group_labels
     else
         return fs
@@ -178,3 +183,5 @@ function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
     return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
     Ttr = mapper.Ttr, Δt = mapper.Δt) for i in uidxs if i ≠ -1)
 end
+
+extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors
