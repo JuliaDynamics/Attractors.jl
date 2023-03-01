@@ -1,5 +1,6 @@
 # v1.1
-- `basins_fractions` with a mapper will always return attractors.
+
+- `basins_fractions` no longer returns the attractors. Instead, a function `extract_attractors(mapper::AttractorMapper)` is provided that gives the attractors. This makes an overall more convenient experience that doesn't depend on the type of the initial conditions used.
 
 # v1
 - Added the `continuation` function and the two types `RecurrencesSeededContinuation` and `GroupAcrossParametersContinuation`
