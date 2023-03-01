@@ -50,6 +50,26 @@ scatter_attractors!(ax, attractors)
 fig
 ```
 
+We could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
+In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
+
+```@example MAIN
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(ds, grid;
+    sparse = false, mx_chk_lost = 1000
+)
+
+sampler, = statespace_sampler(;
+    min_bounds = minimum.(grid), max_bounds = maximum.(grid)
+)
+
+basins = basins_fractions(mapper, sampler)
+```
+
+in this case, to also get the attractors we simply extract them from the underlying storage of the mapper:
+```@example MAIN
+attractors = extract_attractors(mapper)
+```
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
 In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `projected_integrator` to project the 4D system onto a 2D plane, saving a lot of computational time!

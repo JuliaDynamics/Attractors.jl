@@ -129,7 +129,7 @@ function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     return
 end
 
-extract_attractors(m::AttractorsViaRecurrences, labels, ics) = m.bsn_nfo.attractors
+extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
 """
     basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)

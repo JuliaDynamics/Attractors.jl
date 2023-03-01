@@ -9,6 +9,7 @@ Calculating basins of attraction, or their state space fractions, can be done wi
 
 ```@docs
 basins_fractions
+extract_attractors
 basins_of_attraction
 statespace_sampler
 ```

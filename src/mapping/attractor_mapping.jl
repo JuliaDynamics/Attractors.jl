@@ -8,7 +8,8 @@ export AttractorMapper,
     ClusteringConfig,
     basins_fractions,
     basins_of_attraction,
-    automatic_Δt_basins
+    automatic_Δt_basins,
+    extract_attractors
 
 #########################################################################################
 # AttractorMapper structure definition
@@ -53,7 +54,11 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
 #########################################################################################
 # It works for all mappers that define the function-like-object behavior
 """
-    basins_fractions(mapper::AttractorMapper, ics::Union{StateSpaceSet, Function}; kwargs...)
+    basins_fractions(
+        mapper::AttractorMapper,
+        ics::Union{StateSpaceSet, Function};
+        kwargs...
+    )
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
 stystem by mapping initial conditions to attractors using `mapper`
@@ -67,17 +72,21 @@ Initial conditions to use are defined by `ics`. It can be:
   Then `N` random initial conditions are chosen.
   See [`statespace_sampler`](@ref) to generate such functions.
 
-The returned arguments are `fs`.
-If `ics` is a `StateSpaceSet` then the `labels` of each initial condition and roughly approximated
-attractors are also returned: `fs, labels, attractors`.
+## Return
 
-The output `fs` is a dictionary whose keys are the labels given to each attractor
-(always integers enumerating the different attractors), and the
-values are their respective fractions. The label `-1` is given to any initial condition
+The function will always return `fractions`, which is
+a dictionary whose keys are the labels given to each attractor
+(always integers enumerating the different attractors), and whose
+values are the respective basins fractions. The label `-1` is given to any initial condition
 where `mapper` could not match to an attractor (this depends on the `mapper` type).
-`attractors` has the same structure, mapping labels to `StateSpaceSet`s.
 
-See [`AttractorMapper`](@ref) for all possible `mapper` types.
+If `ics` is a `StateSpaceSet` the function will also return `labels, which is
+_vector_, of equal length to `ics`, that contains the label each initial
+condition was mapped to.
+
+See [`AttractorMapper`](@ref) for all possible `mapper` types, and use
+[`extract_attractors`](@ref) (after calling `basins_fractions`) to extract
+the stored attractors from the `mapper`.
 
 ## Keyword arguments
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
@@ -93,8 +102,7 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
     )
     fs = Dict{Int, Int}()
     used_StateSpaceSet && (labels = Vector{Int}(undef, N))
-    # TODO: If we want to parallelize this, then we need to initialize as many
-    # mappers as threads. Use a `threading` keyword and `deepcopy(mapper)`
+
     for i ∈ 1:N
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress)
@@ -102,14 +110,13 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
         used_StateSpaceSet && (labels[i] = label)
         show_progress && ProgressMeter.next!(progress)
     end
-    # the non-public-API `additional_fs` is used in the continuation methods
+    # the non-public-API `additional_fs` i s used in the continuation methods
     additive_dict_merge!(fs, additional_fs)
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
     ffs = Dict(k => v/N for (k, v) in fs)
     if used_StateSpaceSet
-        attractors = extract_attractors(mapper, labels, ics)
-        return ffs, labels, attractors
+        return ffs, labels
     else
         return ffs
     end
@@ -118,6 +125,18 @@ end
 _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractStateSpaceSet, i) = ics[i]
 
+"""
+    extract_attractors(m::AttractorsViaRecurrences) → attractors
+
+Return a dictionary mapping label IDs to attractors found by the `mapper`.
+This function should be called after calling [`basins_fractions`](@ref)
+with the given `mapper` so that the attractors have actually been found first.
+
+For `AttractorsViaFeaturizing`, the attractors are only stored if
+the mapper was called with pre-defined initial conditions rather than
+a sampler (function returning initial conditions).
+"""
+extract_attractors(::AttractorMapper) = error("not imlemented")
 
 #########################################################################################
 # Generic basins of attraction method structure definition
@@ -147,7 +166,8 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     I = CartesianIndices(basins)
     A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
-    fs, labels, attractors = basins_fractions(mapper, A; kwargs...)
+    fs, labels = basins_fractions(mapper, A; kwargs...)
+    attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
     return basins, attractors
 end

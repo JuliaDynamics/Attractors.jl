@@ -139,4 +139,4 @@ function Base.show(io::IO, mapper::AttractorsViaProximity)
     return
 end
 
-extract_attractors(mapper::AttractorsViaProximity, labels, ics) = mapper.attractors
+extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors

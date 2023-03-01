@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("grouping/all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, T, F} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, D, V} <: AttractorMapper
     ds::DS
     featurizer::F
     group_config::G
@@ -16,6 +16,7 @@ struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, T, F} <:
     Δt::T
     total::T
     threaded::Bool
+    attractors::Dict{Int, StateSpaceSet{D, V}}
 end
 
 """
@@ -70,12 +71,14 @@ in contrast to [`AttractorsViaRecurrences`](@ref).
     [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
-    group_config::GroupingConfig = ClusteringGrouping();
-    T=100, Ttr=100, Δt=1, threaded = true,
+        group_config::GroupingConfig = ClusteringGrouping();
+        T=100, Ttr=100, Δt=1, threaded = true,
     )
+    D = dimension(ds)
+    V = eltype(current_state(ds))
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
-        ds, featurizer, group_config, Ttr, Δt, T, threaded
+        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,V}}(),
     )
 end
 
@@ -102,11 +105,14 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
         show_progress = true, N = 1000
     )
     features = extract_features(mapper, ics; show_progress, N)
-    cluster_labels  = group_features(features, mapper.group_config)
-    fs = basins_fractions(cluster_labels) # Vanilla fractions method with Array input
+    group_labels = group_features(features, mapper.group_config)
+    fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
     if typeof(ics) <: AbstractStateSpaceSet
-        attractors = extract_attractors(mapper, cluster_labels, ics)
-        return fs, cluster_labels, attractors
+        # TODO: If we could somehow extract the used initial conditions from `ics` 7
+        # in case `ics` was a function, that would be cool...
+        attractors = extract_attractors(mapper, group_labels, ics)
+        overwrite_dict!(mapper.attractors, attractors)
+        return fs, group_labels
     else
         return fs
     end
@@ -168,14 +174,14 @@ function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
 end
 
 function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper)
-    # Notice that this uses the low-level interface of `trajectory` that works
-    # given an integrator. In DynamicalSystems 3.0 this will a part of the API
     A, t = trajectory(ds, mapper.total, u0; Ttr = mapper.Ttr, Δt = mapper.Δt)
     return mapper.featurizer(A, t)
 end
 
 function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
-    uidxs = unique(i -> labels[i], 1:length(labels))
+    uidxs = unique(i -> labels[i], eachindex(labels))
     return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
-    Ttr = mapper.Ttr, Δt = mapper.Δt) for i in uidxs if i ≠ -1)
+    Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in uidxs if i ≠ -1)
 end
+
+extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors
