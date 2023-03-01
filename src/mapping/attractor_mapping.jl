@@ -115,11 +115,11 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
     ffs = Dict(k => v/N for (k, v) in fs)
+    attractors = extract_attractors(mapper)
     if used_StateSpaceSet
-        attractors = extract_attractors(mapper)
-        return ffs, labels, attractors
+        return ffs, attractors
     else
-        return ffs
+        return ffs, attractors, labels
     end
 end
 

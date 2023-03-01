@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("grouping/all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, T, F} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, T, F, U} <: AttractorMapper
     ds::DS
     featurizer::F
     group_config::G
@@ -70,8 +70,8 @@ in contrast to [`AttractorsViaRecurrences`](@ref).
     [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
-    group_config::GroupingConfig = ClusteringGrouping();
-    T=100, Ttr=100, Δt=1, threaded = true,
+        group_config::GroupingConfig = ClusteringGrouping();
+        T=100, Ttr=100, Δt=1, threaded = true,
     )
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
@@ -168,14 +168,12 @@ function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
 end
 
 function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper)
-    # Notice that this uses the low-level interface of `trajectory` that works
-    # given an integrator. In DynamicalSystems 3.0 this will a part of the API
     A, t = trajectory(ds, mapper.total, u0; Ttr = mapper.Ttr, Δt = mapper.Δt)
     return mapper.featurizer(A, t)
 end
 
 function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
-    uidxs = unique(labels)
+    uidxs = unique(i -> labels[i], eachindex(labels))
     return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
     Ttr = mapper.Ttr, Δt = mapper.Δt) for i in uidxs if i ≠ -1)
 end
