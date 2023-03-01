@@ -75,10 +75,10 @@ function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
         T=100, Ttr=100, Δt=1, threaded = true,
     )
     D = dimension(ds)
-    T = eltype(current_state(ds))
+    V = eltype(current_state(ds))
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
-        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,T}}(),
+        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,V}}(),
     )
 end
 
@@ -181,7 +181,7 @@ end
 function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
     uidxs = unique(i -> labels[i], eachindex(labels))
     return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
-    Ttr = mapper.Ttr, Δt = mapper.Δt) for i in uidxs if i ≠ -1)
+    Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in uidxs if i ≠ -1)
 end
 
 extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors

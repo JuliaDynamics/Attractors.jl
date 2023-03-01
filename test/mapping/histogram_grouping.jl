@@ -32,7 +32,7 @@ min_bounds = minimum.(grid), max_bounds = maximum.(grid)
 )
 ics = StateSpaceSet([sampler() for i in 1:1000])
 
-fs, approx_atts, labels = basins_fractions(mapper, ics; show_progress = false)
+fs, = basins_fractions(mapper, ics; show_progress = false)
 @test length(keys(fs)) == 2
 @test fs[1] ≈ 0.451 rtol = 1e-2
 # the divergent points go to last bin, which is 25 = 5x5
