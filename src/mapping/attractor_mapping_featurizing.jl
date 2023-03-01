@@ -104,11 +104,12 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
     features = extract_features(mapper, ics; show_progress, N)
     group_labels = group_features(features, mapper.group_config)
     fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
-    attractors = extract_attractors(mapper, group_labels, ics)
     if typeof(ics) <: AbstractStateSpaceSet
-        return fs, attractors, group_labels
+        # TODO: Store attractors
+        attractors = extract_attractors(mapper, group_labels, ics)
+        return fs, group_labels
     else
-        return fs, attractors
+        return fs
     end
 end
 
