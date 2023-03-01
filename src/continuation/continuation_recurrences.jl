@@ -89,7 +89,7 @@ function continuation(
     reset!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
-    fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+    fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)[1]
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_curves = [fs]
     # Furthermore some info about the attractors is stored and returned
@@ -124,7 +124,7 @@ function continuation(
         # Now perform basin fractions estimation as normal, utilizing found attractors
         fs = basins_fractions(mapper, ics;
             additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
-        )
+        )[1]
         current_attractors = mapper.bsn_nfo.attractors
         if !isempty(current_attractors) && !isempty(prev_attractors)
             # If there are any attractors,

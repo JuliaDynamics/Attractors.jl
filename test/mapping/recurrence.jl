@@ -45,7 +45,7 @@ using Random
             min_bounds = [-0.5, 0], max_bounds = [0.5, 1])
         ics = StateSpaceSet([sampler() for i in 1:1000])
 
-        fs, labels, atts = basins_fractions(mapper, ics; show_progress=false)
+        fs, atts, labels = basins_fractions(mapper, ics; show_progress=false)
         num_att = length(atts)
         return num_att
     end
@@ -70,10 +70,10 @@ end
             ics = StateSpaceSet([sampler() for i in 1:1000])
 
             mapper = AttractorsViaRecurrences(ds, grid; sparse=true, show_progress = false, kwargs...)
-            fs_sparse, labels_sparse, approx_atts_sparse = basins_fractions(mapper, ics; show_progress = false)
+            fs_sparse, approx_atts_sparse, labels_sparse = basins_fractions(mapper, ics; show_progress = false)
 
             mapper = AttractorsViaRecurrences(ds, grid; sparse=false, show_progress = false, kwargs...)
-            fs_non, labels_non, approx_atts_non = basins_fractions(mapper, ics; show_progress = false)
+            fs_non, approx_atts_non, labels_non = basins_fractions(mapper, ics; show_progress = false)
 
             @test fs_sparse == fs_non
             @test labels_sparse == labels_non
