@@ -163,7 +163,8 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     I = CartesianIndices(basins)
     A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
-    fs, attractors, labels = basins_fractions(mapper, A; kwargs...)
+    fs, labels = basins_fractions(mapper, A; kwargs...)
+    attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
     return basins, attractors
 end

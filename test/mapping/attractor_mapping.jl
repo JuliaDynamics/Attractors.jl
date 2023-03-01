@@ -42,14 +42,15 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             end
         end
         # Generic test
-        fs = basins_fractions(mapper, sampler; show_progress = false)[1]
+        fs = basins_fractions(mapper, sampler; show_progress = false)
         for k in keys(fs)
             @test 0 ≤ fs[k] ≤ 1
         end
         @test sum(values(fs)) ≈ 1 atol=1e-14
 
         # Precise test with known initial conditions
-        fs, approx_atts, labels = basins_fractions(mapper, ics; show_progress = false)
+        fs, labels = basins_fractions(mapper, ics; show_progress = false)
+        approx_atts = extract_attractors(mapper)
         found_fs = sort(collect(values(fs)))
         if length(found_fs) > length(expected_fs)
             # drop -1 key if it corresponds to just unidentified points
