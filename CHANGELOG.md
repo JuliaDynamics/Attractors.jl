@@ -1,3 +1,9 @@
+# v1.1
+- `basins_fractions` with a mapper will always return attractors.
+
+# v1
+- Added the `continuation` function and the two types `RecurrencesSeededContinuation` and `GroupAcrossParametersContinuation`
+
 # v0.1.0
 This is the first release. It continues from ChaosTools.jl v2.9, and hence, the comparison of attractor-related features is w.r.t to that version.
 
