@@ -1,4 +1,14 @@
 # Functions dedicated into plotting basins related stuff
+# Some default colors are needed...
+COLORS = [
+    "#7143E0",
+    "#191E44",
+    "#0A9A84",
+    "#C0A12B",
+    "#701B80",
+    "#2E6137",
+]
+
 
 function animate_attractors_continuation(
         ds, attractors_info, prange, pidx;
@@ -110,7 +120,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
     return
 end
 
-using Random: Xoshiro
+using Random: shuffle!, Xoshiro
 function colors_from_keys(ukeys)
     if length(ukeys) ≤ length(COLORS)
         colors = [COLORS[i] for i in eachindex(ukeys)]
