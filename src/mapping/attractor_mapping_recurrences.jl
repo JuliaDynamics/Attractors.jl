@@ -16,6 +16,7 @@ system. The grid has to be the same dimensionality as the state space, use a
 dimensional subspace.
 
 ## Keyword arguments
+
 * `sparse = true`: control the interval representation of the state space grid. If true,
    uses a sparse array, whose memory usage is in general more efficient than a regular
    array obtained with `sparse=false`. In practice, the sparse representation should
@@ -24,17 +25,25 @@ dimensional subspace.
    non-sparse version should be used.
 
 ### Time evolution configuration
+
 * `Ttr = 0`: Skip a transient before the recurrence routine begins.
 * `Δt`: Approximate integration time step (second argument of the `step!` function).
   It is `1` for discrete time systems.
   For continuous systems, an automatic value is calculated using
   [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
   much smaller than the typical integrator internal step size in case of adaptive
-  integrators. In such cases, it is much better to use non-adaptive ODE solvers
-  with a small step size, e.g., `diffeq = (alg = Tsit5(), adaptive = false, dt = 0.001)`
-  (and also give `Δt = dt` in this case for best performance)
+  integrators. In such cases, use `force_non_adaptive = true`.
+* `force_non_adaptive = false`: Only used if the input dynamical system is `CoupledODEs`.
+  If `true` the additional keywords `adaptive = false, dt = Δt` are given as `diffeq`
+  to the `CoupledODEs`. This means that adaptive integration is turned of and `Δt` is
+  used as the ODE integrator timestep. This is useful in (1) very fine grids, and (2)
+  if some of the attractors are limit cycles. We have noticed that in this case the
+  integrator timestep becomes commensurate with the limit cycle period, leading to
+  incorrectly counting the limit cycle as more than one attractor.
+
 
 ### Finite state machine configuration
+
 * `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
   before declaring convergence to that existing attractor.
 * `mx_chk_hit_bas = 10`: Maximum check of consecutive visits of the same basin of
