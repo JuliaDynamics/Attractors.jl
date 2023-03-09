@@ -80,7 +80,7 @@ a dictionary whose keys are the labels given to each attractor
 values are the respective basins fractions. The label `-1` is given to any initial condition
 where `mapper` could not match to an attractor (this depends on the `mapper` type).
 
-If `ics` is a `StateSpaceSet` the function will also return `labels, which is
+If `ics` is a `StateSpaceSet` the function will also return `labels`, which is
 _vector_, of equal length to `ics`, that contains the label each initial
 condition was mapped to.
 
