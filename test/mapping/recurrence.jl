@@ -27,7 +27,7 @@ using Random
         VCa = 1 ,  VL = -0.5, VK = -0.7, gCa = 1.2, gK = 2,
         gL = 0.5, τ = 3)
         # p = [I, V3, V1, V2, V4, VCa, VL, VK, gCa, gK, gL, τ]
-        diffeq = (reltol = 1e-9, alg = Vern9(), adaptive = !stop_at_Δt, dt = Δt)
+        diffeq = (reltol = 1e-9, alg = Vern9())
 
         df = CoupledODEs(morris_lecar_rule, u0, p; diffeq)
 
@@ -39,18 +39,21 @@ using Random
             sparse = true,
             Δt,
             Ttr = 10,
+            force_non_adaptive = stop_at_Δt,
         )
 
         sampler, = Attractors.statespace_sampler(Random.MersenneTwister(1);
             min_bounds = [-0.5, 0], max_bounds = [0.5, 1])
         ics = StateSpaceSet([sampler() for i in 1:1000])
 
-        fs, atts, labels = basins_fractions(mapper, ics; show_progress=false)
-        num_att = length(atts)
+        fs, labels = basins_fractions(mapper, ics; show_progress=false)
+        num_att = length(fs)
         return num_att
     end
 
-    @testset "Sparse limit cycles" begin # when using a
+    @testset "Sparse limit cycles" begin
+        # how many times we store per cell doesn't change anything
+        # however breaking the orbit commensurability does!
         num_att = test_morrislecar(; store_once_per_cell=true, stop_at_Δt = false)
         @test num_att > 1
         num_att = test_morrislecar(; store_once_per_cell=false, stop_at_Δt = false)
