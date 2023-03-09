@@ -116,9 +116,13 @@ struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
 end
 
 function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
-        Δt = nothing, sparse = true, kwargs...
+        Δt = nothing, sparse = true, force_non_adaptive = false, kwargs...
     )
     bsn_nfo = initialize_basin_info(ds, grid, Δt, sparse)
+    if ds isa CoupledODEs && force_non_adaptive
+        newdiffeq = (ds.diffeq..., adaptive = false, dt = bsn_nfo.Δt)
+        ds = CoupledODEs(ds, newdiffeq)
+    end
     return AttractorsViaRecurrences(ds, bsn_nfo, grid, kwargs)
 end
 
