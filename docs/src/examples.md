@@ -457,3 +457,34 @@ Looking at the information of the "attractions" (here the clusters of the groupi
 ```@example MAIN
 clusters_info
 ```
+
+## Using histograms and histogram distances as features
+
+One of the aspects discussed in the original MCBB paper and implementation was the usage of histograms of the means of the variables of a dynamical system as the feature vector. This is useful in very high dimensional systems, such as oscillator networks, where the histogram of the means is significantly different in synchronized or unsychronized states.
+
+This is possible to do with current interface without any modifications, by using two more packages: ComplexityMeasures.jl to compute histograms, and Distances.jl for the Kullback-Leibler divergence (or any other measure of distance in the space of probability distributions you fancy).
+
+The only code we need to write to achieve this feature is a custom featurizer and providing an alternative distance to `GroupViaClustering`. The code would look like this:
+
+```julia
+using Distances: KLDivergence
+using ComplexityMeasures: ValueHistogram, FixedRectangularBinning, probabilities
+
+# you decide the binning for the histogram, but for a valid estimation of
+# distances, all histograms must have exactly the same bins, and hence be
+# computed with fixed ranges, i.e., using the `FixedRectangularBinning`
+const binning = FixedRectangularBinning(range(-5, 5; length = 11))
+
+function histogram_featurizer(A, t)
+    ms = mean.(columns(A)) # vector of mean of each variable
+    p = probabilities(ValueHistogram(binning), ms) # this is the histogram
+    return vec(p) # because Distances.jl doesn't know `Probabilities`
+end
+
+gconfig = GroupViaClustering(;
+    optimal_radius_method = 0.1, # whatever radius value makes sense for your system
+    cust_distance_metric = KLDivergence(), # or any other PDF distance
+)
+```
+
+You can then pass the `histogram_featurizer` and `gconfig` to an [`AttractorsViaFeaturizing`](@ref) and use the rest of the library as usual.
