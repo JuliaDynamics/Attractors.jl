@@ -377,8 +377,83 @@ Main.basins_curves_plot(aggregated_fractions, prange;
 
 (in hindsight, the labels are reversed; attractor 1 is the alive one, but oh well)
 
+## Trivial featurizing and grouping for basins fractions
+
+This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsviaFeaturizing`](@ref) we just create a julia function that returns this last point
+
+```@example MAIN
+using Attractors
+using PredefinedDynamicalSystems
+
+ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
+
+function featurizer(X, t)
+    return X[end]
+end
+
+mapper = AttractorsViaFeaturizing(psys, featurizer; Ttr = 200, T = 1)
+
+xg = yg = range(-4, 4; length = 101)
+
+sampler, = statespace_sampler(; min_bounds = [-4,-4], max_bounds=[4,4])
+
+fs = basins_fractions(mapper, sampler; show_progress = false)
+```
+As expected, the fractions are each about 1/3 due to the system symmetry.
+
 
 ## Featurizing and grouping across parameters (MCBB)
-Here we showcase the example of the Monte Carlo Basin Bifurcation publication using a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) For this, we will use [`GroupAcrossParametersContinuation`](@ref) while also providing a `par_weight` keyword.
+Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
+For this, we will use [`GroupAcrossParametersContinuation`](@ref) while also providing a `par_weight = 1` keyword.
+However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
+Instead, we will use the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
 
-TODO: Write the example.
+```@example MAIN
+using Attractors
+
+b, a = -0.9, 1.4 # notice the non-default parameters
+henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+henon = DeterministicIteratedMap(henon_rule, zeros(2), [a,b])
+
+function featurizer(a, t) # feature based on period!
+    tol = 1e-5
+    if abs(a[end-1,1] - a[end,1]) < tol
+        # period 1
+        return [1]
+    elseif abs(a[end-3,1] - a[end,1]) < tol
+        # period 3
+        return [3]
+    else
+        return [100]
+    end
+end
+
+henon
+```
+
+
+```@example MAIN
+clusterspecs = GroupViaClustering(optimal_radius_method = 1.0)
+mapper = AttractorsViaFeaturizing(
+    henon, featurizer, clusterspecs;
+    T = 6, threaded = true, Ttr = 500,
+)
+
+continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.0)
+
+ps = range(0.6, 1.1; length = 11)
+pidx = 1
+
+fractions_curves, clusters_info = Attractors.continuation(
+    continuation, ps, pidx, sampler;
+    samples_per_parameter = 100, show_progress = false
+)
+fractions_curves
+```
+
+Looking at the information of the "attractions" (here the clusters of the grouping procedure) makes it clear which label corresponds to which kind of attractor (fixed point, period 3, or divergence to infinity):
+
+```@example MAIN
+clusters_info
+```
