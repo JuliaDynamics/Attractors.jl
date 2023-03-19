@@ -71,7 +71,7 @@ in contrast to [`AttractorsViaRecurrences`](@ref).
     [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
-        group_config::GroupingConfig = ClusteringGrouping();
+        group_config::GroupingConfig = GroupViaClustering();
         T=100, Ttr=100, Δt=1, threaded = true,
     )
     D = dimension(ds)
