@@ -482,7 +482,6 @@ function histogram_featurizer(A, t)
 end
 
 gconfig = GroupViaClustering(;
-    optimal_radius_method = 0.1, # whatever radius value makes sense for your system
     clust_distance_metric = KLDivergence(), # or any other PDF distance
 )
 ```
