@@ -410,7 +410,7 @@ However, we will not use a network of 2nd order Kuramoto oscillators (as done in
 Instead, we will use the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
 
 ```@example MAIN
-using Attractors
+using Attractors, Random
 
 b, a = -0.9, 1.4 # notice the non-default parameters
 henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
@@ -444,6 +444,9 @@ continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.0)
 
 ps = range(0.6, 1.1; length = 11)
 pidx = 1
+sampler, = statespace_sampler(Random.MersenneTwister(1234);
+    min_bounds = [-2,-2], max_bounds = [2,2]
+)
 
 fractions_curves, clusters_info = Attractors.continuation(
     continuation, ps, pidx, sampler;
