@@ -30,7 +30,7 @@ using Random
     sampler, = statespace_sampler(Random.MersenneTwister(1234);
         min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
 
-    rrange = range(0, 2; length = 20)
+    rrange = range(0, 2; length = 21)
     ridx = 1
 
     featurizer(a, t) = a[end]
@@ -44,16 +44,32 @@ using Random
     for (i, r) in enumerate(rrange)
 
         fs = fractions_curves[i]
+        infos = attractors_info[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
+            @test sort!(collect(keys(infos))) == k
             @test length(k) == 1
+            @test infos[1] == [0, 0]
         else
             k = sort!(collect(keys(fs)))
+            @test sort!(collect(keys(infos))) == k
             @test length(k) == 2
             v = values(fs)
             for f in v
+                # each fraction is about 50% but we have so small sampling that
+                # we need to allow huge errors
                 @test (0.3 < f < 0.7)
             end
+            # one attractor is -r the other +r, but we don't know which in advance
+            if infos[2][1] < 0
+                infom = infos[2]
+                infop = infos[3]
+            else
+                infom = infos[3]
+                infop = infos[2]
+            end
+            @test all(infom .≈ [-r, -r])
+            @test all(infop .≈ [r, r])
         end
         @test sum(values(fs)) ≈ 1
     end
@@ -73,9 +89,6 @@ if DO_EXTENSIVE_TESTS
 
         # Feature based on period.
         function featurizer(a, t)
-            if any(isnan, a[end]) || abs(a[end,1]) > 100
-                return [100]
-            end
             tol = 1e-5
             if abs(a[end-1,1] - a[end,1]) < tol
                 # period 1
@@ -105,6 +118,8 @@ if DO_EXTENSIVE_TESTS
                 @test length(k) == 3
             end
             @test sum(values(fs)) ≈ 1
+            infos = attractors_info[i]
+            @test all(v -> v ∈ ([1.0], [3.0], [100.0]), values(infos))
         end
 
     end

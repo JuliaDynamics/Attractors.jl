@@ -32,9 +32,10 @@ See [`AttractorMapper`](@ref) for how to use the `mapper`.
 This `mapper` also allows the syntax `mapper(u0)` but only if the `grouping_config`
 is _not_ `GroupViaClustering`.
 
-`featurizer` is a function that takes as an input an integrated trajectory `A::StateSpaceSet` and
-the corresponding time vector `t` and returns an `SVector{<:Real}` of features describing the
-trajectory. It is important to use static vectors for better performance.
+`featurizer` is a function `f(A, t) that takes as an input an integrated trajectory
+`A::StateSpaceSet` and the corresponding time vector `t` and returns a vector
+`v` of features describing the trajectory.
+For better performance, it is strongly recommended that `v  isa SVector{<:Real}`.
 
 `grouping_config` is an instance of any subtype of [`GroupingConfig`](@ref) and decides
 how features will be grouped into attractors, see below.
@@ -71,7 +72,7 @@ in contrast to [`AttractorsViaRecurrences`](@ref).
     [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
-        group_config::GroupingConfig = ClusteringGrouping();
+        group_config::GroupingConfig = GroupViaClustering();
         T=100, Ttr=100, Δt=1, threaded = true,
     )
     D = dimension(ds)
