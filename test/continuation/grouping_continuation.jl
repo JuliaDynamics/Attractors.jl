@@ -60,8 +60,16 @@ using Random
                 # we need to allow huge errors
                 @test (0.3 < f < 0.7)
             end
-            @test all(infos[2] .≈ [-r, -r])
-            @test all(infos[3] .≈ [r, r])
+            # one attractor is -r the other +r, but we don't know which in advance
+            if infos[2][1] < 0
+                infom = infos[2]
+                infop = infos[3]
+            else
+                infom = infos[3]
+                infop = infos[2]
+            end
+            @test all(infom .≈ [-r, -r])
+            @test all(infop .≈ [r, r])
         end
         @test sum(values(fs)) ≈ 1
     end
