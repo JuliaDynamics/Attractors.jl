@@ -11,7 +11,7 @@ include("../basins_plotting.jl")
 
 ## Outline of Attractors.jl
 
-![TransitionIndicators.jl](https://github.com/JuliaDynamics/JuliaDynamics/blob/master/videos/attractors/attractorsjl_overview.png?raw=true)
+![Attractors.jl flowchart](https://github.com/JuliaDynamics/JuliaDynamics/blob/master/videos/attractors/attractorsjl_overview.png?raw=true)
 
 
 1. First be sure that you are aware of what is a [`DynamicalSystem`](@ref). This is the input to the whole infrastructure of Attractors.jl.
