@@ -124,8 +124,10 @@ using Random: shuffle!, Xoshiro
 function colors_from_keys(ukeys)
     if length(ukeys) ≤ length(COLORS)
         colors = [COLORS[i] for i in eachindex(ukeys)]
-    else
-        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, length(ukeys); categorical = true)))
+    else # keep colorscheme, but add extra random colors
+        n = length(ukeys) - length(COLORS)
+        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, n+1; categorical = true)))
+        colors = append!(to_color.(COLORS), colors[1:(end-1)])
     end
     return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
 end
