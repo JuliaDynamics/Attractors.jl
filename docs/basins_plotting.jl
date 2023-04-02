@@ -4,14 +4,14 @@ COLORS = [
     "#7143E0",
     "#191E44",
     "#0A9A84",
-    "#C0A12B",
-    "#701B80",
-    "#2E6137",
+    "#AF9327",
+    "#5F166D",
+    "#6C768C",
 ]
 
 
 function animate_attractors_continuation(
-        ds, attractors_info, prange, pidx;
+        ds, attractors_info, fractions_curves, prange, pidx;
         savename = "test.mp4", access = [1,2],
         limits = (-1,3,-2,2),
         framerate = 4, markersize = 10
@@ -46,7 +46,7 @@ function animate_attractors_continuation(
         heights[] = [get(fractions, k, 0) for k in ukeys]
 
         for (k, att) in attractors
-            tr = trajectory(ds, 1000, rand(vec(att)); Δt = 1)
+            tr, tvec = trajectory(ds, 1000, rand(vec(att)); Δt = 1)
             att_obs[k][] = vec(tr[:, access])
             notify(att_obs[k])
         end
