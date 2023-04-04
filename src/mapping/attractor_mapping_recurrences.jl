@@ -213,19 +213,17 @@ mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
     visited_list::Q
 end
 
-function initialize_basin_info(
-        ds::DynamicalSystem, grid, Δtt, sparse,
-    )
+function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     Δt = if isnothing(Δtt)
         isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
     else
         Δtt
     end
 
-    D = length(current_state(ds))
+    D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
-    # D == G || error("Grid and dynamical system do not have the same dimension!")
+    D == G || error("Grid and dynamical system do not have the same dimension!")
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
