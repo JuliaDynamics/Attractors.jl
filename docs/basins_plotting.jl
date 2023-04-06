@@ -203,8 +203,7 @@ end
 
 
 function basins_attractors_curves_plot(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
-        ukeys = unique_keys(fractions_curves), # internal argument
-        colors = colors_from_keys(ukeys),
+        kwargs...
     )
     fig = Figure()
     axb = Axis(fig[1,1])
@@ -215,7 +214,7 @@ function basins_attractors_curves_plot(fractions_curves, attractors_info, attrac
     hidexdecorations!(axb; grid = false)
 
     basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
-        attractor_to_real, prange; ukeys, colors,
+        attractor_to_real, prange; kwargs...,
     )
     return fig
 end
@@ -224,13 +223,14 @@ function basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_i
         attractor_to_real, prange = 1:length(attractors_info);
         ukeys = unique_keys(fractions_curves), # internal argument
         colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
     )
 
     if length(fractions_curves) ≠ length(attractors_info)
         error("fractions and attractors don't have the same amount of entries")
     end
 
-    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
+    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors, labels)
 
     attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
         ukeys, colors, add_legend = false, # coz its true for fractions
