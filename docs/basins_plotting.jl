@@ -209,18 +209,31 @@ function basins_attractors_curves_plot(fractions_curves, attractors_info, attrac
     fig = Figure()
     axb = Axis(fig[1,1])
     axa = Axis(fig[2,1])
-    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
-    # Okay here we need to delete key `-1` if it exists:
-    if -1 ∈ ukeys
-        popfirst!(ukeys)
-        delete!(colors, -1)
-    end
-    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
-        ukeys, colors, add_legend = false, # coz its true for fractions
-    )
-    hidexdecorations!(axb, ticks = false, grid = false)
     axa.xlabel = "parameter"
     axa.ylabel = "attractors"
     axb.ylabel = "basins %"
+    hidexdecorations!(axb; grid = false)
+
+    basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange; ukeys, colors,
+    )
     return fig
+end
+
+function basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(fractions_curves), # internal argument
+        colors = colors_from_keys(ukeys),
+    )
+
+    if length(fractions_curves) ≠ length(attractors_info)
+        error("fractions and attractors don't have the same amount of entries")
+    end
+
+    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
+
+    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
+        ukeys, colors, add_legend = false, # coz its true for fractions
+    )
+    return
 end
