@@ -14,7 +14,7 @@ Typically the +,- mean after and before some change of parameter of a system.
 
 Return the replacement map, a dictionary mapping old keys of `a₊` to
 the new ones that they were mapped to. You can obtain this map, without modifying
-the dictionaries, by directly calling the [`replacement_map`](@ref) function directly.
+the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 
 ## Description
 

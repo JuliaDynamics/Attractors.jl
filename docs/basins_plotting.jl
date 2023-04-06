@@ -98,6 +98,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
         labels = Dict(ukeys .=> ukeys),
         separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 7,
+        axislegend_kwargs = (position = :lt,)
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
@@ -116,7 +117,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
         end
     end
     ylims!(ax, 0, 1); xlims!(ax, minimum(prange), maximum(prange))
-    add_legend && axislegend(ax; position = :lt)
+    add_legend && axislegend(ax; axislegend_kwargs...)
     return
 end
 
@@ -163,20 +164,11 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
         attractors = attractors_info[i]
         for (k, A) in attractors
             val = attractor_to_real(A)
-            scatter!(ax, prange[i], val; color = colors[k])
+            scatter!(ax, prange[i], val; color = colors[k], label = string(labels[k]))
         end
     end
     xlims!(ax, minimum(prange), maximum(prange))
-    if add_legend
-        labels = map(k -> labels[k], ukeys)
-        ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
-        # From the source code of `axislegend`:
-        Legend(ax.parent, ele, labels;
-            bbox = ax.scene.px_area,
-            Makie.legend_position_to_aligns(:lt)...,
-            margin = (10, 10, 10, 10),
-        )
-    end
+    add_legend && axislegend(ax; unique = true)
     return
 end
 
@@ -212,24 +204,38 @@ end
 
 
 function basins_attractors_curves_plot(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
-        ukeys = unique_keys(fractions_curves), # internal argument
-        colors = colors_from_keys(ukeys),
+        kwargs...
     )
     fig = Figure()
     axb = Axis(fig[1,1])
     axa = Axis(fig[2,1])
-    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
-    # Okay here we need to delete key `-1` if it exists:
-    if -1 ∈ ukeys
-        popfirst!(ukeys)
-        delete!(colors, -1)
-    end
-    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
-        ukeys, colors, add_legend = false, # coz its true for fractions
-    )
-    hidexdecorations!(axb, ticks = false, grid = false)
     axa.xlabel = "parameter"
     axa.ylabel = "attractors"
     axb.ylabel = "basins %"
+    hidexdecorations!(axb; grid = false)
+
+    basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange; kwargs...,
+    )
     return fig
+end
+
+function basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(fractions_curves), # internal argument
+        colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        kwargs...
+    )
+
+    if length(fractions_curves) ≠ length(attractors_info)
+        error("fractions and attractors don't have the same amount of entries")
+    end
+
+    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
+
+    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
+        ukeys, colors, add_legend = false, # coz its true for fractions
+    )
+    return
 end

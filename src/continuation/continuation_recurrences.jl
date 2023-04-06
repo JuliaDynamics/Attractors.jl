@@ -4,10 +4,10 @@ using Random: MersenneTwister
 
 # The recurrences based distance is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesSeededContinuation{A, M, S, E} <: AttractorsBasinsContinuation
+struct RecurrencesSeededContinuation{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
     mapper::A
     distance::M
-    threshold::Float64
+    threshold::R
     seeds_from_attractor::S
     info_extraction::E
 end
