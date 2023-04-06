@@ -163,20 +163,11 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
         attractors = attractors_info[i]
         for (k, A) in attractors
             val = attractor_to_real(A)
-            scatter!(ax, prange[i], val; color = colors[k])
+            scatter!(ax, prange[i], val; color = colors[k], label = string(labels[k]))
         end
     end
     xlims!(ax, minimum(prange), maximum(prange))
-    if add_legend
-        labels = map(k -> labels[k], ukeys)
-        ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
-        # From the source code of `axislegend`:
-        Legend(ax.parent, ele, labels;
-            bbox = ax.scene.px_area,
-            Makie.legend_position_to_aligns(:lt)...,
-            margin = (10, 10, 10, 10),
-        )
-    end
+    add_legend && axislegend(ax; unique = true)
     return
 end
 
