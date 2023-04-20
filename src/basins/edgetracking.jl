@@ -8,6 +8,18 @@ The algorithm is initialized from two states `u1`, `u2` in state space that must
 different basins of attraction. The system's `attractors` are specified as a dictionary of
 `StateSpaceSet`s.
 
+## Keyword arguments
+* `eps1 = 1e-7`: bisection distance threshold
+* `eps2 = 1e-6`: trajectory divergence distance threshold
+* `maxiter = 100`: maximum number of iterations before the algorithm stops
+* `abstol = 0.0`: convergence threshold for returned edge state (distance in state space)
+* `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection 
+* `dt = 0.01`: integration time step
+* `ϵ_mapper = 0.1`: `ϵ` parameter in [`AttractorsViaProximity`](@ref)
+* `verbose = false`: if true, prints info while running
+* `output_level = 2`: controls what to return (see below)
+* `kwargs...`: additional keyword arguments to be passed to `AttractorsViaProximity`
+
 ## Description
 The edge tracking algorithm is a simple numerical method to find the *edge state* or
 (possibly chaotic) saddle on the boundary between two basins of attraction. It is first
@@ -27,23 +39,6 @@ from each other by more than `eps2` (Euclidean distance). The two final states o
 parallel integration are then used as new states `u1` and `u2` for a new bisection, and 
 so on, until a stopping criterion is fulfilled.
 
-## Keyword arguments
-* `eps1 = 1e-7`: bisection distance threshold
-* `eps2 = 1e-6`: trajectory divergence distance threshold
-* `maxiter = 100`: maximum number of iterations before the algorithm stops
-* `abstol = 0.0`: convergence threshold for returned edge state (distance in state space)
-* `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection 
-* `dt = 0.01`: integration time step
-* `ϵ_mapper = 0.1`: `ϵ` parameter in [`AttractorsViaProximity`](@ref)
-* `verbose = false`: if true, prints info while running
-* `output_level = 2`: controls what to return (see below)
-* `kwargs...`: additional keyword arguments to be passed to `AttractorsViaProximity`
-
-## References
-[^1]: [Skufca et al. (2006)](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.96.174101?casa_token=RUn26KnFdNEAAAAA%3AoXsTlmEWVMkEYbOtR-j2PH2vYOOPOy1a2R_37ncnf4gsiHp6GR66M-IBpzXocLoMQC_oHhk8MIFRa_8)
-[^2]: [Schneider et al. (2008)](https://journals.aps.org/pre/pdf/10.1103/PhysRevE.78.037301?casa_token=mLQmTv_cBGUAAAAA%3AVKnQs290sq1MNm-5k8hW7nJeLtVX54I7l-SEGol_HUPSCwziPi-EGDE8ucrDiVMIXZGUbzzam8benFw)
-[^3]: [Luarini and Bodai (2017)](https://iopscience.iop.org/article/10.1088/1361-6544/aa6b11)
-
 ## Output 
 Output can be controlled via the `output_level` argument.
 * `output_level = 0`: returns only the final state on the edge
@@ -55,6 +50,11 @@ Output can be controlled via the `output_level` argument.
 !!! warning
     May behave erroneously when the DiffEq solver of `ds` is set to `alg = SimpleATsit5()`,
     which is the default solver in DynamicalSystems. The recommended solver is `Vern9()`.
+
+## References
+[^1]: [Skufca et al. (2006)](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.96.174101?casa_token=RUn26KnFdNEAAAAA%3AoXsTlmEWVMkEYbOtR-j2PH2vYOOPOy1a2R_37ncnf4gsiHp6GR66M-IBpzXocLoMQC_oHhk8MIFRa_8)
+[^2]: [Schneider et al. (2008)](https://journals.aps.org/pre/pdf/10.1103/PhysRevE.78.037301?casa_token=mLQmTv_cBGUAAAAA%3AVKnQs290sq1MNm-5k8hW7nJeLtVX54I7l-SEGol_HUPSCwziPi-EGDE8ucrDiVMIXZGUbzzam8benFw)
+[^3]: [Luarini and Bodai (2017)](https://iopscience.iop.org/article/10.1088/1361-6544/aa6b11)
 """
 function edgetracking(ds::DynamicalSystem, u1, u2, attractors::Dict;
     eps1=1e-7,
@@ -149,6 +149,10 @@ straight line in phase space. The states `u1` and `u2` must belong to different 
 Returns two new states located on either side of the basin boundary at a maximum 
 (Euclidean) distance of `eps` between each other.
 
+## Keyword arguments
+* `eps = 1e-9`: The maximum (Euclidean) distance between the two returned states.
+
+## Description
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an `AttractorMapper`
 of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
 
@@ -156,9 +160,6 @@ Note: If the straight line between `u1` and `u2` intersects the basin boundary m
 times, the method will find one of these intersection points. If more than two attractors
 exist, one of the two returned states may belong to a different basin than the initial
 conditions `u1` and `u2`. A warning is raised if the bisection involves a third basin.
-
-# Keyword arguments
-* `eps = 1e-9`: The maximum (Euclidean) distance between the two returned states.
 """
 function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper; eps=1e-9)
     u1, u2 = current_states(pds)
