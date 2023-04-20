@@ -2,7 +2,7 @@ export edgetracking, bisect_to_edge
 
 """
     edgetracking(ds::DynamicalSystem, u1, u2, attractors::Dict; kwargs...)
-Runs the edge tracking algorithm^[1,2,3] for a multistable DynamicalSystem `ds`.
+Runs the edge tracking algorithm[^1] for a multistable DynamicalSystem `ds`.
 
 The algorithm is initialized from two states `u1`, `u2` in state space that must belong to
 different basins of attraction. The system's `attractors` are specified as a dictionary of
@@ -28,15 +28,15 @@ parallel integration are then used as new states `u1` and `u2` for a new bisecti
 so on, until a stopping criterion is fulfilled.
 
 ## Keyword arguments
-* `eps1=1e-9`: bisection distance threshold
-* `eps2=1e-8`: trajectory divergence distance threshold
-* `maxiter=100`: maximum number of iterations before the algorithm stops
-* `abstol=0.0`: convergence threshold for returned edge state (distance in state space)
+* `eps1 = 1e-7`: bisection distance threshold
+* `eps2 = 1e-6`: trajectory divergence distance threshold
+* `maxiter = 100`: maximum number of iterations before the algorithm stops
+* `abstol = 0.0`: convergence threshold for returned edge state (distance in state space)
 * `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection 
-* `dt=0.01`: integration time step
-* `ϵ_mapper=0.1`: `ϵ` parameter in [`AttractorsViaProximity`](@ref)
-* `verbose=false`: if true, prints info while running
-* `output_level`: what data to return (see below)
+* `dt = 0.01`: integration time step
+* `ϵ_mapper = 0.1`: `ϵ` parameter in [`AttractorsViaProximity`](@ref)
+* `verbose = false`: if true, prints info while running
+* `output_level = 2`: controls what to return (see below)
 * `kwargs...`: additional keyword arguments to be passed to `AttractorsViaProximity`
 
 ## References
@@ -53,20 +53,19 @@ Output can be controlled via the `output_level` argument.
   side of the basin boundary
 
 !!! warning
-    May behave erroneously when run with `solver = SimpleATsit5()`, which is the default
-    solver for `AttractorsViaProximity`. The recommended solver is `Vern9()`.
+    May behave erroneously when the DiffEq solver of `ds` is set to `alg = SimpleATsit5()`,
+    which is the default solver in DynamicalSystems. The recommended solver is `Vern9()`.
 """
 function edgetracking(ds::DynamicalSystem, u1, u2, attractors::Dict;
-    eps1 = 1e-9,
-    eps2 = 1e-8,
-    maxiter = 100,
-    abstol = 0.0,
-    ϵ_mapper = 0.1,
-    #diffeq = (;alg = Vern9()),
-    dt = 0.01,
-    tmax = Inf,
+    eps1=1e-7,
+    eps2=1e-6,
+    maxiter=100,
+    abstol=0.0,
+    tmax=Inf,
+    dt=0.01,
+    ϵ_mapper=0.1,
     output_level=2,
-    verbose = false,
+    verbose=false,
     kwargs...)
     
     pds = ParallelDynamicalSystem(ds, [u1, u2])
