@@ -21,6 +21,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     @testset "basins analysis" begin
         testfile("basins/tipping_points_tests.jl")
         testfile("basins/uncertainty_tests.jl")
+        testfile("basins/edgetracking_tests.jl")
     end
 
     @testset "continuation" begin
