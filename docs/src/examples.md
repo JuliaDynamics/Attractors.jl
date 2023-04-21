@@ -106,25 +106,21 @@ third magnet to be so small, its basin of attraction will virtually disappear.
 As we don't know _when_ the basin of the third magnet will disappear, we switch the attractor finding algorithm back to [`AttractorsViaRecurrences`](@ref).
 
 ```@example MAIN
-ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3, γs = [1.0, 1.0, 0.1])
-psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
+set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
 mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
 basins_after, attractors_after = basins_of_attraction(
     mapper, (xg, yg); show_progress = false
 )
 # matching attractors is important!
-match_attractor_ids!(attractors_after, attractors)
+rmap = match_attractor_ids!(attractors_after, attractors)
+# Don't forget to update the labels of the basins as well!
+replace!(basins_after, rmap...)
 
 # now plot
-ids = sort!(unique(basins_after))
-cmap = generate_cmap(length(ids))
-fig, ax = heatmap(xg, yg, basins_after;
-    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
-)
-scatter_attractors!(ax, attractors_after)
-fig
+heatmap_basins_attractors(grid, basins_after, attractors_after)
 ```
 
+And let's compute the tipping "probabilities":
 
 ```@example MAIN
 P = tipping_probabilities(basins, basins_after)
