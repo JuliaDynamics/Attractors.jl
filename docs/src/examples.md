@@ -1,5 +1,7 @@
 # Examples for Attractors.jl
 
+Note that the examples utilize some convenience plotting functions offered by Attractors.jl. In Julia 1.9+ these come into scope when using `Makie` (or any of its backends such as `CairoMakie`). In older versions of Julia, you need to find them and run them manually in the `src/plotting.jl` file.
+
 ## Newton's fractal (basins of 2D map)
 ```@example MAIN
 using Attractors
@@ -25,32 +27,14 @@ basins
 attractors
 ```
 
-Now let's plot this as a heatmap
+Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot the attractors. We do this in one step by utilizing one of the pre-defined plotting functions offered by Attractors.jl
+
 ```@example MAIN
-using CairoMakie
-# Set up some code for plotting attractors
-function scatter_attractors!(ax, attractors)
-    for k ∈ keys(attractors)
-        x, y = columns(attractors[k])
-        scatter!(ax, vec(attractors[k]);
-            color = Cycled(k), markersize = 20,
-            strokewidth = 3, strokecolor = :white
-        )
-    end
-end
-
-generate_cmap(n) = cgrad(Main.COLORS[1:n], n; categorical = true)
-ids = sort!(unique(basins))
-cmap = generate_cmap(length(ids))
-
-fig, ax = heatmap(xg, yg, basins;
-    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
-)
-scatter_attractors!(ax, attractors)
-fig
+grid = (xg, yg)
+heatmap_basins_attractors(grid, basins, attractors)
 ```
 
-We could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
+Instead of computing the full basins, we could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
 In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
 
 ```@example MAIN
@@ -72,14 +56,14 @@ attractors = extract_attractors(mapper)
 ```
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
-In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `projected_integrator` to project the 4D system onto a 2D plane, saving a lot of computational time!
+In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `ProjectedDynamicalSystem` to project the 4D system onto a 2D plane, saving a lot of computational time!
 
 ### Computing the basins
 
-First we need to load in the magnetic pendulum from the predefined dynamical systems
+First we need to load in the magnetic pendulum from the predefined dynamical systems library
 ```@example MAIN
 using PredefinedDynamicalSystems
-ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+ds = PredefinedDynamicalSystems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 ```
 
 Then, we create a projected system on the x-y plane
@@ -87,7 +71,7 @@ Then, we create a projected system on the x-y plane
 psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 ```
 
-For this systems we know the attractors are close to the magnet positions, so we can just do
+For this systems we know the attractors are close to the magnet positions. The positions can be obtained from the equations of the system, provided that one has seen the source code (not displayed here), like so:
 ```@example MAIN
 attractors = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
 ```
@@ -99,16 +83,11 @@ mapper = AttractorsViaProximity(psys, attractors)
 
 and as before, get the basins of attraction
 ```@example MAIN
-xg = yg = range(-4, 4; length = 101)
+xg = yg = range(-4, 4; length = 201)
 grid = (xg, yg)
 basins, = basins_of_attraction(mapper, grid; show_progress = false)
-ids = sort!(unique(basins))
-cmap = generate_cmap(length(ids))
-fig, ax = heatmap(xg, yg, basins;
-    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
-)
-scatter_attractors!(ax, attractors)
-fig
+
+heatmap_basins_attractors(grid, basins, attractors)
 ```
 
 ### Computing the uncertainty exponent
@@ -129,25 +108,21 @@ third magnet to be so small, its basin of attraction will virtually disappear.
 As we don't know _when_ the basin of the third magnet will disappear, we switch the attractor finding algorithm back to [`AttractorsViaRecurrences`](@ref).
 
 ```@example MAIN
-ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3, γs = [1.0, 1.0, 0.1])
-psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
+set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
 mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
 basins_after, attractors_after = basins_of_attraction(
     mapper, (xg, yg); show_progress = false
 )
 # matching attractors is important!
-match_attractor_ids!(attractors_after, attractors)
+rmap = match_attractor_ids!(attractors_after, attractors)
+# Don't forget to update the labels of the basins as well!
+replace!(basins_after, rmap...)
 
 # now plot
-ids = sort!(unique(basins_after))
-cmap = generate_cmap(length(ids))
-fig, ax = heatmap(xg, yg, basins_after;
-    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
-)
-scatter_attractors!(ax, attractors_after)
-fig
+heatmap_basins_attractors(grid, basins_after, attractors_after)
 ```
 
+And let's compute the tipping "probabilities":
 
 ```@example MAIN
 P = tipping_probabilities(basins, basins_after)

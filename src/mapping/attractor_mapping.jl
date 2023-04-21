@@ -126,7 +126,7 @@ _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractStateSpaceSet, i) = ics[i]
 
 """
-    extract_attractors(m::AttractorsViaRecurrences) → attractors
+    extract_attractors(mapper::AttractorsMapper) → attractors
 
 Return a dictionary mapping label IDs to attractors found by the `mapper`.
 This function should be called after calling [`basins_fractions`](@ref)
