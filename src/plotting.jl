@@ -1,5 +1,7 @@
 # Functions dedicated into plotting basins related stuff
-# Some default colors are needed...
+
+# Unfortunately, until `to_color` works with `Cycled`,
+# we need to explitily add here some default colors...
 COLORS = [
     "#7143E0",
     "#191E44",
