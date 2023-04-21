@@ -25,32 +25,14 @@ basins
 attractors
 ```
 
-Now let's plot this as a heatmap
+Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot the attractors. We do this in one step by utilizing one of the pre-defined plotting functions offered by Attractors.jl
+
 ```@example MAIN
-using CairoMakie
-# Set up some code for plotting attractors
-function scatter_attractors!(ax, attractors)
-    for k ∈ keys(attractors)
-        x, y = columns(attractors[k])
-        scatter!(ax, vec(attractors[k]);
-            color = Cycled(k), markersize = 20,
-            strokewidth = 3, strokecolor = :white
-        )
-    end
-end
-
-generate_cmap(n) = cgrad(Main.COLORS[1:n], n; categorical = true)
-ids = sort!(unique(basins))
-cmap = generate_cmap(length(ids))
-
-fig, ax = heatmap(xg, yg, basins;
-    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
-)
-scatter_attractors!(ax, attractors)
-fig
+grid = (xg, yg)
+heatmap_basins_attractors(grid, basins, attractors)
 ```
 
-We could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
+Instead of computing the full basins, we could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
 In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
 
 ```@example MAIN
