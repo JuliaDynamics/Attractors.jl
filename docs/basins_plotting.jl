@@ -10,6 +10,49 @@ COLORS = [
 ]
 
 
+function heatmap_basins_attractors(grid, basins::AbstractArray, attractors; kwargs...)
+    if length(size(basins)) != 2
+        error("Heatmaps only work in two dimensional basins!")
+    end
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
+    return fig
+end
+
+
+function heatmap_basins_attractors!(ax, grid, basins, attractors;
+        ukeys = sort!(unique(basins)), # internal argument just for other keywords
+        colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        add_legend = length(ukeys) < 7,
+        projection_into_2D = (A) -> (A[:, 1], A[:, 2])
+    )
+
+    # Set up the (categorical) color map and colormap values
+    cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
+    ids = 1:length(ukeys)
+    # Heatmap with appropriate colormap values
+    heatmap!(ax, grid..., basins;
+        colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+    )
+    # Scatter attractors
+    for (i, k) ∈ enumerate(ukeys)
+        k == -1 && continue
+        A = attractors[k]
+        x, y = projection_into_2D(A)
+        scatter!(ax, x, y;
+            color = colors[k], markersize = 20,
+            strokewidth = 3, strokecolor = :white,
+            label = "$(labels[k])",
+        )
+    end
+    # Add legend using colors only
+    add_legend && axislegend(ax)
+    return ax
+end
+
+
 function animate_attractors_continuation(
         ds, attractors_info, fractions_curves, prange, pidx;
         savename = "test.mp4", access = [1,2],
@@ -58,7 +101,7 @@ function animate_attractors_continuation(
 
 end
 
-function plot_attractors(attractors::Dict;  access = [1,2], markersize = 12)
+function plot_attractors(attractors::Dict; access = [1,2], markersize = 12)
     fig = Figure()
     ax = Axis(fig[1,1])
     ukeys = keys(attractors)
