@@ -1,6 +1,6 @@
 # Examples for Attractors.jl
 
-Note that the examples utilize some convenience plotting functions offered by Attractors.jl. In Julia 1.9+ these come into scope when using `Makie` (or any of its backends such as `CairoMakie`). In older versions of Julia, you need to find them and run them manually in the `docs/basins_plotting.jl` file.
+Note that the examples utilize some convenience plotting functions offered by Attractors.jl. In Julia 1.9+ these come into scope when using `Makie` (or any of its backends such as `CairoMakie`). In older versions of Julia, you need to find them and run them manually in the `src/plotting.jl` file.
 
 ## Newton's fractal (basins of 2D map)
 ```@example MAIN
