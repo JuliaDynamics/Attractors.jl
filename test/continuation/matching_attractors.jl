@@ -58,6 +58,14 @@ end
         @test !haskey(allatts2[i], 2)
     end
     @test haskey(allatts2[1], 2)
+    # Test rematch function
+    allatts3 = deepcopy(allatts2)
+    fracs = [Dict(k => 0.5 for (k, v) in att) for att in allatts3]
+    @test unique_keys(fracs) == 1:11
+    # Same matching as in `allatts`
+    rematch!(fracs, allatts3; threshold = 100.0)
+    @test unique_keys(fracs) == 1:2
+    @test unique_keys(allatts3) == 1:2
 end
 
 

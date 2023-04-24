@@ -16,7 +16,7 @@ end
     RecurrencesSeededContinuation <: AttractorsBasinsContinuation
     RecurrencesSeededContinuation(mapper::AttractorsViaRecurrences; kwargs...)
 
-A method for [`rsc`](@ref). TODO: Cite our preprint here.
+A method for [`continuation`](@ref). TODO: Cite our preprint here.
 
 ## Description
 
