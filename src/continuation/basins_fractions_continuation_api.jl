@@ -28,7 +28,7 @@ the dynamical system (as in [`basins_fractions`](@ref)).
 Possible subtypes of `AttractorsBasinsContinuation` are:
 
 - [`RecurrencesFindAndMatch`](@ref)
-- [`GroupAcrossParameterContinuation`](@ref)
+- [`GroupAcrossParameter`](@ref)
 
 ## Return
 

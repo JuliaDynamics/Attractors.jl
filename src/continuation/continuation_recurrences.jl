@@ -6,7 +6,6 @@ using Random: MersenneTwister
 # in two independent steps: it first finds attractors and then matches them.
 
 """
-    RAFM <: AttractorsBasinsContinuation
     RecurrencesFindAndMatch <: AttractorsBasinsContinuation
     RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
@@ -72,7 +71,8 @@ struct RecurrencesFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuat
     info_extraction::E
 end
 
-RAFM = RecurrencesFindAndMatch
+"Alias for [`RecurrencesFindAndMatch`](@ref)"
+const RAFM = RecurrencesFindAndMatch
 
 function RecurrencesFindAndMatch(
         mapper::AttractorsViaRecurrences; distance = Centroid(),

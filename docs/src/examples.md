@@ -415,7 +415,7 @@ mapper = AttractorsViaFeaturizing(
     T = 6, threaded = true, Ttr = 500,
 )
 
-continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.0)
+continuation = GroupAcrossParameter(mapper; par_weight = 1.0)
 
 ps = range(0.6, 1.1; length = 11)
 pidx = 1

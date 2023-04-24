@@ -1,15 +1,16 @@
-export GroupAcrossParameterContinuation
+export GroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct GroupAcrossParameterContinuation{A<:AttractorsViaFeaturizing, E} <: AttractorsBasinsContinuation
+struct GroupAcrossParameter{A<:AttractorsViaFeaturizing, E} <: AttractorsBasinsContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64
 end
 
 """
-    GroupAcrossParameterContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
+    GroupAcrossParameter <: AttractorsBasinsContinuation
+    GroupAcrossParameter(mapper::AttractorsViaFeaturizing; kwargs...)
 
 A method for [`continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
@@ -44,12 +45,12 @@ done by the developer team of Attractors.jl.
     Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
     [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
-function GroupAcrossParameterContinuation(
+function GroupAcrossParameter(
         mapper::AttractorsViaFeaturizing;
         info_extraction = mean_across_features,
         par_weight = 0.0,
     )
-    return GroupAcrossParameterContinuation(
+    return GroupAcrossParameter(
         mapper, info_extraction, par_weight
     )
 end
@@ -66,7 +67,7 @@ function mean_across_features(fs)
 end
 
 function continuation(
-        continuation::GroupAcrossParameterContinuation, prange, pidx, ics;
+        continuation::GroupAcrossParameter, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )
     (; mapper, info_extraction, par_weight) = continuation
