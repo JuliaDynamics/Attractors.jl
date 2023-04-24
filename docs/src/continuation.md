@@ -28,6 +28,7 @@ replacement_map
 set_distance
 setsofsets_distances
 match_basins_ids!
+rematch!
 ```
 
 ## Aggregating attractors and fractions

@@ -1,5 +1,4 @@
 # v1.4
-
 - New function `rematch!` that can be used after `continuation` is called with `AttractorsViaRecurrences`, if the original matching performed was not ideal.
 
 # v1.3

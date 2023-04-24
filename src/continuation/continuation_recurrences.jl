@@ -37,6 +37,10 @@ distance, but more options are possible, see [`match_attractor_ids!`](@ref).
 This process continues until all parameter values are exhausted and for each parameter
 value the attractors and their fractions are found.
 
+Note that since in this continuation the finding-attractors and matching-attractors
+steps are completely independent. This means, that if you don't like the initial
+outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
+
 ## Keyword arguments
 
 - `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
