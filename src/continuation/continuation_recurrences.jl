@@ -46,12 +46,10 @@ outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
 - `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`rsc`](@ref).
+  `attractors_info` in [`continuation`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
-  parameter slice. By default, we sample some points from existing attractors according
-  to how many points the attractors themselves contain. A maximum of `10` seeds is done
-  per attractor.
+  parameter slice. By default, we sample only the first stored point on the attractor.
 
 [^Datseris2023]: Datseris, Rossi & Wagemakers 2023: Framework for global stability analysis
 """
@@ -76,11 +74,17 @@ function RecurrencesFindAndMatch(
     )
 end
 
-function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
+# TODO: This is currently not used, and not sure if it has to be.
+function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
     max_possible_seeds = 10
     seeds = round(Int, log(10, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
-    return (rand(rng, attractor.data) for _ in 1:seeds)
+    return (rand(rng, vec(attractor)) for _ in 1:seeds)
+end
+
+# This is the one used
+function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
+    return (attractor[1],) # must be iterable
 end
 
 function continuation(
