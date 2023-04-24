@@ -234,7 +234,7 @@ pidx = :γs
 sampler, = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
-rsc = RecurrencesSeededContinuation(mapper; threshold = Inf)
+rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
 fractions_curves, attractors_info = continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
@@ -279,10 +279,10 @@ as you can see, two of the three fixed points, and their stability, do not depen
 
 ## Extinction of a species in a multistable competition model
 
-In this advanced example we utilize both [`RecurrencesSeededContinuation`](@ref) and [`aggregate_attractor_fractions`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
+In this advanced example we utilize both [`RecurrencesFindAndMatch`](@ref) and [`aggregate_attractor_fractions`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
 The final goal is to show the percentage of how much of the state space leads to the extinction or not of a pre-determined species, as we vary a parameter. The model however displays extreme multistability, a feature we want to measure and preserve before aggregating information into "extinct or not".
 
-To measure and preserve this we will apply [`RecurrencesSeededContinuation`](@ref) as-is first. Then we can aggregate information. First we have
+To measure and preserve this we will apply [`RecurrencesFindAndMatch`](@ref) as-is first. Then we can aggregate information. First we have
 ```julia
 using Attractors, OrdinaryDiffEq
 using PredefinedDynamicalSystems
@@ -306,7 +306,7 @@ sampler, = statespace_sampler(Xoshiro(1234);
 # initialize mapper
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
-continuation = RecurrencesSeededContinuation(mapper; threshold = Inf)
+continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
 fractions_curves, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
@@ -319,7 +319,7 @@ Main.basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
 _this example is not actually run when building the docs, because it takes about 60 minutes to complete depending on the computer; we load precomputed results instead_
 
 As you can see, the system has extreme multistability with 64 unique attractors
-(according to the default matching behavior in [`RecurrencesSeededContinuation`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
+(according to the default matching behavior in [`RecurrencesFindAndMatch`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
 One could also isolate a specific parameter slice, and do the same as what we do in
 the [Fractality of 2D basins of the (4D) magnetic pendulum](@ref) example, to prove that the basin boundaries are fractal, thereby indeed confirming the paper title "Fundamental Unpredictability".
 

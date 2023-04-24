@@ -16,6 +16,12 @@ Return the replacement map, a dictionary mapping old keys of `a₊` to
 the new ones that they were mapped to. You can obtain this map, without modifying
 the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 
+## Keyword arguments
+
+- `distance = Centroid()`: given to [`setsofsets_distances`](@ref).
+- `threshold = Inf`: attractors with distance more than the `threshold` are guaranteed
+  to not be mapped to each other.
+
 ## Description
 
 When finding attractors and their fractions in DynamicalSystems.jl,
@@ -27,8 +33,10 @@ the different parameters) with different IDs.
 i.e., the keys of the given dictionaries.
 
 The matching happens according to the output of the [`setsofsets_distances`](@ref)
-function with the keyword `distance`. distance` can be whatever that function accepts.
-Attractors are then match according to distance, with unique mapping.
+function with the keyword `distance`. `distance` can be whatever that function accepts,
+i.e., one of `Centroid, Hausdorff, StrictlyMinimumDistance` or any arbitrary user-
+provided function that given two sets it returns a positive number (their distance).
+Attractors are then matched according to this distance, with unique mapping.
 The closest attractors (before and after) are mapped to each
 other, and are removed from the matching pool, and then the next pair with least
 remaining distance is matched, and so on.
@@ -160,7 +168,7 @@ end
 """
     rematch!(fractions_curves, attractors_info; kwargs...)
 
-Given the outputs of [`continuation`](@ref) witn [`RecurrencesSeededContinuation`](@ref),
+Given the outputs of [`continuation`](@ref) witn [`RecurrencesFindAndMatch`](@ref),
 perform the matching step of the process again with the (possibly different) keywords
 that [`match_attractor_ids!`](@ref) accepts. This "re-matching" is possible because in
 [`continuation`](@ref) finding the attractors and their basins is a completely independent

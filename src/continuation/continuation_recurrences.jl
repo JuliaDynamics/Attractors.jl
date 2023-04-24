@@ -1,22 +1,20 @@
-export RecurrencesSeededContinuation
+export RecurrencesFindAndMatch, RAFM
 import ProgressMeter
 using Random: MersenneTwister
 
 # The recurrences based distance is rather flexible because it works
 # in two independent steps: it first finds attractors and then matches them.
-struct RecurrencesSeededContinuation{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
-    mapper::A
-    distance::M
-    threshold::R
-    seeds_from_attractor::S
-    info_extraction::E
-end
 
 """
-    RecurrencesSeededContinuation <: AttractorsBasinsContinuation
-    RecurrencesSeededContinuation(mapper::AttractorsViaRecurrences; kwargs...)
+    RAFM <: AttractorsBasinsContinuation
+    RecurrencesFindAndMatch <: AttractorsBasinsContinuation
+    RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
-A method for [`continuation`](@ref). TODO: Cite our preprint here.
+A method for [`continuation`](@ref) as in [^Datseris2023] that is based on the
+recurrences-based algorithmf or finding attractors ([`AttractorsViaRecurrences`](@ref))
+and the "matching attractors" functionality offered by [`match_attractor_ids!`](@ref).
+
+You can use `RAFM` as an alias.
 
 ## Description
 
@@ -24,19 +22,27 @@ At the first parameter slice attractors and their fractions are found as describ
 [`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
 At each subsequent parameter slice,
 new attractors are found by seeding initial conditions from the previously found
-attractors and then piping these initial conditions through the recurrences algorithm
+attractors and then running these initial conditions through the recurrences algorithm
 of the `mapper`. Seeding initial conditions close to previous attractors accelerates
 the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
-After the attractors are found, their fractions are computed by running new initial
-conditions through the [`AttractorsViaRecurrences`](@ref) mapper.
-This process continues until all parameter values are exhausted and for each parameter
-value the attractors and their fractions are found.
 
-Then, the different attractors across parameters are matched so that they have
+After the attractors are found, their fractions are computed by sampling new random initial
+(using the provided `sampler` in [`continuation`](@ref)) and mapping them to attractors
+using the [`AttractorsViaRecurrences`](@ref) mapper.
+
+Then, the newly found attractors (and their fractions) are "matched" to the previous ones.
+I.e., their _IDs_ are changed, accoring to the [`match_attractor_ids!`](@ref) function.
+Typically, the matching process matches attractor IDs that are closest in state space
+distance, but mroe options are possible, see.
+] attractors across parameters are matched so that they have
 the same ID. The matching process is based on distances between attractors.
 The function that computes these distances is
 [`setsofsets_distances`](@ref) and the matching function
 is [`match_attractor_ids!`](@ref) (please read those docstrings as well).
+
+This process continues until all parameter values are exhausted and for each parameter
+value the attractors and their fractions are found.
+
 
 At each parameter slice beyond the first, the new
 attractors are matched to the previous attractors found in the previous parameter value
@@ -55,13 +61,25 @@ get assigned the same label.
   parameter slice. By default, we sample some points from existing attractors according
   to how many points the attractors themselves contain. A maximum of `10` seeds is done
   per attractor.
+
+[^Datseris2023]: Datseris, Rossi & Wagemakers 2023: Framework for global stability analysis
 """
-function RecurrencesSeededContinuation(
+struct RecurrencesFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
+    mapper::A
+    distance::M
+    threshold::R
+    seeds_from_attractor::S
+    info_extraction::E
+end
+
+RAFM = RecurrencesFindAndMatch
+
+function RecurrencesFindAndMatch(
         mapper::AttractorsViaRecurrences; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
-    return RecurrencesSeededContinuation(
+    return RecurrencesFindAndMatch(
         mapper, distance, threshold, seeds_from_attractor, info_extraction
     )
 end
@@ -74,7 +92,7 @@ function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = Mersen
 end
 
 function continuation(
-        rsc::RecurrencesSeededContinuation,
+        rsc::RecurrencesFindAndMatch,
         prange, pidx, ics = _ics_from_grid(rsc);
         samples_per_parameter = 100, show_progress = true,
     )
@@ -168,7 +186,7 @@ function reset!(mapper::AttractorsViaRecurrences)
     return
 end
 
-function _ics_from_grid(rsc::RecurrencesSeededContinuation)
+function _ics_from_grid(rsc::RecurrencesFindAndMatch)
     return _ics_from_grid(rsc.mapper.grid)
 end
 

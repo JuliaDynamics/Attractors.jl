@@ -18,7 +18,7 @@ continuation
 ## Recurrences continuation (best)
 
 ```@docs
-RecurrencesSeededContinuation
+RecurrencesFindAndMatch
 ```
 
 ## Matching attractors
