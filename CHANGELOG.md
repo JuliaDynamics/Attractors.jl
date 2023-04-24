@@ -1,3 +1,10 @@
+# v1.4
+
+- New function `rematch!` that can be used after `continuation` is called with `AttractorsViaRecurrences`, if the original matching performed was not ideal.
+
+# v1.3
+- More plotting functions have been added and plotting has been exposed as API. After Julia 1.9 it will also be documented and formally included in the built docs.
+
 # v1.2
 - Add option `force_non_adaptive` to `AttractorsViaRecurrences`. This option is of instrumental importance when the grid is too fine or when limit cycle attractors are involved.
 
