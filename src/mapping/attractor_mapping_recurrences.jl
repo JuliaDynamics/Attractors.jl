@@ -28,6 +28,7 @@ dimensional subspace.
 
 * `Ttr = 0`: Skip a transient before the recurrence routine begins.
 * `Δt`: Approximate integration time step (second argument of the `step!` function).
+  The keyword `Dt` can also be used instead if `Δ` (`\\Delta`) is not accessible.
   It is `1` for discrete time systems.
   For continuous systems, an automatic value is calculated using
   [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
@@ -35,7 +36,7 @@ dimensional subspace.
   integrators. In such cases, use `force_non_adaptive = true`.
 * `force_non_adaptive = false`: Only used if the input dynamical system is `CoupledODEs`.
   If `true` the additional keywords `adaptive = false, dt = Δt` are given as `diffeq`
-  to the `CoupledODEs`. This means that adaptive integration is turned of and `Δt` is
+  to the `CoupledODEs`. This means that adaptive integration is turned off and `Δt` is
   used as the ODE integrator timestep. This is useful in (1) very fine grids, and (2)
   if some of the attractors are limit cycles. We have noticed that in this case the
   integrator timestep becomes commensurate with the limit cycle period, leading to
@@ -116,7 +117,7 @@ struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
 end
 
 function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
-        Δt = nothing, sparse = true, force_non_adaptive = false, kwargs...
+        Dt = nothing, Δt = Dt, sparse = true, force_non_adaptive = false, kwargs...
     )
     bsn_nfo = initialize_basin_info(ds, grid, Δt, sparse)
     if ds isa CoupledODEs && force_non_adaptive
@@ -212,19 +213,17 @@ mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
     visited_list::Q
 end
 
-function initialize_basin_info(
-        ds::DynamicalSystem, grid, Δtt, sparse,
-    )
+function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     Δt = if isnothing(Δtt)
         isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
     else
         Δtt
     end
 
-    D = length(current_state(ds))
+    D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
-    # D == G || error("Grid and dynamical system do not have the same dimension!")
+    D == G || error("Grid and dynamical system do not have the same dimension!")
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
@@ -249,8 +248,7 @@ function initialize_basin_info(
 end
 
 
-using LinearAlgebra
-
+using LinearAlgebra: norm
 
 """
     automatic_Δt_basins(ds::DynamicalSystem, grid; N = 5000) → Δt
@@ -328,6 +326,7 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # on the previously found one...
         bsn_nfo.safety_counter += 1
         if bsn_nfo.safety_counter ≥ mx_chk_safety
+            # TODO: Set up some debugging framework here via environment variable
             # @warn """
             # `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
             # It may be that the grid is not fine enough and attractors intersect in the
@@ -340,6 +339,10 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         end
 
         step!(ds, bsn_nfo.Δt)
+        if !successful_step(ds)
+            return -1
+        end
+
         new_y = current_state(ds)
         # The internal function `_possibly_reduced_state` exists solely to
         # accommodate the special case of a Poincare map with the grid defined

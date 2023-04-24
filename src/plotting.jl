@@ -1,17 +1,62 @@
 # Functions dedicated into plotting basins related stuff
-# Some default colors are needed...
+
+# Unfortunately, until `to_color` works with `Cycled`,
+# we need to explitily add here some default colors...
 COLORS = [
     "#7143E0",
     "#191E44",
     "#0A9A84",
-    "#C0A12B",
-    "#701B80",
-    "#2E6137",
+    "#AF9327",
+    "#5F166D",
+    "#6C768C",
 ]
 
 
+function heatmap_basins_attractors(grid, basins::AbstractArray, attractors; kwargs...)
+    if length(size(basins)) != 2
+        error("Heatmaps only work in two dimensional basins!")
+    end
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
+    return fig
+end
+
+
+function heatmap_basins_attractors!(ax, grid, basins, attractors;
+        ukeys = sort!(unique(basins)), # internal argument just for other keywords
+        colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        add_legend = length(ukeys) < 7,
+        projection_into_2D = (A) -> (A[:, 1], A[:, 2])
+    )
+
+    # Set up the (categorical) color map and colormap values
+    cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
+    ids = 1:length(ukeys)
+    # Heatmap with appropriate colormap values
+    heatmap!(ax, grid..., basins;
+        colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+    )
+    # Scatter attractors
+    for (i, k) ∈ enumerate(ukeys)
+        k == -1 && continue
+        A = attractors[k]
+        x, y = projection_into_2D(A)
+        scatter!(ax, x, y;
+            color = colors[k], markersize = 20,
+            strokewidth = 3, strokecolor = :white,
+            label = "$(labels[k])",
+        )
+    end
+    # Add legend using colors only
+    add_legend && axislegend(ax)
+    return ax
+end
+
+
 function animate_attractors_continuation(
-        ds, attractors_info, prange, pidx;
+        ds, attractors_info, fractions_curves, prange, pidx;
         savename = "test.mp4", access = [1,2],
         limits = (-1,3,-2,2),
         framerate = 4, markersize = 10
@@ -46,7 +91,7 @@ function animate_attractors_continuation(
         heights[] = [get(fractions, k, 0) for k in ukeys]
 
         for (k, att) in attractors
-            tr = trajectory(ds, 1000, rand(vec(att)); Δt = 1)
+            tr, tvec = trajectory(ds, 1000, rand(vec(att)); Δt = 1)
             att_obs[k][] = vec(tr[:, access])
             notify(att_obs[k])
         end
@@ -58,7 +103,7 @@ function animate_attractors_continuation(
 
 end
 
-function plot_attractors(attractors::Dict;  access = [1,2], markersize = 12)
+function plot_attractors(attractors::Dict; access = [1,2], markersize = 12)
     fig = Figure()
     ax = Axis(fig[1,1])
     ukeys = keys(attractors)
@@ -98,6 +143,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
         labels = Dict(ukeys .=> ukeys),
         separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 7,
+        axislegend_kwargs = (position = :lt,)
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
@@ -116,7 +162,7 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
         end
     end
     ylims!(ax, 0, 1); xlims!(ax, minimum(prange), maximum(prange))
-    add_legend && axislegend(ax; position = :lt)
+    add_legend && axislegend(ax; axislegend_kwargs...)
     return
 end
 
@@ -163,20 +209,11 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
         attractors = attractors_info[i]
         for (k, A) in attractors
             val = attractor_to_real(A)
-            scatter!(ax, prange[i], val; color = colors[k])
+            scatter!(ax, prange[i], val; color = colors[k], label = string(labels[k]))
         end
     end
     xlims!(ax, minimum(prange), maximum(prange))
-    if add_legend
-        labels = map(k -> labels[k], ukeys)
-        ele = map(k -> MarkerElement(; marker = :circle, color = colors[k]), ukeys)
-        # From the source code of `axislegend`:
-        Legend(ax.parent, ele, labels;
-            bbox = ax.scene.px_area,
-            Makie.legend_position_to_aligns(:lt)...,
-            margin = (10, 10, 10, 10),
-        )
-    end
+    add_legend && axislegend(ax; unique = true)
     return
 end
 
@@ -212,24 +249,38 @@ end
 
 
 function basins_attractors_curves_plot(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
-        ukeys = unique_keys(fractions_curves), # internal argument
-        colors = colors_from_keys(ukeys),
+        kwargs...
     )
     fig = Figure()
     axb = Axis(fig[1,1])
     axa = Axis(fig[2,1])
-    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors)
-    # Okay here we need to delete key `-1` if it exists:
-    if -1 ∈ ukeys
-        popfirst!(ukeys)
-        delete!(colors, -1)
-    end
-    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
-        ukeys, colors, add_legend = false, # coz its true for fractions
-    )
-    hidexdecorations!(axb, ticks = false, grid = false)
     axa.xlabel = "parameter"
     axa.ylabel = "attractors"
     axb.ylabel = "basins %"
+    hidexdecorations!(axb; grid = false)
+
+    basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange; kwargs...,
+    )
     return fig
+end
+
+function basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange = 1:length(attractors_info);
+        ukeys = unique_keys(fractions_curves), # internal argument
+        colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        kwargs...
+    )
+
+    if length(fractions_curves) ≠ length(attractors_info)
+        error("fractions and attractors don't have the same amount of entries")
+    end
+
+    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
+
+    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
+        ukeys, colors, add_legend = false, # coz its true for fractions
+    )
+    return
 end

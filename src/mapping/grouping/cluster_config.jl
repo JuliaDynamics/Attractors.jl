@@ -217,7 +217,7 @@ end
 
 # Already expecting the distance matrix, the output of `pairwise`
 function _cluster_distances_into_labels(distances, ϵ_optimal, min_neighbors)
-    dbscanresult = dbscan(distances, ϵ_optimal, min_neighbors)
+    dbscanresult = dbscan(distances, ϵ_optimal; min_neighbors, metric=nothing)
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
 end
