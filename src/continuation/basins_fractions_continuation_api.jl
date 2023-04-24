@@ -27,15 +27,15 @@ the dynamical system (as in [`basins_fractions`](@ref)).
 
 Possible subtypes of `AttractorsBasinsContinuation` are:
 
-- [`RecurrencesSeededContinuation`](@ref)
-- [`GroupAcrossParameterContinuation`](@ref)
+- [`RecurrencesFindAndMatch`](@ref)
+- [`GroupAcrossParameter`](@ref)
 
 ## Return
 
-1. `fractions_curves :: Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
+1. `fractions_curves::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
    `fractions_curves[i]` is a dictionary mapping attractor IDs to their basin fraction
    at the `i`-th parameter.
-2. `attractors_info <: Vector{Dict{Int, <:Any}}`. Information about the attractors.
+2. `attractors_info::Vector{Dict{Int, <:Any}}`. Information about the attractors.
    `attractors_info[i]` is a dictionary mapping attractor ID to information about the
    attractor at the `i`-th parameter.
    The type of information stored depends on the chosen continuation type.

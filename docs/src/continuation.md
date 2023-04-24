@@ -18,7 +18,7 @@ continuation
 ## Recurrences continuation (best)
 
 ```@docs
-RecurrencesSeededContinuation
+RecurrencesFindAndMatch
 ```
 
 ## Matching attractors
@@ -37,5 +37,5 @@ aggregate_attractor_fractions
 
 ## Grouping continuation
 ```@docs
-GroupAcrossParameterContinuation
+GroupAcrossParameter
 ```

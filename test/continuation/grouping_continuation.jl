@@ -36,7 +36,7 @@ using Random
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-    continuation = GroupAcrossParameterContinuation(mapper; par_weight = 0.0)
+    continuation = GroupAcrossParameter(mapper; par_weight = 0.0)
     fractions_curves, attractors_info = Attractors.continuation(
     continuation, rrange, ridx, sampler; show_progress = false)
 
@@ -101,7 +101,7 @@ if DO_EXTENSIVE_TESTS
         end
         clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.)
         mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
-        continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.0)
+        continuation = GroupAcrossParameter(mapper; par_weight = 1.0)
         fractions_curves, attractors_info = Attractors.continuation(
             continuation, ps, pidx, sampler;
             samples_per_parameter = 1000, show_progress = false
