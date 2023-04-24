@@ -10,14 +10,14 @@ using Random: MersenneTwister
     RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
 A method for [`continuation`](@ref) as in [^Datseris2023] that is based on the
-recurrences-based algorithmf or finding attractors ([`AttractorsViaRecurrences`](@ref))
+recurrences-based algorithm for finding attractors ([`AttractorsViaRecurrences`](@ref))
 and the "matching attractors" functionality offered by [`match_attractor_ids!`](@ref).
 
 You can use `RAFM` as an alias.
 
 ## Description
 
-At the first parameter slice attractors and their fractions are found as described in the
+At the first parameter slice, attractors and their fractions are found as described in the
 [`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
 At each subsequent parameter slice,
 new attractors are found by seeding initial conditions from the previously found
@@ -30,27 +30,15 @@ After the attractors are found, their fractions are computed by sampling new ran
 using the [`AttractorsViaRecurrences`](@ref) mapper.
 
 Then, the newly found attractors (and their fractions) are "matched" to the previous ones.
-I.e., their _IDs_ are changed, accoring to the [`match_attractor_ids!`](@ref) function.
+I.e., their _IDs are changed_, according to the [`match_attractor_ids!`](@ref) function.
 Typically, the matching process matches attractor IDs that are closest in state space
-distance, but mroe options are possible, see.
-] attractors across parameters are matched so that they have
-the same ID. The matching process is based on distances between attractors.
-The function that computes these distances is
-[`setsofsets_distances`](@ref) and the matching function
-is [`match_attractor_ids!`](@ref) (please read those docstrings as well).
+distance, but more options are possible, see [`match_attractor_ids!`](@ref).
 
 This process continues until all parameter values are exhausted and for each parameter
 value the attractors and their fractions are found.
 
-
-At each parameter slice beyond the first, the new
-attractors are matched to the previous attractors found in the previous parameter value
-by a direct call to the [`match_attractor_ids!`](@ref) function. Hence, the matching
-of attractors here works "slice by slice" on the parameter axis and the attractors
-that are closest to each other (in state space, but for two different parameter values)
-get assigned the same label.
-
 ## Keyword arguments
+
 - `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the

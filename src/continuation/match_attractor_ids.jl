@@ -19,7 +19,7 @@ the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 ## Keyword arguments
 
 - `distance = Centroid()`: given to [`setsofsets_distances`](@ref).
-- `threshold = Inf`: attractors with distance more than the `threshold` are guaranteed
+- `threshold = Inf`: attractors with distance larger than the `threshold` are guaranteed
   to not be mapped to each other.
 
 ## Description
