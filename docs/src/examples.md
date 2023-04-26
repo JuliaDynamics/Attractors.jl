@@ -437,7 +437,7 @@ fractions_curves, clusters_info = continuation(
 fractions_curves
 ```
 
-Looking at the information of the "attractions" (here the clusters of the grouping procedure) makes it clear which label corresponds to which kind of attractor (fixed point, period 3, or divergence to infinity):
+Looking at the information of the "attractors" (here the clusters of the grouping procedure) makes it clear which label corresponds to which kind of attractor (fixed point, period 3, or divergence to infinity):
 
 ```@example MAIN
 clusters_info
