@@ -7,9 +7,15 @@
 [![codecov](https://codecov.io/gh/JuliaDynamics/Attractors.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/Attractors.jl)
 [![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/Attractors)](https://pkgs.genieframework.com?packages=Attractors)
 
-A Julia module for finding attractors of dynamical systems,
-their basins and their boundaries, fractal properties of the boundaries,
-as well as continuing attractors and their basins across parameters.
+A Julia module for
+
+- finding attractors of arbitrary dynamical systems
+- finding their basins of attraction or the state space fractions of the basins
+- "continuing" the attractors and their basins over a parameter range
+- finding the basin boundaries and analyzing their fractal properties
+- tipping points related functionality for systems with known dynamic rule
+- and more!
+
 It can be used as a standalone package, or as part of
 [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/).
 
