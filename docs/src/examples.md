@@ -62,6 +62,7 @@ In this section we will calculate the basins of attraction of the four-dimension
 
 First we need to load in the magnetic pendulum from the predefined dynamical systems library
 ```@example MAIN
+using Attractors
 using PredefinedDynamicalSystems
 ds = PredefinedDynamicalSystems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 ```
@@ -94,6 +95,7 @@ Main.heatmap_basins_attractors(grid, basins, attractors)
 Let's now calculate the [`uncertainty_exponent`](@ref) for this system as well.
 The calculation is straightforward:
 ```@example MAIN
+using CairoMakie
 ε, f_ε, α = uncertainty_exponent(basins)
 fig, ax = lines(log.(ε), log.(f_ε))
 ax.title = "α = $(round(α; digits=3))"
@@ -138,10 +140,12 @@ the system's symmetry.
 
 To showcase the true power of [`AttractorsViaRecurrences`](@ref) we need to use a system whose attractors span higher-dimensional space. An example is
 ```@example MAIN
-ds = Systems.thomas_cyclical(b = 0.1665)
+using Attractors
+using PredefinedDynamicalSystems
+ds = PredefinedDynamicalSystems.thomas_cyclical(b = 0.1665)
 ```
-which, for this parameter, contains 5 coexisting attractors. 3 of them are entangled
-periodic orbits that span across all three dimensions, and the remaining 2 are fixed points.
+which, for this parameter, contains 3 coexisting attractors which are entangled
+periodic orbits that span across all three dimensions.
 
 To compute the basins we define a three-dimensional grid and call on it
 [`basins_of_attraction`](@ref).
@@ -162,6 +166,8 @@ Dict{Int16, StateSpaceSet{3, Float64}} with 5 entries:
   3 => 3-dimensional StateSpaceSet{Float64} with 537 points
   1 => 3-dimensional StateSpaceSet{Float64} with 1 points
 ```
+
+_Note: the reason we have 6 attractors here is because the algorithm also finds 3 unstable fixed points and labels them as attractors. This happens because we have provided initial conditions on the grid `xg, yg, zg` that start exactly on the unstable fixed points, and hence stay there forever, and hence are perceived as attractors by the recurrence algorithm. As you will see in the video below, they don't have any basin fractions_
 
 The basins of attraction are very complicated. We can try to visualize them by animating the 2D slices at each z value, to obtain:
 
@@ -253,11 +259,12 @@ Main.basins_curves_plot(fractions_curves, γγ)
 ```
 
 
-### "Bifurcation curves"
+### Fixed point curves
 
-A by-product of the analysis is that we can obtain bifurcation curves for free. However, only the stable branches can be obtained!
+A by-product of the analysis is that we can obtain the curves of the position of fixed points for free. However, only the stable branches can be obtained!
 
 ```@example MAIN
+using CairoMakie
 fig = Figure()
 ax = Axis(fig[1,1]; xlabel = L"\gamma_3", ylabel = "fixed point")
 # choose how to go from attractor to real number representation
