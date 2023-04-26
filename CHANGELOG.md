@@ -1,3 +1,7 @@
+# v1.5
+- Our pre-print regarding the novel global stability analysis framework offered by Attractors.jl is now online: https://arxiv.org/abs/2304.12786
+- Package now has a CITATION.bib file.
+
 # v1.4
 - New function `rematch!` that can be used after `continuation` is called with `AttractorsViaRecurrences`, if the original matching performed was not ideal.
 

@@ -17,9 +17,9 @@ You can use `RAFM` as an alias.
 
 ## Description
 
-At the first parameter slice, attractors and their fractions are found as described in the
-[`AttractorsViaRecurrences`](@ref) mapper using recurrences in state space.
-At each subsequent parameter slice,
+At the first parameter slice of the continuation process, attractors and their fractions
+are found as described in the [`AttractorsViaRecurrences`](@ref) mapper using recurrences
+in state space. At each subsequent parameter slice,
 new attractors are found by seeding initial conditions from the previously found
 attractors and then running these initial conditions through the recurrences algorithm
 of the `mapper`. Seeding initial conditions close to previous attractors accelerates
@@ -28,6 +28,7 @@ the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the 
 After the attractors are found, their fractions are computed by sampling new random initial
 (using the provided `sampler` in [`continuation`](@ref)) and mapping them to attractors
 using the [`AttractorsViaRecurrences`](@ref) mapper.
+I.e., exactly as in [`basins_fractions`](@ref).
 
 Then, the newly found attractors (and their fractions) are "matched" to the previous ones.
 I.e., their _IDs are changed_, according to the [`match_attractor_ids!`](@ref) function.
@@ -51,7 +52,9 @@ outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample only the first stored point on the attractor.
 
-[^Datseris2023]: Datseris, Rossi & Wagemakers 2023: Framework for global stability analysis
+[^Datseris2023]:
+    Datseris, Rossi, Wagemakers 2023, Framework for global stability analysis of
+    dynamical systems, [arXiv:2304.12786](https://arxiv.org/abs/2304.12786)
 """
 struct RecurrencesFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
     mapper::A

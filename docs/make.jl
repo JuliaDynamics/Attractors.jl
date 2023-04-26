@@ -5,6 +5,7 @@ using Attractors.StateSpaceSets
 
 pages = [
     "index.md",
+    "dynsysref.md",
     "attractors.md",
     "basins.md",
     "continuation.md",

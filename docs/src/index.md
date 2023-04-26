@@ -9,6 +9,11 @@ using CairoMakie, Attractors
 include("../basins_plotting.jl")
 ```
 
+## Latest news
+
+Our pre-print that discusses the global stability analysis framework offered by Attractors.jl ([`continuation`](@ref)) and the novel continuation offered by [`RecurrencesFindAndMatch`](@ref) is now online: https://arxiv.org/abs/2304.12786 !
+
+
 ## Outline of Attractors.jl
 
 ![Attractors.jl flowchart](https://github.com/JuliaDynamics/JuliaDynamics/blob/master/videos/attractors/attractorsjl_overview.png?raw=true)
