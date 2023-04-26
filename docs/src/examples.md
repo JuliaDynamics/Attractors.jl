@@ -422,7 +422,7 @@ mapper = AttractorsViaFeaturizing(
     T = 6, threaded = true, Ttr = 500,
 )
 
-continuation = GroupAcrossParameter(mapper; par_weight = 1.0)
+gap = GroupAcrossParameter(mapper; par_weight = 1.0)
 
 ps = range(0.6, 1.1; length = 11)
 pidx = 1
@@ -430,8 +430,8 @@ sampler, = statespace_sampler(Random.MersenneTwister(1234);
     min_bounds = [-2,-2], max_bounds = [2,2]
 )
 
-fractions_curves, clusters_info = Attractors.continuation(
-    continuation, ps, pidx, sampler;
+fractions_curves, clusters_info = continuation(
+    gap, ps, pidx, sampler;
     samples_per_parameter = 100, show_progress = false
 )
 fractions_curves
