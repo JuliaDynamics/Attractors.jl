@@ -36,9 +36,10 @@ using Random
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-    continuation = GroupAcrossParameter(mapper; par_weight = 0.0)
-    fractions_curves, attractors_info = Attractors.continuation(
-    continuation, rrange, ridx, sampler; show_progress = false)
+    gap = GroupAcrossParameter(mapper; par_weight = 0.0)
+    fractions_curves, attractors_info = continuation(
+        gap, rrange, ridx, sampler; show_progress = false
+    )
 
     for (i, r) in enumerate(rrange)
 
@@ -79,32 +80,37 @@ if DO_EXTENSIVE_TESTS
     @testset "Henon period doubling" begin
 
         # Notice special parameter values:
-        ds = Systems.henon(; b = -0.9, a = 1.4)
-        ps = range(0.6, 1.1; length = 10)
+        b, a = -0.9, 1.1 # notice the non-default parameters
+        henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+        ds = DeterministicIteratedMap(henon_rule, ones(2), [a,b])
+        ps = range(0.6, 1.1; length = 11)
         pidx = 1
         sampler, = statespace_sampler(Random.MersenneTwister(1234);
             min_bounds = [-2,-2], max_bounds = [2,2]
         )
 
         # Feature based on period.
-        function featurizer(a, t)
+        function featurizer(a, t) # feature based on period!
             tol = 1e-5
-            if abs(a[end-1,1] - a[end,1]) < tol
+            L = length(a)
+            if abs(a[L-1,1] - a[L,1]) < tol
                 # period 1
                 return [1]
-            elseif abs(a[end-3,1] - a[end,1]) < tol
+            elseif abs(a[L-3,1] - a[L,1]) < tol
                 # period 3
                 return [3]
             else
                 return [100]
             end
         end
-        clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.)
-        mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 500, threaded = true)
-        continuation = GroupAcrossParameter(mapper; par_weight = 1.0)
-        fractions_curves, attractors_info = Attractors.continuation(
-            continuation, ps, pidx, sampler;
-            samples_per_parameter = 1000, show_progress = false
+        clusterspecs = Attractors.GroupViaClustering(rescale_features = false, optimal_radius_method = 1.0)
+        mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs;
+            T = 10, Ttr = 2000, threaded = true
+        )
+        gap = GroupAcrossParameter(mapper; par_weight = 0.0)
+        fractions_curves, attractors_info = continuation(
+            gap, ps, pidx, sampler;
+            samples_per_parameter = 100, show_progress = false
         )
 
         for (i, p) in enumerate(ps)

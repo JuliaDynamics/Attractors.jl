@@ -1,3 +1,7 @@
+# v1.5
+- Our pre-print regarding the global stability analysis framework offered by Attractors.jl is now online: https://arxiv.org/abs/2304.12786
+- Package now has a CITATION.bib file.
+
 # v1.4
 - New function `rematch!` that can be used after `continuation` is called with `AttractorsViaRecurrences`, if the original matching performed was not ideal.
 
@@ -12,7 +16,7 @@
 - `basins_fractions` no longer returns the attractors. Instead, a function `extract_attractors(mapper::AttractorMapper)` is provided that gives the attractors. This makes an overall more convenient experience that doesn't depend on the type of the initial conditions used.
 
 # v1
-- Added the `continuation` function and the two types `RecurrencesFindAndMatch` and `GroupAcrossParametersContinuation`
+- Added the `continuation` function and the two types `RecurrencesFindAndMatch` and `GroupAcrossParameterContinuation`
 
 # v0.1.0
 This is the first release. It continues from ChaosTools.jl v2.9, and hence, the comparison of attractor-related features is w.r.t to that version.
