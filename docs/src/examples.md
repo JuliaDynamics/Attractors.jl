@@ -387,57 +387,55 @@ As expected, the fractions are each about 1/3 due to the system symmetry.
 
 ## Featurizing and grouping across parameters (MCBB)
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
-For this, we will use [`GroupAcrossParametersContinuation`](@ref) while also providing a `par_weight = 1` keyword.
+For this, we will use [`GroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
-Instead, we will use the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
+Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
+
+ the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
 
 ```@example MAIN
 using Attractors, Random
 
-b, a = -0.9, 1.4 # notice the non-default parameters
-henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-henon = DeterministicIteratedMap(henon_rule, zeros(2), [a,b])
-
-function featurizer(a, t) # feature based on period!
-    tol = 1e-5
-    if abs(a[end-1,1] - a[end,1]) < tol
-        # period 1
-        return [1]
-    elseif abs(a[end-3,1] - a[end,1]) < tol
-        # period 3
-        return [3]
+function dumb_map(dz, z, p, n)
+    x, y = z
+    r = p[1]
+    if r < 0.5
+        dz[1] = dz[2] = 0.0
     else
-        return [100]
+        if x > 0
+            dz[1] = r
+            dz[2] = r
+        else
+            dz[1] = -r
+            dz[2] = -r
+        end
     end
+    return
 end
 
-henon
+r = 3.833
+ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 ```
 
 
 ```@example MAIN
-clusterspecs = GroupViaClustering(optimal_radius_method = 1.0)
-mapper = AttractorsViaFeaturizing(
-    henon, featurizer, clusterspecs;
-    T = 6, threaded = true, Ttr = 500,
-)
-
-gap = GroupAcrossParameter(mapper; par_weight = 1.0)
-
-ps = range(0.6, 1.1; length = 11)
-pidx = 1
 sampler, = statespace_sampler(Random.MersenneTwister(1234);
-    min_bounds = [-2,-2], max_bounds = [2,2]
-)
+    min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
 
+rrange = range(0, 2; length = 21)
+ridx = 1
+
+featurizer(a, t) = a[end]
+clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
+mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
+gap = GroupAcrossParameter(mapper; par_weight = 1.0)
 fractions_curves, clusters_info = continuation(
-    gap, ps, pidx, sampler;
-    samples_per_parameter = 100, show_progress = false
+    gap, rrange, ridx, sampler; show_progress = false
 )
 fractions_curves
 ```
 
-Looking at the information of the "attractors" (here the clusters of the grouping procedure) makes it clear which label corresponds to which kind of attractor (fixed point, period 3, or divergence to infinity):
+Looking at the information of the "attractors" (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:
 
 ```@example MAIN
 clusters_info
