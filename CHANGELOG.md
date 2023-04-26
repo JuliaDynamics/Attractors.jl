@@ -1,5 +1,5 @@
 # v1.5
-- Our pre-print regarding the novel global stability analysis framework offered by Attractors.jl is now online: https://arxiv.org/abs/2304.12786
+- Our pre-print regarding the global stability analysis framework offered by Attractors.jl is now online: https://arxiv.org/abs/2304.12786
 - Package now has a CITATION.bib file.
 
 # v1.4

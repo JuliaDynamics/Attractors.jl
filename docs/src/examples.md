@@ -31,7 +31,7 @@ Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot 
 
 ```@example MAIN
 grid = (xg, yg)
-heatmap_basins_attractors(grid, basins, attractors)
+Main.heatmap_basins_attractors(grid, basins, attractors)
 ```
 
 Instead of computing the full basins, we could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
@@ -87,7 +87,7 @@ xg = yg = range(-4, 4; length = 201)
 grid = (xg, yg)
 basins, = basins_of_attraction(mapper, grid; show_progress = false)
 
-heatmap_basins_attractors(grid, basins, attractors)
+Main.heatmap_basins_attractors(grid, basins, attractors)
 ```
 
 ### Computing the uncertainty exponent
@@ -119,7 +119,7 @@ rmap = match_attractor_ids!(attractors_after, attractors)
 replace!(basins_after, rmap...)
 
 # now plot
-heatmap_basins_attractors(grid, basins_after, attractors_after)
+Main.heatmap_basins_attractors(grid, basins_after, attractors_after)
 ```
 
 And let's compute the tipping "probabilities":

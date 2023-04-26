@@ -6,7 +6,6 @@ Attractors
 
 ```@setup MAIN
 using CairoMakie, Attractors
-include("../basins_plotting.jl")
 ```
 
 ## Latest news
@@ -24,22 +23,3 @@ Our pre-print that discusses the global stability analysis framework offered by 
 3. For grouping features, there is a sub-infrastructure for instructing how to group features, which is governed by [`GroupingConfig`](@ref).
 4. The infrastructure of finding attractors and their basins fractions is then integrated into a brand new way of doing bifurcation analysis in the [`continuation`](@ref) function.
 5. See [Examples for Attractors.jl](@ref) for several applications in real world cases.
-
-## `DynamicalSystem` reference
-
-The kinds of dynamical systems that can be used in Attractors.jl are listed below for reference
-```@docs
-DynamicalSystem
-DeterministicIteratedMap
-CoupledODEs
-StroboscopicMap
-PoincareMap
-ProjectedDynamicalSystem
-ArbitrarySteppable
-```
-
-## `StateSpaceSet` reference
-
-```@docs
-StateSpaceSet
-```

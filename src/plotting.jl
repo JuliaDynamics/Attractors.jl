@@ -56,23 +56,28 @@ end
 
 
 function animate_attractors_continuation(
-        ds, attractors_info, fractions_curves, prange, pidx;
+        ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
         savename = "test.mp4", access = [1,2],
-        limits = (-1,3,-2,2),
-        framerate = 4, markersize = 10
+        limits = (0,1,0,1),
+        framerate = 4, markersize = 10,
+        ukeys = unique_keys(attractors_info),
+        colors = colors_from_keys(ukeys),
+        markers = markers_from_keys(ukeys),
+        Δt = isdiscretetime(ds) ? 1 : 0.05,
+        T = 100,
     )
-    ukeys = unique_keys(attractors_info)
     K = length(ukeys)
     fig = Figure()
     ax = Axis(fig[1,1]; limits)
-    fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1))
+    fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions", yaxisposition = :right)
     hidedecorations!(fracax)
+    fracax.ylabelvisible = true
 
-    colors = Dict(k => (to_color(COLORS[i]), 0.75) for (i, k) in enumerate(ukeys))
+    colors = Dict(k => (to_color(colors[k]), 0.75) for k in ukeys)
     att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
+    plotf! = isdiscretetime(ds) ? scatter! : scatterlines!
     for k in ukeys
-        scatter!(ax, att_obs[k]; color = colors[k],
-        label = "$k", markersize = markersize + rand(-4:4))
+        plotf!(ax, att_obs[k]; color = colors[k], label = "$k", markersize, marker = markers[k])
     end
     axislegend(ax)
 
@@ -80,7 +85,6 @@ function animate_attractors_continuation(
     heights = Observable(fill(0.1, K))
     colors = [to_color(COLORS[i]) for i in ukeys]
     barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = colors)
-    display(fig)
 
     record(fig, savename, eachindex(prange); framerate) do i
         p = prange[i]
@@ -91,7 +95,7 @@ function animate_attractors_continuation(
         heights[] = [get(fractions, k, 0) for k in ukeys]
 
         for (k, att) in attractors
-            tr, tvec = trajectory(ds, 1000, rand(vec(att)); Δt = 1)
+            tr, tvec = trajectory(ds, T, rand(vec(att)); Δt)
             att_obs[k][] = vec(tr[:, access])
             notify(att_obs[k])
         end
@@ -101,6 +105,7 @@ function animate_attractors_continuation(
         end
     end
 
+    return fig
 end
 
 function plot_attractors(attractors::Dict; access = [1,2], markersize = 12)
@@ -176,6 +181,11 @@ function colors_from_keys(ukeys)
         colors = append!(to_color.(COLORS), colors[1:(end-1)])
     end
     return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
+end
+function markers_from_keys(ukeys)
+    MARKERS = [:circle, :dtriangle, :rect, :star5, :xcross, :diamond]
+    markers = Dict(k => MARKERS[mod1(i, 6)] for (i, k) in enumerate(ukeys))
+    return markers
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
