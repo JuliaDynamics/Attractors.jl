@@ -103,11 +103,11 @@ if DO_EXTENSIVE_TESTS
                 return [100]
             end
         end
-        clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = 1.0)
+        clusterspecs = Attractors.GroupViaClustering(rescale_features = false, optimal_radius_method = 1.0)
         mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs;
-            T = 10, Ttr = 100, threaded = true
+            T = 10, Ttr = 2000, threaded = true
         )
-        gap = GroupAcrossParameter(mapper; par_weight = 1.0)
+        gap = GroupAcrossParameter(mapper; par_weight = 0.0)
         fractions_curves, attractors_info = continuation(
             gap, ps, pidx, sampler;
             samples_per_parameter = 100, show_progress = false
