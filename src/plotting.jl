@@ -124,6 +124,8 @@ end
 function basins_curves_plot(fractions_curves, prange; kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
+    ax.xlabel = "parameter"
+    ax.ylabel = "basins %"
     basins_curves_plot!(ax, fractions_curves, prange; kwargs...)
     return fig
 end
@@ -214,6 +216,7 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
+        axislegend_kwargs = (position = :lt,)
     )
     for i in eachindex(attractors_info)
         attractors = attractors_info[i]
@@ -223,7 +226,7 @@ function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange 
         end
     end
     xlims!(ax, minimum(prange), maximum(prange))
-    add_legend && axislegend(ax; unique = true)
+    add_legend && axislegend(ax; axislegend_kwargs..., unique = true)
     return
 end
 
