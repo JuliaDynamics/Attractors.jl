@@ -36,7 +36,7 @@ using Random
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-    gap = GroupAcrossParameter(mapper; par_weight = 1.0)
+    gap = GroupAcrossParameter(mapper; par_weight = 0.0)
     fractions_curves, attractors_info = continuation(
         gap, rrange, ridx, sampler; show_progress = false
     )
