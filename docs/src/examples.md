@@ -153,7 +153,7 @@ To compute the basins we define a three-dimensional grid and call on it
 ```julia
 # This computation takes about an hour
 xg = yg = zg = range(-6.0, 6.0; length = 251)
-mapper = AttractorsViaRecurrences(ds, (xg, yg, zg))
+mapper = AttractorsViaRecurrences(ds, (xg, yg, zg); sparse = false)
 basins, attractors = basins_of_attraction(mapper)
 attractors
 ```
