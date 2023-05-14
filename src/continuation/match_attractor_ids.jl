@@ -146,7 +146,7 @@ function match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
 end
 
 function _similarity_from_overlaps(b₊, ids₊, b₋, ids₋)
-    @assert size(b₋) == size(b₊)
+    size(b₋) == size(b₊) || error("Sizes of b₊ and  b₋ must match")
     distances = Dict{eltype(ids₊), Dict{eltype(ids₋), Float64}}()
     for i in ids₊
         Bi = findall(isequal(i), b₊)
