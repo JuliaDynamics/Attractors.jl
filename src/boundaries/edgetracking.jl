@@ -9,8 +9,8 @@ different basins of attraction. The system's `attractors` are specified as a dic
 `StateSpaceSet`s.
 
 ## Keyword arguments
-* `eps1 = 1e-7`: bisection distance threshold
-* `eps2 = 1e-6`: trajectory divergence distance threshold
+* `bisect_thresh = 1e-7`: bisection distance threshold
+* `diverge_thresh = 1e-6`: trajectory divergence distance threshold
 * `maxiter = 100`: maximum number of iterations before the algorithm stops
 * `abstol = 0.0`: convergence threshold for returned edge state (distance in state space)
 * `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection 
@@ -32,10 +32,10 @@ structures.
 The algorithm consists of two main steps: bisection and tracking. First, it iteratively 
 bisects along a
 straight line in state space between the intial states `u1` and `u2` to find the basin
-boundary. The bisection stops when the two updated states are less than `eps1` (in
+boundary. The bisection stops when the two updated states are less than `bisect_thresh` (in
 Euclidean distance) apart from each other. Next, a `ParallelDynamicalSystem` is initialized
 from these two updated states and integrated forward until the two trajectories diverge
-from each other by more than `eps2` (Euclidean distance). The two final states of the
+from each other by more than `diverge_thresh` (Euclidean distance). The two final states of the
 parallel integration are then used as new states `u1` and `u2` for a new bisection, and 
 so on, until a stopping criterion is fulfilled.
 
@@ -57,8 +57,8 @@ Output can be controlled via the `output_level` argument.
 [^3]: [Luarini and Bodai (2017)](https://iopscience.iop.org/article/10.1088/1361-6544/aa6b11)
 """
 function edgetracking(ds::DynamicalSystem, u1, u2, attractors::Dict;
-    eps1=1e-7,
-    eps2=1e-6,
+    bisect_thresh=1e-7,
+    diverge_thresh=1e-6,
     maxiter=100,
     abstol=0.0,
     tmax=Inf,
@@ -72,7 +72,7 @@ function edgetracking(ds::DynamicalSystem, u1, u2, attractors::Dict;
     mapper = AttractorsViaProximity(ds, attractors, ϵ_mapper; kwargs...)
     
     edgetracking(pds, mapper;
-        eps1=eps1, eps2=eps2, maxiter=maxiter, abstol=abstol, dt=dt, tmax=tmax,
+        bisect_thresh=bisect_thresh, diverge_thresh=diverge_thresh, maxiter=maxiter, abstol=abstol, dt=dt, tmax=tmax,
         output_level=output_level, verbose=verbose)
 end;
 
@@ -81,8 +81,8 @@ end;
 Low-level function for the [`edgetracking`](@ref) algorithm.
 """
 function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
-    eps1=1e-9,
-    eps2=1e-8,
+    bisect_thresh=1e-9,
+    diverge_thresh=1e-8,
     maxiter=100,
     abstol=0.0,
     dt=0.01,
@@ -92,7 +92,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     
     verbose && println("=== Starting edge tracking algorithm ===")
     
-    u1, u2 = bisect_to_edge(pds, mapper; eps=eps1)
+    u1, u2 = bisect_to_edge(pds, mapper; eps=bisect_thresh)
     edgestate = (u1 + u2)/2
     
     if output_level>0
@@ -111,7 +111,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         distance = dist(current_state(pds, 1) - current_state(pds, 2))
         T = 0
         # forward integration loop
-        while (distance < eps2) && (T < tmax)
+        while (distance < diverge_thresh) && (T < tmax)
             step!(pds, dt)
             distance = dist(current_state(pds, 1) - current_state(pds, 2))
             T += dt
@@ -119,7 +119,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
                 push!(edge, (current_state(pds, 1) + current_state(pds, 2))/2)
             end
         end
-        u1, u2 = bisect_to_edge(pds, mapper; eps=eps1)
+        u1, u2 = bisect_to_edge(pds, mapper; eps=bisect_thresh)
         edgestate = (u1 + u2)/2
         correction = dist(edgestate - state)
         counter += 1

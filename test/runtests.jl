@@ -21,12 +21,15 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     @testset "basins analysis" begin
         testfile("basins/tipping_points_tests.jl")
         testfile("basins/uncertainty_tests.jl")
-        testfile("basins/edgetracking_tests.jl")
     end
 
     @testset "continuation" begin
         testfile("continuation/matching_attractors.jl")
         testfile("continuation/recurrences_continuation.jl")
         testfile("continuation/grouping_continuation.jl")
+    end
+
+    @testset "boundaries" begin
+        testfile("boundaries/edgetracking_tests.jl")
     end
 end
