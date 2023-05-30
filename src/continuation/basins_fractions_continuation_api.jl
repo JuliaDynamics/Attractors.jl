@@ -57,4 +57,5 @@ function continuation end
 include("match_attractor_ids.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
+include("continuation_featurizing_findandmatch.jl")
 include("aggregate_attractor_fractions.jl")
