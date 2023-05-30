@@ -102,17 +102,30 @@ ValidICS = Union{AbstractStateSpaceSet, Function}
 #####################################################################################
 # We only extend the general `basins_fractions`, because the clustering method
 # cannot map individual initial conditions to attractors
+# additional_ics is for internal use in the findandmatch continuation
 function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
-        show_progress = true, N = 1000
+        show_progress = true, N = 1000, additional_ics::Union{ValidICS, Nothing} = nothing,
     )
     if typeof(ics) <: Function ics_copy = deepcopy(ics) end
     features = extract_features(mapper, ics; show_progress, N)
+    
+    if !isnothing(additional_ics)
+        additional_features = extract_features(mapper, additional_ics; show_progress, N)
+        features = vcat(features, additional_features)
+    end
+    
     group_labels = group_features(features, mapper.group_config)
     fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
+    
     if typeof(ics) <: Function ics = ics_copy end
+    
     attractors = extract_attractors(mapper, group_labels, ics)
     overwrite_dict!(mapper.attractors, attractors)
-    return fs, group_labels
+    if typeof(ics) <: AbstractStateSpaceSet
+        return fs, group_labels #note that changing this would need to change how continuation receives `fs`
+    else
+        return fs
+    end
 end
 
 #####################################################################################
