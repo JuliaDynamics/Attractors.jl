@@ -179,23 +179,21 @@ function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_re
     return
 end
 
-function attractor_type(A)
-    return "len=$(length(A))"
-    # if length(A) == 1
-    #     l =  "fixed p."
-    # else
-    #     # fractal dimension
-    #     D = grassberger_proccacia_dim(A)
-    #     @show D
-    #     if D < 0.1
-    #         l =  "fixed p."
-    #     elseif D < 1
-    #         l =  "limit c."
-    #     else
-    #         l =  "chaotic"
-    #     end
-    # end
-    # return "$(l)"
+function Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+        kwargs...
+    )
+    fig = Figure()
+    axb = Axis(fig[1,1])
+    axa = Axis(fig[2,1])
+    axa.xlabel = "parameter"
+    axa.ylabel = "attractors"
+    axb.ylabel = "basins %"
+    hidexdecorations!(axb; grid = false)
+
+    Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
+        attractor_to_real, prange; kwargs...,
+    )
+    return fig
 end
 
 function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
