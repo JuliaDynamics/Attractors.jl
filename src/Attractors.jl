@@ -18,4 +18,7 @@ include("basins/basins.jl")
 include("continuation/basins_fractions_continuation_api.jl")
 include("deprecated.jl")
 
+# Visualization (export names extended in the extension package)
+include("plotting.jl")
+
 end # module Attractors
