@@ -2,7 +2,7 @@
 
 In this page we document several plotting utility functions that have been created to make the visualization of the output of Attractors.jl seamless. See the examples page for usage of all these plotting functions.
 
-Note that all functions have an out-of-place and an in-place form, the in-place form always taking as a first input a pre-initialized `Axis` to plot in.
+Note that most functions have an out-of-place and an in-place form, the in-place form always taking as a first input a pre-initialized `Axis` to plot in while the out-of-place creates and returns a new figure object.
 
 E.g.,
 
@@ -14,14 +14,20 @@ heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
 ## Common plotting keywords
 Common keywords for plotting functions in Attractors.jl are:
 
-- `ukeys`: The keys (attractor ids, vector of integers) to use.
+- `ukeys`: the keys (attractor ids, vector of integers) to use.
   Only these ids will be visualized. By default all are used.
-- `colors`: A dictionary mapping attractor id to a color.
-  By default the JuliaDynamics colorscheme is used if less than 7 ids are present, otherwise
-  random colors form the `:darktest` colormap.
-- `labels = Dict(ukeys .=> ukeys)`: How to label each attractor.
-- `add_legend = length(ukeys) < 7`: Whether to add a legend mapping colors to labels.
+- `colors`: a dictionary mapping basin ids (i.e., including the `-1` key) to a color. By default the JuliaDynamics colorscheme is used if less than 7 ids are present, otherwise random colors from the `:darktest` colormap.
+- `labels = Dict(ukeys .=> ukeys)`: how to label each attractor.
+- `add_legend = length(ukeys) < 7`: whether to add a legend mapping colors to labels.
+- `access = [1, 2]`: indices of which dimensions of an attractor to select an visualize in a two-dimensional plot.
 
 ## Basins related
 
+```@docs
+heatmap_basins_attractors
+```
 ## Continuation related
+
+```@docs
+animate_attractors_continuation
+```

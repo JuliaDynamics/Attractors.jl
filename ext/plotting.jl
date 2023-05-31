@@ -1,18 +1,38 @@
-# Functions dedicated into plotting basins related stuff
+##########################################################################################
+# Auto colors/markers
+##########################################################################################
+using Random: shuffle!, Xoshiro
+function colors_from_keys(ukeys)
+    # Unfortunately, until `to_color` works with `Cycled`,
+    # we need to explitily add here some default colors...
+    COLORS = [
+        "#7143E0",
+        "#191E44",
+        "#0A9A84",
+        "#AF9327",
+        "#5F166D",
+        "#6C768C",
+    ]
+    if length(ukeys) ≤ length(COLORS)
+        colors = [COLORS[i] for i in eachindex(ukeys)]
+    else # keep colorscheme, but add extra random colors
+        n = length(ukeys) - length(COLORS)
+        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, n+1; categorical = true)))
+        colors = append!(to_color.(COLORS), colors[1:(end-1)])
+    end
+    return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
+end
+function markers_from_keys(ukeys)
+    MARKERS = [:circle, :dtriangle, :rect, :star5, :xcross, :diamond]
+    markers = Dict(k => MARKERS[mod1(i, 6)] for (i, k) in enumerate(ukeys))
+    return markers
+end
 
-# Unfortunately, until `to_color` works with `Cycled`,
-# we need to explitily add here some default colors...
-COLORS = [
-    "#7143E0",
-    "#191E44",
-    "#0A9A84",
-    "#AF9327",
-    "#5F166D",
-    "#6C768C",
-]
 
-
-function heatmap_basins_attractors(grid, basins::AbstractArray, attractors; kwargs...)
+##########################################################################################
+# Basins
+##########################################################################################
+function Attractors.heatmap_basins_attractors(grid, basins::AbstractArray, attractors; kwargs...)
     if length(size(basins)) != 2
         error("Heatmaps only work in two dimensional basins!")
     end
@@ -23,12 +43,12 @@ function heatmap_basins_attractors(grid, basins::AbstractArray, attractors; kwar
 end
 
 
-function heatmap_basins_attractors!(ax, grid, basins, attractors;
+function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
         ukeys = sort!(unique(basins)), # internal argument just for other keywords
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
-        projection_into_2D = (A) -> (A[:, 1], A[:, 2])
+        access = SVector(1, 2)
     )
 
     # Set up the (categorical) color map and colormap values
@@ -42,7 +62,7 @@ function heatmap_basins_attractors!(ax, grid, basins, attractors;
     for (i, k) ∈ enumerate(ukeys)
         k == -1 && continue
         A = attractors[k]
-        x, y = projection_into_2D(A)
+        x, y = columns(A[:, access])
         scatter!(ax, x, y;
             color = colors[k], markersize = 20,
             strokewidth = 3, strokecolor = :white,
@@ -55,9 +75,13 @@ function heatmap_basins_attractors!(ax, grid, basins, attractors;
 end
 
 
-function animate_attractors_continuation(
+
+##########################################################################################
+# Continuation
+##########################################################################################
+function Attractors.animate_attractors_continuation(
         ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
-        savename = "test.mp4", access = [1,2],
+        savename = "test.mp4", access = SVector(1, 2),
         limits = (0,1,0,1),
         framerate = 4, markersize = 10,
         ukeys = unique_keys(attractors_info),
@@ -66,6 +90,7 @@ function animate_attractors_continuation(
         Δt = isdiscretetime(ds) ? 1 : 0.05,
         T = 100,
     )
+    length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
     K = length(ukeys)
     fig = Figure()
     ax = Axis(fig[1,1]; limits)
@@ -73,17 +98,16 @@ function animate_attractors_continuation(
     hidedecorations!(fracax)
     fracax.ylabelvisible = true
 
-    colors = Dict(k => (to_color(colors[k]), 0.75) for k in ukeys)
+    # setup attractor axis (note we change colors to be transparent)
     att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
     plotf! = isdiscretetime(ds) ? scatter! : scatterlines!
     for k in ukeys
-        plotf!(ax, att_obs[k]; color = colors[k], label = "$k", markersize, marker = markers[k])
+        plotf!(ax, att_obs[k]; color = (colors[k], 0.75), label = "$k", markersize, marker = markers[k])
     end
     axislegend(ax)
 
     # setup fractions axis
     heights = Observable(fill(0.1, K))
-    colors = [to_color(COLORS[i]) for i in ukeys]
     barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = colors)
 
     record(fig, savename, eachindex(prange); framerate) do i
@@ -95,7 +119,7 @@ function animate_attractors_continuation(
         heights[] = [get(fractions, k, 0) for k in ukeys]
 
         for (k, att) in attractors
-            tr, tvec = trajectory(ds, T, rand(vec(att)); Δt)
+            tr, tvec = trajectory(ds, T, last(vec(att)); Δt)
             att_obs[k][] = vec(tr[:, access])
             notify(att_obs[k])
         end
@@ -104,22 +128,9 @@ function animate_attractors_continuation(
             att_obs[k][] = Point2f[]; notify(att_obs[k])
         end
     end
-
     return fig
 end
 
-function plot_attractors(attractors::Dict; access = [1,2], markersize = 12)
-    fig = Figure()
-    ax = Axis(fig[1,1])
-    ukeys = keys(attractors)
-    colors = Dict(k => (to_color(COLORS[i]), 0.75) for (i, k) in enumerate(ukeys))
-    for k in ukeys
-        scatter!(ax, vec(attractors[k][:, access]); color = colors[k],
-        label = "$k", markersize = markersize + rand(-2:4))
-    end
-    axislegend(ax)
-    return fig
-end
 
 function basins_curves_plot(fractions_curves, prange; kwargs...)
     fig = Figure()
@@ -171,23 +182,6 @@ function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_c
     ylims!(ax, 0, 1); xlims!(ax, minimum(prange), maximum(prange))
     add_legend && axislegend(ax; axislegend_kwargs...)
     return
-end
-
-using Random: shuffle!, Xoshiro
-function colors_from_keys(ukeys)
-    if length(ukeys) ≤ length(COLORS)
-        colors = [COLORS[i] for i in eachindex(ukeys)]
-    else # keep colorscheme, but add extra random colors
-        n = length(ukeys) - length(COLORS)
-        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, n+1; categorical = true)))
-        colors = append!(to_color.(COLORS), colors[1:(end-1)])
-    end
-    return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
-end
-function markers_from_keys(ukeys)
-    MARKERS = [:circle, :dtriangle, :rect, :star5, :xcross, :diamond]
-    markers = Dict(k => MARKERS[mod1(i, 6)] for (i, k) in enumerate(ukeys))
-    return markers
 end
 
 function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
