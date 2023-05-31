@@ -150,7 +150,7 @@ function fractions_series(fractions_curves, prange, ukeys = unique_keys(fraction
     return bands
 end
 
-function Attractors.plot_attractor_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+function Attractors.plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)

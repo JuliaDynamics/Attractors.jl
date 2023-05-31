@@ -63,6 +63,7 @@ i.e., visualize the output of [`continuation`](@ref).
 - Also all [common plotting keywords](@ref).
 """
 function plot_basins_curves end
+function plot_basins_curves! end
 export plot_basins_curves, plot_basins_curves!
 
 """
@@ -76,6 +77,7 @@ and returns a real number so that it can be plotted versus the parameter axis.
 Same keywords as [`plot_basins_curves`](@ref).
 """
 function plot_attractors_curves end
+function plot_attractors_curves! end
 export plot_attractors_curves, plot_attractors_curves!
 
 """
@@ -88,4 +90,5 @@ Convinience combination of [`plot_basins_curves`](@ref) and [`plot_attractors_cu
 in a two-panel plot that shares legend, colors, markers, etc.
 """
 function plot_basins_attractors_curves end
+function plot_basins_attractors_curves! end
 export plot_basins_attractors_curves, plot_basins_attractors_curves!
