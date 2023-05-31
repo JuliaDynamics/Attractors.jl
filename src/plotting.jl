@@ -64,3 +64,28 @@ i.e., visualize the output of [`continuation`](@ref).
 """
 function plot_basins_curves end
 export plot_basins_curves, plot_basins_curves!
+
+"""
+    plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(); kwargs...)
+
+Same as in [`plot_basins_curves`](@ref) but visualizes the attractor dependence on
+the parameter instead of their fraction.
+The function `attractor_to_real` takes as input a `StateSpaceSet` (attractor)
+and returns a real number so that it can be plotted versus the parameter axis.
+
+Same keywords as [`plot_basins_curves`](@ref).
+"""
+function plot_attractors_curves end
+export plot_attractors_curves, plot_attractors_curves!
+
+"""
+    plot_basins_attractors_curves(
+        fractions_curves, attractors_info, attractor_to_real [, prange]
+        kwargs...
+    )
+
+Convinience combination of [`plot_basins_curves`](@ref) and [`plot_attractors_curves`](@ref)
+in a two-panel plot that shares legend, colors, markers, etc.
+"""
+function plot_basins_attractors_curves end
+export plot_basins_attractors_curves, plot_basins_attractors_curves!

@@ -150,14 +150,14 @@ function fractions_series(fractions_curves, prange, ukeys = unique_keys(fraction
     return bands
 end
 
-function plot_attractor_curves!(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+function Attractors.plot_attractor_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)
     return fig
 end
 
-function plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
         ukeys = unique_keys(attractors_info), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
@@ -210,7 +210,7 @@ function create_attractor_names(ukeys, attractors_info, attractor_name)
 end
 
 
-function basins_attractors_curves_plot(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+function Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
         kwargs...
     )
     fig = Figure()
@@ -221,13 +221,13 @@ function basins_attractors_curves_plot(fractions_curves, attractors_info, attrac
     axb.ylabel = "basins %"
     hidexdecorations!(axb; grid = false)
 
-    basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+    Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
         attractor_to_real, prange; kwargs...,
     )
     return fig
 end
 
-function basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_info,
+function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
         attractor_to_real, prange = 1:length(attractors_info);
         ukeys = unique_keys(fractions_curves), # internal argument
         colors = colors_from_keys(ukeys),
