@@ -15,11 +15,12 @@ heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
 Common keywords for plotting functions in Attractors.jl are:
 
 - `ukeys`: the keys (attractor ids, vector of integers) to use.
+- `access = [1, 2]`: indices of which dimensions of an attractor to select an visualize in a two-dimensional plot.
   Only these ids will be visualized. By default all are used.
 - `colors`: a dictionary mapping basin ids (i.e., including the `-1` key) to a color. By default the JuliaDynamics colorscheme is used if less than 7 ids are present, otherwise random colors from the `:darktest` colormap.
+- `markers`: dictionary mapping attractor ids to markers they should be plotted as
 - `labels = Dict(ukeys .=> ukeys)`: how to label each attractor.
 - `add_legend = length(ukeys) < 7`: whether to add a legend mapping colors to labels.
-- `access = [1, 2]`: indices of which dimensions of an attractor to select an visualize in a two-dimensional plot.
 
 ## Basins related
 

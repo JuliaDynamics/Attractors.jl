@@ -37,9 +37,6 @@ while `ds, prange, pidx` are the input to [`continuation`](@ref).
 
 - `savename = "test.mp4"`: name of video output file
 - `framerate = 4`: framerate of video output
-- `markers`: dictionary mapping attractor ids to markers they should be plotted as;
-  attractors found are scatter-plotted with the given markers and additional
-  trajectories are integrated and plotted on top for better visual coverage
 - `markersize = 10`
 - `Δt, T`: propagated to `trajectory` for evolving an initial condition sampled
   from an attractor
@@ -47,3 +44,23 @@ while `ds, prange, pidx` are the input to [`continuation`](@ref).
 """
 function animate_attractors_continuation end
 export animate_attractors_continuation
+
+"""
+    plot_basins_curves(fractions_curves, prange = 1:length(); kwargs...)
+
+Plot the fractions of basins of attraction versus a parameter range,
+i.e., visualize the output of [`continuation`](@ref).
+
+## Keyword arguments
+
+- `style = :band`: how to visualize the basin fractions. Choices are
+  `:cumulative` for a band plot with cumulative sum = 1 or `:lines` for a scatterline
+  plot of each basin fraction
+- `separatorwidth = 1, separatorcolor = "white"`: adds a line separating the fractions
+  if the style is `:band`
+- `axislegend_kwargs = (position = :lt,)`: propagated to `axislegend` if a legend is added
+- `series_kwargs = NamedTuple()`: propagated to the band or scatterline plot
+- Also all [common plotting keywords](@ref).
+"""
+function plot_basins_curves end
+export plot_basins_curves, plot_basins_curves!

@@ -79,144 +79,99 @@ end
 ##########################################################################################
 # Continuation
 ##########################################################################################
-function Attractors.animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
-        savename = "test.mp4", access = SVector(1, 2),
-        limits = (0,1,0,1),
-        framerate = 4, markersize = 10,
-        ukeys = unique_keys(attractors_info),
-        colors = colors_from_keys(ukeys),
-        markers = markers_from_keys(ukeys),
-        Δt = isdiscretetime(ds) ? 1 : 0.05,
-        T = 100,
-    )
-    length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
-    K = length(ukeys)
-    fig = Figure()
-    ax = Axis(fig[1,1]; limits)
-    fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions", yaxisposition = :right)
-    hidedecorations!(fracax)
-    fracax.ylabelvisible = true
-
-    # setup attractor axis (note we change colors to be transparent)
-    att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
-    plotf! = isdiscretetime(ds) ? scatter! : scatterlines!
-    for k in ukeys
-        plotf!(ax, att_obs[k]; color = (colors[k], 0.75), label = "$k", markersize, marker = markers[k])
-    end
-    axislegend(ax)
-
-    # setup fractions axis
-    heights = Observable(fill(0.1, K))
-    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = colors)
-
-    record(fig, savename, eachindex(prange); framerate) do i
-        p = prange[i]
-        ax.title = "p = $p"
-        attractors = attractors_info[i]
-        fractions = fractions_curves[i]
-        set_parameter!(ds, pidx, p)
-        heights[] = [get(fractions, k, 0) for k in ukeys]
-
-        for (k, att) in attractors
-            tr, tvec = trajectory(ds, T, last(vec(att)); Δt)
-            att_obs[k][] = vec(tr[:, access])
-            notify(att_obs[k])
-        end
-        # also ensure that attractors that don't exist are cleared
-        for k in setdiff(ukeys, collect(keys(attractors)))
-            att_obs[k][] = Point2f[]; notify(att_obs[k])
-        end
-    end
-    return fig
-end
-
-
-function basins_curves_plot(fractions_curves, prange; kwargs...)
+function Attractors.plot_basins_curves(fractions_curves, prange; kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     ax.xlabel = "parameter"
     ax.ylabel = "basins %"
-    basins_curves_plot!(ax, fractions_curves, prange; kwargs...)
+    plot_basins_curves!(ax, fractions_curves, prange; kwargs...)
     return fig
 end
 
-"""
-    basins_curves_plot!(ax::Axis, fractions_curves, prange; kwargs...)
-
-Plot the fractions of basins of attraction versus a parameter range,
-i.e., visualize the output of [`continuation`](@ref).
-Keywords:
-```julia
-labels = Dict(ukeys .=> ukeys),
-colors = colors_from_keys(ukeys),
-separatorwidth = 1,
-separatorcolor = "white",
-add_legend = length(ukeys) < 8,
-```
-"""
-function basins_curves_plot!(ax, fractions_curves, prange = 1:length(fractions_curves);
+function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(fractions_curves);
         ukeys = unique_keys(fractions_curves), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 7,
-        axislegend_kwargs = (position = :lt,)
+        axislegend_kwargs = (position = :lt,),
+        series_kwargs = (markersize = 5, linewidth = 3),
+        markers = markers_from_keys(ukeys),
+        style = :band,
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = fractions_to_cumulative(fractions_curves, prange, ukeys)
-    for (j, k) in enumerate(ukeys)
-        if j == 1
-            l, u = 0, bands[j]
-            l = fill(0f0, length(u))
-        else
-            l, u = bands[j-1], bands[j]
+    bands = fractions_series(fractions_curves, prange, ukeys)
+    if style == :band
+          # transform to cumulative sum
+        for j in 2:length(bands)
+            bands[j] .+= bands[j-1]
         end
-        band!(ax, prange, l, u; color = colors[k], label = "$(labels[k])", linewidth = 4)
-        if separatorwidth > 0 && j < length(ukeys)
-            lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth)
+        for (j, k) in enumerate(ukeys)
+            if j == 1
+                l, u = 0, bands[j]
+                l = fill(0f0, length(u))
+            else
+                l, u = bands[j-1], bands[j]
+            end
+            band!(ax, prange, l, u;
+                color = colors[k], label = "$(labels[k])", linewidth = 4,
+                series_kwargs...
+            )
+            if separatorwidth > 0 && j < length(ukeys)
+                lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth)
+            end
         end
+        ylims!(ax, 0, 1)
+    elseif style == :lines
+        for (j, k) in enumerate(ukeys)
+            scatterlines!(ax, prange, bands[j];
+                color = colors[k], label = "$(labels[k])", marker = markers[k],
+                series_kwargs...
+            )
+        end
+    else
+        error()
     end
-    ylims!(ax, 0, 1); xlims!(ax, minimum(prange), maximum(prange))
+
+    xlims!(ax, minimum(prange), maximum(prange))
     add_legend && axislegend(ax; axislegend_kwargs...)
     return
 end
 
-function fractions_to_cumulative(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
+function fractions_series(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
     bands = [zeros(length(prange)) for _ in ukeys]
     for i in eachindex(fractions_curves)
         for (j, k) in enumerate(ukeys)
             bands[j][i] = get(fractions_curves[i], k, 0)
         end
     end
-    # transform to cumulative sum
-    for j in 2:length(bands)
-        bands[j] .+= bands[j-1]
-    end
     return bands
 end
 
-function attractors_curves_plot(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+function plot_attractor_curves!(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
-    attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange; kwargs...)
+    plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)
     return fig
 end
 
-function attractors_curves_plot!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+function plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
         ukeys = unique_keys(attractors_info), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
+        markers = markers_from_keys(ukeys),
         axislegend_kwargs = (position = :lt,)
     )
     for i in eachindex(attractors_info)
         attractors = attractors_info[i]
         for (k, A) in attractors
             val = attractor_to_real(A)
-            scatter!(ax, prange[i], val; color = colors[k], label = string(labels[k]))
+            scatter!(ax, prange[i], val;
+                color = colors[k], markers = markers[k], label = string(labels[k]),
+            )
         end
     end
     xlims!(ax, minimum(prange), maximum(prange))
@@ -284,10 +239,67 @@ function basins_attractors_curves_plot!(axb, axa, fractions_curves, attractors_i
         error("fractions and attractors don't have the same amount of entries")
     end
 
-    basins_curves_plot!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
+    plot_basins_curves!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
 
-    attractors_curves_plot!(axa, attractors_info, attractor_to_real, prange;
+    plot_attractors_curves!(axa, attractors_info, attractor_to_real, prange;
         ukeys, colors, add_legend = false, # coz its true for fractions
     )
     return
 end
+
+##########################################################################################
+# Videos
+##########################################################################################
+function Attractors.animate_attractors_continuation(
+        ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
+        savename = "test.mp4", access = SVector(1, 2),
+        limits = (0,1,0,1),
+        framerate = 4, markersize = 10,
+        ukeys = unique_keys(attractors_info),
+        colors = colors_from_keys(ukeys),
+        markers = markers_from_keys(ukeys),
+        Δt = isdiscretetime(ds) ? 1 : 0.05,
+        T = 100,
+    )
+    length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
+    K = length(ukeys)
+    fig = Figure()
+    ax = Axis(fig[1,1]; limits)
+    fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions", yaxisposition = :right)
+    hidedecorations!(fracax)
+    fracax.ylabelvisible = true
+
+    # setup attractor axis (note we change colors to be transparent)
+    att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
+    plotf! = isdiscretetime(ds) ? scatter! : scatterlines!
+    for k in ukeys
+        plotf!(ax, att_obs[k]; color = (colors[k], 0.75), label = "$k", markersize, marker = markers[k])
+    end
+    axislegend(ax)
+
+    # setup fractions axis
+    heights = Observable(fill(0.1, K))
+    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = colors)
+
+    record(fig, savename, eachindex(prange); framerate) do i
+        p = prange[i]
+        ax.title = "p = $p"
+        attractors = attractors_info[i]
+        fractions = fractions_curves[i]
+        set_parameter!(ds, pidx, p)
+        heights[] = [get(fractions, k, 0) for k in ukeys]
+
+        for (k, att) in attractors
+            tr, tvec = trajectory(ds, T, first(vec(att)); Δt)
+            att_obs[k][] = vec(tr[:, access])
+            notify(att_obs[k])
+        end
+        # also ensure that attractors that don't exist are cleared
+        for k in setdiff(ukeys, collect(keys(attractors)))
+            att_obs[k][] = Point2f[]; notify(att_obs[k])
+        end
+    end
+    return fig
+end
+
+
