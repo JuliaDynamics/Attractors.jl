@@ -1,3 +1,7 @@
+# v1.6
+- Attractors.jl moved to Julia 1.9+
+- Plotting utility functions are now part of the API using package extensions. They are exported, documented, and used in the examples.
+
 # v1.5
 - Our pre-print regarding the global stability analysis framework offered by Attractors.jl is now online: https://arxiv.org/abs/2304.12786
 - Package now has a CITATION.bib file.
