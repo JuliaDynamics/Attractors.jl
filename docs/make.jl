@@ -10,6 +10,7 @@ pages = [
     "attractors.md",
     "basins.md",
     "continuation.md",
+    "visualization.md",
     "examples.md",
 ]
 
