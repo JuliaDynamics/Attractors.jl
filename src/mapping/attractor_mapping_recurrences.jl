@@ -158,7 +158,7 @@ basins, making the computation faster as the grid is processed more and more.
     [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    basins = mapper.bsn_nfo.basins
+    basins = zeros(Int32, size(mapper.bsn_nfo.basins))
     if basins isa SparseArray;
         throw(ArgumentError("""
             Sparse version of AttractorsViaRecurrences is incompatible with
