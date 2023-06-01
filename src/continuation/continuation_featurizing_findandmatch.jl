@@ -42,11 +42,15 @@ function continuation(
         desc="Continuating basins fractions:", enabled=show_progress
     )
 
+    if ics isa Function
+        error("`ics` needs to be a Dataset.")
+    end
+
     (; mapper, distance, threshold) = fam
     reset!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
-    fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+    fs, _ = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_curves = [fs]
     # Furthermore some info about the attractors is stored and returned
@@ -70,7 +74,7 @@ function continuation(
             values(prev_attractors))...)) #dataset with ics seeded from previous attractors
         
         # Now perform basin fractions estimation as normal, utilizing found attractors
-        fs = basins_fractions(mapper, ics;
+        fs, _ = basins_fractions(mapper, ics;
             show_progress = false, N = samples_per_parameter, additional_ics
         )
         current_attractors = mapper.attractors

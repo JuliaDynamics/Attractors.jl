@@ -194,26 +194,4 @@ function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
     Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in uidxs if i ≠ -1)
 end
 
-function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics::Function)
-    uidxs = unique(i -> labels[i], eachindex(labels))
-    filter!(x->x!=-1, uidxs) 
-    ics_dataset = _generate_ics_from_index(uidxs, ics)
-    return Dict(labels[uidxs[i]] => trajectory(mapper.ds, mapper.total, ics_dataset[i];
-    Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in eachindex(uidxs))
-end
-
 extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors
-
-"""
-Receives `ics` as a sampler function, returns the initial conditions sampled from `ics` at
-`n` function calls, where `n` is given in idx. This means it will generate the ics for the given idxs.
-"""
-function _generate_ics_from_index(idxs::AbstractVector, ics::Function)
-    ics_dataset = Dataset( map(idx->_generate_ics_from_index(idx, ics), idxs) )
-end
-
-function _generate_ics_from_index(idx::Int, ics::Function)
-    ics_copy = deepcopy(ics) #I'm assuming here that deepcopies are cheap. Otherwise we could sort the idxs and call this function sequentially so that we would run each index just once.
-    for _ in 1:idx-1 ics_copy() end
-    ic = ics_copy() 
-end
