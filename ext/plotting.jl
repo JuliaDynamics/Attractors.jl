@@ -22,9 +22,11 @@ function colors_from_keys(ukeys)
     end
     return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
 end
+
 function markers_from_keys(ukeys)
-    MARKERS = [:circle, :dtriangle, :rect, :star5, :xcross, :diamond]
-    markers = Dict(k => MARKERS[mod1(i, 6)] for (i, k) in enumerate(ukeys))
+    MARKERS = [:circle, :dtriangle, :rect, :star5, :xcross, :diamond,
+    :hexagon, :cross, :pentagon, :ltriangle, :rtriangle, :hline, :vline, :star4,]
+    markers = Dict(k => MARKERS[mod1(i, length(MARKERS))] for (i, k) in enumerate(ukeys))
     return markers
 end
 
@@ -44,13 +46,15 @@ end
 
 
 function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
-        ukeys = sort!(unique(basins)), # internal argument just for other keywords
+        ukeys = unique(basins), # internal argument just for other keywords
         colors = colors_from_keys(ukeys),
+        markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
         access = SVector(1, 2)
     )
 
+    sort!(ukeys) # necessary because colormap is ordered
     # Set up the (categorical) color map and colormap values
     cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
     ids = 1:length(ukeys)
@@ -60,12 +64,13 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     )
     # Scatter attractors
     for (i, k) ∈ enumerate(ukeys)
-        k == -1 && continue
+        k ≤ 0 && continue
         A = attractors[k]
         x, y = columns(A[:, access])
         scatter!(ax, x, y;
             color = colors[k], markersize = 20,
-            strokewidth = 3, strokecolor = :white,
+            marker = markers[k],
+            strokewidth = 1.5, strokecolor = :white,
             label = "$(labels[k])",
         )
     end
@@ -104,7 +109,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
     end
     bands = fractions_series(fractions_curves, prange, ukeys)
     if style == :band
-          # transform to cumulative sum
+        # transform to cumulative sum
         for j in 2:length(bands)
             bands[j] .+= bands[j-1]
         end
