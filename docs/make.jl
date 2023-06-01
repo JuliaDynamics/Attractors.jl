@@ -10,6 +10,7 @@ pages = [
     "attractors.md",
     "basins.md",
     "continuation.md",
+    "visualization.md",
     "examples.md",
 ]
 
@@ -19,9 +20,6 @@ Downloads.download(
     joinpath(@__DIR__, "build_docs_with_style.jl")
 )
 include("build_docs_with_style.jl")
-
-# Special file
-include("../src/plotting.jl")
 
 build_docs_with_style(pages, Attractors, DynamicalSystemsBase, StateSpaceSets;
     expandfirst = ["index.md"],

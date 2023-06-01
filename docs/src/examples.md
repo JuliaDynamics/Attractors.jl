@@ -1,6 +1,6 @@
 # Examples for Attractors.jl
 
-Note that the examples utilize some convenience plotting functions offered by Attractors.jl. In Julia 1.9+ these come into scope when using `Makie` (or any of its backends such as `CairoMakie`). In older versions of Julia, you need to find them and run them manually in the `src/plotting.jl` file.
+Note that the examples utilize some convenience plotting functions offered by Attractors.jl which come into scope when using `Makie` (or any of its backends such as `CairoMakie`), see the [visualization utilities](@ref) for more.
 
 ## Newton's fractal (basins of 2D map)
 ```@example MAIN
@@ -30,8 +30,9 @@ attractors
 Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot the attractors. We do this in one step by utilizing one of the pre-defined plotting functions offered by Attractors.jl
 
 ```@example MAIN
+using CairoMakie
 grid = (xg, yg)
-Main.heatmap_basins_attractors(grid, basins, attractors)
+heatmap_basins_attractors(grid, basins, attractors)
 ```
 
 Instead of computing the full basins, we could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
@@ -62,7 +63,7 @@ In this section we will calculate the basins of attraction of the four-dimension
 
 First we need to load in the magnetic pendulum from the predefined dynamical systems library
 ```@example MAIN
-using Attractors
+using Attractors, CairoMakie
 using PredefinedDynamicalSystems
 ds = PredefinedDynamicalSystems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 ```
@@ -88,7 +89,7 @@ xg = yg = range(-4, 4; length = 201)
 grid = (xg, yg)
 basins, = basins_of_attraction(mapper, grid; show_progress = false)
 
-Main.heatmap_basins_attractors(grid, basins, attractors)
+heatmap_basins_attractors(grid, basins, attractors)
 ```
 
 ### Computing the uncertainty exponent
@@ -121,7 +122,7 @@ rmap = match_attractor_ids!(attractors_after, attractors)
 replace!(basins_after, rmap...)
 
 # now plot
-Main.heatmap_basins_attractors(grid, basins_after, attractors_after)
+heatmap_basins_attractors(grid, basins_after, attractors_after)
 ```
 
 And let's compute the tipping "probabilities":
@@ -255,7 +256,7 @@ We visualize them using a predefined function that you can find in `docs/basins_
 
 ```@example MAIN
 # careful; `prange` isn't a vector of reals!
-Main.basins_curves_plot(fractions_curves, γγ)
+basins_curves_plot(fractions_curves, γγ)
 ```
 
 
@@ -318,7 +319,7 @@ fractions_curves, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );
-Main.basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
+basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
 ```
 
 ![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
@@ -349,7 +350,7 @@ aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
     fractions_curves, attractors_info, featurizer, groupingconfig
 )
 
-Main.basins_curves_plot(aggregated_fractions, prange;
+basins_curves_plot(aggregated_fractions, prange;
     separatorwidth = 1, colors = ["green", "black"],
     labels = Dict(1 => "extinct", 2 => "alive"),
 )
