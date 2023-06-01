@@ -21,9 +21,6 @@ Downloads.download(
 )
 include("build_docs_with_style.jl")
 
-# Special file
-include("../src/plotting.jl")
-
 build_docs_with_style(pages, Attractors, DynamicalSystemsBase, StateSpaceSets;
     expandfirst = ["index.md"],
 )
