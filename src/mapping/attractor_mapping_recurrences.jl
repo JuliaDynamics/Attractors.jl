@@ -158,7 +158,8 @@ basins, making the computation faster as the grid is processed more and more.
     [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    basins = zeros(Int32, size(mapper.bsn_nfo.basins))
+    # basins = zeros(Int32, size(mapper.bsn_nfo.basins))
+    basins = mapper.bsn_nfo.basins
     if basins isa SparseArray;
         throw(ArgumentError("""
             Sparse version of AttractorsViaRecurrences is incompatible with
@@ -335,11 +336,13 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
             # """
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
         end
 
         step!(ds, bsn_nfo.Δt)
         if !successful_step(ds)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
         end
 
