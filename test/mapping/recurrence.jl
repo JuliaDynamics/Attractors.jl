@@ -92,4 +92,36 @@ end
     end
 end
 
+@testset "Escape to -1 test" begin
+# This is for testing if the chk safety keyword is working 
+# as intended. The output should be only -1.
+
+function dissipative_standard_map_rule(u, p, n)
+    x, y = u
+    ν, f₀ = p
+    s = x + y
+    xn = mod2pi(s)
+    yn = (1 - ν)*y + f₀*(sin(s))
+    return SVector(xn, yn)
+end
+
+p0 = (ν = 0.02, f0 = 4.0)
+u0 = [0.1, 0.1]
+ds = DeterministicIteratedMap(dissipative_standard_map_rule, u0, p0)
+density = 10
+xg = range(0, 2π; length = density+1)[1:end-1]
+yg = range(-ymax, ymax; length = density)
+grid = (xg, yg)
+
+mapper_kwargs = (
+    mx_chk_safety = 10,
+    sparse = false, # we want to compute full basins
+)
+
+mapper = AttractorsViaRecurrences(ds, grid; mapper_kwargs...)
+basins, attractors = basins_of_attraction(mapper)
+ids = sort!(unique(basins))
+@test ids... == -1
+
+end
 end # extensive tests clause
