@@ -73,10 +73,11 @@ end
             ics = StateSpaceSet([sampler() for i in 1:1000])
 
             mapper = AttractorsViaRecurrences(ds, grid; sparse=true, show_progress = false, kwargs...)
-            fs_sparse, approx_atts_sparse, labels_sparse = basins_fractions(mapper, ics; show_progress = false)
-
+            fs_sparse, labels_sparse = basins_fractions(mapper, ics; show_progress = false)
+            approx_atts_sparse = extract_attractors(mapper)
             mapper = AttractorsViaRecurrences(ds, grid; sparse=false, show_progress = false, kwargs...)
-            fs_non, approx_atts_non, labels_non = basins_fractions(mapper, ics; show_progress = false)
+            fs_non, labels_non = basins_fractions(mapper, ics; show_progress = false)
+            approx_atts_non = extract_attractors(mapper)
 
             @test fs_sparse == fs_non
             @test labels_sparse == labels_non
@@ -110,6 +111,7 @@ u0 = [0.1, 0.1]
 ds = DeterministicIteratedMap(dissipative_standard_map_rule, u0, p0)
 density = 10
 xg = range(0, 2π; length = density+1)[1:end-1]
+ymax = 2
 yg = range(-ymax, ymax; length = density)
 grid = (xg, yg)
 
