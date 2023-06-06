@@ -335,11 +335,13 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
             # """
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
         end
 
         step!(ds, bsn_nfo.Δt)
         if !successful_step(ds)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
         end
 
