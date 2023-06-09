@@ -55,8 +55,10 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
     ids = 1:length(ukeys)
     # Heatmap with appropriate colormap values
+    crange = -1 ∈ ukeys ? (ids[1]-1.5, ids[end]+0.5) : (ids[1]-0.5, ids[end]+0.5)
     heatmap!(ax, grid..., basins;
-        colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+        colormap = cmap, 
+        colorrange = crange,
     )
     # Scatter attractors
     for (i, k) ∈ enumerate(ukeys)
