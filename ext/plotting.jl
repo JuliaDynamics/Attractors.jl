@@ -53,16 +53,20 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
 
     # Set up the (categorical) color map and colormap values
     cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
+    # Heatmap with appropriate colormap values. We need to transform
+    # the basin array to one with values the sequential integers,
+    # because the colormap itself also has as values the sequential integers
     ids = 1:length(ukeys)
-    # Heatmap with appropriate colormap values
-    crange = -1 ∈ ukeys ? (ids[1]-1.5, ids[end]+0.5) : (ids[1]-0.5, ids[end]+0.5)
-    heatmap!(ax, grid..., basins;
-        colormap = cmap, 
-        colorrange = crange,
+    replace_dict = Dict(k => i for (i, k) in enumerate(ukeys))
+    basins_to_plot = replace(basins, replace_dict...)
+
+    heatmap!(ax, grid..., basins_to_plot;
+        colormap = cmap,
+        colorrange = (ids[1]-0.5, ids[end]+0.5),
     )
     # Scatter attractors
     for (i, k) ∈ enumerate(ukeys)
-        k == -1 && continue
+        k < 0 && continue
         A = attractors[k]
         x, y = columns(A[:, access])
         scatter!(ax, x, y;
