@@ -15,7 +15,7 @@ Description:
 
 """
 
-function check_basin(mapper, X, Y)
+function check_basin(mapper::AttractorMapper, X, Y)
     idx = mapper(X)
     idy = mapper(Y)
     if idx == idy
@@ -116,7 +116,7 @@ Description:
 """
 
 
-function mfs_brute_force(mapper, X, best_shock, best_dist, dim,  Ntries=10000)
+function mfs_brute_force(mapper::AttractorMapper, X, best_shock, best_dist, dim,  Ntries=10000)
     
     radius_dif = 100.
 
@@ -158,7 +158,6 @@ Description:
 function mfs(mapper::AttractorMapper, search_area, X, dim, n_iterations = 10000)
     best_shock, best_dist = random_pertubation(mapper, X, search_area, dim,  n_iterations)
     best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist, dim, n_iterations)
-
     return best_shock, best_dist
 end
 
