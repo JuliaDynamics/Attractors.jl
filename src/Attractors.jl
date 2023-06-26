@@ -21,4 +21,7 @@ include("deprecated.jl")
 # Visualization (export names extended in the extension package)
 include("plotting.jl")
 
+# minimal fatal shock algo
+include("mfs.jl")
+
 end # module Attractors
