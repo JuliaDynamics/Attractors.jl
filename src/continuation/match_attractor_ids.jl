@@ -7,8 +7,8 @@ export match_statespacesets!, match_basins_ids!, replacement_map, rematch!
 """
     match_statespacesets!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
 
-Given dictionaries `a₊, a₋` mapping IDs to attractors (`StateSpaceSet` instances),
-match attractor IDs in dictionary `a₊` so that its attractors that are the closest to
+Given dictionaries `a₊, a₋` mapping IDs to `StateSpaceSet` instances,
+match the IDs in dictionary `a₊` so that its sets that are the closest to
 those in dictionary `a₋` get assigned the same key as in `a₋`.
 Typically the +,- mean after and before some change of parameter of a system.
 
@@ -24,19 +24,22 @@ the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 
 ## Description
 
-When finding attractors and their fractions in DynamicalSystems.jl,
+When finding attractors and their fractions in Attractors.jl,
 different attractors get assigned different IDs. However
 which attractor gets which ID is somewhat arbitrary. Finding the attractors of the
 same system for slightly different parameters could label "similar" attractors (at
 the different parameters) with different IDs.
-`match_attractors_ids!` tries to "match" them by modifying the attractor IDs,
-i.e., the keys of the given dictionaries.
+`match_statespacesets!` tries to "match" them by modifying the IDs,
+i.e., the keys of the given dictionaries. Do note however that there is nothing
+in this function that is limited to attractors in the formal mathematical sense.
+Any dictionary with `StateSpaceSet` values is a valid input and these sets
+may represent attractors, trajectories, group of features, or anything else.
 
 The matching happens according to the output of the [`setsofsets_distances`](@ref)
 function with the keyword `distance`. `distance` can be whatever that function accepts,
 i.e., one of `Centroid, Hausdorff, StrictlyMinimumDistance` or any arbitrary user-
 provided function that given two sets it returns a positive number (their distance).
-Attractors are then matched according to this distance, with unique mapping.
+State space sets are then matched according to this distance, with unique mapping.
 The closest attractors (before and after) are mapped to each
 other, and are removed from the matching pool, and then the next pair with least
 remaining distance is matched, and so on.
