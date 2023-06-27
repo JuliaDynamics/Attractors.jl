@@ -1,6 +1,7 @@
 # v1.7
+
 - Some functions have been renamed for higher level of clarity (deprecations have been put in place):
-  - `match_attractors_ids!` -> `match_statespacesets!`
+  - `match_attractor_ids!` -> `match_statespacesets!`
   - `GroupAcrossParameter` -> `FeaturizeGroupAcrossParameter`.
 
 # v1.6

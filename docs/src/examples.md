@@ -117,7 +117,7 @@ basins_after, attractors_after = basins_of_attraction(
     mapper, (xg, yg); show_progress = false
 )
 # matching attractors is important!
-rmap = match_attractor_ids!(attractors_after, attractors)
+rmap = match_statespacesets!(attractors_after, attractors)
 # Don't forget to update the labels of the basins as well!
 replace!(basins_after, rmap...)
 
@@ -388,7 +388,7 @@ As expected, the fractions are each about 1/3 due to the system symmetry.
 
 ## Featurizing and grouping across parameters (MCBB)
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
-For this, we will use [`GroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
+For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
 Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
 
@@ -429,7 +429,7 @@ ridx = 1
 featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-gap = GroupAcrossParameter(mapper; par_weight = 1.0)
+gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
 fractions_curves, clusters_info = continuation(
     gap, rrange, ridx, sampler; show_progress = false
 )

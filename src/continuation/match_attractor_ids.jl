@@ -1,11 +1,11 @@
 # Notice this file uses heavily `dict_utils.jl`!
-export match_attractor_ids!, match_basins_ids!, replacement_map, rematch!
+export match_statespacesets!, match_basins_ids!, replacement_map, rematch!
 
 ###########################################################################################
 # Matching attractors and key swapping business
 ###########################################################################################
 """
-    match_attractor_ids!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
+    match_statespacesets!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
 
 Given dictionaries `a₊, a₋` mapping IDs to attractors (`StateSpaceSet` instances),
 match attractor IDs in dictionary `a₊` so that its attractors that are the closest to
@@ -45,29 +45,29 @@ Additionally, you can provide a `threshold` value. If the distance between two a
 is larger than this `threshold`, then it is guaranteed that the attractors will get assigned
 different key in the dictionary `a₊`.
 """
-function match_attractor_ids!(a₊::AbstractDict, a₋; kwargs...)
+function match_statespacesets!(a₊::AbstractDict, a₋; kwargs...)
     rmap = replacement_map(a₊, a₋; kwargs...)
     swap_dict_keys!(a₊, rmap)
     return rmap
 end
 
 """
-    match_attractor_ids!(attractors_info::Vector{<:Dict}; kwargs...)
+    match_statespacesets!(attractors_info::Vector{<:Dict}; kwargs...)
 
 Convenience method that progresses through the dictionaries in `attractors_info` in sequence
 and matches them using same keywords as the above method.
 """
-function match_attractor_ids!(as::Vector{<:Dict}; kwargs...)
+function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
     for i in 1:length(as)-1
         a₊, a₋ = as[i+1], as[i]
-        match_attractor_ids!(a₊, a₋; kwargs...)
+        match_statespacesets!(a₊, a₋; kwargs...)
     end
 end
 
 """
     replacement_map(a₊, a₋; distance = Centroid(), threshold = Inf) → rmap
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
-as explained in [`match_attractor_ids!`](@ref).
+as explained in [`match_statespacesets!`](@ref).
 """
 function replacement_map(a₊::Dict, a₋::Dict; distance = Centroid(), threshold = Inf)
     distances = setsofsets_distances(a₊, a₋, distance)
@@ -128,7 +128,7 @@ end
 ###########################################################################################
 """
     match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
-Similar to [`match_attractor_ids!`](@ref) but operate on basin arrays instead
+Similar to [`match_statespacesets!`](@ref) but operate on basin arrays instead
 (the arrays typically returned by [`basins_of_attraction`](@ref)).
 
 This method matches IDs of attractors whose basins of attraction before and after `b₋,b₊`
@@ -170,14 +170,14 @@ end
 
 Given the outputs of [`continuation`](@ref) witn [`RecurrencesFindAndMatch`](@ref),
 perform the matching step of the process again with the (possibly different) keywords
-that [`match_attractor_ids!`](@ref) accepts. This "re-matching" is possible because in
+that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
 [`continuation`](@ref) finding the attractors and their basins is a completely independent
 step from matching them with their IDs in the previous parameter value.
 """
 function rematch!(fractions_curves, attractors_info; kwargs...)
     for i in 1:length(attractors_info)-1
         a₊, a₋ = attractors_info[i+1], attractors_info[i]
-        rmap = match_attractor_ids!(a₊, a₋; kwargs...)
+        rmap = match_statespacesets!(a₊, a₋; kwargs...)
         swap_dict_keys!(fractions_curves[i+1], rmap)
     end
     rmap = retract_keys_to_consecutive(fractions_curves)
