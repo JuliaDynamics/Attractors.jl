@@ -21,7 +21,7 @@ RecurrencesFindAndMatch
 
 ## Matching attractors
 ```@docs
-match_attractor_ids!
+match_statespacesets!
 replacement_map
 set_distance
 setsofsets_distances
@@ -36,5 +36,5 @@ aggregate_attractor_fractions
 
 ## Grouping continuation
 ```@docs
-GroupAcrossParameter
+FeaturizeGroupAcrossParameter
 ```

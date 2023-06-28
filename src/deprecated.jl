@@ -14,6 +14,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
     """)
 end
 
-
 @deprecate RecurrencesSeededContinuation RecurrencesFindAndMatch
-@deprecate GroupAcrossParameterContinuation GroupAcrossParameter
+@deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter
+@deprecate match_attractor_ids! match_statespacesets!
+@deprecate GroupAcrossParameter FeaturizeGroupAcrossParameter

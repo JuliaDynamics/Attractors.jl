@@ -34,7 +34,7 @@ in [Extinction of a species in a multistable competition model](@ref).
    to be grouped later. Features expected by [`GroupingConfig`](@ref) are `SVector`.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
 5. `info_extraction`: a function accepting a vector of features and returning a description
-   of the features. I.e., exactly as in [`GroupAcrossParameter`](@ref).
+   of the features. I.e., exactly as in [`FeaturizeGroupAcrossParameter`](@ref).
    The 5th argument is optional and defaults to the centroid of the features.
 
 ## Return
