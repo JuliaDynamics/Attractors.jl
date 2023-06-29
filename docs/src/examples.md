@@ -216,6 +216,38 @@ record(fig, "cyclical_attractors.mp4", 1:length(a)) do i
 end
 ```
 
+## Basins of attraction of a Poincaré map
+
+[`PoincareMap`](@ref) is just another discrete time dynamical system within the DynamicalSystems.jl ecosystem. With respect to Attractors.jl functionality, there is nothing special about Poincaré maps. You simply initialize one use it like any other type of system. Let's continue from the above example  of the Thomas cyclical system
+```@example MAIN
+using Attractors
+using PredefinedDynamicalSystems
+ds = PredefinedDynamicalSystems.thomas_cyclical(b = 0.1665);
+```
+The three limit cycles attractors we have above become fixed points in the Poincaré map (for appropriately chosen hyperplanes). Since we already know the 3D structure of the basins, we can see that an appropriately chosen hyperplane is just the plane `z = 0`. Hence, we define a Poincaré map on this plane:
+
+```@example MAIN
+plane = (3, 0.0)
+pmap = PoincareMap(ds, plane)
+```
+
+We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the [`PoincareMap`](@ref), that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
+```@example MAIN
+xg = yg = range(-6.0, 6.0; length = 251)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(pmap, grid; sparse = false)
+```
+All that is left to do is to call [`basins_of_attraction`](@ref):
+
+```@example MAIN
+basins, attractors = basins_of_attraction(mapper; show_progress = false);
+```
+
+```@example MAIN
+heatmap_basins_attractors(grid, basins, attractors)
+```
+_just like in the example above, there is a fourth attractor with 0 basin fraction. This is an unstable fixed point, and exists exactly because we provided a grid with the unstable fixed point exactly on this grid_
+
 ## Basin fractions continuation in the magnetic pendulum
 
 Perhaps the simplest application of [`continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.

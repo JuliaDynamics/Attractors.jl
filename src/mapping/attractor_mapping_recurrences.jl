@@ -223,7 +223,9 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
-    D == G || error("Grid and dynamical system do not have the same dimension!")
+    if D ≠ G && (ds isa PoincareMap && G ∉ (D, D-1))
+        error("Grid and dynamical system do not have the same dimension!")
+    end
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
@@ -240,7 +242,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
         Δt,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int32, StateSpaceSet{D, T}}(),
+        Dict{Int32, StateSpaceSet{G, T}}(),
         Vector{CartesianIndex{G}}(),
     )
     reset_basins_counters!(bsn_nfo)
@@ -351,13 +353,11 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
         y = _possibly_reduced_state(new_y, ds, bsn_nfo.grid_minima)
         n = basin_cell_index(y, bsn_nfo)
-        u = current_state(ds) # in case we need the full state to save the attractor
-        cell_label = _identify_basin_of_cell!(bsn_nfo, n, u; kwargs...)
+        cell_label = _identify_basin_of_cell!(bsn_nfo, n, y; kwargs...)
     end
     return cell_label
 end
 
-# TODO: Once this is removed, the check D == G below needs to be adjusted.
 _possibly_reduced_state(y, ds, grid) = y
 function _possibly_reduced_state(y, ds::PoincareMap, grid)
     if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
@@ -381,7 +381,7 @@ Diverging trajectories and the trajectories staying outside the grid are coded w
 The label `1` (initial value) outlined in the paper is `0` here instead.
 """
 function _identify_basin_of_cell!(
-        bsn_nfo::BasinsInfo, n::CartesianIndex, u_full_state;
+        bsn_nfo::BasinsInfo, n::CartesianIndex, u;
         mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
         horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = true,
         show_progress = true, # show_progress only used when finding new attractor.
@@ -421,7 +421,7 @@ function _identify_basin_of_cell!(
 
         if bsn_nfo.consecutive_match >= mx_chk_fnd_att
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
-            store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_attractor!(bsn_nfo, u, show_progress)
             bsn_nfo.state = :att_found
             bsn_nfo.consecutive_match = 1
         end
@@ -435,12 +435,12 @@ function _identify_basin_of_cell!(
             # label this box as part of an attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             bsn_nfo.consecutive_match = 1
-            store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_attractor!(bsn_nfo, u, show_progress)
         elseif iseven(ic_label) && (bsn_nfo.consecutive_match <  mx_chk_loc_att)
             # We make sure we hit the attractor another mx_chk_loc_att consecutive times
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
-            store_once_per_cell || store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_once_per_cell || store_attractor!(bsn_nfo, u, show_progress)
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
             # We have checked the presence of an attractor: tidy up everything
             # and get a new cell
@@ -474,7 +474,7 @@ function _identify_basin_of_cell!(
 
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
-        if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u_full_state) > horizon_limit
+        if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
             relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
@@ -486,15 +486,15 @@ function _identify_basin_of_cell!(
 end
 
 function store_attractor!(bsn_nfo::BasinsInfo{D, Δ, T},
-    u_full_state, show_progress = true) where {D, Δ, T}
+    u, show_progress = true) where {D, Δ, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
     if haskey(bsn_nfo.attractors, attractor_id)
-        push!(bsn_nfo.attractors[attractor_id], V(u_full_state))
+        push!(bsn_nfo.attractors[attractor_id], V(u))
     else
         # initialize container for new attractor
-        bsn_nfo.attractors[attractor_id] = StateSpaceSet([V(u_full_state)])
+        bsn_nfo.attractors[attractor_id] = StateSpaceSet([V(u)])
     end
 end
 
