@@ -117,7 +117,7 @@ basins_after, attractors_after = basins_of_attraction(
     mapper, (xg, yg); show_progress = false
 )
 # matching attractors is important!
-rmap = match_attractor_ids!(attractors_after, attractors)
+rmap = match_statespacesets!(attractors_after, attractors)
 # Don't forget to update the labels of the basins as well!
 replace!(basins_after, rmap...)
 
@@ -215,6 +215,38 @@ record(fig, "cyclical_attractors.mp4", 1:length(a)) do i
     ax.azimuth = a[i]
 end
 ```
+
+## Basins of attraction of a Poincaré map
+
+[`PoincareMap`](@ref) is just another discrete time dynamical system within the DynamicalSystems.jl ecosystem. With respect to Attractors.jl functionality, there is nothing special about Poincaré maps. You simply initialize one use it like any other type of system. Let's continue from the above example  of the Thomas cyclical system
+```@example MAIN
+using Attractors
+using PredefinedDynamicalSystems
+ds = PredefinedDynamicalSystems.thomas_cyclical(b = 0.1665);
+```
+The three limit cycles attractors we have above become fixed points in the Poincaré map (for appropriately chosen hyperplanes). Since we already know the 3D structure of the basins, we can see that an appropriately chosen hyperplane is just the plane `z = 0`. Hence, we define a Poincaré map on this plane:
+
+```@example MAIN
+plane = (3, 0.0)
+pmap = PoincareMap(ds, plane)
+```
+
+We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the [`PoincareMap`](@ref), that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
+```@example MAIN
+xg = yg = range(-6.0, 6.0; length = 251)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(pmap, grid; sparse = false)
+```
+All that is left to do is to call [`basins_of_attraction`](@ref):
+
+```@example MAIN
+basins, attractors = basins_of_attraction(mapper; show_progress = false);
+```
+
+```@example MAIN
+heatmap_basins_attractors(grid, basins, attractors)
+```
+_just like in the example above, there is a fourth attractor with 0 basin fraction. This is an unstable fixed point, and exists exactly because we provided a grid with the unstable fixed point exactly on this grid_
 
 ## Basin fractions continuation in the magnetic pendulum
 
@@ -388,7 +420,7 @@ As expected, the fractions are each about 1/3 due to the system symmetry.
 
 ## Featurizing and grouping across parameters (MCBB)
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
-For this, we will use [`GroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
+For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
 Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
 
@@ -429,7 +461,7 @@ ridx = 1
 featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
-gap = GroupAcrossParameter(mapper; par_weight = 1.0)
+gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
 fractions_curves, clusters_info = continuation(
     gap, rrange, ridx, sampler; show_progress = false
 )

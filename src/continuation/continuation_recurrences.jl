@@ -11,7 +11,7 @@ using Random: MersenneTwister
 
 A method for [`continuation`](@ref) as in [^Datseris2023] that is based on the
 recurrences-based algorithm for finding attractors ([`AttractorsViaRecurrences`](@ref))
-and the "matching attractors" functionality offered by [`match_attractor_ids!`](@ref).
+and the "matching attractors" functionality offered by [`match_statespacesets!`](@ref).
 
 You can use `RAFM` as an alias.
 
@@ -31,9 +31,9 @@ using the [`AttractorsViaRecurrences`](@ref) mapper.
 I.e., exactly as in [`basins_fractions`](@ref).
 
 Then, the newly found attractors (and their fractions) are "matched" to the previous ones.
-I.e., their _IDs are changed_, according to the [`match_attractor_ids!`](@ref) function.
+I.e., their _IDs are changed_, according to the [`match_statespacesets!`](@ref) function.
 Typically, the matching process matches attractor IDs that are closest in state space
-distance, but more options are possible, see [`match_attractor_ids!`](@ref).
+distance, but more options are possible, see [`match_statespacesets!`](@ref).
 
 This process continues until all parameter values are exhausted and for each parameter
 value the attractors and their fractions are found.
@@ -44,7 +44,7 @@ outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
 
 ## Keyword arguments
 
-- `distance, threshold`: propagated to [`match_attractor_ids!`](@ref).
+- `distance, threshold`: propagated to [`match_statespacesets!`](@ref).
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
   `attractors_info` in [`continuation`](@ref).
@@ -146,7 +146,7 @@ function continuation(
         if !isempty(current_attractors) && !isempty(prev_attractors)
             # If there are any attractors,
             # match with previous attractors before storing anything!
-            rmap = match_attractor_ids!(
+            rmap = match_statespacesets!(
                 current_attractors, prev_attractors; distance, threshold
             )
             swap_dict_keys!(fs, rmap)

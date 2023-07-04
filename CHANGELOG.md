@@ -1,3 +1,12 @@
+# v1.7.1
+- Fixed issue where poincare map was not working with basins of attraction as intended (sampling points directly on the hyperplane)
+
+# v1.7
+
+- Some functions have been renamed for higher level of clarity (deprecations have been put in place):
+  - `match_attractor_ids!` -> `match_statespacesets!`
+  - `GroupAcrossParameter` -> `FeaturizeGroupAcrossParameter`.
+
 # v1.6
 - Attractors.jl moved to Julia 1.9+
 - Plotting utility functions are now part of the API using package extensions. They are exported, documented, and used in the examples.
