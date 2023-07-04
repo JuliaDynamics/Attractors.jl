@@ -1,4 +1,5 @@
 
+export minimal_fatal_shock
 
 
 function random_point_on_sphere(radius, n)
@@ -31,6 +32,7 @@ Output:
     best_dist: norm of the best shock found
 """
 
+
 function random_pertubation(mapper::AttractorMapper, X, search_area, dim, id_x;  total_iterations=10000)
     best_dist = Inf
     best_shock = nothing
@@ -38,7 +40,7 @@ function random_pertubation(mapper::AttractorMapper, X, search_area, dim, id_x; 
         u0 = search_area[1] .+ rand(dim) .* (search_area[2] .- search_area[1])
         shock = X + u0
         if !(id_x == mapper(shock))
-            dist = LinearAlgebra.norm(u0)
+            dist = norm(u0)
             if dist < best_dist
                 best_dist = dist
                 best_shock = u0
@@ -149,8 +151,8 @@ function minimal_fatal_shock(mapper::AttractorMapper, X, search_area; dimension,
     end
 
     if algorithm == :random 
-        best_shock, best_dist = random_pertubation(mapper, X, search_area,dimension, id_x;  total_iterations)
-        best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist,dimension, id_x,  total_iterations)
+        best_shock, best_dist = random_pertubation(mapper, X, search_area,dimension, id_x;  total_iterations = total_iterations)
+        best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist,dimension, id_x,  total_iterations )
     elseif algorithm == :bboxopt
         result = bboptimize(objective_function; SearchRange = search_area, NumDimensions =dimension)
         best_shock = best_candidate(result)
