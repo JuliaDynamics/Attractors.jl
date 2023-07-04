@@ -43,6 +43,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         end
         # Generic test
         fs = basins_fractions(mapper, sampler; show_progress = false)
+        approx_atts_sampler = extract_attractors(mapper)
         for k in keys(fs)
             @test 0 ≤ fs[k] ≤ 1
         end
@@ -66,6 +67,10 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
                 @test abs(fs[k] - expected_fs_raw[k]) ≤ err
             end
         end
+        
+        @test length(approx_atts_sampler) == length(approx_atts)
+        @test all(approx_atts_sampler[i] == approx_atts[i] for i in eachindex(approx_atts_sampler) )
+        
         # `basins_of_attraction` tests
         basins, approx_atts = basins_of_attraction(mapper, reduced_grid; show_progress=false)
         @test length(size(basins)) == length(grid)
