@@ -1,22 +1,6 @@
 
 
 
-""" 
-    random_point_on_sphere(radius, n)
-
-Input:
-    radius: radius of the sphere
-    n: dimension of the sphere
-Output:
-    coordinates of a random point on the n-sphere
-
-Description:
-    This function generates a random point on the n-sphere of radius radius.
-    It does so by generating n-1 random angles and then calculating the last coordinate
-    using the formula for the n-sphere.
-"""
-
-
 function random_point_on_sphere(radius, n)
     angles = rand(n-1) * 2π  
 
@@ -68,6 +52,12 @@ end
 """ 
     mfs_brute_force(mapper, X, best_shock, best_dist, dim,  total_iterations=10000)
 
+
+This function works on the results obtained by random_pertubation(). It starts from the best shock found so far and tries to find a better one 
+by continuously reducing the radius of the sphere on the surface of which it generates random pertubations. If pertubation with the same basin of attraction is found,
+it updates the best shock found so far and reduces the radius of the sphere. 
+It repeats this process total_iterations times and returns the best pertubation found.
+
 Input:
     mapper: AttractorMapper
     X: initial point to test
@@ -80,11 +70,7 @@ Output:
     best_shock: vector of the best shock found
     best_dist: norm of the best shock found
 
-Description:
-    This function works on the results obtained by random_pertubation(). It starts from the best shock found so far and tries to find a better one 
-    by continuously reducing the radius of the sphere on the surface of which it generates random pertubations. If pertubation with the same basin of attraction is found,
-    it updates the best shock found so far and reduces the radius of the sphere. 
-    It repeats this process total_iterations times and returns the best pertubation found.
+
 """
 
 
@@ -124,46 +110,55 @@ end
 
 
 """
-    minimal_fatal_shock(mapper, search_area, X, dim, total_iterations = 10000)
+    minimal_fatal_shock(mapper::AttractorMapper, X, search_area; dimension, total_iterations = 10000, algorithm = :random)  
+
+Runs the minimal fatal shock algorithm on the initial point X.
+Three choises available for the algorithm (keywords algorithm = ...): random, bboxopt and combined.
+In "random" algorithm it generates random pertubation of X and then trying to find a better one by using the brute force method.
+In "bboxopt" it uses algorithms decribed in BlackBoxOpt.jl julia package to perform derivative free constraint optimization iof finding minimal fatal shock.
+The "combined" method is used to initially run "random" algorithm and then provide obtained guess to the "bboxopt" method for better accuracy and optimization. 
+
+
 
 Input:
     mapper: AttractorMapper
-    search_area: array of two points defining the search area
+    search_area: array of tuples, by specifying single value e.g. [(-1.5, 1.5)] you specify this value for each of the variable, or you may specify separetely 
+search area for each of your states by, for example in 2 dimensions, [(-1.5, 1.5), (-1, 1)]
     X: initial point to test
-    dim: dimension of the system
+    dimension: dimension of your input system
     total_iterations: number of iterations to run each step of the algorithm, default = 10000
-
+    algorithm: random, bboxopt or combined.  
 Output:
     best_shock: vector of the best shock found
     best_dist: norm of the best shock found
 
-Description:
-    This function runs the minimal fatal shock algorithm on the initial point X.
-    It does so by first generating a random pertubation of X and then trying to find a better one by using the brute force method.
+
 """
 
-
-function minimal_fatal_shock(mapper::AttractorMapper, X, search_area; total_iterations = 10000, algorithm = :random)
+function minimal_fatal_shock(mapper::AttractorMapper, X, search_area; dimension, total_iterations = 10000, algorithm = :random)
 
 
     id_x = mapper(X)
-    dim = mapper.ds
+    
+    if length(search_area) == 1
+        search_area = [search_area[1] for _ in 1:dimension]
+    end
 
-    function objective_function(perturbation)
+    function objective_function(perturbation)  # we need this declaration here due to BlackBoxOpt specifics of input
         return mfs_objective(perturbation, X, id_x, mapper)
     end
 
-    if algorithm == random 
-        best_shock, best_dist = random_pertubation(mapper, X, search_area, dim, id_x;  total_iterations)
-        best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist, dim, id_x,  total_iterations)
-    elseif algorithm == bboxopt
-        result = bboptimize(objective_function; SearchRange = [search_area for _ in dim], NumDimensions = dim)
+    if algorithm == :random 
+        best_shock, best_dist = random_pertubation(mapper, X, search_area,dimension, id_x;  total_iterations)
+        best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist,dimension, id_x,  total_iterations)
+    elseif algorithm == :bboxopt
+        result = bboptimize(objective_function; SearchRange = search_area, NumDimensions =dimension)
         best_shock = best_candidate(result)
         best_dist = LinearAlgebra.norm(best_shock)
-    elseif algorithm == combined
-        best_shock, best_dist = random_pertubation(mapper, X, search_area, dim, id_x;  total_iterations)
-        best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist, dim, id_x,  total_iterations)
-        result = bboptimize(objective_function, best_shock; SearchRange = [search_area for _ in dim], NumDimensions = dim)
+    elseif algorithm == :combined
+        best_shock, best_dist = random_pertubation(mapper, X, search_area,dimension, id_x;  total_iterations)
+        best_shock, best_dist = mfs_brute_force(mapper, X, best_shock, best_dist,dimension, id_x,  total_iterations)
+        result = bboptimize(objective_function, best_shock; SearchRange = search_area, NumDimensions =dimension)
         best_shock = best_candidate(result)
         best_dist = LinearAlgebra.norm(best_shock)
     else
@@ -172,6 +167,4 @@ function minimal_fatal_shock(mapper::AttractorMapper, X, search_area; total_iter
 
     return best_shock, best_dist
 end
-
-
 
