@@ -5,6 +5,7 @@ repo = "https://github.com/JuliaDynamics/Attractors.jl.git"
 version = "1.6.1"
 
 [deps]
+BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 ComplexityMeasures = "ab4b797d-85ee-42ba-b621-05d793b346a2"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
@@ -12,14 +13,14 @@ Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Mmap = "a63ad114-7e13-5084-954f-fe012c677804"
+NOMAD = "02130f1c-4665-5b79-af82-ff1385104aa0"
 Neighborhood = "645ca80c-8b79-4109-87ea-e1f58159d116"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
+PredefinedDynamicalSystems = "31e2f376-db9e-427a-b76e-a14f56347a14"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 StateSpaceSets = "40b095a5-5852-4c12-98c7-d43bf788e795"
-BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
-
 
 [weakdeps]
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
@@ -28,6 +29,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 AttractorsVisualizations = "Makie"
 
 [compat]
+BlackBoxOptim = "0.6"
 Clustering = "0.15"
 ComplexityMeasures = "2.3"
 Distances = "0.7, 0.8, 0.9, 0.10"
@@ -40,5 +42,3 @@ ProgressMeter = "1.7"
 Reexport = "1"
 StateSpaceSets = "1"
 julia = "1.9"
-BlackBoxOptim = "0.6"
-
