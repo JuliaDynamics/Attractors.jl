@@ -1,7 +1,12 @@
 using Test
 using Attractors
 using Distributions
+using PredefinedDynamicalSystems
 
+
+###############################################
+#           Newton 2D fractal setup           #
+###############################################
 function newton_map(z, p, n)
     z1 = z[1] + im*z[2]
     dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
@@ -62,7 +67,7 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
     @testset begin
         test = true
         for i in (keys(randomised_r)) 
-            println(randomised_r[i][2] <= 0.5)
+        
             if randomised_r[i][2] >= 0.5 || newton(randomised_r[i][1] + i) == newton(i)
                 test = false
             end
@@ -82,3 +87,44 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
         @test test
     end
 end
+
+
+
+###############################################
+#           Magnetic 2D                       #
+###############################################
+
+
+ds = PredefinedDynamicalSystems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+
+psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
+
+attractors = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
+
+mapper = AttractorsViaProximity(psys, attractors)
+
+xg = yg = range(-4, 4; length = 201)
+grid = (xg, yg)
+basins, attractors = basins_of_attraction(mapper, grid; show_progress = false)
+
+attractor3 = ((collect(values(attractors)))[3].data)
+attractor2 = ((collect(values(attractors)))[2].data)
+attractor1 = ((collect(values(attractors)))[1].data)
+
+
+randomised_r = Dict([atr => Attractors.minimal_fatal_shock(mapper, atr, [(-4, 4), (-4, 4)], algo_r) 
+                                         for atr in [attractor1[1], attractor2[1], attractor3[1]]])
+
+@test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
+
+
+blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper, atr, [(-4, 4), (-4, 4)], algo_bb) 
+                                         for atr in [attractor1[1], attractor2[1], attractor3[1]]])
+
+
+@test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
+
+
+
+
+
