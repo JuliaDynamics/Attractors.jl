@@ -8,7 +8,7 @@ export minimal_fatal_shock, MFSBruteForce, MFSBlackBoxOptim
 """
     minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm::Union{MFSBruteForce, MFSBlackBoxOptim})  
 
-Runs the minimal fatal shock algorithm on the initial point `u0`. Two algorithms are available: MFSBruteForce and MFSBlackBoxOptim.
+Runs the minimal fatal shock algorithm on the initial point `u0` and outputs tuple `minimal fatal shock` and its `norm`. Two algorithms are available: MFSBruteForce and MFSBlackBoxOptim.
 MFSBruteForce is an algorithm based on randomised search with two consequent steps: random initialization and sphere radius reduction.
 MFSBlackBoxOptim is an algorithm based derivative free optimization. It uses BlackBoxOptim package to find the best shock.
 
@@ -29,10 +29,6 @@ the more precise values may be obtained.
 `MaxSteps` maximum number of steps for the optimization algorithm, default = 10000.
 `penalty` penalty value for the objective function, allows to adjust optimization algorithm to find the minimal fatal shock, `default = 1000.0`
 
-
-## Output
-`best_shock` - minimal fatal shock.
-`best_dist` norm of the minimal fatal shock.
 
 ## Description
 The minimal fatal shock algorithm is used to find the smallest perturbation of the initial point `u0` that will 
