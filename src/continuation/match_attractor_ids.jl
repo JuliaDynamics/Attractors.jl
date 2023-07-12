@@ -39,10 +39,11 @@ The matching happens according to the output of the [`setsofsets_distances`](@re
 function with the keyword `distance`. `distance` can be whatever that function accepts,
 i.e., one of `Centroid, Hausdorff, StrictlyMinimumDistance` or any arbitrary user-
 provided function that given two sets it returns a positive number (their distance).
-State space sets are then matched according to this distance, with unique mapping.
-The closest attractors (before and after) are mapped to each
-other, and are removed from the matching pool, and then the next pair with least
-remaining distance is matched, and so on.
+State space sets are then matched according to this distance.
+First, all possible pairs (old, new) are sorted according to their distance.
+the pair with smallest distance is matched. Matched pairs are removed from the
+matching pool to ensure a unique mapping. Then, the next pair with least
+remaining distance is matched, and the process repeats until all pairs are exhausted.
 
 Additionally, you can provide a `threshold` value. If the distance between two attractors
 is larger than this `threshold`, then it is guaranteed that the attractors will get assigned
@@ -100,7 +101,7 @@ function replacement_map(keys₊, keys₋, distances::Dict, threshold)
     used_keys₋ = eltype(keys₋)[] # stores keys of a₋ already used
     for (oldkey, newkey, dist) in sorted_keys_with_distances
         (oldkey ∈ done_keys₊ || newkey ∈ used_keys₋) && continue
-        if  dist < threshold
+        if dist < threshold
             push!(used_keys₋, newkey)
         else
             # The distance exceeds threshold, so we will assign a new key
