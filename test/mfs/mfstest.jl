@@ -26,7 +26,8 @@ newton = AttractorsViaRecurrences(ds, (xg, yg);
 
 attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
 algo_r = Attractors.MFSBruteForce()
-randomised = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
+
+randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
 
 algo_bb = Attractors.MFSBlackBoxOptim()
 blackbox = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in attractors])
@@ -131,6 +132,25 @@ randomised_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 
     @test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
 end
 
+
+
+@testset "3D symmetry" begin
+
+    ds = Systems.thomas_cyclical(b = 0.1665)
+    xg = yg = zg = range(-6.0, 6.0; length = 251)
+    mapper_3d = AttractorsViaRecurrences(ds, (xg, yg, zg); sparse = false)
+
+    ux = SVector(1.5, 0, 0)
+    uy = SVector(0, 1.5, 0)
+
+    algo_bb = Attractors.MFSBlackBoxOptim(MaxSteps = 50000)
+
+    ux_res = minimal_fatal_shock(mapper, ux,  (-6.0,6.0), algo_bb)
+    uy_res = minimal_fatal_shock(mapper, uy,  (-6.0,6.0), algo_bb)
+
+    @test (ux_res[2]-uy_res[2]) < 0.0001
+
+end
 
 
 

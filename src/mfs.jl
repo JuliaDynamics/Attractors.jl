@@ -4,7 +4,53 @@ using StateSpaceSets: statespace_sampler
 export minimal_fatal_shock, MFSBruteForce, MFSBlackBoxOptim
 
 
+"""
+    MFSBruteForce(; kwargs...)
 
+Initialize the optimization algorithm used in `minimal_fatal_shock` function. It is based on randomised search with two consequent steps: random initialization and sphere radius reduction.
+
+## Keyword arguments
+`initial_iterations` number of random pertubations to try in the first step of the algorithm, default = 10000.
+`sphere_iterations` number of steps while initializing random points on hypersphere and decreasing its radius, default = 10000.
+`sphere_decrease_step` factor by which the radius of the hypersphere is decreased, default = 1000.0, the higher the value, 
+the more precise values may be obtained.
+
+"""
+mutable struct MFSBruteForce 
+    initial_iterations::Int64
+    sphere_iterations::Int64
+    sphere_decrease_step::Float64
+end
+
+function MFSBruteForce(; initial_iterations = 10000, sphere_iterations = 10000, sphere_decrease_step = 100.0)
+    MFSBruteForce(initial_iterations, sphere_iterations, sphere_decrease_step)
+end
+
+
+
+"""
+    MFSBlackBoxOptim(; kwargs...)
+
+Initialize the optimization algorithm used in `minimal_fatal_shock` function. It uses BlackBoxOptim.jl package to find the best shock.
+It is based on derivative free optimization and uses the objective function with penalties to find the minimal fatal shock.
+
+## Keyword arguments
+`guess` vector of initial guesses for the optimization algorithm, `default = []`.
+`MaxSteps` maximum number of steps for the optimization algorithm, default = 10000.
+`penalty` penalty value for the objective function, allows to adjust optimization algorithm to find the minimal fatal shock, `default = 1000.0`
+`random_algo` algorithm used to find the initial guess for the optimization algorithm, by default it is initialized as `MFSBruteForce(0,0,0)` and not used, to use it,
+you need to initialize it with the parameters you want to use, e.g. `MFSBruteForce(1000,1000,100.0)` or `MFSBruteForce()` with default parameters.
+"""
+struct MFSBlackBoxOptim
+    guess::Vector{Float64}
+    MaxSteps::Int64
+    penalty::Float64
+    random_algo::MFSBruteForce
+end
+
+function MFSBlackBoxOptim(; guess = [], MaxSteps = 1000,  penalty = 1000.0, random_algo = MFSBruteForce(0,0,0))
+    MFSBlackBoxOptim(guess, MaxSteps, penalty, random_algo)
+end
 """
     minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm::Union{MFSBruteForce, MFSBlackBoxOptim})  
 
@@ -18,17 +64,13 @@ MFSBlackBoxOptim is an algorithm based derivative free optimization. It uses Bla
 search area for each of your states by, for example in 2 dimensions, `[(-1.5, 1.5), (-1, 1)]`.
 `algorithm` one of the two algorithms available: `MFSBruteForce` or `MFSBlackBoxOptim`.
 
-## `MFSBruteForce`
-`initial_iterations` number of random pertubations to try in the first step of the algorithm, default = 10000.
-`sphere_iterations` number of steps while initializing random points on hypersphere and decreasing its radius, default = 10000.
-`sphere_decrease_step` factor by which the radius of the hypersphere is decreased, default = 1000.0, the higher the value, 
-the more precise values may be obtained.
-
-## `MFSBlackBoxOptim`
-`guess` vector of initial guesses for the optimization algorithm, `default = []`.
-`MaxSteps` maximum number of steps for the optimization algorithm, default = 10000.
-`penalty` penalty value for the objective function, allows to adjust optimization algorithm to find the minimal fatal shock, `default = 1000.0`
-
+## Setup 
+While working with high dimensional systems, we recommend using `MFSBlackBoxOptim` algorithm, as it will give more precise results. While you can use `MFSBruteForce` algorithm 
+to quickly obtain some guess which you can pass as the argument in initialization of `MFSBlackBoxOptim` algorithm to optimize it and obtain exact results more efficiently. Or you can 
+also pass `MFSBruteForce` algorithm as the argument in initialization of `MFSBlackBoxOptim` with parameter random_algo.
+We recommend to pay attention to setup parameters of the algorithms, as default settings may not be sufficient to obtain precise results in some cases. Parameters `MaxSteps` and `search_area` are crucial in initialization
+of `MFSBlackBoxOptim` algorithm. The higher the `MaxSteps` value, the more precise results may be obtained with the cost of longer computation time. By manually decresing approximaton of `search_area`, 
+you may significantly optimize algorithm's performance.
 
 ## Description
 The minimal fatal shock algorithm is used to find the smallest perturbation of the initial point `u0` that will 
@@ -50,31 +92,12 @@ to find the minimal fatal shock.
 
 
 """
-mutable struct MFSBruteForce 
-    initial_iterations::Int64
-    sphere_iterations::Int64
-    sphere_decrease_step::Float64
-end
-
-function MFSBruteForce(; initial_iterations = 10000, sphere_iterations = 10000, sphere_decrease_step = 100.0)
-    MFSBruteForce(initial_iterations, sphere_iterations, sphere_decrease_step)
-end
-
-struct MFSBlackBoxOptim
-    guess::Vector{Float64}
-    MaxSteps::Int64
-    penalty::Float64
-end
-
-function MFSBlackBoxOptim(; guess = [], MaxSteps = 10000,  penalty = 1000.0)
-    MFSBlackBoxOptim(guess, MaxSteps, penalty)
-end
-
 function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm::MFSBruteForce) 
     id_u0 = mapper(u0)
     dim = dimension(mapper.ds)
-
-    if length(search_area) == 1
+    if typeof(search_area) <: Tuple{Any,Any}
+        search_area  = [search_area for _ in 1:dim]
+    elseif length(search_area) == 1
         search_area = [search_area[1] for _ in 1:dim]
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
@@ -91,10 +114,10 @@ end
 function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm::MFSBlackBoxOptim)
     id_u0 = mapper(u0)
     dim = dimension(mapper.ds)
-    if length(search_area) == 1
-        
+    if typeof(search_area) <: Tuple{Any,Any}
+        search_area  = [search_area for _ in 1:dim]
+    elseif length(search_area) == 1
         search_area = [search_area[1] for _ in 1:dim]
-        
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
     end
@@ -103,10 +126,15 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm
         return mfs_objective(perturbation, u0, id_u0, mapper, algorithm.penalty)
     end
     
-    if algorithm.guess != [] && dim == length(algorithm.guess)
-        result = bboptimize(objective_function, algorithm.guess; MaxSteps = MaxSteps, SearchRange = search_area, NumDimensions = dim)
+    rand_guess = []
+    if algorithm.random_algo.initial_iterations != 0
+        rand_guess = minimal_fatal_shock(mapper, u0, search_area, algorithm.random_algo)[1]
+    end
+
+    if (algorithm.guess != [] || rand_guess != [])  && dim == length(algorithm.guess)
+        result = bboptimize(objective_function, algorithm.guess; MaxSteps = algorithm.MaxSteps, SearchRange = search_area, NumDimensions = dim)
     else
-        result = bboptimize(objective_function; SearchRange = search_area, NumDimensions = dim)
+        result = bboptimize(objective_function; MaxSteps = algorithm.MaxSteps, SearchRange = search_area, NumDimensions = dim)
     end
 
     best_shock = best_candidate(result)
@@ -114,6 +142,8 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm
     return best_shock, best_dist
 
 end
+
+
 
 
 
@@ -161,15 +191,13 @@ This function works on the results obtained by `crude_initial_radius`. It starts
 by continuously reducing the radius of the sphere on the surface of which it generates random pertubations. If pertubation with the same basin of attraction is found,
 it updates the best shock found so far and reduces the radius of the sphere. 
 It repeats this process total_iterations times and returns the best pertubation found.
-`mapper` one of available in Attractors.jl [`AttractorMapper`](@ref) constructed with respect to dynamical system
-`u0` initial point to be tested
-`best_shock` best shock found by `crude_initial_radius`
-`best_dist` norm of the best shock found by `crude_initial_radius`
-`dim` dimension of the system
-`total_iterations` number of random pertubations to try, default = 10000
-`sphere_decrease_step` factor by which the radius of the hypersphere is decreased, default = 1000.0, the higher the value
-
-
+`mapper` one of available in Attractors.jl [`AttractorMapper`](@ref) constructed with respect to dynamical system.
+`u0` initial point to be tested.
+`best_shock` best shock found by `crude_initial_radius`.
+`best_dist` norm of the best shock found by `crude_initial_radius`.
+`dim` dimension of the system.
+`total_iterations` number of random pertubations to try, default = 10000.
+`sphere_decrease_step` factor by which the radius of the hypersphere is decreased, default = 1000.0, the higher the value the more precise values may be obtained.
 """
 function mfs_brute_force(mapper::AttractorMapper, u0, 
                         best_shock, best_dist, dim, id_u0,  
