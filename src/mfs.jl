@@ -38,7 +38,7 @@ It is based on derivative free optimization and uses the objective function with
 `guess` vector of initial guesses for the optimization algorithm, `default = []`.
 `MaxSteps` maximum number of steps for the optimization algorithm, default = 10000.
 `penalty` penalty value for the objective function, allows to adjust optimization algorithm to find the minimal fatal shock, `default = 1000.0`
-`random_algo` algorithm used to find the initial guess for the optimization algorithm, by default it is initialized as `MFSBruteForce(0,0,0)` and not used, to use it,
+`random_algo` algorithm used to find the initial guess for the optimization algorithm, by default it is initialized as `MFSBruteForce(0,0,0)` and not used. To activate it,
 you need to initialize it with the parameters you want to use, e.g. `MFSBruteForce(1000,1000,100.0)` or `MFSBruteForce()` with default parameters.
 """
 struct MFSBlackBoxOptim
@@ -54,22 +54,22 @@ end
 """
     minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm::Union{MFSBruteForce, MFSBlackBoxOptim})  
 
-Runs the minimal fatal shock algorithm on the initial point `u0` and outputs tuple `minimal fatal shock` and its `norm`. Two algorithms are available: MFSBruteForce and MFSBlackBoxOptim.
-MFSBruteForce is an algorithm based on randomised search with two consequent steps: random initialization and sphere radius reduction.
-MFSBlackBoxOptim is an algorithm based derivative free optimization. It uses BlackBoxOptim package to find the best shock.
+Runs the minimal fatal shock algorithm on the initial point `u0` and outputs tuple `minimal fatal shock` and its `norm`. Two algorithms are available: [`MFSBruteForce`](@ref) and [`MFSBlackBoxOptim`](@ref).
+[`MFSBruteForce`](@ref) is an algorithm based on randomised search with two consequent steps: random initialization and sphere radius reduction.
+[`MFSBlackBoxOptim`](@ref) is an algorithm based derivative free optimization. It uses BlackBoxOptim package to find the best shock.
 
 `mapper::AttractorMapper` one of available in Attractors.jl [`AttractorMapper`](@ref) constructed with respect to dynamical system.
 `u0` vector containing coordinates of initial point to be tested.
-`search_area` array of tuples, by specifying single value e.g. `[(-1.5, 1.5)]` you specify this value for each of the variables, or you may specify separetely 
+`search_area` array of tuples or a tuple, by specifying single value e.g.  `(-1.5, 1.5)` or `[(-1.5, 1.5)]` you specify this value for each of the variables, or you may specify separetely 
 search area for each of your states by, for example in 2 dimensions, `[(-1.5, 1.5), (-1, 1)]`.
-`algorithm` one of the two algorithms available: `MFSBruteForce` or `MFSBlackBoxOptim`.
+`algorithm` one of the two algorithms available: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
 
 ## Setup 
-While working with high dimensional systems, we recommend using `MFSBlackBoxOptim` algorithm, as it will give more precise results. While you can use `MFSBruteForce` algorithm 
-to quickly obtain some guess which you can pass as the argument in initialization of `MFSBlackBoxOptim` algorithm to optimize it and obtain exact results more efficiently. Or you can 
-also pass `MFSBruteForce` algorithm as the argument in initialization of `MFSBlackBoxOptim` with parameter random_algo.
+While working with high dimensional systems, we recommend using [`MFSBlackBoxOptim`](@ref) algorithm, as it will give more precise results. While you can use [`MFSBruteForce`](@ref) algorithm 
+to quickly obtain some guess which you can pass as the argument in initialization of [`MFSBlackBoxOptim`](@ref) algorithm to optimize it and obtain exact results more efficiently. Or you can 
+also pass [`MFSBruteForce`](@ref) algorithm as the argument in initialization of [`MFSBlackBoxOptim`](@ref) with parameter random_algo.
 We recommend to pay attention to setup parameters of the algorithms, as default settings may not be sufficient to obtain precise results in some cases. Parameters `MaxSteps` and `search_area` are crucial in initialization
-of `MFSBlackBoxOptim` algorithm. The higher the `MaxSteps` value, the more precise results may be obtained with the cost of longer computation time. By manually decresing approximaton of `search_area`, 
+of [`MFSBlackBoxOptim`](@ref) algorithm. The higher the `MaxSteps` value, the more precise results may be obtained with the cost of longer computation time. By manually decresing approximaton of `search_area`, 
 you may significantly optimize algorithm's performance.
 
 ## Description

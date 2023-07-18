@@ -70,8 +70,8 @@ shocks
 To visualize results we can make use of previously defined heatmap
 ```@example MAIN
 ax =  content(fig[1,1])
-for (i,j) in shocks
-    lines!(ax, [i, i + j[1]])
+for (atr, shock) in shocks
+    lines!(ax, [atr, atr + shock[1]])
 end
 fig
 ```
