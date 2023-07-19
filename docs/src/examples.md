@@ -62,7 +62,8 @@ attractors = extract_attractors(mapper)
 shocks = Dict()
 algo_bb = Attractors.MFSBlackBoxOptim(MaxSteps = 20000)
 for atr in values(attractors)
-    shocks[vec(atr)[1]] = minimal_fatal_shock(mapper, vec(atr)[1], (-1.5,1.5), algo_bb)
+    u0 = vec(atr)[1]
+    shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
     
 end
 shocks

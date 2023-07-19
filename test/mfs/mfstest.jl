@@ -1,6 +1,6 @@
 using Test
 using Attractors
-using Distributions
+
 
 
 
@@ -32,14 +32,14 @@ randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r
 algo_bb = Attractors.MFSBlackBoxOptim()
 blackbox = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in attractors])
 
-random_seed = [rand(Uniform(-0.5, 0.5), 2) for _ in 1:20]
+random_seed = [[rand([-1,1])*rand()/2, rand([-1,1])*rand()/2] for _ in 1:20]
 randomised_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in random_seed])
 blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in random_seed])
 
 
 
 @testset "Newton 2d" begin
-    @testset begin
+    @testset "1" begin
         test = true
         for i in (keys(randomised)) 
             
@@ -99,7 +99,40 @@ end
 
 
 
-ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+struct MagneticPendulum
+    magnets::Vector{SVector{2, Float64}}
+end
+mutable struct MagneticPendulumParams
+    γs::Vector{Float64}
+    d::Float64
+    α::Float64
+    ω::Float64
+end
+
+function (m::MagneticPendulum)(u, p, t)
+    x, y, vx, vy = u
+    γs::Vector{Float64}, d::Float64, α::Float64, ω::Float64 = p.γs, p.d, p.α, p.ω
+    dx, dy = vx, vy
+    dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
+    for (i, ma) in enumerate(m.magnets)
+        δx, δy = (x - ma[1]), (y - ma[2])
+        D = sqrt(δx^2 + δy^2 + d^2)
+        dvx -= γs[i]*(x - ma[1])/D^3
+        dvy -= γs[i]*(y - ma[2])/D^3
+    end
+    return SVector(dx, dy, dvx, dvy)
+end
+
+
+function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
+    γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N))
+    m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
+    p = MagneticPendulumParams(γs, d, α, ω)
+    return CoupledODEs(m, u, p)
+end
+
+
+ds = magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 
 psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 
@@ -119,14 +152,12 @@ attractor1 = vec((collect(values(attractors_m)))[1])
 randomised_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r) 
                                          for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
+blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb) 
+                                            for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
 @testset "Magnetic 2D" begin
     
     @test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
-
-
-    blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper, atr, [(-4, 4), (-4, 4)], algo_bb) 
-                                            for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
 
     @test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
@@ -134,9 +165,27 @@ end
 
 
 
+
+###############################################
+#           Thomas 3D                       #
+###############################################
+
+
+thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
+
+
+function thomas_rule(u, p, t)
+    x,y,z = u
+    b = p[1]
+    xdot = sin(y) - b*x
+    ydot = sin(z) - b*y
+    zdot = sin(x) - b*z
+    return SVector{3}(xdot, ydot, zdot)
+end
+
 @testset "3D symmetry" begin
 
-    ds = Systems.thomas_cyclical(b = 0.1665)
+    ds = thomas_cyclical(b = 0.1665)
     xg = yg = zg = range(-6.0, 6.0; length = 251)
     mapper_3d = AttractorsViaRecurrences(ds, (xg, yg, zg); sparse = false)
 
@@ -145,8 +194,8 @@ end
 
     algo_bb = Attractors.MFSBlackBoxOptim(MaxSteps = 50000)
 
-    ux_res = minimal_fatal_shock(mapper, ux,  (-6.0,6.0), algo_bb)
-    uy_res = minimal_fatal_shock(mapper, uy,  (-6.0,6.0), algo_bb)
+    ux_res = minimal_fatal_shock(mapper_3d, ux,  (-6.0,6.0), algo_bb)
+    uy_res = minimal_fatal_shock(mapper_3d, uy,  (-6.0,6.0), algo_bb)
 
     @test (ux_res[2]-uy_res[2]) < 0.0001
 
