@@ -10,24 +10,24 @@ defaultname(file) = uppercasefirst(replace(splitext(basename(file))[1], '_' => '
 testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include(file); end
 
 @testset "Attractors.jl" begin
-    # @testset "mapping" begin
-    #     testfile("mapping/grouping.jl")
-    #     testfile("mapping/recurrence.jl")
-    #     testfile("mapping/proximity_deduce_ε.jl")
-    #     testfile("mapping/attractor_mapping.jl")
-    #     testfile("mapping/histogram_grouping.jl")
-    # end
+    @testset "mapping" begin
+        testfile("mapping/grouping.jl")
+        testfile("mapping/recurrence.jl")
+        testfile("mapping/proximity_deduce_ε.jl")
+        testfile("mapping/attractor_mapping.jl")
+        testfile("mapping/histogram_grouping.jl")
+    end
 
-    # @testset "basins analysis" begin
-    #     testfile("basins/tipping_points_tests.jl")
-    #     testfile("basins/uncertainty_tests.jl")
-    # end
+    @testset "basins analysis" begin
+        testfile("basins/tipping_points_tests.jl")
+        testfile("basins/uncertainty_tests.jl")
+    end
 
-    # @testset "continuation" begin
-    #     testfile("continuation/matching_attractors.jl")
-    #     testfile("continuation/recurrences_continuation.jl")
-    #     testfile("continuation/grouping_continuation.jl")
-    # end
+    @testset "continuation" begin
+        testfile("continuation/matching_attractors.jl")
+        testfile("continuation/recurrences_continuation.jl")
+        testfile("continuation/grouping_continuation.jl")
+    end
 
     @testset "mfs" begin
         testfile("mfs/mfstest.jl")
