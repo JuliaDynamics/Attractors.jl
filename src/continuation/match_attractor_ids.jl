@@ -40,8 +40,8 @@ function with the keyword `distance`. `distance` can be whatever that function a
 i.e., one of `Centroid, Hausdorff, StrictlyMinimumDistance` or any arbitrary user-
 provided function that given two sets it returns a positive number (their distance).
 State space sets are then matched according to this distance.
-First, all possible pairs (old, new) are sorted according to their distance.
-the pair with smallest distance is matched. Matched pairs are removed from the
+First, all possible pairs (old, new, distance) are sorted according to their distance.
+The pair with smallest distance is matched. Sets in matched pairs are removed from the
 matching pool to ensure a unique mapping. Then, the next pair with least
 remaining distance is matched, and the process repeats until all pairs are exhausted.
 
