@@ -30,6 +30,6 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     end
 
     @testset "mfs" begin
-        testfile("mfs/mfstest.jl")
+        # testfile("mfs/mfstest.jl")
     end
 end

@@ -3,7 +3,9 @@ using Attractors
 import Random
 using Statistics: mean
 
-ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
+henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+ds = henon()
 xg = yg = range(-2.0, 2.0; length=100)
 grid = (xg, yg)
 expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
