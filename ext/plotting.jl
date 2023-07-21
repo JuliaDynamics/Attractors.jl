@@ -113,7 +113,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = fractions_series(fractions_curves, prange, ukeys)
+    bands = fractions_series(fractions_curves, ukeys)
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
@@ -151,8 +151,8 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
     return
 end
 
-function fractions_series(fractions_curves, prange, ukeys = unique_keys(fractions_curves))
-    bands = [zeros(length(prange)) for _ in ukeys]
+function fractions_series(fractions_curves, ukeys = unique_keys(fractions_curves))
+    bands = [zeros(length(fractions_curves)) for _ in ukeys]
     for i in eachindex(fractions_curves)
         for (j, k) in enumerate(ukeys)
             bands[j][i] = get(fractions_curves[i], k, 0)

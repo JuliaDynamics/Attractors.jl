@@ -54,7 +54,7 @@ i.e., visualize the output of [`continuation`](@ref).
 ## Keyword arguments
 
 - `style = :band`: how to visualize the basin fractions. Choices are
-  `:cumulative` for a band plot with cumulative sum = 1 or `:lines` for a scatterline
+  `:band` for a band plot with cumulative sum = 1 or `:lines` for a lines
   plot of each basin fraction
 - `separatorwidth = 1, separatorcolor = "white"`: adds a line separating the fractions
   if the style is `:band`
