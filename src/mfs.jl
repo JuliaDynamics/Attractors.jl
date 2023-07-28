@@ -87,7 +87,7 @@ end
 function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, id_u0)
     dim = dimension(mapper.ds)
     best_shock, best_dist = crude_initial_radius(
-        mapper, u0, search_area, dim, id_u0, algorithm.initial_iterations
+        mapper, u0, search_area, id_u0, algorithm.initial_iterations
     )
     best_shock, best_dist = mfs_brute_force(
         mapper, u0, best_shock, best_dist, dim, id_u0,
@@ -105,11 +105,15 @@ of the pertubation and compares it to the best pertubation found so far.
 If the norm is smaller, it updates the best pertubation found so far.
 It repeats this process total_iterations times and returns the best pertubation found.
 """
-function crude_initial_radius(mapper::AttractorMapper, u0, search_area, dim, id_u0, total_iterations)
+function crude_initial_radius(mapper::AttractorMapper, u0, search_area, id_u0, total_iterations)
     best_dist = Inf
     best_shock = nothing
+    generator, _ = statespace_sampler(; min_bounds = [s[1] for s in search_area],
+        max_bounds = [s[2] for s in search_area]
+    )
+
     for _ in 1:total_iterations
-        perturbation = rand(Uniform(search_area[1][1],search_area[1][2]), dim)
+        perturbation = generator()
         shock = u0 + perturbation
         if !(id_u0 == mapper(shock))
             dist = norm(perturbation)
@@ -142,10 +146,8 @@ function mfs_brute_force(mapper::AttractorMapper, u0,
     perturbation = zeros(dim)
 
     for _ in 1:total_iterations
-        generator, _ = statespace_sampler(GLOBAL_RNG;
-                                         radius = 1.0, spheredims = dim,
-                                         center = zeros(dim) )
-        perturbation = generator() * temp_dist
+        generator, _ = statespace_sampler(; radius = temp_dist, spheredims = dim)
+        perturbation = generator()
         new_shock = perturbation + u0
 
         if !(id_u0 == mapper(new_shock))
