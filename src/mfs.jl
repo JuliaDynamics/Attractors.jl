@@ -176,10 +176,8 @@ The black box derivative-free optimization algorithm used in [`minimal_fatal_sho
   to find the minimal fatal shock, `default = 1000.0`
 - `PrintInfo` boolean value, if true, the optimization algorithm will print information on
   the evaluation steps of objective function, `default = false`.
-- `random_algo` algorithm used to find the initial guess for the optimization algorithm,
-  by default it is initialized as `MFSBruteForce(0,0,0)` and not used. To activate it,
-  you need to initialize it with the parameters you want to use,
-  e.g. `MFSBruteForce(1000,1000,100.0)` or `MFSBruteForce()` with default parameters.
+- `random_algo = nothing` algorithm used to find the initial guess for the optimization algorithm,
+  To activate it, you need to initialize and provide an instance of [`MFSBruteForce`](@ref).
 
 ## Description
 
@@ -200,21 +198,13 @@ function mfs_objective(perturbation, u0, mapper, penalty)
 end
 ```
 """
-struct MFSBlackBoxOptim{G, RA}
-    guess::G
-    MaxSteps::Int64
-    penalty::Float64
-    PrintInfo::Bool
-    random_algo::RA
+Base.@kwdef struct MFSBlackBoxOptim{G, RA}
+    guess::G = nothing
+    MaxSteps::Int64 = 10_000
+    penalty::Float64 = 0.999
+    PrintInfo::Bool = false
+    random_algo::RA = nothing
 end
-
-function MFSBlackBoxOptim(; guess = [], MaxSteps = 10000,  penalty = 1000.0,
-                    PrintInfo = false, random_algo = MFSBruteForce(0,0,0) )
-
-    MFSBlackBoxOptim(guess, MaxSteps, penalty, PrintInfo, random_algo)
-end
-
-
 
 function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
     function objective_function(perturbation)
@@ -227,25 +217,23 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
         TraceMode = :silent
     end
 
-    rand_guess = zero(u0)
-
-    if algorithm.random_algo.initial_iterations > 0
-        rand_guess = minimal_fatal_shock(mapper, u0, search_area, algorithm.random_algo)
-    end
-
-    if (algorithm.guess != [] || rand_guess != [])  && dim == length(algorithm.guess)
-        result = bboptimize(objective_function, algorithm.guess;
+    if isnothing(algorithm.random_algo) && isnothing(algorithm.guess)
+            result = bboptimize(objective_function;
+            MaxSteps = algorithm.MaxSteps, SearchRange = search_area,
+            NumDimensions = dim, TraceMode
+        )
+    else
+        if !isnothing(algorithm.guess)
+            guess = algorithm.guess
+        else
+            guess = minimal_fatal_shock(mapper, u0, search_area, algorithm.random_algo)
+        end
+        result = bboptimize(objective_function, guess;
             MaxSteps = algorithm.MaxSteps,
             SearchRange = search_area,
             NumDimensions = dim, TraceMode
         )
-    else
-        result = bboptimize(objective_function;
-            MaxSteps = algorithm.MaxSteps, SearchRange = search_area,
-            NumDimensions = dim, TraceMode
-        )
     end
-
     best_shock = best_candidate(result)
     return best_shock
 end
