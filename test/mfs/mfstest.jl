@@ -1,9 +1,6 @@
 using Test
 using Attractors
 
-
-
-
 ###############################################
 #           Newton 2D fractal setup           #
 ###############################################
@@ -22,7 +19,6 @@ xg = yg = range(-1.5, 1.5; length = 400)
 newton = AttractorsViaRecurrences(ds, (xg, yg);
     sparse = false, mx_chk_lost = 1000
 )
-
 
 attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
 algo_r = Attractors.MFSBruteForce()
@@ -50,9 +46,6 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
         @test test
     end
 
-
-
-
     @testset begin
         test = true
         for i in (keys(blackbox))
@@ -64,8 +57,6 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
         @test test
     end
 
-
-
     @testset begin
         test = true
         for i in (keys(randomised_r))
@@ -76,7 +67,6 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
         end
         @test test
     end
-
 
     @testset begin
         test = true
@@ -95,10 +85,6 @@ end
 ###############################################
 #           Magnetic 2D                       #
 ###############################################
-
-
-
-
 struct MagneticPendulum
     magnets::Vector{SVector{2, Float64}}
 end
@@ -156,10 +142,7 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4)
                                             for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
 @testset "Magnetic 2D" begin
-
     @test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
-
-
     @test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
 end
 
@@ -169,11 +152,6 @@ end
 ###############################################
 #           Thomas 3D                       #
 ###############################################
-
-
-thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
-
-
 function thomas_rule(u, p, t)
     x,y,z = u
     b = p[1]
@@ -182,6 +160,8 @@ function thomas_rule(u, p, t)
     zdot = sin(x) - b*z
     return SVector{3}(xdot, ydot, zdot)
 end
+
+thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
 
 @testset "3D symmetry" begin
 
@@ -197,6 +177,5 @@ end
     ux_res = minimal_fatal_shock(mapper_3d, ux,  (-6.0,6.0), algo_bb)
     uy_res = minimal_fatal_shock(mapper_3d, uy,  (-6.0,6.0), algo_bb)
 
-    @test (ux_res[2]-uy_res[2]) < 0.0001
-
+    @test norm(ux_res - uy_res) < 0.0001
 end

@@ -238,12 +238,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
     return best_shock
 end
 
-
-
-
-
 function mfs_objective(perturbation, u0, id_u0, mapper::AttractorMapper, penalty=1000.0)
-
     dist = norm(perturbation)
     if dist == 0
         return penalty
@@ -254,4 +249,3 @@ function mfs_objective(perturbation, u0, id_u0, mapper::AttractorMapper, penalty
         return dist
     end
 end
-
