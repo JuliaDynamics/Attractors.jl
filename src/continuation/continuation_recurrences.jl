@@ -9,7 +9,7 @@ using Random: MersenneTwister
     RecurrencesFindAndMatch <: AttractorsBasinsContinuation
     RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
-A method for [`continuation`](@ref) as in [^Datseris2023] that is based on the
+A method for [`continuation`](@ref) as in [Datseris2023](@cite) that is based on the
 recurrences-based algorithm for finding attractors ([`AttractorsViaRecurrences`](@ref))
 and the "matching attractors" functionality offered by [`match_statespacesets!`](@ref).
 
@@ -51,10 +51,6 @@ outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample only the first stored point on the attractor.
-
-[^Datseris2023]:
-    Datseris, Rossi, Wagemakers 2023, Framework for global stability analysis of
-    dynamical systems, [arXiv:2304.12786](https://arxiv.org/abs/2304.12786)
 """
 struct RecurrencesFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
     mapper::A

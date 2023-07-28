@@ -29,6 +29,7 @@ to each parameter value they came from.
 - `par_weight = 0`: See below the section on MCBB.
 
 ## MCBB special version
+
 If the chosen grouping method is [`GroupViaClustering`](@ref), the additional keyword
 `par_weight::Real` can be used. If it is ≠ 0, the distance matrix between features
 obtains an extra weight that is proportional to the distance `par_weight*|p[i] - p[j]|`
@@ -38,12 +39,8 @@ such that the largest distance in the parameter space is 1. The normalization is
 because the feature space is also (by default) normalized to 0-1.
 
 This version of the algorithm is the original "MCBB" continuation method described
-in [^Gelbrecht2020], besides the improvements of clustering accuracy and performance
+in [Gelbrecht2020](@cite), besides the improvements of clustering accuracy and performance
 done by the developer team of Attractors.jl.
-
-[^Gelbrecht2021]:
-    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
-    [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function FeaturizeGroupAcrossParameter(
         mapper::AttractorsViaFeaturizing;
