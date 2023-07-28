@@ -164,11 +164,11 @@ end
 """
     MFSBlackBoxOptim(; kwargs...)
 
-Initialize the optimization algorithm used in `minimal_fatal_shock` function. It uses
-BlackBoxOptim.jl package to find the best shock. It is based on derivative free
-optimization and uses the objective function with penalties to find the minimal fatal shock.
+The black box derivative-free optimization algorithm used in [`minimal_fatal_shock`](@ref).
+
 
 ## Keyword arguments
+
 - `guess = nothing` a initial guess for the minimal fatal shock given to the
   optimization algorithm. If not `nothing`, `random_algo` below is ignored.
 - `MaxSteps = 10000` maximum number of steps for the optimization algorithm.
@@ -180,6 +180,25 @@ optimization and uses the objective function with penalties to find the minimal 
   by default it is initialized as `MFSBruteForce(0,0,0)` and not used. To activate it,
   you need to initialize it with the parameters you want to use,
   e.g. `MFSBruteForce(1000,1000,100.0)` or `MFSBruteForce()` with default parameters.
+
+## Description
+
+Initialize the optimization algorithm used in `minimal_fatal_shock` function.
+The algorithm uses BlackBoxOptim.jl and a penaltized objective function to minimize.
+y function used as a constraint function.
+So, if we hit another basin during the search we encourage the algorithm otherwise we
+punish it with some penalty. The function to minimize is (besides some details):
+```julia
+function mfs_objective(perturbation, u0, mapper, penalty)
+    dist = norm(perturbation)
+    if mapper(u0 + perturbation) == mapper(u0)
+        # penaltize if we stay in the same basin:
+        return dist + penalty
+    else
+        return dist
+    end
+end
+```
 """
 struct MFSBlackBoxOptim{G, RA}
     guess::G
