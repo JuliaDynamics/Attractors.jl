@@ -12,7 +12,7 @@ abstract type AttractorsBasinsContinuation end
 Find and continue attractors (or feature-based representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
 `continuation` is the central function of the framework for global stability analysis
-illustrated in [^Datseris2023].
+illustrated in [Datseris2023](@cite).
 
 The continuation type `abc` is a subtype of `AttractorsBasinsContinuation`
 and contains an [`AttractorMapper`](@ref). The mapper contains information
@@ -47,10 +47,6 @@ Possible subtypes of `AttractorsBasinsContinuation` are:
 - `show_progress = true`: display a progress bar of the computation.
 - `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
   from `ics`.
-
-[^Datseris2023]:
-   Datseris, Rossi, Wagemakers 2023, Framework for global stability analysis of
-   dynamical systems, [arXiv:2304.12786](https://arxiv.org/abs/2304.12786)
 """
 function continuation end
 

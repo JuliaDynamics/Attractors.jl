@@ -4,14 +4,14 @@ export tipping_probabilities
     tipping_probabilities(basins_before, basins_after) → P
 
 Return the tipping probabilities of the computed basins before and after a change
-in the system parameters (or time forcing), according to the definition of[^Kaszás2019].
+in the system parameters (or time forcing), according to the definition of [Kaszás2019](@cite).
 
 The input `basins` are integer-valued arrays, where the integers enumerate the attractor,
 e.g. the output of [`basins_of_attraction`](@ref).
 
 ## Description
 Let ``\\mathcal{B}_i(p)`` denote the basin of attraction of attractor ``A_i`` at
-parameter(s) ``p``. Kaszás et al[^Kaszás2019] define the tipping probability
+parameter(s) ``p``. Kaszás et al [Kaszás2019](@cite) define the tipping probability
 from ``A_i`` to ``A_j``, given a parameter change in the system of ``p_- \\to p_+``, as
 
 ```math
@@ -25,8 +25,6 @@ what is the overlap of the basin of attraction of ``A_i`` at ``p_-`` with that o
 attractor ``A_j`` at ``p_+``.
 If `basins_before, basins_after` contain values of `-1`, corresponding to trajectories
 that diverge, this is considered as the last attractor of the system in `P`.
-
-[^Kaszás2019]: Kaszás, Feudel & Tél. Tipping phenomena in typical dynamical systems subjected to parameter drift. [Scientific Reports, 9(1)](https://doi.org/10.1038/s41598-019-44863-3)
 """
 function tipping_probabilities(basins_before::AbstractArray, basins_after::AbstractArray)
     @assert size(basins_before) == size(basins_after)
