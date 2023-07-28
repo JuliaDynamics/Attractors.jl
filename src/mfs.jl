@@ -65,25 +65,26 @@ of the hypersphere to continue searching for the better result within smaller ra
 
 ## Keyword arguments
 
-- `initial_iterations` number of random pertubations to try in the first step of the
-  algorithm, default = 10000.
-- `sphere_iterations` number of steps while initializing random points on hypersphere and
-  decreasing its radius, default = 10000.
-- `sphere_decrease_step` factor by which the radius of the hypersphere is decreased,
-  default = 1000.0, the higher the value, the more precise values may be obtained.
+- `initial_iterations = 10000`: number of random pertubations to try in the first step of the
+  algorithm.
+- `sphere_iterations = 10000`: number of steps while initializing random points on hypersphere and
+  decreasing its radius.
+- `sphere_decrease_factor = 0.999` factor by which the radius of the hypersphere is decreased
+  (at each step the radius is multiplied by this number).
 """
-mutable struct MFSBruteForce
-    initial_iterations::Int64
-    sphere_iterations::Int64
-    sphere_decrease_step::Float64
+Base.@kwdef struct MFSBruteForce
+    initial_iterations::Int64 = 10000
+    sphere_iterations::Int64 = 10000
+    sphere_decrease_factor::Float64 = 0.999
 end
 
-function MFSBruteForce(; initial_iterations = 10000, sphere_iterations = 10000,
-                                                    sphere_decrease_step = 100.0)
-
-    MFSBruteForce(initial_iterations, sphere_iterations, sphere_decrease_step)
+function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, id_u0)
+    best_shock, best_dist = crude_initial_radius(mapper, u0, search_area, dim, id_u0;
+      total_iterations = algorithm.initial_iterations)
+    best_shock, best_dist = mfs_brute_force(mapper, u0, best_shock, best_dist, dim, id_u0,
+     algorithm.sphere_iterations, algorithm.sphere_decrease_factor)
+    return best_shock
 end
-
 
 
 
@@ -95,8 +96,9 @@ BlackBoxOptim.jl package to find the best shock. It is based on derivative free
 optimization and uses the objective function with penalties to find the minimal fatal shock.
 
 ## Keyword arguments
-- `guess` vector of initial guesses for the optimization algorithm, `default = []`.
-- `MaxSteps` maximum number of steps for the optimization algorithm, default = 10000.
+- `guess = nothing` a initial guess for the minimal fatal shock given to the
+  optimization algorithm. If not `nothing`, `random_algo` below is ignored.
+- `MaxSteps = 10000` maximum number of steps for the optimization algorithm.
 - `penalty` penalty value for the objective function, allows to adjust optimization algorithm
   to find the minimal fatal shock, `default = 1000.0`
 - `PrintInfo` boolean value, if true, the optimization algorithm will print information on
@@ -106,12 +108,12 @@ optimization and uses the objective function with penalties to find the minimal 
   you need to initialize it with the parameters you want to use,
   e.g. `MFSBruteForce(1000,1000,100.0)` or `MFSBruteForce()` with default parameters.
 """
-struct MFSBlackBoxOptim{G}
+struct MFSBlackBoxOptim{G, RA}
     guess::G
     MaxSteps::Int64
     penalty::Float64
     PrintInfo::Bool
-    random_algo::MFSBruteForce
+    random_algo::RA
 end
 
 function MFSBlackBoxOptim(; guess = [], MaxSteps = 10000,  penalty = 1000.0,
@@ -121,14 +123,6 @@ function MFSBlackBoxOptim(; guess = [], MaxSteps = 10000,  penalty = 1000.0,
 end
 
 
-
-function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, id_u0)
-    best_shock, best_dist = crude_initial_radius(mapper, u0, search_area, dim, id_u0;
-      total_iterations = algorithm.initial_iterations)
-    best_shock, best_dist = mfs_brute_force(mapper, u0, best_shock, best_dist, dim, id_u0,
-     algorithm.sphere_iterations, algorithm.sphere_decrease_step)
-    return best_shock
-end
 
 function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
     function objective_function(perturbation)
@@ -179,14 +173,6 @@ If the pertubation is not in the same basin of attraction, it calculates the nor
 of the pertubation and compares it to the best pertubation found so far.
 If the norm is smaller, it updates the best pertubation found so far.
 It repeats this process total_iterations times and returns the best pertubation found.
-
-`mapper`  one of available in Attractors.jl [`AttractorMapper`](@ref) constructed with
-respect to dynamical system
-`u0` initial point to be tested
-`search_area` array of two points defining the search area
-`dim` dimension of the system
-`total_iterations` number of random pertubations to try, `default = 10000`
-
 """
 function crude_initial_radius(mapper::AttractorMapper, u0, search_area, dim, id_u0;
                                                                  total_iterations=10000)
@@ -219,22 +205,12 @@ the radius of the sphere on the surface of which it generates random pertubation
 If pertubation with the same basin of attraction is found, it updates the best shock found
 so far and reduces the radius of the sphere. It repeats this process total_iterations times
 and returns the best pertubation found.
-
-`mapper` one of available in Attractors.jl [`AttractorMapper`](@ref) constructed
-with respect to dynamical system.
-`u0` initial point to be tested.
-`best_shock` best shock found by `crude_initial_radius`.
-`best_dist` norm of the best shock found by `crude_initial_radius`.
-`dim` dimension of the system.
-`total_iterations` number of random pertubations to try, default = 10000.
-`sphere_decrease_step` factor by which the radius of the hypersphere is decreased,
-default = 1000.0, the higher the value the more precise values may be obtained.
 """
 function mfs_brute_force(mapper::AttractorMapper, u0,
                         best_shock, best_dist, dim, id_u0,
-                        total_iterations=10000, sphere_decrease_step = 1000.0)
+                        total_iterations, sphere_decrease_factor)
 
-    temp_dist = best_dist-best_dist/sphere_decrease_step
+    temp_dist = best_dist*sphere_decrease_factor
     perturbation = zeros(dim)
 
     for _ in 1:total_iterations
@@ -247,7 +223,7 @@ function mfs_brute_force(mapper::AttractorMapper, u0,
         if !(id_u0 == mapper(new_shock))
             best_dist = norm(perturbation)
             best_shock = perturbation
-            temp_dist = best_dist-best_dist/sphere_decrease_step
+            temp_dist = best_dist*sphere_decrease_factor
         end
     end
 
