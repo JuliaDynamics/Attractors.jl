@@ -13,14 +13,14 @@ specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` inte
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
 The options for `algorithm` are: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
 
-The `search_area` dictactes the state space range for the search of the `mfs`.
+The `search_area` dictates the state space range for the search of the `mfs`.
 It can be a 2-tuple of (min, max) values, in which case the same values are used
 for each dimension of the system in `mapper`. Otherwise, it can be a vector of 2-tuples,
 each for each dimension of the system.
 
 ## Description
 
-The minimal fatal shock algorithm is defined as the smallest perturbation of the initial
+The minimal fatal shock is defined as the smallest perturbation of the initial
 point `u0` that will lead it a different basin of attraction. It is inspired by the paper
 "Minimal fatal shocks in multistable complex networks" [Halekotte2020](@cite),
 however the implementation here is generic: it works for _any_ dynamical system.
@@ -55,13 +55,19 @@ end
 """
     MFSBruteForce(; kwargs...)
 
-Initialize the randomised algorithm used in `minimal_fatal_shock` function. It consists of
+The brute force randomized search algorithm used in [`minimal_fatal_shock`](@ref).
+
+It consists of
 two steps: random initialization and sphere radius reduction. On the first step,
-the algorithm generates random pertubations of the initial point `u0` and with the best
+the algorithm generates random pertubations of the initial point `u0` and records
+the perturbation that leads to a different basin but with the smallest magnitude.
+With this
 obtained pertubation it proceeds to the second step. On the second step, the algorithm
-generates random pertubations  on the surface of the hypersphere with radius equal to the
-norm of the best pertubation found in the first step. It reduces the radius
+generates random pertubations on the surface of the hypersphere with radius equal to the
+norm of the pertubation found in the first step. It reduces the radius
 of the hypersphere to continue searching for the better result within smaller radius.
+It records the shock with smallest radius that leads to a different basin.
+(a new radius is recorded only if a perturbation that leads to a different basin is found)
 
 ## Keyword arguments
 
@@ -79,13 +85,78 @@ Base.@kwdef struct MFSBruteForce
 end
 
 function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, id_u0)
-    best_shock, best_dist = crude_initial_radius(mapper, u0, search_area, dim, id_u0;
-      total_iterations = algorithm.initial_iterations)
-    best_shock, best_dist = mfs_brute_force(mapper, u0, best_shock, best_dist, dim, id_u0,
-     algorithm.sphere_iterations, algorithm.sphere_decrease_factor)
+    dim = dimension(mapper.ds)
+    best_shock, best_dist = crude_initial_radius(
+        mapper, u0, search_area, dim, id_u0, algorithm.initial_iterations
+    )
+    best_shock, best_dist = mfs_brute_force(
+        mapper, u0, best_shock, best_dist, dim, id_u0,
+        algorithm.sphere_iterations, algorithm.sphere_decrease_factor
+    )
     return best_shock
 end
 
+"""
+This function generates a random pertubation of the initial point `u0` within
+specified "search_area" and checks if it is in the same basin of attraction.
+It does so by generating a random vector of length dim and then adding it to u0.
+If the pertubation is not in the same basin of attraction, it calculates the norm
+of the pertubation and compares it to the best pertubation found so far.
+If the norm is smaller, it updates the best pertubation found so far.
+It repeats this process total_iterations times and returns the best pertubation found.
+"""
+function crude_initial_radius(mapper::AttractorMapper, u0, search_area, dim, id_u0, total_iterations)
+    best_dist = Inf
+    best_shock = nothing
+    for _ in 1:total_iterations
+        perturbation = rand(Uniform(search_area[1][1],search_area[1][2]), dim)
+        shock = u0 + perturbation
+        if !(id_u0 == mapper(shock))
+            dist = norm(perturbation)
+
+            if dist < best_dist
+                best_dist = dist
+                best_shock = perturbation
+
+            end
+        end
+    end
+
+    return best_shock, best_dist
+end
+
+
+"""
+This function works on the results obtained by `crude_initial_radius`. It starts from
+the best shock found so far and tries to find a better one by continuously reducing
+the radius of the sphere on the surface of which it generates random pertubations.
+If pertubation with the same basin of attraction is found, it updates the best shock found
+so far and reduces the radius of the sphere. It repeats this process total_iterations times
+and returns the best pertubation found.
+"""
+function mfs_brute_force(mapper::AttractorMapper, u0,
+                        best_shock, best_dist, dim, id_u0,
+                        total_iterations, sphere_decrease_factor)
+
+    temp_dist = best_dist*sphere_decrease_factor
+    perturbation = zeros(dim)
+
+    for _ in 1:total_iterations
+        generator, _ = statespace_sampler(GLOBAL_RNG;
+                                         radius = 1.0, spheredims = dim,
+                                         center = zeros(dim) )
+        perturbation = generator() * temp_dist
+        new_shock = perturbation + u0
+
+        if !(id_u0 == mapper(new_shock))
+            best_dist = norm(perturbation)
+            best_shock = perturbation
+            temp_dist = best_dist*sphere_decrease_factor
+        end
+    end
+
+    return best_shock, best_dist
+end
 
 
 """
@@ -160,75 +231,6 @@ end
 
 
 
-
-
-"""
-    crude_initial_radius(mapper::AttractorMapper, u0, search_area, dim,
-                                                    total_iterations=10000)
-
-This function generates a random pertubation of the initial point `u0` within
-specified "search_area" and checks if it is in the same basin of attraction.
-It does so by generating a random vector of length dim and then adding it to u0.
-If the pertubation is not in the same basin of attraction, it calculates the norm
-of the pertubation and compares it to the best pertubation found so far.
-If the norm is smaller, it updates the best pertubation found so far.
-It repeats this process total_iterations times and returns the best pertubation found.
-"""
-function crude_initial_radius(mapper::AttractorMapper, u0, search_area, dim, id_u0;
-                                                                 total_iterations=10000)
-    best_dist = Inf
-    best_shock = nothing
-    for _ in 1:total_iterations
-        perturbation = rand(Uniform(search_area[1][1],search_area[1][2]), dim)
-        shock = u0 + perturbation
-        if !(id_u0 == mapper(shock))
-            dist = norm(perturbation)
-
-            if dist < best_dist
-                best_dist = dist
-                best_shock = perturbation
-
-            end
-        end
-    end
-
-    return best_shock, best_dist
-end
-
-
-"""
-    mfs_brute_force(mapper, u0, best_shock, best_dist, dim,  total_iterations=10000)
-
-This function works on the results obtained by `crude_initial_radius`. It starts from
-the best shock found so far and tries to find a better one by continuously reducing
-the radius of the sphere on the surface of which it generates random pertubations.
-If pertubation with the same basin of attraction is found, it updates the best shock found
-so far and reduces the radius of the sphere. It repeats this process total_iterations times
-and returns the best pertubation found.
-"""
-function mfs_brute_force(mapper::AttractorMapper, u0,
-                        best_shock, best_dist, dim, id_u0,
-                        total_iterations, sphere_decrease_factor)
-
-    temp_dist = best_dist*sphere_decrease_factor
-    perturbation = zeros(dim)
-
-    for _ in 1:total_iterations
-        generator, _ = statespace_sampler(GLOBAL_RNG;
-                                         radius = 1.0, spheredims = dim,
-                                         center = zeros(dim) )
-        perturbation = generator() * temp_dist
-        new_shock = perturbation + u0
-
-        if !(id_u0 == mapper(new_shock))
-            best_dist = norm(perturbation)
-            best_shock = perturbation
-            temp_dist = best_dist*sphere_decrease_factor
-        end
-    end
-
-    return best_shock, best_dist
-end
 
 
 function mfs_objective(perturbation, u0, id_u0, mapper::AttractorMapper, penalty=1000.0)
