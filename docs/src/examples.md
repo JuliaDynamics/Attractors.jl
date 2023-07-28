@@ -60,11 +60,11 @@ Finding Minimal Fatal Shock for some point `u0` on example of Newton's fractal a
 ```@example MAIN
 attractors = extract_attractors(mapper)
 shocks = Dict()
-algo_bb = Attractors.MFSBlackBoxOptim(MaxSteps = 20000)
+algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 20000)
 for atr in values(attractors)
     u0 = vec(atr)[1]
     shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
-    
+
 end
 shocks
 ```

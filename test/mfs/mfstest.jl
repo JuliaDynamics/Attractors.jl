@@ -172,7 +172,7 @@ thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
     ux = SVector(1.5, 0, 0)
     uy = SVector(0, 1.5, 0)
 
-    algo_bb = Attractors.MFSBlackBoxOptim(MaxSteps = 50000)
+    algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 50000)
 
     ux_res = minimal_fatal_shock(mapper_3d, ux,  (-6.0,6.0), algo_bb)
     uy_res = minimal_fatal_shock(mapper_3d, uy,  (-6.0,6.0), algo_bb)

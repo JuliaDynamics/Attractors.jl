@@ -32,8 +32,8 @@ of [`MFSBlackBoxOptim`](@ref) algorithm to optimize it and obtain exact results 
 efficiently. Or you can also pass [`MFSBruteForce`](@ref) algorithm as the argument in
 initialization of [`MFSBlackBoxOptim`](@ref) with parameter `random_algo`. We recommend to pay
 attention to setup parameters of the algorithms, as default settings may not be sufficient
-to obtain precise results in some cases. Parameters `MaxSteps` and `search_area` are crucial
-in initialization of [`MFSBlackBoxOptim`](@ref) algorithm. The higher the `MaxSteps` value,
+to obtain precise results in some cases. Parameters `max_steps` and `search_area` are crucial
+in initialization of [`MFSBlackBoxOptim`](@ref) algorithm. The higher the `max_steps` value,
 the more precise results may be obtained with the cost of longer computation time.
 By manually decresing approximaton of `search_area`, you may significantly optimize
 algorithm's performance.
@@ -171,10 +171,10 @@ The black box derivative-free optimization algorithm used in [`minimal_fatal_sho
 
 - `guess = nothing` a initial guess for the minimal fatal shock given to the
   optimization algorithm. If not `nothing`, `random_algo` below is ignored.
-- `MaxSteps = 10000` maximum number of steps for the optimization algorithm.
+- `max_steps = 10000` maximum number of steps for the optimization algorithm.
 - `penalty` penalty value for the objective function, allows to adjust optimization algorithm
   to find the minimal fatal shock, `default = 1000.0`
-- `PrintInfo` boolean value, if true, the optimization algorithm will print information on
+- `print_info` boolean value, if true, the optimization algorithm will print information on
   the evaluation steps of objective function, `default = false`.
 - `random_algo = nothing` algorithm used to find the initial guess for the optimization algorithm,
   To activate it, you need to initialize and provide an instance of [`MFSBruteForce`](@ref).
@@ -200,9 +200,9 @@ end
 """
 Base.@kwdef struct MFSBlackBoxOptim{G, RA}
     guess::G = nothing
-    MaxSteps::Int64 = 10_000
+    max_steps::Int64 = 10_000
     penalty::Float64 = 0.999
-    PrintInfo::Bool = false
+    print_info::Bool = false
     random_algo::RA = nothing
 end
 
@@ -211,7 +211,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
         return mfs_objective(perturbation, u0, id_u0, mapper, algorithm.penalty)
     end
     dim = dimension(mapper.ds)
-    if algorithm.PrintInfo == true
+    if algorithm.print_info == true
         TraceMode = :compact
     else
         TraceMode = :silent
@@ -219,7 +219,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
 
     if isnothing(algorithm.random_algo) && isnothing(algorithm.guess)
             result = bboptimize(objective_function;
-            MaxSteps = algorithm.MaxSteps, SearchRange = search_area,
+            MaxSteps = algorithm.max_steps, SearchRange = search_area,
             NumDimensions = dim, TraceMode
         )
     else
@@ -229,7 +229,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
             guess = minimal_fatal_shock(mapper, u0, search_area, algorithm.random_algo)
         end
         result = bboptimize(objective_function, guess;
-            MaxSteps = algorithm.MaxSteps,
+            MaxSteps = algorithm.max_steps,
             SearchRange = search_area,
             NumDimensions = dim, TraceMode
         )
