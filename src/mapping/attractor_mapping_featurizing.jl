@@ -27,7 +27,7 @@ end
 
 Initialize a `mapper` that maps initial conditions to attractors using a featurizing and
 grouping approach. This is a supercase of the featurizing and clustering approach that
-is utilized by bSTAB[^Stender2021] and MCBB[^Gelbrecht2021].
+is utilized by bSTAB [Stender2021](@cite) and MCBB [Gelbrecht2021](@cite).
 See [`AttractorMapper`](@ref) for how to use the `mapper`.
 This `mapper` also allows the syntax `mapper(u0)` but only if the `grouping_config`
 is _not_ `GroupViaClustering`.
@@ -63,13 +63,6 @@ and hence each initial condition is labelled according to the group it is part o
 The method thus relies on the user having at least some basic idea about what attractors
 to expect in order to pick the right features, and the right way to group them,
 in contrast to [`AttractorsViaRecurrences`](@ref).
-
-[^Stender2021]:
-    Stender & Hoffmann 2021, [bSTAB: an open-source software for computing the basin
-    stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
-[^Gelbrecht2021]:
-    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
-    [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
 function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
         group_config::GroupingConfig = GroupViaClustering();

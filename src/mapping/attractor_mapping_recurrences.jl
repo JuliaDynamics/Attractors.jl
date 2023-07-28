@@ -6,7 +6,7 @@ include("sparse_arrays.jl")
     AttractorsViaRecurrences(ds::DynamicalSystem, grid::Tuple; kwargs...)
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
-recurrences in the state space, as outlined by Datseris & Wagemakers[^Datseris2022].
+recurrences in the state space, as outlined by Datseris & Wagemakers [Datseris2022](@cite).
 
 `grid` is a tuple of ranges partitioning the state space so that a finite state
 machine can operate on top of it. For example
@@ -81,7 +81,7 @@ A finite state machine (FSM) follows the
 trajectory in the state space, and constantly maps it to the given `grid`. The FSM
 decides when an initial condition has successfully converged into an attractor. An array,
 internally called "basins", stores the state of the FSM on the grid, according to the
-indexing system described in [^Datseris2022]. As the system is integrated more and more,
+indexing system described in [Datseris2022](@cite). As the system is integrated more and more,
 the information of the "basins" becomes richer and richer with more identified attractors
 or with grid cells that belong to basins of already found attractors.
 Notice that only in the special method
@@ -104,10 +104,6 @@ The iteration of a given initial condition continues until one of the following 
    condition's label is set to `-1`.
 -  If none of the above happens, the initial condition is labelled `-1` after
    and `mx_chk_safety` integrator steps.
-
-[^Datseris2022]:
-    G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*,
-    [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
 struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS
@@ -147,15 +143,12 @@ extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
 """
     basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
+
 This is a special method of `basins_of_attraction` that using recurrences does
-_exactly_ what is described in the paper by Datseris & Wagemakers[^Datseris2022].
+_exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@ref).
 By enforcing that the internal grid of `mapper` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
-
-[^Datseris2022]:
-    G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*,
-    [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
     basins = mapper.bsn_nfo.basins
