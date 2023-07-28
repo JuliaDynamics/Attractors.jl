@@ -52,6 +52,8 @@ optimization and uses the objective function with penalties to find the minimal 
 `MaxSteps` maximum number of steps for the optimization algorithm, default = 10000.
 `penalty` penalty value for the objective function, allows to adjust optimization algorithm 
 to find the minimal fatal shock, `default = 1000.0`
+`PrintInfo` boolean value, if true, the optimization algorithm will print information on 
+the evaluation steps of objective function, `default = false`.
 `random_algo` algorithm used to find the initial guess for the optimization algorithm, 
 by default it is initialized as `MFSBruteForce(0,0,0)` and not used. To activate it,
 you need to initialize it with the parameters you want to use, 
@@ -62,13 +64,14 @@ struct MFSBlackBoxOptim
     guess::Vector{Float64}
     MaxSteps::Int64
     penalty::Float64
+    PrintInfo::Bool
     random_algo::MFSBruteForce
 end
 
-function MFSBlackBoxOptim(; guess = [], MaxSteps = 10000,  penalty = 1000.0, 
-                                            random_algo = MFSBruteForce(0,0,0))
+function MFSBlackBoxOptim(; guess = [], MaxSteps = 10000,  penalty = 1000.0,
+                    PrintInfo = false, random_algo = MFSBruteForce(0,0,0) )
 
-    MFSBlackBoxOptim(guess, MaxSteps, penalty, random_algo)
+    MFSBlackBoxOptim(guess, MaxSteps, penalty, PrintInfo, random_algo)
 end
 
 
@@ -149,6 +152,11 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area,
     function objective_function(perturbation)
         return mfs_objective(perturbation, u0, id_u0, mapper, algorithm.penalty)
     end
+    if algorithm.PrintInfo == true
+        TraceMode = :compact
+    else
+        TraceMode = :silent
+    end
     
     rand_guess = []
     if algorithm.random_algo.initial_iterations != 0
@@ -159,11 +167,11 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area,
         result = bboptimize(objective_function, algorithm.guess; 
                                             MaxSteps = algorithm.MaxSteps, 
                                             SearchRange = search_area, 
-                                            NumDimensions = dim)
+                                            NumDimensions = dim, TraceMode)
     else
         result = bboptimize(objective_function; MaxSteps = algorithm.MaxSteps, 
                                                 SearchRange = search_area, 
-                                                NumDimensions = dim)
+                                                NumDimensions = dim, TraceMode)
     end
 
     best_shock = best_candidate(result)
