@@ -41,22 +41,22 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
 @testset "Newton 2d" begin
     @testset "1" begin
         test = true
-        for i in (keys(randomised)) 
-            
+        for i in (keys(randomised))
+
             if randomised[i][2] >= 0.63 || randomised[i][2] <= 0.62 || newton(randomised[i][1] + i) == newton(i)
                 test = false
             end
         end
         @test test
     end
-        
-        
-    
+
+
+
 
     @testset begin
         test = true
-        for i in (keys(blackbox)) 
-            
+        for i in (keys(blackbox))
+
             if blackbox[i][2] >= 0.629 || blackbox[i][2] <= 0.62009 || newton(blackbox[i][1] + i) == newton(i)
                 test = false
             end
@@ -68,8 +68,8 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
 
     @testset begin
         test = true
-        for i in (keys(randomised_r)) 
-        
+        for i in (keys(randomised_r))
+
             if randomised_r[i][2] >= 0.5 || newton(randomised_r[i][1] + i) == newton(i)
                 test = false
             end
@@ -80,8 +80,8 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
 
     @testset begin
         test = true
-        for i in (keys(blackbox_r)) 
-            
+        for i in (keys(blackbox_r))
+
             if blackbox_r[i][2] >= 0.5 || newton(blackbox_r[i][1] + i) == newton(i)
                 test = false
             end
@@ -149,14 +149,14 @@ attractor2 = vec((collect(values(attractors_m)))[2])
 attractor1 = vec((collect(values(attractors_m)))[1])
 
 
-randomised_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r) 
+randomised_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r)
                                          for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
-blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb) 
+blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb)
                                             for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
 @testset "Magnetic 2D" begin
-    
+
     @test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
 
 
@@ -200,7 +200,3 @@ end
     @test (ux_res[2]-uy_res[2]) < 0.0001
 
 end
-
-
-
-
