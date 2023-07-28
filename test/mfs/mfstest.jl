@@ -167,7 +167,7 @@ thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
 
     ds = thomas_cyclical(b = 0.1665)
     xg = yg = zg = range(-6.0, 6.0; length = 251)
-    mapper_3d = AttractorsViaRecurrences(ds, (xg, yg, zg); sparse = false)
+    mapper_3d = AttractorsViaRecurrences(ds, (xg, yg, zg))
 
     ux = SVector(1.5, 0, 0)
     uy = SVector(0, 1.5, 0)
