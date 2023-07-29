@@ -4,42 +4,42 @@ using Attractors
 ###############################################
 #           Newton 2D fractal setup           #
 ###############################################
-function newton_map(z, p, n)
-    z1 = z[1] + im*z[2]
-    dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
-    z1 = z1 - dz1
-    return SVector(real(z1), imag(z1))
-end
-newton_f(x, p) = x^p - 1
-newton_df(x, p)= p*x^(p-1)
-
-ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
-xg = yg = range(-1.5, 1.5; length = 400)
-
-newton = AttractorsViaRecurrences(ds, (xg, yg);
-    sparse = false, mx_chk_lost = 1000
-)
-
-attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
-algo_r = Attractors.MFSBruteForce()
-
-randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
-
-algo_bb = Attractors.MFSBlackBoxOptim()
-blackbox = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in attractors])
-
-random_seed = [[rand([-1,1])*rand()/2, rand([-1,1])*rand()/2] for _ in 1:20]
-randomised_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in random_seed])
-blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in random_seed])
-
-
-
 @testset "Newton 2d" begin
+
+    function newton_map(z, p, n)
+        z1 = z[1] + im*z[2]
+        dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
+        z1 = z1 - dz1
+        return SVector(real(z1), imag(z1))
+    end
+    newton_f(x, p) = x^p - 1
+    newton_df(x, p)= p*x^(p-1)
+
+    ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
+    xg = yg = range(-1.5, 1.5; length = 400)
+
+    newton = AttractorsViaRecurrences(ds, (xg, yg);
+        sparse = false, mx_chk_lost = 1000
+    )
+
+    attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
+    algo_r = MFSBruteForce()
+
+    randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
+
+    algo_bb = MFSBlackBoxOptim()
+    blackbox = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in attractors])
+
+    random_seed = [[rand([-1,1])*rand()/2, rand([-1,1])*rand()/2] for _ in 1:20]
+    randomised_r = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in random_seed])
+    blackbox_r = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in random_seed])
+
+
+
     @testset "1" begin
         test = true
         for i in (keys(randomised))
-
-            if randomised[i][2] >= 0.63 || randomised[i][2] <= 0.62 || newton(randomised[i][1] + i) == newton(i)
+            if randomised[i][2] >= 0.63 || randomised[i][2] <= 0.62 || newton(randomised[i][1] .+ i) == newton(i)
                 test = false
             end
         end
@@ -49,7 +49,6 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
     @testset begin
         test = true
         for i in (keys(blackbox))
-
             if blackbox[i][2] >= 0.629 || blackbox[i][2] <= 0.62009 || newton(blackbox[i][1] + i) == newton(i)
                 test = false
             end
@@ -60,7 +59,6 @@ blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(newton, atr, [(-1.5, 1.
     @testset begin
         test = true
         for i in (keys(randomised_r))
-
             if randomised_r[i][2] >= 0.5 || newton(randomised_r[i][1] + i) == newton(i)
                 test = false
             end
@@ -85,6 +83,8 @@ end
 ###############################################
 #           Magnetic 2D                       #
 ###############################################
+@testset "Magnetic 2D" begin
+
 struct MagneticPendulum
     magnets::Vector{SVector{2, Float64}}
 end
@@ -109,7 +109,6 @@ function (m::MagneticPendulum)(u, p, t)
     return SVector(dx, dy, dvx, dvy)
 end
 
-
 function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
     γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N))
     m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
@@ -128,22 +127,21 @@ mapper_m = AttractorsViaProximity(psys, attractors_m)
 
 xg = yg = range(-4, 4; length = 201)
 grid = (xg, yg)
-basins, attractors_m = basins_of_attraction(mapper_m, grid; show_progress = false)
+algo_r = MFSBruteForce()
 
 attractor3 = vec((collect(values(attractors_m)))[3])
 attractor2 = vec((collect(values(attractors_m)))[2])
 attractor1 = vec((collect(values(attractors_m)))[1])
 
-
-randomised_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r)
+randomised_r = Dict([atr => minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r)
                                          for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
-blackbox_r = Dict([atr => Attractors.minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb)
+blackbox_r = Dict([atr => minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb)
                                             for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
-@testset "Magnetic 2D" begin
-    @test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
-    @test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
+@test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
+@test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
+
 end
 
 
@@ -152,18 +150,18 @@ end
 ###############################################
 #           Thomas 3D                       #
 ###############################################
-function thomas_rule(u, p, t)
-    x,y,z = u
-    b = p[1]
-    xdot = sin(y) - b*x
-    ydot = sin(z) - b*y
-    zdot = sin(x) - b*z
-    return SVector{3}(xdot, ydot, zdot)
-end
-
-thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
-
 @testset "3D symmetry" begin
+    using LinearAlgebra: norm
+    function thomas_rule(u, p, t)
+        x,y,z = u
+        b = p[1]
+        xdot = sin(y) - b*x
+        ydot = sin(z) - b*y
+        zdot = sin(x) - b*z
+        return SVector{3}(xdot, ydot, zdot)
+    end
+
+    thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
 
     ds = thomas_cyclical(b = 0.1665)
     xg = yg = zg = range(-6.0, 6.0; length = 251)
@@ -172,10 +170,10 @@ thomas_cyclical(u0 = [1.0, 0, 0]; b = 0.2) = CoupledODEs(thomas_rule, u0, [b])
     ux = SVector(1.5, 0, 0)
     uy = SVector(0, 1.5, 0)
 
-    algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 50000)
+    algo_bb = MFSBlackBoxOptim(max_steps = 50000)
 
     ux_res = minimal_fatal_shock(mapper_3d, ux,  (-6.0,6.0), algo_bb)
     uy_res = minimal_fatal_shock(mapper_3d, uy,  (-6.0,6.0), algo_bb)
 
-    @test norm(ux_res - uy_res) < 0.0001
+    @test norm(ux_res) - norm(uy_res) < 0.0001
 end

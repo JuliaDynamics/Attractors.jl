@@ -206,7 +206,7 @@ Base.@kwdef struct MFSBlackBoxOptim{G, RA}
     random_algo::RA = nothing
 end
 
-function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_are, id_u0)
+function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, id_u0)
     function objective_function(perturbation)
         return mfs_objective(perturbation, u0, id_u0, mapper, algorithm.penalty)
     end
