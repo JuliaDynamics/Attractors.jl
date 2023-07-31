@@ -59,15 +59,16 @@ The brute force randomized search algorithm used in [`minimal_fatal_shock`](@ref
 
 It consists of
 two steps: random initialization and sphere radius reduction. On the first step,
-the algorithm generates random pertubations of the initial point `u0` and records
+the algorithm generates random pertubations within the search area and records
 the perturbation that leads to a different basin but with the smallest magnitude.
 With this
 obtained pertubation it proceeds to the second step. On the second step, the algorithm
 generates random pertubations on the surface of the hypersphere with radius equal to the
-norm of the pertubation found in the first step. It reduces the radius
-of the hypersphere to continue searching for the better result within smaller radius.
-It records the shock with smallest radius that leads to a different basin.
-(a new radius is recorded only if a perturbation that leads to a different basin is found)
+norm of the pertubation found in the first step.
+It reduces the radius of the hypersphere and continues searching for the better result
+with a smaller radius. Each time a better result is found, the radius is reduced further.
+
+The algorithm records the perturbation with smallest radius that leads to a different basin.
 
 ## Keyword arguments
 
@@ -76,7 +77,8 @@ It records the shock with smallest radius that leads to a different basin.
 - `sphere_iterations = 10000`: number of steps while initializing random points on hypersphere and
   decreasing its radius.
 - `sphere_decrease_factor = 0.999` factor by which the radius of the hypersphere is decreased
-  (at each step the radius is multiplied by this number).
+  (at each step the radius is multiplied by this number). Number closer to 1 means
+  more refined accuracy
 """
 Base.@kwdef struct MFSBruteForce
     initial_iterations::Int64 = 10000
@@ -85,6 +87,7 @@ Base.@kwdef struct MFSBruteForce
 end
 
 function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, id_u0)
+    algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
     dim = dimension(mapper.ds)
     best_shock, best_dist = crude_initial_radius(
         mapper, u0, search_area, id_u0, algorithm.initial_iterations
@@ -107,22 +110,20 @@ It repeats this process total_iterations times and returns the best pertubation 
 """
 function crude_initial_radius(mapper::AttractorMapper, u0, search_area, id_u0, total_iterations)
     best_dist = Inf
-    best_shock = nothing
-    generator, _ = statespace_sampler(; min_bounds = [s[1] for s in search_area],
-        max_bounds = [s[2] for s in search_area]
-    )
+    region = HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
+    generator, _ = statespace_sampler(region)
+    best_shock = copy(generator())
 
     for _ in 1:total_iterations
         perturbation = generator()
-        
+
         shock = u0 + perturbation
         if !(id_u0 == mapper(shock))
             dist = norm(perturbation)
 
             if dist < best_dist
                 best_dist = dist
-                best_shock = perturbation
-
+                best_shock .= perturbation
             end
         end
     end
@@ -140,23 +141,28 @@ so far and reduces the radius of the sphere. It repeats this process total_itera
 and returns the best pertubation found.
 """
 function mfs_brute_force(mapper::AttractorMapper, u0,
-                        best_shock, best_dist, dim, id_u0,
-                        total_iterations, sphere_decrease_factor)
+        best_shock, best_dist, dim, id_u0,
+        total_iterations, sphere_decrease_factor
+    )
 
     temp_dist = best_dist*sphere_decrease_factor
-    perturbation = zeros(dim)
-    for _ in 1:total_iterations
-        generator, _ = statespace_sampler(; radius = temp_dist, spheredims = dim)
-        perturbation = generator() 
-        
-        new_shock = perturbation + u0
-
+    region = HSphereSurface(temp_dist, dim)
+    generator, = statespace_sampler(region)
+    i = 0
+    while i < total_iterations
+        perturbation = generator()
+        @. new_shock = perturbation + u0
+        # if perturbation leading to another basin:
         if !(id_u0 == mapper(new_shock))
-            
-            best_dist = norm(perturbation)
-            best_shock = perturbation
-            temp_dist = best_dist*sphere_decrease_factor
+            # record best
+            best_shock .= perturbation
+            best_dist = temp_dist
+            # update radius
+            temp_dist = temp_dist*sphere_decrease_factor
+            region = HSphereSurface(temp_dist, dim)
+            generator, = statespace_sampler(region)
         end
+        i += 1
     end
     return best_shock, best_dist
 end
