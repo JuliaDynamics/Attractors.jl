@@ -1,6 +1,6 @@
 using BlackBoxOptim: bboptimize, best_candidate
 using Random: GLOBAL_RNG
-using StateSpaceSets: statespace_sampler
+using StateSpaceSets: statespace_sampler, HRectangle
 export minimal_fatal_shock, MFSBruteForce, MFSBlackBoxOptim
 
 
@@ -99,7 +99,7 @@ It repeats this process total_iterations times and returns the best pertubation 
 """
 function crude_initial_radius(mapper::AttractorMapper, u0, search_area, id_u0, total_iterations)
     best_dist = Inf
-    region = HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
+    region = StateSpaceSets.HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
     generator, _ = statespace_sampler(region)
     best_shock = copy(generator())
 
