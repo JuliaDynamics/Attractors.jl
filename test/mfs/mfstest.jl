@@ -2,8 +2,6 @@ using Test
 using Attractors
 using LinearAlgebra
 
-
-
 @testset "Newton 2d" begin
 
     function newton_map(z, p, n)
@@ -34,19 +32,13 @@ using LinearAlgebra
     randomised_r = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r)) for atr in random_seed])
     blackbox_r = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb)) for atr in random_seed])
 
-
-
-    
     test = true
     for i in (keys(randomised))
-        
         if norm(randomised[i]) >= 0.64 || norm(randomised[i]) <= 0.61 || newton(randomised[i] + i) == newton(i)
             test = false
         end
     end
     @test test
-
-
 
     test = true
     for i in (keys(blackbox))
@@ -56,8 +48,6 @@ using LinearAlgebra
     end
     @test test
 
-
-
     test = true
     for i in (keys(randomised_r))
         if norm(randomised_r[i]) >= 0.5 || newton(randomised_r[i] + i) == newton(i)
@@ -66,17 +56,13 @@ using LinearAlgebra
     end
     @test test
 
-
-
     test = true
     for i in (keys(blackbox_r))
-
         if norm(blackbox_r[i]) >= 0.5 || newton(blackbox_r[i] + i) == newton(i)
             test = false
         end
     end
     @test test
-    
 end
 
 
@@ -116,7 +102,6 @@ function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
     p = MagneticPendulumParams(γs, d, α, ω)
     return CoupledODEs(m, u, p)
 end
-
 
 ds = magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 
@@ -174,8 +159,8 @@ end
 
     algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 50000)
 
-    ux_res = minimal_fatal_shock(mapper_3d, ux,  (-6.0,6.0), algo_bb)
-    uy_res = minimal_fatal_shock(mapper_3d, uy,  (-6.0,6.0), algo_bb)
+    ux_res = minimal_fatal_shock(mapper_3d, ux, (-6.0,6.0), algo_bb)
+    uy_res = minimal_fatal_shock(mapper_3d, uy, (-6.0,6.0), algo_bb)
 
     @test norm(ux_res) - norm(uy_res) < 0.0001
 end

@@ -12,31 +12,20 @@ specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` inte
 (see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
 The options for `algorithm` are: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
+Forh high dimensional systems [`MFSBlackBoxOptim`](@ref) is likely more accurate.
 
 The `search_area` dictates the state space range for the search of the `mfs`.
 It can be a 2-tuple of (min, max) values, in which case the same values are used
 for each dimension of the system in `mapper`. Otherwise, it can be a vector of 2-tuples,
-each for each dimension of the system.
+each for each dimension of the system. The search area is defined w.r.t. to `u0`
+(i.e., it is the search area for perturbations of `u0`).
 
 ## Description
 
-The minimal fatal shock is defined as the smallest perturbation of the initial
+The minimal fatal shock is defined as the smallest (smallest norm) perturbation of the initial
 point `u0` that will lead it a different basin of attraction. It is inspired by the paper
 "Minimal fatal shocks in multistable complex networks" [Halekotte2020](@cite),
 however the implementation here is generic: it works for _any_ dynamical system.
-
-While working with high dimensional systems, we recommend using [`MFSBlackBoxOptim`](@ref)
-algorithm, as it will give more precise results. While you can use [`MFSBruteForce`](@ref)
-algorithm to quickly obtain some guess which you can pass as the argument in initialization
-of [`MFSBlackBoxOptim`](@ref) algorithm to optimize it and obtain exact results more
-efficiently. Or you can also pass [`MFSBruteForce`](@ref) algorithm as the argument in
-initialization of [`MFSBlackBoxOptim`](@ref) with parameter `random_algo`. We recommend to pay
-attention to setup parameters of the algorithms, as default settings may not be sufficient
-to obtain precise results in some cases. Parameters `max_steps` and `search_area` are crucial
-in initialization of [`MFSBlackBoxOptim`](@ref) algorithm. The higher the `max_steps` value,
-the more precise results may be obtained with the cost of longer computation time.
-By manually decresing approximaton of `search_area`, you may significantly optimize
-algorithm's performance.
 """
 function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm)
     id_u0 = mapper(u0)
@@ -149,6 +138,7 @@ function mfs_brute_force(mapper::AttractorMapper, u0,
     region = HSphereSurface(temp_dist, dim)
     generator, = statespace_sampler(region)
     i = 0
+    new_shock = zeros(dim)
     while i < total_iterations
         perturbation = generator()
         @. new_shock = perturbation + u0
@@ -173,7 +163,6 @@ end
 
 The black box derivative-free optimization algorithm used in [`minimal_fatal_shock`](@ref).
 
-
 ## Keyword arguments
 
 - `guess = nothing` a initial guess for the minimal fatal shock given to the
@@ -183,12 +172,11 @@ The black box derivative-free optimization algorithm used in [`minimal_fatal_sho
   to find the minimal fatal shock, `default = 1000.0`
 - `print_info` boolean value, if true, the optimization algorithm will print information on
   the evaluation steps of objective function, `default = false`.
-- `random_algo = nothing` algorithm used to find the initial guess for the optimization algorithm,
-  To activate it, you need to initialize and provide an instance of [`MFSBruteForce`](@ref).
+- `random_algo = MFSBruteForce(100, 100, 0.99)`: an instance of [`MFSBruteForce`](@ref)
+  that can be used to provide an initial guess.
 
 ## Description
 
-Initialize the optimization algorithm used in `minimal_fatal_shock` function.
 The algorithm uses BlackBoxOptim.jl and a penaltized objective function to minimize.
 y function used as a constraint function.
 So, if we hit another basin during the search we encourage the algorithm otherwise we
@@ -204,13 +192,17 @@ function mfs_objective(perturbation, u0, mapper, penalty)
     end
 end
 ```
+Using an initial guess can be beneficial to both performance and accuracy,
+which is why the output of a crude [`MFSBruteForce`](@ref) is used to provide a guess.
+This can be disabled by either passing a `guess` vector explicitly or
+by giving `nothing` as `random_algo`.
 """
 Base.@kwdef struct MFSBlackBoxOptim{G, RA}
     guess::G = nothing
     max_steps::Int64 = 10_000
     penalty::Float64 = 0.999
     print_info::Bool = false
-    random_algo::RA = nothing
+    random_algo::RA = MFSBruteForce(100, 100, 0.99)
 end
 
 function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, id_u0)
