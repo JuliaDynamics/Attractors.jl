@@ -2,7 +2,7 @@ name = "Attractors"
 uuid = "f3fd9213-ca85-4dba-9dfd-7fc91308fec7"
 authors = ["George Datseris <datseris.george@gmail.com>", "Kalel Rossi", "Alexandre Wagemakers"]
 repo = "https://github.com/JuliaDynamics/Attractors.jl.git"
-version = "1.8"
+version = "1.8.0"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
@@ -38,5 +38,5 @@ Neighborhood = "0.2.2"
 Optim = "1.7"
 ProgressMeter = "1.7"
 Reexport = "1"
-StateSpaceSets = "1"
+StateSpaceSets = "1.3.7"
 julia = "1.9"

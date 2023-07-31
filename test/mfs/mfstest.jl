@@ -1,9 +1,9 @@
 using Test
 using Attractors
+using LinearAlgebra
 
-###############################################
-#           Newton 2D fractal setup           #
-###############################################
+
+
 @testset "Newton 2d" begin
 
     function newton_map(z, p, n)
@@ -23,59 +23,60 @@ using Attractors
     )
 
     attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
-    algo_r = MFSBruteForce()
+    algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.97)
 
     randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
 
-    algo_bb = MFSBlackBoxOptim()
-    blackbox = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in attractors])
+    algo_bb = Attractors.MFSBlackBoxOptim()
+    blackbox = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb)) for atr in attractors])
 
     random_seed = [[rand([-1,1])*rand()/2, rand([-1,1])*rand()/2] for _ in 1:20]
-    randomised_r = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in random_seed])
-    blackbox_r = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb) for atr in random_seed])
+    randomised_r = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r)) for atr in random_seed])
+    blackbox_r = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb)) for atr in random_seed])
 
 
 
-    @testset "1" begin
-        test = true
-        for i in (keys(randomised))
-            if randomised[i][2] >= 0.63 || randomised[i][2] <= 0.62 || newton(randomised[i][1] .+ i) == newton(i)
-                test = false
-            end
+    
+    test = true
+    for i in (keys(randomised))
+        
+        if norm(randomised[i]) >= 0.64 || norm(randomised[i]) <= 0.61 || newton(randomised[i] + i) == newton(i)
+            test = false
         end
-        @test test
     end
+    @test test
 
-    @testset begin
-        test = true
-        for i in (keys(blackbox))
-            if blackbox[i][2] >= 0.629 || blackbox[i][2] <= 0.62009 || newton(blackbox[i][1] + i) == newton(i)
-                test = false
-            end
+
+
+    test = true
+    for i in (keys(blackbox))
+        if norm(blackbox[i]) >= 0.629 || norm(blackbox[i]) <= 0.62009 || newton(blackbox[i] + i) == newton(i)
+            test = false
         end
-        @test test
     end
+    @test test
 
-    @testset begin
-        test = true
-        for i in (keys(randomised_r))
-            if randomised_r[i][2] >= 0.5 || newton(randomised_r[i][1] + i) == newton(i)
-                test = false
-            end
+
+
+    test = true
+    for i in (keys(randomised_r))
+        if norm(randomised_r[i]) >= 0.5 || newton(randomised_r[i] + i) == newton(i)
+            test = false
         end
-        @test test
     end
+    @test test
 
-    @testset begin
-        test = true
-        for i in (keys(blackbox_r))
 
-            if blackbox_r[i][2] >= 0.5 || newton(blackbox_r[i][1] + i) == newton(i)
-                test = false
-            end
+
+    test = true
+    for i in (keys(blackbox_r))
+
+        if norm(blackbox_r[i]) >= 0.5 || newton(blackbox_r[i] + i) == newton(i)
+            test = false
         end
-        @test test
     end
+    @test test
+    
 end
 
 
@@ -127,20 +128,21 @@ mapper_m = AttractorsViaProximity(psys, attractors_m)
 
 xg = yg = range(-4, 4; length = 201)
 grid = (xg, yg)
-algo_r = MFSBruteForce()
+algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.99)
+algo_bb = Attractors.MFSBlackBoxOptim()
 
 attractor3 = vec((collect(values(attractors_m)))[3])
 attractor2 = vec((collect(values(attractors_m)))[2])
 attractor1 = vec((collect(values(attractors_m)))[1])
 
-randomised_r = Dict([atr => minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r)
+randomised_r = Dict([atr => norm(minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r))
                                          for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
-blackbox_r = Dict([atr => minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb)
+blackbox_r = Dict([atr => norm(minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb))
                                             for atr in [attractor1[1], attractor2[1], attractor3[1]]])
 
-@test map(x -> (x[2] <= 0.4) && (x[2]) > 0.39, values(randomised_r)) |> all
-@test map(x -> (x[2] <= 0.395) && (x[2]) > 0.39, values(blackbox_r)) |> all
+@test map(x -> (x <= 0.4) && (x) > 0.39, values(randomised_r)) |> all
+@test map(x -> (x <= 0.395) && (x) > 0.39, values(blackbox_r)) |> all
 
 end
 
@@ -170,7 +172,7 @@ end
     ux = SVector(1.5, 0, 0)
     uy = SVector(0, 1.5, 0)
 
-    algo_bb = MFSBlackBoxOptim(max_steps = 50000)
+    algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 50000)
 
     ux_res = minimal_fatal_shock(mapper_3d, ux,  (-6.0,6.0), algo_bb)
     uy_res = minimal_fatal_shock(mapper_3d, uy,  (-6.0,6.0), algo_bb)

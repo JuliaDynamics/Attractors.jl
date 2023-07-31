@@ -114,6 +114,7 @@ function crude_initial_radius(mapper::AttractorMapper, u0, search_area, id_u0, t
 
     for _ in 1:total_iterations
         perturbation = generator()
+        
         shock = u0 + perturbation
         if !(id_u0 == mapper(shock))
             dist = norm(perturbation)
@@ -144,19 +145,19 @@ function mfs_brute_force(mapper::AttractorMapper, u0,
 
     temp_dist = best_dist*sphere_decrease_factor
     perturbation = zeros(dim)
-
     for _ in 1:total_iterations
         generator, _ = statespace_sampler(; radius = temp_dist, spheredims = dim)
-        perturbation = generator()
+        perturbation = generator() 
+        
         new_shock = perturbation + u0
 
         if !(id_u0 == mapper(new_shock))
+            
             best_dist = norm(perturbation)
             best_shock = perturbation
             temp_dist = best_dist*sphere_decrease_factor
         end
     end
-
     return best_shock, best_dist
 end
 
