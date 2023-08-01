@@ -8,7 +8,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     @testset "infinite threshold" begin
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = match_attractor_ids!(a_afte, a_befo)
+        rmap = match_statespacesets!(a_afte, a_befo)
         @test rmap == Dict(1 => 2, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
         @test haskey(a_afte, 2)
@@ -17,7 +17,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     @testset "separating threshold" begin
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = match_attractor_ids!(a_afte, a_befo; threshold = 0.1)
+        rmap = match_statespacesets!(a_afte, a_befo; threshold = 0.1)
         @test rmap == Dict(1 => 3, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
         @test !haskey(a_afte, 2)
@@ -46,18 +46,26 @@ end
         end
     end
     # Test with distance not enough to increment
-    match_attractor_ids!(allatts; threshold = 100.0) # all odd keys become 1
+    match_statespacesets!(allatts; threshold = 100.0) # all odd keys become 1
     @test all(haskey(d, 1) for d in allatts)
     @test all(haskey(d, 2) for d in allatts)
     # Test with distance enough to increment
     allatts2 = deepcopy(allatts)
-    match_attractor_ids!(allatts2; threshold = 0.1) # all keys there were `2` get incremented
+    match_statespacesets!(allatts2; threshold = 0.1) # all keys there were `2` get incremented
     @test all(haskey(d, 1) for d in allatts2)
     for i in 2:length(jrange)
         @test haskey(allatts2[i], i+1)
         @test !haskey(allatts2[i], 2)
     end
     @test haskey(allatts2[1], 2)
+    # Test rematch function
+    allatts3 = deepcopy(allatts2)
+    fracs = [Dict(k => 0.5 for (k, v) in att) for att in allatts3]
+    @test unique_keys(fracs) == 1:11
+    # Same matching as in `allatts`
+    rematch!(fracs, allatts3; threshold = 100.0)
+    @test unique_keys(fracs) == 1:2
+    @test unique_keys(allatts3) == 1:2
 end
 
 
@@ -76,7 +84,7 @@ if DO_EXTENSIVE_TESTS
             mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)
             b₊, a₊ = basins_of_attraction(mapper; show_progress = false)
             @testset "distances match" begin
-                rmap = match_attractor_ids!(a₊, a₋)
+                rmap = match_statespacesets!(a₊, a₋)
                 for k in keys(a₊)
                     dist = minimum(norm(x .- y) for x ∈ a₊[k] for y ∈ a₋[k])
                     @test dist < 0.2

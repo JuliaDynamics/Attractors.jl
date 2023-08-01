@@ -1,6 +1,6 @@
 # Examples for Attractors.jl
 
-Note that the examples utilize some convenience plotting functions offered by Attractors.jl. In Julia 1.9+ these come into scope when using `Makie` (or any of its backends such as `CairoMakie`). In older versions of Julia, you need to find them and run them manually in the `src/plotting.jl` file.
+Note that the examples utilize some convenience plotting functions offered by Attractors.jl which come into scope when using `Makie` (or any of its backends such as `CairoMakie`), see the [visualization utilities](@ref) for more.
 
 ## Newton's fractal (basins of 2D map)
 ```@example MAIN
@@ -30,6 +30,7 @@ attractors
 Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot the attractors. We do this in one step by utilizing one of the pre-defined plotting functions offered by Attractors.jl
 
 ```@example MAIN
+using CairoMakie
 grid = (xg, yg)
 heatmap_basins_attractors(grid, basins, attractors)
 ```
@@ -62,6 +63,7 @@ In this section we will calculate the basins of attraction of the four-dimension
 
 First we need to load in the magnetic pendulum from the predefined dynamical systems library
 ```@example MAIN
+using Attractors, CairoMakie
 using PredefinedDynamicalSystems
 ds = PredefinedDynamicalSystems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 ```
@@ -94,6 +96,7 @@ heatmap_basins_attractors(grid, basins, attractors)
 Let's now calculate the [`uncertainty_exponent`](@ref) for this system as well.
 The calculation is straightforward:
 ```@example MAIN
+using CairoMakie
 ε, f_ε, α = uncertainty_exponent(basins)
 fig, ax = lines(log.(ε), log.(f_ε))
 ax.title = "α = $(round(α; digits=3))"
@@ -114,7 +117,7 @@ basins_after, attractors_after = basins_of_attraction(
     mapper, (xg, yg); show_progress = false
 )
 # matching attractors is important!
-rmap = match_attractor_ids!(attractors_after, attractors)
+rmap = match_statespacesets!(attractors_after, attractors)
 # Don't forget to update the labels of the basins as well!
 replace!(basins_after, rmap...)
 
@@ -138,10 +141,12 @@ the system's symmetry.
 
 To showcase the true power of [`AttractorsViaRecurrences`](@ref) we need to use a system whose attractors span higher-dimensional space. An example is
 ```@example MAIN
-ds = Systems.thomas_cyclical(b = 0.1665)
+using Attractors
+using PredefinedDynamicalSystems
+ds = PredefinedDynamicalSystems.thomas_cyclical(b = 0.1665)
 ```
-which, for this parameter, contains 5 coexisting attractors. 3 of them are entangled
-periodic orbits that span across all three dimensions, and the remaining 2 are fixed points.
+which, for this parameter, contains 3 coexisting attractors which are entangled
+periodic orbits that span across all three dimensions.
 
 To compute the basins we define a three-dimensional grid and call on it
 [`basins_of_attraction`](@ref).
@@ -149,7 +154,7 @@ To compute the basins we define a three-dimensional grid and call on it
 ```julia
 # This computation takes about an hour
 xg = yg = zg = range(-6.0, 6.0; length = 251)
-mapper = AttractorsViaRecurrences(ds, (xg, yg, zg))
+mapper = AttractorsViaRecurrences(ds, (xg, yg, zg); sparse = false)
 basins, attractors = basins_of_attraction(mapper)
 attractors
 ```
@@ -162,6 +167,8 @@ Dict{Int16, StateSpaceSet{3, Float64}} with 5 entries:
   3 => 3-dimensional StateSpaceSet{Float64} with 537 points
   1 => 3-dimensional StateSpaceSet{Float64} with 1 points
 ```
+
+_Note: the reason we have 6 attractors here is because the algorithm also finds 3 unstable fixed points and labels them as attractors. This happens because we have provided initial conditions on the grid `xg, yg, zg` that start exactly on the unstable fixed points, and hence stay there forever, and hence are perceived as attractors by the recurrence algorithm. As you will see in the video below, they don't have any basin fractions_
 
 The basins of attraction are very complicated. We can try to visualize them by animating the 2D slices at each z value, to obtain:
 
@@ -209,6 +216,38 @@ record(fig, "cyclical_attractors.mp4", 1:length(a)) do i
 end
 ```
 
+## Basins of attraction of a Poincaré map
+
+[`PoincareMap`](@ref) is just another discrete time dynamical system within the DynamicalSystems.jl ecosystem. With respect to Attractors.jl functionality, there is nothing special about Poincaré maps. You simply initialize one use it like any other type of system. Let's continue from the above example  of the Thomas cyclical system
+```@example MAIN
+using Attractors
+using PredefinedDynamicalSystems
+ds = PredefinedDynamicalSystems.thomas_cyclical(b = 0.1665);
+```
+The three limit cycles attractors we have above become fixed points in the Poincaré map (for appropriately chosen hyperplanes). Since we already know the 3D structure of the basins, we can see that an appropriately chosen hyperplane is just the plane `z = 0`. Hence, we define a Poincaré map on this plane:
+
+```@example MAIN
+plane = (3, 0.0)
+pmap = PoincareMap(ds, plane)
+```
+
+We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the [`PoincareMap`](@ref), that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
+```@example MAIN
+xg = yg = range(-6.0, 6.0; length = 251)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(pmap, grid; sparse = false)
+```
+All that is left to do is to call [`basins_of_attraction`](@ref):
+
+```@example MAIN
+basins, attractors = basins_of_attraction(mapper; show_progress = false);
+```
+
+```@example MAIN
+heatmap_basins_attractors(grid, basins, attractors)
+```
+_just like in the example above, there is a fourth attractor with 0 basin fraction. This is an unstable fixed point, and exists exactly because we provided a grid with the unstable fixed point exactly on this grid_
+
 ## Basin fractions continuation in the magnetic pendulum
 
 Perhaps the simplest application of [`continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
@@ -234,7 +273,7 @@ pidx = :γs
 sampler, = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
-rsc = RecurrencesSeededContinuation(mapper; threshold = Inf)
+rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
 fractions_curves, attractors_info = continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
@@ -249,15 +288,16 @@ We visualize them using a predefined function that you can find in `docs/basins_
 
 ```@example MAIN
 # careful; `prange` isn't a vector of reals!
-Main.basins_curves_plot(fractions_curves, γγ)
+basins_curves_plot(fractions_curves, γγ)
 ```
 
 
-### "Bifurcation curves"
+### Fixed point curves
 
-A by-product of the analysis is that we can obtain bifurcation curves for free. However, only the stable branches can be obtained!
+A by-product of the analysis is that we can obtain the curves of the position of fixed points for free. However, only the stable branches can be obtained!
 
 ```@example MAIN
+using CairoMakie
 fig = Figure()
 ax = Axis(fig[1,1]; xlabel = L"\gamma_3", ylabel = "fixed point")
 # choose how to go from attractor to real number representation
@@ -279,10 +319,10 @@ as you can see, two of the three fixed points, and their stability, do not depen
 
 ## Extinction of a species in a multistable competition model
 
-In this advanced example we utilize both [`RecurrencesSeededContinuation`](@ref) and [`aggregate_attractor_fractions`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
+In this advanced example we utilize both [`RecurrencesFindAndMatch`](@ref) and [`aggregate_attractor_fractions`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
 The final goal is to show the percentage of how much of the state space leads to the extinction or not of a pre-determined species, as we vary a parameter. The model however displays extreme multistability, a feature we want to measure and preserve before aggregating information into "extinct or not".
 
-To measure and preserve this we will apply [`RecurrencesSeededContinuation`](@ref) as-is first. Then we can aggregate information. First we have
+To measure and preserve this we will apply [`RecurrencesFindAndMatch`](@ref) as-is first. Then we can aggregate information. First we have
 ```julia
 using Attractors, OrdinaryDiffEq
 using PredefinedDynamicalSystems
@@ -306,12 +346,12 @@ sampler, = statespace_sampler(Xoshiro(1234);
 # initialize mapper
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
-continuation = RecurrencesSeededContinuation(mapper; threshold = Inf)
+continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
 fractions_curves, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );
-Main.basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
+basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
 ```
 
 ![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
@@ -319,7 +359,7 @@ Main.basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
 _this example is not actually run when building the docs, because it takes about 60 minutes to complete depending on the computer; we load precomputed results instead_
 
 As you can see, the system has extreme multistability with 64 unique attractors
-(according to the default matching behavior in [`RecurrencesSeededContinuation`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
+(according to the default matching behavior in [`RecurrencesFindAndMatch`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
 One could also isolate a specific parameter slice, and do the same as what we do in
 the [Fractality of 2D basins of the (4D) magnetic pendulum](@ref) example, to prove that the basin boundaries are fractal, thereby indeed confirming the paper title "Fundamental Unpredictability".
 
@@ -342,7 +382,7 @@ aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
     fractions_curves, attractors_info, featurizer, groupingconfig
 )
 
-Main.basins_curves_plot(aggregated_fractions, prange;
+basins_curves_plot(aggregated_fractions, prange;
     separatorwidth = 1, colors = ["green", "black"],
     labels = Dict(1 => "extinct", 2 => "alive"),
 )
@@ -380,57 +420,55 @@ As expected, the fractions are each about 1/3 due to the system symmetry.
 
 ## Featurizing and grouping across parameters (MCBB)
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
-For this, we will use [`GroupAcrossParametersContinuation`](@ref) while also providing a `par_weight = 1` keyword.
+For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
-Instead, we will use the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
+Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
+
+ the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
 
 ```@example MAIN
 using Attractors, Random
 
-b, a = -0.9, 1.4 # notice the non-default parameters
-henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-henon = DeterministicIteratedMap(henon_rule, zeros(2), [a,b])
-
-function featurizer(a, t) # feature based on period!
-    tol = 1e-5
-    if abs(a[end-1,1] - a[end,1]) < tol
-        # period 1
-        return [1]
-    elseif abs(a[end-3,1] - a[end,1]) < tol
-        # period 3
-        return [3]
+function dumb_map(dz, z, p, n)
+    x, y = z
+    r = p[1]
+    if r < 0.5
+        dz[1] = dz[2] = 0.0
     else
-        return [100]
+        if x > 0
+            dz[1] = r
+            dz[2] = r
+        else
+            dz[1] = -r
+            dz[2] = -r
+        end
     end
+    return
 end
 
-henon
+r = 3.833
+ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 ```
 
 
 ```@example MAIN
-clusterspecs = GroupViaClustering(optimal_radius_method = 1.0)
-mapper = AttractorsViaFeaturizing(
-    henon, featurizer, clusterspecs;
-    T = 6, threaded = true, Ttr = 500,
-)
-
-continuation = GroupAcrossParameterContinuation(mapper; par_weight = 1.0)
-
-ps = range(0.6, 1.1; length = 11)
-pidx = 1
 sampler, = statespace_sampler(Random.MersenneTwister(1234);
-    min_bounds = [-2,-2], max_bounds = [2,2]
-)
+    min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
 
-fractions_curves, clusters_info = Attractors.continuation(
-    continuation, ps, pidx, sampler;
-    samples_per_parameter = 100, show_progress = false
+rrange = range(0, 2; length = 21)
+ridx = 1
+
+featurizer(a, t) = a[end]
+clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
+mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
+gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
+fractions_curves, clusters_info = continuation(
+    gap, rrange, ridx, sampler; show_progress = false
 )
 fractions_curves
 ```
 
-Looking at the information of the "attractions" (here the clusters of the grouping procedure) makes it clear which label corresponds to which kind of attractor (fixed point, period 3, or divergence to infinity):
+Looking at the information of the "attractors" (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:
 
 ```@example MAIN
 clusters_info

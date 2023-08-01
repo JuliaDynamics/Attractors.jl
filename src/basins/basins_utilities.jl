@@ -5,13 +5,9 @@ The elements of `basins` are integers, enumerating the attractor that the entry 
 `basins` converges to (i.e., like the output of [`basins_of_attraction`](@ref)).
 Return a dictionary that maps attractor IDs to their relative fractions.
 
-In[^Menck2013] the authors use these fractions to quantify the stability of a basin of
+In [Menck2013](@cite) the authors use these fractions to quantify the stability of a basin of
 attraction, and specifically how it changes when a parameter is changed.
 For this, see [`continuation`](@ref).
-
-[^Menck2013]:
-    Menck, Heitzig, Marwan & Kurths. How basin stability complements the linear
-    stability paradigm. [Nature Physics, 9(2), 89–92](https://doi.org/10.1038/nphys2516)
 """
 function basins_fractions(basins::AbstractArray, ids = unique(basins))
     fs = Dict{eltype(basins), Float64}()

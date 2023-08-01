@@ -6,7 +6,7 @@ include("sparse_arrays.jl")
     AttractorsViaRecurrences(ds::DynamicalSystem, grid::Tuple; kwargs...)
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
-recurrences in the state space, as outlined by Datseris & Wagemakers[^Datseris2022].
+recurrences in the state space, as outlined by Datseris & Wagemakers [Datseris2022](@cite).
 
 `grid` is a tuple of ranges partitioning the state space so that a finite state
 machine can operate on top of it. For example
@@ -81,7 +81,7 @@ A finite state machine (FSM) follows the
 trajectory in the state space, and constantly maps it to the given `grid`. The FSM
 decides when an initial condition has successfully converged into an attractor. An array,
 internally called "basins", stores the state of the FSM on the grid, according to the
-indexing system described in [^Datseris2022]. As the system is integrated more and more,
+indexing system described in [Datseris2022](@cite). As the system is integrated more and more,
 the information of the "basins" becomes richer and richer with more identified attractors
 or with grid cells that belong to basins of already found attractors.
 Notice that only in the special method
@@ -104,10 +104,6 @@ The iteration of a given initial condition continues until one of the following 
    condition's label is set to `-1`.
 -  If none of the above happens, the initial condition is labelled `-1` after
    and `mx_chk_safety` integrator steps.
-
-[^Datseris2022]:
-    G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*,
-    [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
 struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS
@@ -147,15 +143,12 @@ extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
 """
     basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
+
 This is a special method of `basins_of_attraction` that using recurrences does
-_exactly_ what is described in the paper by Datseris & Wagemakers[^Datseris2022].
+_exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@ref).
 By enforcing that the internal grid of `mapper` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
-
-[^Datseris2022]:
-    G. Datseris and A. Wagemakers, *Effortless estimation of basins of attraction*,
-    [Chaos 32, 023104 (2022)](https://doi.org/10.1063/5.0076568)
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
     basins = mapper.bsn_nfo.basins
@@ -223,7 +216,9 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
-    D == G || error("Grid and dynamical system do not have the same dimension!")
+    if D ≠ G && (ds isa PoincareMap && G ∉ (D, D-1))
+        error("Grid and dynamical system do not have the same dimension!")
+    end
     grid_steps = step.(grid)
     grid_maxima = maximum.(grid)
     grid_minima = minimum.(grid)
@@ -240,7 +235,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
         Δt,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int32, StateSpaceSet{D, T}}(),
+        Dict{Int32, StateSpaceSet{G, T}}(),
         Vector{CartesianIndex{G}}(),
     )
     reset_basins_counters!(bsn_nfo)
@@ -335,11 +330,13 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
             # """
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
         end
 
         step!(ds, bsn_nfo.Δt)
         if !successful_step(ds)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
         end
 
@@ -349,13 +346,11 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
         y = _possibly_reduced_state(new_y, ds, bsn_nfo.grid_minima)
         n = basin_cell_index(y, bsn_nfo)
-        u = current_state(ds) # in case we need the full state to save the attractor
-        cell_label = _identify_basin_of_cell!(bsn_nfo, n, u; kwargs...)
+        cell_label = _identify_basin_of_cell!(bsn_nfo, n, y; kwargs...)
     end
     return cell_label
 end
 
-# TODO: Once this is removed, the check D == G below needs to be adjusted.
 _possibly_reduced_state(y, ds, grid) = y
 function _possibly_reduced_state(y, ds::PoincareMap, grid)
     if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
@@ -379,7 +374,7 @@ Diverging trajectories and the trajectories staying outside the grid are coded w
 The label `1` (initial value) outlined in the paper is `0` here instead.
 """
 function _identify_basin_of_cell!(
-        bsn_nfo::BasinsInfo, n::CartesianIndex, u_full_state;
+        bsn_nfo::BasinsInfo, n::CartesianIndex, u;
         mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
         horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = true,
         show_progress = true, # show_progress only used when finding new attractor.
@@ -419,7 +414,7 @@ function _identify_basin_of_cell!(
 
         if bsn_nfo.consecutive_match >= mx_chk_fnd_att
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
-            store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_attractor!(bsn_nfo, u, show_progress)
             bsn_nfo.state = :att_found
             bsn_nfo.consecutive_match = 1
         end
@@ -433,12 +428,12 @@ function _identify_basin_of_cell!(
             # label this box as part of an attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             bsn_nfo.consecutive_match = 1
-            store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_attractor!(bsn_nfo, u, show_progress)
         elseif iseven(ic_label) && (bsn_nfo.consecutive_match <  mx_chk_loc_att)
             # We make sure we hit the attractor another mx_chk_loc_att consecutive times
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
-            store_once_per_cell || store_attractor!(bsn_nfo, u_full_state, show_progress)
+            store_once_per_cell || store_attractor!(bsn_nfo, u, show_progress)
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
             # We have checked the presence of an attractor: tidy up everything
             # and get a new cell
@@ -472,7 +467,7 @@ function _identify_basin_of_cell!(
 
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
-        if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u_full_state) > horizon_limit
+        if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
             relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
@@ -484,15 +479,15 @@ function _identify_basin_of_cell!(
 end
 
 function store_attractor!(bsn_nfo::BasinsInfo{D, Δ, T},
-    u_full_state, show_progress = true) where {D, Δ, T}
+    u, show_progress = true) where {D, Δ, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
     if haskey(bsn_nfo.attractors, attractor_id)
-        push!(bsn_nfo.attractors[attractor_id], V(u_full_state))
+        push!(bsn_nfo.attractors[attractor_id], V(u))
     else
         # initialize container for new attractor
-        bsn_nfo.attractors[attractor_id] = StateSpaceSet([V(u_full_state)])
+        bsn_nfo.attractors[attractor_id] = StateSpaceSet([V(u)])
     end
 end
 

@@ -13,3 +13,8 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
     Please use that method instead.
     """)
 end
+
+@deprecate RecurrencesSeededContinuation RecurrencesFindAndMatch
+@deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter
+@deprecate match_attractor_ids! match_statespacesets!
+@deprecate GroupAcrossParameter FeaturizeGroupAcrossParameter

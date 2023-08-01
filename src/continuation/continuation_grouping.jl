@@ -1,15 +1,16 @@
-export GroupAcrossParameterContinuation
+export FeaturizeGroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct GroupAcrossParameterContinuation{A<:AttractorsViaFeaturizing, E} <: AttractorsBasinsContinuation
+struct FeaturizeGroupAcrossParameter{A<:AttractorsViaFeaturizing, E} <: AttractorsBasinsContinuation
     mapper::A
     info_extraction::E
     par_weight::Float64
 end
 
 """
-    GroupAcrossParameterContinuation(mapper::AttractorsViaFeaturizing; kwargs...)
+    FeaturizeGroupAcrossParameter <: AttractorsBasinsContinuation
+    FeaturizeGroupAcrossParameter(mapper::AttractorsViaFeaturizing; kwargs...)
 
 A method for [`continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
@@ -28,6 +29,7 @@ to each parameter value they came from.
 - `par_weight = 0`: See below the section on MCBB.
 
 ## MCBB special version
+
 If the chosen grouping method is [`GroupViaClustering`](@ref), the additional keyword
 `par_weight::Real` can be used. If it is ≠ 0, the distance matrix between features
 obtains an extra weight that is proportional to the distance `par_weight*|p[i] - p[j]|`
@@ -37,19 +39,15 @@ such that the largest distance in the parameter space is 1. The normalization is
 because the feature space is also (by default) normalized to 0-1.
 
 This version of the algorithm is the original "MCBB" continuation method described
-in [^Gelbrecht2020], besides the improvements of clustering accuracy and performance
+in [Gelbrecht2020](@cite), besides the improvements of clustering accuracy and performance
 done by the developer team of Attractors.jl.
-
-[^Gelbrecht2021]:
-    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
-    [New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
 """
-function GroupAcrossParameterContinuation(
+function FeaturizeGroupAcrossParameter(
         mapper::AttractorsViaFeaturizing;
         info_extraction = mean_across_features,
         par_weight = 0.0,
     )
-    return GroupAcrossParameterContinuation(
+    return FeaturizeGroupAcrossParameter(
         mapper, info_extraction, par_weight
     )
 end
@@ -66,7 +64,7 @@ function mean_across_features(fs)
 end
 
 function continuation(
-        continuation::GroupAcrossParameterContinuation, prange, pidx, ics;
+        continuation::FeaturizeGroupAcrossParameter, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )
     (; mapper, info_extraction, par_weight) = continuation

@@ -7,8 +7,8 @@ export GroupViaClustering
 
 Initialize a struct that contains instructions on how to group features in
 [`AttractorsViaFeaturizing`](@ref). `GroupViaClustering` clusters features into
-groups using DBSCAN, similar to the original work by bSTAB[^Stender2021] and
-MCBB[^Gelbrecht2021]. Several options on clustering are available, see keywords below.
+groups using DBSCAN, similar to the original work by bSTAB [Stender2021](@cite) and
+MCBB [Gelbrecht2021](@cite). Several options on clustering are available, see keywords below.
 
 The defaults are a significant improvement over existing literature, see Description.
 
@@ -26,7 +26,6 @@ The defaults are a significant improvement over existing literature, see Descrip
 * `use_mmap = false`: whether to use an on-disk map for creating the distance matrix
   of the features. Useful when the features are so many where a matrix with side their
   length would not fit to memory.
-
 
 ### Keywords for optimal radius estimation
 
@@ -50,7 +49,7 @@ The defaults are a significant improvement over existing literature, see Descrip
   though not necessarily much, while always reducing speed.
 * `silhouette_statistic::Function = mean`: statistic (e.g. mean or minimum) of the
   silhouettes that is maximized in the "optimal" clustering. The original implementation
-  in [^Stender2021] used the `minimum` of the silhouettes, and typically performs less
+  in [Stender2021](@cite) used the `minimum` of the silhouettes, and typically performs less
   accurately than the `mean`.
 * `max_used_features = 0`: if not `0`, it should be an `Int` denoting the max amount of
   features to be used when finding the optimal radius. Useful when clustering a very large
@@ -84,20 +83,8 @@ with similar accuracy. A third alternative is the`"elbow"` method, which works b
 calculating the distance of each point to its k-nearest-neighbors (with `k=min_neighbors`)
 and finding the distance corresponding to the highest derivative in the curve of the
 distances, sorted in ascending order. This distance is chosen as the optimal radius. It is
-described in [^Kriegel1996] and [^Schubert2017]. It typically performs considerably worse
+described in [Ester1996](@ref) and [Schubert2017](@cite). It typically performs considerably worse
 than the `"silhouette"` methods.
-
-[^Stender2021]:
-    Stender & Hoffmann 2021, [bSTAB: an open-source software for computing the basin
-    stability of multi-stable dynamical systems](https://doi.org/10.1007/s11071-021-06786-5)
-[^Gelbrecht2021]:
-    Maximilian Gelbrecht et al 2021, Monte Carlo basin bifurcation analysis,
-    [2020 New J. Phys.22 03303](http://dx.doi.org/10.1088/1367-2630/ab7a05)
-[^Kriegel1996]: Ester, Kriegel, Sander and Xu: A Density-Based Algorithm for Discovering
-    Clusters in Large Spatial Databases with Noise
-[^Schubert2017]:
-    Schubert, Sander, Ester, Kriegel and Xu: DBSCAN Revisited, Revisited: Why and How You
-    Should (Still) Use DBSCAN
 """
 struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingConfig
     clust_distance_metric::M
@@ -228,7 +215,7 @@ Do "min-max" rescaling of vector of feature vectors so that its values span `[0,
 _rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(StateSpaceSet(features))
 function _rescale_to_01(features::AbstractStateSpaceSet)
     mini, maxi = minmaxima(features)
-    return map(f -> f .* (maxi .- mini) .+ mini, features)
+    return map(f -> (f .- mini) ./ (maxi .- mini), features)
 end
 
 #####################################################################################

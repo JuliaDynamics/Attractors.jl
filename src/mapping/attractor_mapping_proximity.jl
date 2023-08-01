@@ -45,13 +45,14 @@ end
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
         Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, verbose = false
     )
-    @assert dimension(ds) == dimension(first(attractors)[2])
+    dimension(ds) == dimension(first(attractors)[2]) || 
+            error("Dimension of the dynamical system and candidate attractors must match")
     search_trees = Dict(k => KDTree(att.data, Euclidean()) for (k, att) in attractors)
 
     if isnothing(ε)
         ε = _deduce_ε_from_attractors(attractors, search_trees, verbose)
     else
-        @assert ε isa Real
+        ε isa Real || error("ε must be a Real number")
     end
 
     mapper = AttractorsViaProximity(
