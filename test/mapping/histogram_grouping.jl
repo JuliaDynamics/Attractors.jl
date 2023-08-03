@@ -29,15 +29,7 @@ xg = yg = range(-2.0, 2.0; length=100)
 grid = (xg, yg)
 expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
 
-
-sampler, _ = (statespace_sampler(HRectangle(minimum.(grid), maximum.(grid))))
-
-
-# sampler, _ = statespace_sampler(Random.MersenneTwister(1234);
-# min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-# )
-
-
+sampler, _ = statespace_sampler(grid, 12444)
 
 ics = StateSpaceSet([copy(sampler()) for _ in 1:1000])
 fs, = basins_fractions(mapper, ics; show_progress = false)
