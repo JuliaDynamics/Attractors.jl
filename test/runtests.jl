@@ -28,4 +28,8 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("continuation/recurrences_continuation.jl")
         testfile("continuation/grouping_continuation.jl")
     end
+
+    @testset "mfs" begin
+        testfile("mfs/mfstest.jl")
+    end
 end

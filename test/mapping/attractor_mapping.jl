@@ -12,7 +12,6 @@ using LinearAlgebra
 using OrdinaryDiffEq: Vern9
 using Random
 using Statistics
-using PredefinedDynamicalSystems: Systems
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
@@ -201,8 +200,36 @@ if DO_EXTENSIVE_TESTS
 
 
     @testset "Magnetic pendulum: projected system" begin
-        # TODO: replace this!
-        ds = Systems.magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3)
+        mutable struct MagneticPendulumParams
+            γs::Vector{Float64}
+            d::Float64
+            α::Float64
+            ω::Float64
+            magnets::Vector{SVector{2, Float64}}
+        end
+
+        function magnetic_pendulum_rule(u, p, t)
+            x, y, vx, vy = u
+            γs::Vector{Float64}, d::Float64, α::Float64, ω::Float64 = p.γs, p.d, p.α, p.ω
+            dx, dy = vx, vy
+            dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
+            for (i, ma) in enumerate(p.magnets)
+                δx, δy = (x - ma[1]), (y - ma[2])
+                D = sqrt(δx^2 + δy^2 + d^2)
+                dvx -= γs[i]*(x - ma[1])/D^3
+                dvy -= γs[i]*(y - ma[2])/D^3
+            end
+            return SVector(dx, dy, dvx, dvy)
+        end
+
+        function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
+            γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N))
+            m = [SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N]
+            p = MagneticPendulumParams(γs, d, α, ω, m)
+            return CoupledODEs(magnetic_pendulum_rule, u, p)
+        end
+
+        ds = magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3)
         xg = range(-2,2,length = 201)
         yg = range(-2,2,length = 201)
         grid = (xg, yg)

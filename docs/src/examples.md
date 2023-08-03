@@ -32,7 +32,7 @@ Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot 
 ```@example MAIN
 using CairoMakie
 grid = (xg, yg)
-heatmap_basins_attractors(grid, basins, attractors)
+fig = heatmap_basins_attractors(grid, basins, attractors)
 ```
 
 Instead of computing the full basins, we could get only the fractions of the basins of attractions using [`basins_fractions`](@ref), which is typically the more useful thing to do in a high dimensional system.
@@ -55,6 +55,28 @@ in this case, to also get the attractors we simply extract them from the underly
 ```@example MAIN
 attractors = extract_attractors(mapper)
 ```
+## Minimal Fatal Shock
+Finding Minimal Fatal Shock for some point `u0` on example of Newton's fractal attractors
+```@example MAIN
+attractors = extract_attractors(mapper)
+shocks = Dict()
+algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 20000)
+for atr in values(attractors)
+    u0 = vec(atr)[1]
+    shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
+
+end
+shocks
+```
+To visualize results we can make use of previously defined heatmap
+```@example MAIN
+ax =  content(fig[1,1])
+for (atr, shock) in shocks
+    lines!(ax, [atr, atr + shock[1]])
+end
+fig
+```
+
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
 In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `ProjectedDynamicalSystem` to project the 4D system onto a 2D plane, saving a lot of computational time!

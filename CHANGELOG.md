@@ -1,3 +1,6 @@
+# v1.8
+- New algorithm `minimal_fatal_shock` that finds the minimal perturbation for arbitrary initial condition `u0` which will kick the system into different from the current basin.
+
 # v1.7.1
 - Fixed issue where poincare map was not working with basins of attraction as intended (sampling points directly on the hyperplane)
 
