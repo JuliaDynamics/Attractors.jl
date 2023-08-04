@@ -32,8 +32,7 @@ using Random
     grid = (xg,yg)
     mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
 
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+    sampler, = statespace_sampler(grid, 1234)
 
     rrange = range(0, 2; length = 20)
     ridx = 1
@@ -130,8 +129,7 @@ end
     yg = xg = range(-10., 10, length = 100)
     grid = (xg, yg)
 
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+    sampler, = statespace_sampler(grid, 1234)
 
     rrange = range(0, 2; length = 21)
     ridx = 1
@@ -203,9 +201,7 @@ if DO_EXTENSIVE_TESTS
 
     xg = yg = range(-2.5, 2.5, length = 500)
     pidx = 1
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = [-2,-2], max_bounds = [2,2]
-    )
+    sampler, = statespace_sampler(HRectangle([-2,-2], [2,2]), 1234)
     distance_function = function (A, B)
         # length of attractors within a factor of 2, then distance is ≤ 1
         return abs(log(2, length(A)) - log(2, length(B)))
@@ -283,9 +279,7 @@ end
     # This grid is chosen such that no attractors are in there!
     xg = yg = range(-25, -5; length = 500)
     pidx = 1
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = [-2,-2], max_bounds = [2,2]
-    )
+    sampler, = statespace_sampler(HRectangle([-2,-2], [2,2]), 1234)
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     rsc = RecurrencesFindAndMatch(mapper)
 
@@ -308,7 +302,7 @@ end
     psorig = [[1, 1, γ] for γ in rr]
     pidx = :γs
     # important to make a sampler that respects the symmetry of the system
-    sampler, isinside = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
+    sampler, isinside = statespace_sampler(HSphere(3.0, 2), 1234)
     for (j, ps) in enumerate((psorig, reverse(psorig)))
         # test that both finding and removing attractor works
         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)

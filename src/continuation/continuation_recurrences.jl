@@ -186,6 +186,6 @@ function _ics_from_grid(rsc::RecurrencesFindAndMatch)
 end
 
 function _ics_from_grid(grid::Tuple)
-    sampler, = statespace_sampler(min_bounds = minimum.(grid), max_bounds = maximum.(grid))
+    sampler, = statespace_sampler(grid)
     return sampler
 end

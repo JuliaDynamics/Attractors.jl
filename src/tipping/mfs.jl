@@ -1,8 +1,6 @@
 using BlackBoxOptim: bboptimize, best_candidate
 using Random: GLOBAL_RNG
-using StateSpaceSets: statespace_sampler, HRectangle
 export minimal_fatal_shock, MFSBruteForce, MFSBlackBoxOptim
-
 
 """
     minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm) → mfs
@@ -102,11 +100,11 @@ function crude_initial_radius(mapper::AttractorMapper, u0, search_area, id_u0, t
     region = StateSpaceSets.HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
     generator, _ = statespace_sampler(region)
     best_shock = copy(generator())
+    shock = copy(best_shock)
 
     for _ in 1:total_iterations
         perturbation = generator()
-
-        shock = u0 + perturbation
+        @. shock = perturbation + u0
         if !(id_u0 == mapper(shock))
             dist = norm(perturbation)
 

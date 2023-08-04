@@ -44,9 +44,7 @@ mapper = AttractorsViaRecurrences(ds, grid;
     sparse = false, mx_chk_lost = 1000
 )
 
-sampler, = statespace_sampler(;
-    min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-)
+sampler, = statespace_sampler(grid)
 
 basins = basins_fractions(mapper, sampler)
 ```
@@ -292,7 +290,8 @@ mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
 prange = [[1, 1, γ] for γ in γγ]
 pidx = :γs
 # important to make a sampler that respects the symmetry of the system
-sampler, = statespace_sampler(Xoshiro(1234); spheredims = 2, radius = 3.0)
+region = HSphere(3.0, 2)
+sampler, = statespace_sampler(region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
@@ -362,9 +361,7 @@ xg = range(0, 60; length = 300)
 grid = ntuple(x -> xg, 8)
 prange = range(0.2, 0.3; length = total_parameter_values)
 pidx = :D
-sampler, = statespace_sampler(Xoshiro(1234);
-    min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-)
+sampler, = statespace_sampler(grid, 1234)
 # initialize mapper
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
@@ -433,7 +430,8 @@ mapper = AttractorsViaFeaturizing(psys, featurizer; Ttr = 200, T = 1)
 
 xg = yg = range(-4, 4; length = 101)
 
-sampler, = statespace_sampler(; min_bounds = [-4,-4], max_bounds=[4,4])
+region = HRectangle([-4, 4], [4, 4])
+sampler, = statespace_sampler(region)
 
 fs = basins_fractions(mapper, sampler; show_progress = false)
 ```
@@ -474,8 +472,7 @@ ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 
 
 ```@example MAIN
-sampler, = statespace_sampler(Random.MersenneTwister(1234);
-    min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
+sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
 
 rrange = range(0, 2; length = 21)
 ridx = 1
