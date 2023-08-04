@@ -135,30 +135,19 @@ function continuation(
             end
         end
         # Now perform basin fractions estimation as normal, utilizing found attractors
+        # (the function comes from attractor_mapping.jl)
         fs = basins_fractions(mapper, ics;
             additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
         )
+        # We do not match attractors here; the matching is independent step done at the end
         current_attractors = mapper.bsn_nfo.attractors
-        if !isempty(current_attractors) && !isempty(prev_attractors)
-            # If there are any attractors,
-            # match with previous attractors before storing anything!
-            rmap = match_statespacesets!(
-                current_attractors, prev_attractors; distance, threshold
-            )
-            swap_dict_keys!(fs, rmap)
-        end
-        # Then do the remaining setup for storing and next step
         push!(fractions_curves, fs)
         push!(attractors_info, get_info(current_attractors))
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
-    # Normalize to smaller available integers for user convenience
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
-    end
+    # Match attractors (and basins)
+    rematch!(fractions_curves, attractors_info; distance, threshold)
     return fractions_curves, attractors_info
 end
 
