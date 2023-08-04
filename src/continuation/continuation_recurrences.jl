@@ -1,4 +1,4 @@
-export RecurrencesFindAndMatch, RAFM
+export RecurrencesFindAndMatch, RAFM, rematch!
 import ProgressMeter
 using Random: MersenneTwister
 
@@ -177,4 +177,36 @@ end
 function _ics_from_grid(grid::Tuple)
     sampler, = statespace_sampler(grid)
     return sampler
+end
+
+
+###########################################################################################
+# Rematch! (which can be used after continuation)
+###########################################################################################
+"""
+    rematch_continuation!(fractions_curves, attractors_info; kwargs...)
+
+Given the outputs of [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref),
+perform the matching step of the process again with the (possibly different) keywords
+that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
+[`continuation`](@ref) finding the attractors and their basins is a completely independent
+step from matching them with their IDs in the previous parameter value.
+
+## Keyword arguments
+
+- `distance, threshold`: As in [`match_statespacesets!`](@ref)
+- `use_vanished = false`: HOW TO NAME THIS
+
+"""
+function rematch_continuation!(fractions_curves, attractors_info; kwargs...)
+    for i in 1:length(attractors_info)-1
+        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+        rmap = match_statespacesets!(a₊, a₋; kwargs...)
+        swap_dict_keys!(fractions_curves[i+1], rmap)
+    end
+    rmap = retract_keys_to_consecutive(fractions_curves)
+    for (da, df) in zip(attractors_info, fractions_curves)
+        swap_dict_keys!(da, rmap)
+        swap_dict_keys!(df, rmap)
+    end
 end

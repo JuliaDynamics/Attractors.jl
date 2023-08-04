@@ -1,5 +1,5 @@
 # Notice this file uses heavily `dict_utils.jl`!
-export match_statespacesets!, match_basins_ids!, replacement_map, rematch!
+export match_statespacesets!, match_basins_ids!, replacement_map
 
 ###########################################################################################
 # Matching attractors and key swapping business
@@ -164,29 +164,4 @@ function _similarity_from_overlaps(b₊, ids₊, b₋, ids₋)
         distances[i] = d
     end
     return distances
-end
-
-###########################################################################################
-# Rematch! (which can be used after continuation)
-###########################################################################################
-"""
-    rematch!(fractions_curves, attractors_info; kwargs...)
-
-Given the outputs of [`continuation`](@ref) witn [`RecurrencesFindAndMatch`](@ref),
-perform the matching step of the process again with the (possibly different) keywords
-that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
-[`continuation`](@ref) finding the attractors and their basins is a completely independent
-step from matching them with their IDs in the previous parameter value.
-"""
-function rematch!(fractions_curves, attractors_info; kwargs...)
-    for i in 1:length(attractors_info)-1
-        a₊, a₋ = attractors_info[i+1], attractors_info[i]
-        rmap = match_statespacesets!(a₊, a₋; kwargs...)
-        swap_dict_keys!(fractions_curves[i+1], rmap)
-    end
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
-    end
 end

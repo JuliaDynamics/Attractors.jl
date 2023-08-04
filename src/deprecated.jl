@@ -18,3 +18,4 @@ end
 @deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter
 @deprecate match_attractor_ids! match_statespacesets!
 @deprecate GroupAcrossParameter FeaturizeGroupAcrossParameter
+@deprecate rematch! rematch_continuation!
