@@ -62,7 +62,7 @@ end
 
 @testset "continuation matching advanced" begin
     jrange = 0.1:0.1:1
-    allatts = [Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(j, j)], 3 => [SVector(j, 0)]) for j in jrange]
+    allatts = [Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)], 3 => [SVector((10j)^2, 0)]) for j in jrange]
     allatts = [Dict(keys(d) .=> StateSpaceSet.(values(d))) for d in allatts]
     # delete attractors every other parameter
     for i in eachindex(jrange)
@@ -80,6 +80,37 @@ end
         @test unique_keys(atts) == 1:7
     end
 
+    @testset "use vanished" begin
+        @testset "Inf thresh" begin
+            atts = deepcopy(allatts)
+            match_continuation!(atts; use_vanished = true)
+            @test unique_keys(atts) == 1:3
+            for i in eachindex(jrange)
+                if iseven(i)
+                    @test sort!(collect(keys(atts[i]))) == 1:2
+                else
+                    @test sort!(collect(keys(atts[i]))) == 1:3
+                end
+            end
+        end
+        @testset "finite thresh" begin
+            # okay here we test the case that the trehsold becomes too large
+            threshold = 10.0 # at the 5th index, we cannot match anymore
+            atts = deepcopy(allatts)
+            match_continuation!(atts; use_vanished = true, threshold)
+            @testset "i=$(i)" for i in eachindex(jrange)
+                if iseven(i)
+                    @test sort!(collect(keys(atts[i]))) == 1:2
+                else
+                    if i < 5
+                        @test sort!(collect(keys(atts[i]))) == 1:3
+                    else
+                        @test sort!(collect(keys(atts[i]))) == [1, 2, i÷2 + 2]
+                    end
+                end
+            end
+        end
+    end
 end
 
 

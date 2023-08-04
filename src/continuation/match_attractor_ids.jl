@@ -187,16 +187,24 @@ function match_continuation!(attractors_info; kwargs...)
     fractions_curves = [Dict(k => nothing for k in keys(d)) for d in attractors_info]
     match_continuation!(fractions_curves, attractors_info; kwargs...)
 end
-function match_continuation!(fractions_curves, attractors_info; use_vanished = false, kwargs...)
+function match_continuation!(
+        fractions_curves::Vector{<:Dict}, attractors_info::Vector{<:Dict};
+        threshold = Inf, use_vanished = !isinf(threshold), kwargs...
+    )
     if !use_vanished
-        _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
+        _rematch_ignored!(fractions_curves, attractors_info; threshold, kwargs...)
     else
-        error("not implemented yet!")
+        _rematch_with_past!(fractions_curves, attractors_info; threshold, kwargs...)
+    end
+    # This part normalizes so that keys increment by +1
+    rmap = retract_keys_to_consecutive(fractions_curves)
+    for (da, df) in zip(attractors_info, fractions_curves)
+        swap_dict_keys!(da, rmap)
+        swap_dict_keys!(df, rmap)
     end
 end
 
 function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
-    # TODO: Set `next_id` correctly!
     next_id = 1
     for i in 1:length(attractors_info)-1
         a₊, a₋ = attractors_info[i+1], attractors_info[i]
@@ -207,9 +215,20 @@ function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
         rmap = match_statespacesets!(a₊, a₋; next_id, kwargs...)
         swap_dict_keys!(fractions_curves[i+1], rmap)
     end
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
+end
+
+function _rematch_with_past!(fractions_curves, attractors_info; kwargs...)
+    # this dictionary stores all instances of previous attractors and is updated
+    # at every step. It is then given to the matching function as if it was
+    # the current attractors
+    latest_ghosts = deepcopy(attractors_info[1])
+    for i in 1:length(attractors_info)-1
+        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+        # update ghosts
+        for (k, A) in a₋
+            latest_ghosts[k] = A
+        end
+        rmap = match_statespacesets!(a₊, latest_ghosts; kwargs...)
+        swap_dict_keys!(fractions_curves[i+1], rmap)
     end
 end
