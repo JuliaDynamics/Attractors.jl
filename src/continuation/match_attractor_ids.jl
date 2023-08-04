@@ -166,22 +166,33 @@ end
 """
     match_continuation!(fractions_curves::Vector{<:Dict}, attractors_info::Vector{<:Dict}; kwargs...)
 
-Given the outputs of [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref),
-perform the matching step of the process with the (possibly different) keywords
-that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
-[`continuation`](@ref) finding the attractors and their basins is a completely independent
-step from matching them with their IDs in the previous parameter value.
+Loop over all entries in the given arguments (which are typically the direct outputs of
+[`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)), and match the
+attractor IDs in both the attractors container and the basins fractions container.
+This means that we loop over each entry of the vectors (besides the first),
+and in each entry we attempt to match the dictionary keys to the keys of the
+previous dictionary using [`match_statespacesets`](@ref).
 
-## Keyword arguments
+The keywords `distance, threshold` are propagated to [`match_statespacesets`](@ref).
+However, there is a unique keyword for `match_continuation!`: `use_vanished::Bool`.
+If `true`, then attractors that existed before but have vanished are kept in "memory"
+when it comes to matching: the new attractors are compared to the latest istance
+of all attractors that have ever existed, and get match to their closest ones
+as per [`match_statespacesets!`](@ref).
+If `false`, vanished attractors are ignored. Note that in this case new attractors
+that cannot be matched to any previous attractors will get an appropriately
+incremented ID. E.g., if we started with three attractors, and attractor 3 vanished,
+and at some later parameter value we again have three attractors, the new third
+attractor will _not_ have ID 3, but 4 (i.e., the next available ID).
 
-- `distance, threshold`: As in [`match_statespacesets!`](@ref)
-- `use_vanished = true`: HOW TO NAME THIS
+By default `use_vanished = !isinf(threshold)` and since the default value for
+`threshold` is `Inf`, `use_vanished` is `false`.
 
 
     rematch_continuation!(attractors_info::Vector{<:Dict}; kwargs...)
 
-This is a convenience method that only uses and modifies the state space set container
-without the need for a basins fractions container.
+This is a convenience method that only uses and modifies the state space set dictionary
+container without the need for a basins fractions container.
 """
 function match_continuation!(attractors_info; kwargs...)
     fractions_curves = [Dict(k => nothing for k in keys(d)) for d in attractors_info]
@@ -221,7 +232,7 @@ function _rematch_with_past!(fractions_curves, attractors_info; kwargs...)
     # this dictionary stores all instances of previous attractors and is updated
     # at every step. It is then given to the matching function as if it was
     # the current attractors
-    latest_ghosts = deepcopy(attractors_info[1])
+    latest_ghosts = copy(attractors_info[1])
     for i in 1:length(attractors_info)-1
         a₊, a₋ = attractors_info[i+1], attractors_info[i]
         # update ghosts
