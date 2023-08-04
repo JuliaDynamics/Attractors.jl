@@ -60,6 +60,28 @@ end
     @test haskey(allatts2[1], 2)
 end
 
+@testset "continuation matching advanced" begin
+    jrange = 0.1:0.1:1
+    allatts = [Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(j, j)], 3 => [SVector(j, 0)]) for j in jrange]
+    allatts = [Dict(keys(d) .=> StateSpaceSet.(values(d))) for d in allatts]
+    # delete attractors every other parameter
+    for i in eachindex(jrange)
+        if iseven(i)
+            delete!(allatts[i], 3)
+        end
+    end
+
+    @testset "ignore vanished" begin
+        atts = deepcopy(allatts)
+        match_continuation!(atts; use_vanished = false)
+        # After the first 3 key, all subsequent keys 3 become the next integer,
+        # and since we started cutting away keys 3 from `i = 2` we have
+        # 4 extra 3 keys to add
+        @test unique_keys(atts) == 1:7
+    end
+
+end
+
 
 if DO_EXTENSIVE_TESTS
     @testset "magnetic pendulum" begin

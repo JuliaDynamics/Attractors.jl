@@ -187,8 +187,8 @@ function match_continuation!(attractors_info; kwargs...)
     fractions_curves = [Dict(k => nothing for k in keys(d)) for d in attractors_info]
     match_continuation!(fractions_curves, attractors_info; kwargs...)
 end
-function match_continuation!(fractions_curves, attractors_info; used_vanished = false, kwargs...)
-    if !used_vanished
+function match_continuation!(fractions_curves, attractors_info; use_vanished = false, kwargs...)
+    if !use_vanished
         _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
     else
         error("not implemented yet!")
