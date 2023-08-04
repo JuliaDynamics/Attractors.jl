@@ -169,7 +169,7 @@ end
 Loop over all entries in the given arguments (which are typically the direct outputs of
 [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)), and match the
 attractor IDs in both the attractors container and the basins fractions container.
-This means that we loop over each entry of the vectors (besides the first),
+This means that we loop over each entry of the vectors (skipping the first),
 and in each entry we attempt to match the dictionary keys to the keys of the
 previous dictionary using [`match_statespacesets`](@ref).
 
