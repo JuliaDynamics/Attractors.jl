@@ -18,4 +18,8 @@ end
 @deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter
 @deprecate match_attractor_ids! match_statespacesets!
 @deprecate GroupAcrossParameter FeaturizeGroupAcrossParameter
-@deprecate rematch! rematch_continuation!
+@deprecate rematch! match_continuation!
+
+function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
+    error("This function was incorrect. Use `match_continuation!` instead.")
+end

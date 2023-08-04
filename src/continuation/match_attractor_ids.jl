@@ -1,5 +1,5 @@
 # Notice this file uses heavily `dict_utils.jl`!
-export match_statespacesets!, match_basins_ids!, replacement_map
+export match_statespacesets!, match_basins_ids!, replacement_map, match_continuation!
 
 ###########################################################################################
 # Matching attractors and key swapping business
@@ -53,19 +53,6 @@ function match_statespacesets!(a₊::AbstractDict, a₋; kwargs...)
     rmap = replacement_map(a₊, a₋; kwargs...)
     swap_dict_keys!(a₊, rmap)
     return rmap
-end
-
-"""
-    match_statespacesets!(attractors_info::Vector{<:Dict}; kwargs...)
-
-Convenience method that progresses through the dictionaries in `attractors_info` in sequence
-and matches them using same keywords as the above method.
-"""
-function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
-    for i in 1:length(as)-1
-        a₊, a₋ = as[i+1], as[i]
-        match_statespacesets!(a₊, a₋; kwargs...)
-    end
 end
 
 # Note that `next_id` is an internal argument not exposed to Public API.
@@ -170,4 +157,61 @@ function _similarity_from_overlaps(b₊, ids₊, b₋, ids₋)
         distances[i] = d
     end
     return distances
+end
+
+
+###########################################################################################
+# Continuation matching (which can be used after continuation)
+###########################################################################################
+"""
+    match_continuation!(fractions_curves::Vector{<:Dict}, attractors_info::Vector{<:Dict}; kwargs...)
+
+Given the outputs of [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref),
+perform the matching step of the process again with the (possibly different) keywords
+that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
+[`continuation`](@ref) finding the attractors and their basins is a completely independent
+step from matching them with their IDs in the previous parameter value.
+
+## Keyword arguments
+
+- `distance, threshold`: As in [`match_statespacesets!`](@ref)
+- `use_vanished = true`: HOW TO NAME THIS
+
+
+    rematch_continuation!(attractors_info::Vector{<:Dict}; kwargs...)
+
+This is a convenience method that only uses and modifies the attractors container.
+"""
+function match_continuation!(attractors_info; kwargs...)
+    fractions_curves = [d => Dict(k => false for k in keys(d)) for d in attractors_info]
+    rematch_continuation!(fractions_curves, attractors_info; kwargs...)
+end
+function match_continuation!(fractions_curves, attractors_info; used_vanished = false, kwargs...)
+    if isnothing(fractions_curves)
+        fractions_curves = [d => Dict(k => false for k in keys(d)) for d in attractors_info]
+    end
+    if !used_vanished
+        _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
+    else
+        error("not implemented yet!")
+    end
+end
+
+function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
+    # TODO: Set `next_id` correctly!
+    next_id = 1
+    for i in 1:length(attractors_info)-1
+        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+        # Here we always compute a next id. In this way, if an attractor dissapears
+        # and re-appears, it will get a different (incremented) id as it should!
+        next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋))) + 1
+        next_id = max(next_id+1, next_id_a)
+        rmap = match_statespacesets!(a₊, a₋; next_id, kwargs...)
+        swap_dict_keys!(fractions_curves[i+1], rmap)
+    end
+    rmap = retract_keys_to_consecutive(fractions_curves)
+    for (da, df) in zip(attractors_info, fractions_curves)
+        swap_dict_keys!(da, rmap)
+        swap_dict_keys!(df, rmap)
+    end
 end

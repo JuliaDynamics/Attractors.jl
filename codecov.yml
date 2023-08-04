@@ -1,0 +1,3 @@
+# sample regex patterns
+ignore:
+  - "src/deprecated.jl"  # ignore folders and all its contents

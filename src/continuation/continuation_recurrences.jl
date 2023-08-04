@@ -1,4 +1,4 @@
-export RecurrencesFindAndMatch, RAFM, rematch!
+export RecurrencesFindAndMatch, RAFM
 import ProgressMeter
 using Random: MersenneTwister
 
@@ -40,14 +40,16 @@ value the attractors and their fractions are found.
 
 Note that since in this continuation the finding-attractors and matching-attractors
 steps are completely independent. This means, that if you don't like the initial
-outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
+outcome of the matching process, you may call [`match_continuation!`](@ref) on the outcome.
 
 ## Keyword arguments
 
 - `distance, threshold`: propagated to [`match_statespacesets!`](@ref).
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`continuation`](@ref).
+  `attractors_info` in [`continuation`](@ref). Note that the same attractors that
+  are stored in `attractors_info` are also used to perform the matching in
+  [`match_continuation!`](@ref), hence this keyword should be altered with care.
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample only the first stored point on the attractor.
@@ -179,48 +181,3 @@ function _ics_from_grid(grid::Tuple)
     return sampler
 end
 
-
-###########################################################################################
-# Rematch! (which can be used after continuation)
-###########################################################################################
-"""
-    rematch_continuation!(fractions_curves, attractors_info; kwargs...)
-
-Given the outputs of [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref),
-perform the matching step of the process again with the (possibly different) keywords
-that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
-[`continuation`](@ref) finding the attractors and their basins is a completely independent
-step from matching them with their IDs in the previous parameter value.
-
-## Keyword arguments
-
-- `distance, threshold`: As in [`match_statespacesets!`](@ref)
-- `use_vanished = false`: HOW TO NAME THIS
-
-"""
-function rematch_continuation!(fractions_curves, attractors_info; used_vanished = false, kwargs...)
-    if !used_vanished
-        _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
-    else
-        error("not implemented yet!")
-    end
-end
-
-function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
-    # TODO: Set `next_id` correctly!
-    next_id = 1
-    for i in 1:length(attractors_info)-1
-        a₊, a₋ = attractors_info[i+1], attractors_info[i]
-        # Here we always compute a next id. In this way, if an attractor dissapears
-        # and re-appears, it will get a different (incremented) id as it should!
-        next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋))) + 1
-        next_id = max(next_id+1, next_id_a)
-        rmap = match_statespacesets!(a₊, a₋; next_id, kwargs...)
-        swap_dict_keys!(fractions_curves[i+1], rmap)
-    end
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
-    end
-end
