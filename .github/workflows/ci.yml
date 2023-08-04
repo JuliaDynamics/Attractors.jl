@@ -46,12 +46,6 @@ jobs:
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
 
-      - name: Install packages on main branch
-        shell: julia --color=yes --project=. {0}
-        run: |
-          using Pkg
-          Pkg.add(PackageSpec(; name="DynamicalSystemsBase", rev="main"))
-
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
