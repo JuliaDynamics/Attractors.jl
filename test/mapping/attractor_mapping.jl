@@ -137,6 +137,53 @@ end
     max_distance = 20, ε = 1e-3, proximity_test = false)
 end
 
+@testset "Magnetic pendulum: projected system" begin
+    mutable struct MagneticPendulumParams
+        γs::Vector{Float64}
+        d::Float64
+        α::Float64
+        ω::Float64
+        magnets::Vector{SVector{2, Float64}}
+    end
+    function magnetic_pendulum_rule(u, p, t)
+        x, y, vx, vy = u
+        γs::Vector{Float64}, d::Float64, α::Float64, ω::Float64 = p.γs, p.d, p.α, p.ω
+        dx, dy = vx, vy
+        dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
+        for (i, ma) in enumerate(p.magnets)
+            δx, δy = (x - ma[1]), (y - ma[2])
+            D = sqrt(δx^2 + δy^2 + d^2)
+            dvx -= γs[i]*(x - ma[1])/D^3
+            dvy -= γs[i]*(y - ma[2])/D^3
+        end
+        return SVector(dx, dy, dvx, dvy)
+    end
+    function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
+        γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N), diffeq)
+        m = [SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N]
+        p = MagneticPendulumParams(γs, d, α, ω, m)
+        return CoupledODEs(magnetic_pendulum_rule, u, p; diffeq)
+    end
+
+    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+    ds = magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3; diffeq)
+    xg = range(-2,2; length = 201)
+    yg = range(-2,2; length = 201)
+    grid = (xg, yg)
+    ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
+    u0s = [
+        1 => [-0.5, 0.857],
+        2 => [-0.5, -0.857],
+        3 => [1.  , 0.],
+    ]
+    expected_fs_raw = Dict(2 => 0.314, 3 => 0.309, 1 => 0.377)
+    function featurizer(A, t)
+        return SVector(A[end][1], A[end][2])
+    end
+
+    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
+end
+
 # Okay, all of these aren't fundamentally new tests.
 if DO_EXTENSIVE_TESTS
 
@@ -201,54 +248,6 @@ if DO_EXTENSIVE_TESTS
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         ε = 1.0, ferr=1e-2, rerr = 1e-2, aerr = 5e-3)
-    end
-
-
-    @testset "Magnetic pendulum: projected system" begin
-        mutable struct MagneticPendulumParams
-            γs::Vector{Float64}
-            d::Float64
-            α::Float64
-            ω::Float64
-            magnets::Vector{SVector{2, Float64}}
-        end
-        function magnetic_pendulum_rule(u, p, t)
-            x, y, vx, vy = u
-            γs::Vector{Float64}, d::Float64, α::Float64, ω::Float64 = p.γs, p.d, p.α, p.ω
-            dx, dy = vx, vy
-            dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
-            for (i, ma) in enumerate(p.magnets)
-                δx, δy = (x - ma[1]), (y - ma[2])
-                D = sqrt(δx^2 + δy^2 + d^2)
-                dvx -= γs[i]*(x - ma[1])/D^3
-                dvy -= γs[i]*(y - ma[2])/D^3
-            end
-            return SVector(dx, dy, dvx, dvy)
-        end
-        function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
-            γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N), diffeq)
-            m = [SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N]
-            p = MagneticPendulumParams(γs, d, α, ω, m)
-            return CoupledODEs(magnetic_pendulum_rule, u, p; diffeq)
-        end
-
-        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-        ds = magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3; diffeq)
-        xg = range(-2,2; length = 201)
-        yg = range(-2,2; length = 201)
-        grid = (xg, yg)
-        ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
-        u0s = [
-            1 => [-0.5, 0.857],
-            2 => [-0.5, -0.857],
-            3 => [1.  , 0.],
-        ]
-        expected_fs_raw = Dict(2 => 0.314, 3 => 0.309, 1 => 0.377)
-        function featurizer(A, t)
-            return SVector(A[end][1], A[end][2])
-        end
-
-        test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
     end
 
 
