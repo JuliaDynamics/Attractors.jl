@@ -47,7 +47,7 @@ remaining distance is matched, and the process repeats until all pairs are exhau
 
 Additionally, you can provide a `threshold` value. If the distance between two attractors
 is larger than this `threshold`, then it is guaranteed that the attractors will get assigned
-different key in the dictionary `a₊`.
+different key in the dictionary `a₊` (which is the next available integer).
 """
 function match_statespacesets!(a₊::AbstractDict, a₋; kwargs...)
     rmap = replacement_map(a₊, a₋; kwargs...)
@@ -68,18 +68,24 @@ function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
     end
 end
 
+# Note that `next_id` is an internal argument not exposed to Public API.
+# This is used when we ignore previously existing attractors in
+# `rematch_continuation!`
 """
     replacement_map(a₊, a₋; distance = Centroid(), threshold = Inf) → rmap
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_statespacesets!`](@ref).
 """
-function replacement_map(a₊::Dict, a₋::Dict; distance = Centroid(), threshold = Inf)
+function replacement_map(a₊::Dict, a₋::Dict;
+        distance = Centroid(), threshold = Inf, next_id = nothing
+    )
     distances = setsofsets_distances(a₊, a₋, distance)
     keys₊, keys₋ = keys.((a₊, a₋))
-    replacement_map(keys₊, keys₋, distances::Dict, threshold)
+    nextid = isnothing(next_id) ? max(maximum(keys₊), maximum(keys₋)) + 1 : next_id
+    replacement_map(keys₊, keys₋, distances::Dict, threshold, nextid)
 end
 
-function replacement_map(keys₊, keys₋, distances::Dict, threshold)
+function replacement_map(keys₊, keys₋, distances::Dict, threshold, next_id)
     # Transform distances to sortable collection. Sorting by distance
     # ensures we prioritize the closest matches
     sorted_keys_with_distances = Tuple{Int, Int, Float64}[]
@@ -96,10 +102,10 @@ function replacement_map(keys₊, keys₋, distances::Dict, threshold)
     # but also ensure that keys that have too high of a value distance are guaranteeed
     # to have different keys, and ensure that there is unique mapping happening!
     rmap = Dict{eltype(keys₊), eltype(keys₋)}()
-    next_id = max(maximum(keys₊), maximum(keys₋)) + 1
     done_keys₊ = eltype(keys₊)[] # stores keys of a₊ already processed
     used_keys₋ = eltype(keys₋)[] # stores keys of a₋ already used
     for (oldkey, newkey, dist) in sorted_keys_with_distances
+        # used keys can't be re-used to match again
         (oldkey ∈ done_keys₊ || newkey ∈ used_keys₋) && continue
         if dist < threshold
             push!(used_keys₋, newkey)

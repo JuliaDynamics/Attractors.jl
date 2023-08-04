@@ -198,10 +198,24 @@ step from matching them with their IDs in the previous parameter value.
 - `use_vanished = false`: HOW TO NAME THIS
 
 """
-function rematch_continuation!(fractions_curves, attractors_info; kwargs...)
+function rematch_continuation!(fractions_curves, attractors_info; used_vanished = false, kwargs...)
+    if !used_vanished
+        _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
+    else
+        error("not implemented yet!")
+    end
+end
+
+function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
+    # TODO: Set `next_id` correctly!
+    next_id = 1
     for i in 1:length(attractors_info)-1
         a₊, a₋ = attractors_info[i+1], attractors_info[i]
-        rmap = match_statespacesets!(a₊, a₋; kwargs...)
+        # Here we always compute a next id. In this way, if an attractor dissapears
+        # and re-appears, it will get a different (incremented) id as it should!
+        next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋))) + 1
+        next_id = max(next_id+1, next_id_a)
+        rmap = match_statespacesets!(a₊, a₋; next_id, kwargs...)
         swap_dict_keys!(fractions_curves[i+1], rmap)
     end
     rmap = retract_keys_to_consecutive(fractions_curves)
