@@ -32,7 +32,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     end
 end
 
-@testset "matching attractors in vector" begin
+@testset "continuation matching" begin
     # Make fake attractors with points that become more "separated" as "parameter"
     # is increased
     jrange = 0.1:0.1:1
@@ -46,26 +46,18 @@ end
         end
     end
     # Test with distance not enough to increment
-    match_statespacesets!(allatts; threshold = 100.0) # all odd keys become 1
+    match_continuation!(allatts; threshold = 100.0) # all odd keys become 1
     @test all(haskey(d, 1) for d in allatts)
     @test all(haskey(d, 2) for d in allatts)
     # Test with distance enough to increment
     allatts2 = deepcopy(allatts)
-    match_statespacesets!(allatts2; threshold = 0.1) # all keys there were `2` get incremented
+    match_continuation!(allatts2; threshold = 0.1) # all keys there were `2` get incremented
     @test all(haskey(d, 1) for d in allatts2)
     for i in 2:length(jrange)
         @test haskey(allatts2[i], i+1)
         @test !haskey(allatts2[i], 2)
     end
     @test haskey(allatts2[1], 2)
-    # Test rematch function
-    allatts3 = deepcopy(allatts2)
-    fracs = [Dict(k => 0.5 for (k, v) in att) for att in allatts3]
-    @test unique_keys(fracs) == 1:11
-    # Same matching as in `allatts`
-    rematch!(fracs, allatts3; threshold = 100.0)
-    @test unique_keys(fracs) == 1:2
-    @test unique_keys(allatts3) == 1:2
 end
 
 

@@ -72,7 +72,7 @@ function replacement_map(a₊::Dict, a₋::Dict;
     replacement_map(keys₊, keys₋, distances::Dict, threshold, nextid)
 end
 
-function replacement_map(keys₊, keys₋, distances::Dict, threshold, next_id)
+function replacement_map(keys₊, keys₋, distances::Dict, threshold, next_id = max(maximum(keys₊), maximum(keys₋)) + 1)
     # Transform distances to sortable collection. Sorting by distance
     # ensures we prioritize the closest matches
     sorted_keys_with_distances = Tuple{Int, Int, Float64}[]
@@ -167,7 +167,7 @@ end
     match_continuation!(fractions_curves::Vector{<:Dict}, attractors_info::Vector{<:Dict}; kwargs...)
 
 Given the outputs of [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref),
-perform the matching step of the process again with the (possibly different) keywords
+perform the matching step of the process with the (possibly different) keywords
 that [`match_statespacesets!`](@ref) accepts. This "re-matching" is possible because in
 [`continuation`](@ref) finding the attractors and their basins is a completely independent
 step from matching them with their IDs in the previous parameter value.
@@ -180,16 +180,14 @@ step from matching them with their IDs in the previous parameter value.
 
     rematch_continuation!(attractors_info::Vector{<:Dict}; kwargs...)
 
-This is a convenience method that only uses and modifies the attractors container.
+This is a convenience method that only uses and modifies the state space set container
+without the need for a basins fractions container.
 """
 function match_continuation!(attractors_info; kwargs...)
-    fractions_curves = [d => Dict(k => false for k in keys(d)) for d in attractors_info]
-    rematch_continuation!(fractions_curves, attractors_info; kwargs...)
+    fractions_curves = [Dict(k => nothing for k in keys(d)) for d in attractors_info]
+    match_continuation!(fractions_curves, attractors_info; kwargs...)
 end
 function match_continuation!(fractions_curves, attractors_info; used_vanished = false, kwargs...)
-    if isnothing(fractions_curves)
-        fractions_curves = [d => Dict(k => false for k in keys(d)) for d in attractors_info]
-    end
     if !used_vanished
         _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
     else
