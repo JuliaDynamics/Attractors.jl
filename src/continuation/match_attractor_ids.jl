@@ -188,6 +188,11 @@ attractor will _not_ have ID 3, but 4 (i.e., the next available ID).
 By default `use_vanished = !isinf(threshold)` and since the default value for
 `threshold` is `Inf`, `use_vanished` is `false`.
 
+The last keyword is `retract_keys = true` which will "retract" keys (i.e., make the
+integers smaller integers) so that all unique IDs
+are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become
+1, 2, 3. The special id -1 is unaffected by this.
+
 
     rematch_continuation!(attractors_info::Vector{<:Dict}; kwargs...)
 
@@ -200,18 +205,20 @@ function match_continuation!(attractors_info; kwargs...)
 end
 function match_continuation!(
         fractions_curves::Vector{<:Dict}, attractors_info::Vector{<:Dict};
-        threshold = Inf, use_vanished = !isinf(threshold), kwargs...
+        threshold = Inf, use_vanished = !isinf(threshold), retract_keys = true, kwargs...
     )
     if !use_vanished
         _rematch_ignored!(fractions_curves, attractors_info; threshold, kwargs...)
     else
         _rematch_with_past!(fractions_curves, attractors_info; threshold, kwargs...)
     end
-    # This part normalizes so that keys increment by +1
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
+    if retract_keys
+        # This part normalizes so that keys increment by +1
+        rmap = retract_keys_to_consecutive(fractions_curves)
+        for (da, df) in zip(attractors_info, fractions_curves)
+            swap_dict_keys!(da, rmap)
+            swap_dict_keys!(df, rmap)
+        end
     end
 end
 
