@@ -76,7 +76,7 @@ end
 struct MagneticPendulum
     magnets::Vector{SVector{2, Float64}}
 end
-mutable struct MagneticPendulumParams
+mutable struct MagneticPendulumParams2
     γs::Vector{Float64}
     d::Float64
     α::Float64
@@ -100,7 +100,7 @@ end
 function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
     γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N))
     m = MagneticPendulum([SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N])
-    p = MagneticPendulumParams(γs, d, α, ω)
+    p = MagneticPendulumParams2(γs, d, α, ω)
     return CoupledODEs(m, u, p)
 end
 

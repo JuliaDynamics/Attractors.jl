@@ -156,7 +156,7 @@ function continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     # Match attractors (and basins)
-    rematch!(fractions_curves, attractors_info; distance, threshold)
+    match_continuation!(fractions_curves, attractors_info; distance, threshold)
     return fractions_curves, attractors_info
 end
 
