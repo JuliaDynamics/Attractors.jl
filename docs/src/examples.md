@@ -309,7 +309,7 @@ We visualize them using a predefined function that you can find in `docs/basins_
 
 ```@example MAIN
 # careful; `prange` isn't a vector of reals!
-basins_curves_plot(fractions_curves, γγ)
+plot_basins_curves(fractions_curves, γγ)
 ```
 
 
@@ -370,7 +370,7 @@ fractions_curves, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );
-basins_curves_plot(fractions_curves, prange; separatorwidth = 1)
+plot_basins_curves(fractions_curves, prange; separatorwidth = 1)
 ```
 
 ![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
@@ -401,7 +401,7 @@ aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
     fractions_curves, attractors_info, featurizer, groupingconfig
 )
 
-basins_curves_plot(aggregated_fractions, prange;
+plot_basins_curves(aggregated_fractions, prange;
     separatorwidth = 1, colors = ["green", "black"],
     labels = Dict(1 => "extinct", 2 => "alive"),
 )
