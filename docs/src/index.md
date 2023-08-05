@@ -10,8 +10,9 @@ using CairoMakie, Attractors
 
 ## Latest news
 
-Our pre-print that discusses the global stability analysis framework offered by Attractors.jl ([`continuation`](@ref)) and the novel continuation offered by [`RecurrencesFindAndMatch`](@ref) is now online: https://arxiv.org/abs/2304.12786 !
-
+- Our paper on the global stability analysis framework offered by Attractors.jl ([`continuation`](@ref)) and the novel continuation offered by [`RecurrencesFindAndMatch`](@ref) is published as a _Featured Article_ in Chaos (https://pubs.aip.org/aip/cha/article/33/7/073151/2904709/Framework-for-global-stability-analysis-of) and has been featured in the AIP publishing showcase (https://www.growkudos.com/publications/10.1063%25252F5.0159675/reader)
+- New function [`minimal_fatal_shock`](@ref)
+- New function [`match_continuation!`](@ref) which improves the matching during a continuation process where attractors dissapear and re-appear.
 
 ## Outline of Attractors.jl
 

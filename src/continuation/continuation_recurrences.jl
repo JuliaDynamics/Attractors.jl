@@ -25,29 +25,38 @@ attractors and then running these initial conditions through the recurrences alg
 of the `mapper`. Seeding initial conditions close to previous attractors accelerates
 the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
 
-After the attractors are found, their fractions are computed by sampling new random initial
+After the special initial conditions are mapped to attractors, attractor basin fractions
+are computed by sampling random initial conditions.
 (using the provided `sampler` in [`continuation`](@ref)) and mapping them to attractors
 using the [`AttractorsViaRecurrences`](@ref) mapper.
 I.e., exactly as in [`basins_fractions`](@ref).
+Naturally, during this step new attractors may be found, besides those found
+using the "seeding from previous attractors".
+Once the basins fractions are computed,
+the parameter is incremented again and we perform the steps as before.
 
-Then, the newly found attractors (and their fractions) are "matched" to the previous ones.
-I.e., their _IDs are changed_, according to the [`match_statespacesets!`](@ref) function.
+This process continues for all parameter values. After all parameters are exhausted,
+the newly found attractors (and their fractions) are "matched" to the previous ones.
+I.e., their _IDs are changed_, so that attractors with closest distance to those at a
+previous parameter get assigned the same ID.
+Matching is rather sophisticated and is described in
+[`match_statespacesets!`](@ref) and [`match_continuation!`](@ref).
 Typically, the matching process matches attractor IDs that are closest in state space
 distance, but more options are possible, see [`match_statespacesets!`](@ref).
 
-This process continues until all parameter values are exhausted and for each parameter
-value the attractors and their fractions are found.
-
-Note that since in this continuation the finding-attractors and matching-attractors
+Note that in this continuation the finding-attractors and matching-attractors
 steps are completely independent. This means, that if you don't like the initial
-outcome of the matching process, you may call [`rematch!`](@ref) on the outcome.
+outcome of the matching process, you may call [`match_continuation!`](@ref) again
+on the outcome with (possibly different) matching-related keywords.
 
 ## Keyword arguments
 
-- `distance, threshold`: propagated to [`match_statespacesets!`](@ref).
+- `distance, threshold, use_vanished`: propagated to [`match_continuation!`](@ref).
 - `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
   and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`continuation`](@ref).
+  `attractors_info` in [`continuation`](@ref). Note that the same attractors that
+  are stored in `attractors_info` are also used to perform the matching in
+  [`match_continuation!`](@ref), hence this keyword should be altered with care.
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample only the first stored point on the attractor.
@@ -135,30 +144,19 @@ function continuation(
             end
         end
         # Now perform basin fractions estimation as normal, utilizing found attractors
+        # (the function comes from attractor_mapping.jl)
         fs = basins_fractions(mapper, ics;
             additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
         )
+        # We do not match attractors here; the matching is independent step done at the end
         current_attractors = mapper.bsn_nfo.attractors
-        if !isempty(current_attractors) && !isempty(prev_attractors)
-            # If there are any attractors,
-            # match with previous attractors before storing anything!
-            rmap = match_statespacesets!(
-                current_attractors, prev_attractors; distance, threshold
-            )
-            swap_dict_keys!(fs, rmap)
-        end
-        # Then do the remaining setup for storing and next step
         push!(fractions_curves, fs)
         push!(attractors_info, get_info(current_attractors))
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
-    # Normalize to smaller available integers for user convenience
-    rmap = retract_keys_to_consecutive(fractions_curves)
-    for (da, df) in zip(attractors_info, fractions_curves)
-        swap_dict_keys!(da, rmap)
-        swap_dict_keys!(df, rmap)
-    end
+    # Match attractors (and basins)
+    match_continuation!(fractions_curves, attractors_info; distance, threshold)
     return fractions_curves, attractors_info
 end
 
@@ -189,3 +187,4 @@ function _ics_from_grid(grid::Tuple)
     sampler, = statespace_sampler(grid)
     return sampler
 end
+
