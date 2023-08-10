@@ -21,7 +21,7 @@ using LinearAlgebra
     )
 
     attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
-    algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.97)
+    algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.96)
 
     randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
 
@@ -34,7 +34,6 @@ using LinearAlgebra
 
     test = true
     for i in (keys(randomised))
-        println(norm(randomised[i]))
         if norm(randomised[i]) >= 0.64 || norm(randomised[i]) <= 0.61 || newton(randomised[i] + i) == newton(i)
             test = false
         end
