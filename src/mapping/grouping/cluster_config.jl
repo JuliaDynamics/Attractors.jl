@@ -15,7 +15,7 @@ The defaults are a significant improvement over existing literature, see Descrip
 ## Keyword arguments
 
 * `clust_distance_metric = Euclidean()`: A metric to be used in the clustering.
-  It can be any function `f(a, b)` that returns the distance between vectors
+  It can be any function `f(a, b)` that returns the distance between real-valued vectors
   `a, b`. All metrics from Distances.jl can be used here.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
@@ -157,8 +157,8 @@ function _distance_matrix(features, config::GroupViaClustering;
     else # it is any arbitrary distance function, e.g., used in aggregating attractors
         @inbounds for i in eachindex(features)
             Threads.@threads for j in i:length(features)
-                dists[i, j] = metric(features[i], features[j])
-                dists[j, i] = dists[i, j] # symmetry
+                v = metric(features[i], features[j])
+                dists[i, j] = dists[j, i] = v # utilize symmetry
             end
         end
     end
