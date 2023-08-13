@@ -48,3 +48,4 @@ newton = AttractorsViaRecurrences(ds, (xg, yg);
 basins, attractors = basins_of_attraction(newton)
 
 @test length(attractors) == 3
+

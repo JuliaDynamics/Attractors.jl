@@ -40,6 +40,6 @@ tipping_probabilities
 The algorithm to find minimal perturbation for arbitrary initial condition `u0` which will kick the system into different from the current basin. 
 ```@docs
 minimal_fatal_shock
-MFSBlackBox
+MFSBlackBoxOptim
 MFSBruteForce
 ```

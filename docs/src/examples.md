@@ -53,12 +53,14 @@ in this case, to also get the attractors we simply extract them from the underly
 ```@example MAIN
 attractors = extract_attractors(mapper)
 ```
+
+
 ## Minimal Fatal Shock
 Finding Minimal Fatal Shock for some point `u0` on example of Newton's fractal attractors
 ```@example MAIN
 attractors = extract_attractors(mapper)
 shocks = Dict()
-algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 20000)
+algo_bb = Attractors.MFSBlackBoxOptim()
 for atr in values(attractors)
     u0 = vec(atr)[1]
     shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
@@ -72,9 +74,39 @@ ax =  content(fig[1,1])
 for (atr, shock) in shocks
     lines!(ax, [atr, atr + shock[1]])
 end
-fig
+display(fig)
 ```
 
+## Irregular grid
+One can also make use of irregular grids when dealing with systems with highly varying dynamics, make sure you provide `Dt` in initialization of mapper:
+
+```@example MAIN
+using DynamicalSystems
+@inbounds @inline function predator_prey(u, p, t)
+	α, γ, ϵ, ν, h, K, m = p
+	N, P = u
+    du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
+    du2 = ϵ * (  ν*γ*N*P/(N+h) - m*P    )
+	return SVector{2}(du1, du2)
+end
+
+γ = 2.5
+h = 1 
+ν = 0.5 
+m = 0.4
+ϵ = 1.0
+α = 0.8 
+K = 15 
+
+u0 = rand(2)
+ds = ContinuousDynamicalSystem(predator_prey, u0, [α, γ, ϵ, ν, h, K, m])
+xg = yg = range(0, 15^(1/2); length = 200).^2   # create a grid which is more fine close to zero
+mapper = AttractorsViaRecurrences(ds, (xg, yg); Dt = 0.1, sparse = false)
+basins, attractors = basins_of_attraction(mapper; show_progress = false)
+heatmap_basins_attractors((xg,yg),basins, attractors)
+
+
+```
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
 In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `ProjectedDynamicalSystem` to project the 4D system onto a 2D plane, saving a lot of computational time!
