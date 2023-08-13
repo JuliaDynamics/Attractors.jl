@@ -13,10 +13,9 @@ machine can operate on top of it. For example
 `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)` for a two-dimensional
 system with regular grid or one can also define an irregular grid, for example 
 `xg = vcat(range(-5, -2; length = 50), range(-2, 5; length = 50)),
-yg = range(-5, 5; length = 100)`.The grid has to be the same dimensionality as
+yg = range(-5, 5; length = 100)`. The grid has to be the same dimensionality as
 the state space, use a [`ProjectedDynamicalSystem`](@ref) if you 
 want to search for attractors in a lower dimensional subspace.
-
 ## Keyword arguments
 
 * `sparse = true`: control the interval representation of the state space grid. If true,
