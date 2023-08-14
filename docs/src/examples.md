@@ -77,7 +77,7 @@ end
 display(fig)
 ```
 
-## Irregular grid
+## Irregular grid for `AttractorsViaRecurrences`
 One can also make use of irregular grids when dealing with systems with highly varying dynamics, make sure you provide `Dt` in initialization of mapper:
 
 ```@example MAIN
