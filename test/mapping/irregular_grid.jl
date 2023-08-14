@@ -1,8 +1,5 @@
 using Attractors
-
 using Test
-
-
 
 function newton_map(z, p, n)
     z1 = z[1] + im*z[2]
@@ -48,4 +45,5 @@ newton = AttractorsViaRecurrences(ds, (xg, yg);
 basins, attractors = basins_of_attraction(newton)
 
 @test length(attractors) == 3
+
 

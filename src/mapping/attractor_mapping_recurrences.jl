@@ -377,7 +377,7 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         end
            
         y = _possibly_reduced_state(new_y, ds, grid_min)
-        n = basin_cell_index(y, bsn_nfo)
+        n = basin_cell_index(y, bsn_nfo.grid_nfo)
         cell_label = _identify_basin_of_cell!(bsn_nfo, n, y; kwargs...)
         
     end
@@ -533,39 +533,80 @@ function relabel_visited_cell!(bsn_nfo::BasinsInfo, old_label, new_label)
     end
 end
 
-function basin_cell_index(y_grid_state, bsn_nfo::BasinsInfo{B}) where {B}
-      
-    if bsn_nfo.grid_nfo isa RegularGrid
 
-        iswithingrid = true
 
-        @inbounds for i in eachindex(bsn_nfo.grid_nfo.grid_minima)
+function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
+    iswithingrid = true
+    @inbounds for i in eachindex(grid_nfo.grid_minima)
 
-            if !(bsn_nfo.grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ bsn_nfo.grid_nfo.grid_maxima[i])
-                iswithingrid = false
-                break
-            end
+        if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
+            iswithingrid = false
+            break
         end
-        if iswithingrid
-            # Snap point to grid
-            ind = @. round(Int, (y_grid_state - bsn_nfo.grid_nfo.grid_minima)/bsn_nfo.grid_nfo.grid_steps) + 1
-            return CartesianIndex{B}(ind...)
-        else
-            return CartesianIndex{B}(-1)
-        end
-    else 
-        for (axis, coord) in zip(bsn_nfo.grid_nfo.grid, y_grid_state)
-            if coord < minimum(axis) || coord > maximum(axis)
-                return CartesianIndex{B}(-1)
-            end
-        end
+    end
+    if iswithingrid
+        # Snap point to grid
+        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+        return CartesianIndex(ind...)
+    else
+        return CartesianIndex(-1)
+    end
+end
 
-        cell_indices = map(x -> searchsortedlast(x[1], x[2]), zip(bsn_nfo.grid_nfo.grid, y_grid_state))
-        
-        return CartesianIndex{B}(cell_indices...)
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
+    
+    for axis in grid_nfo.grid
+        if !issorted(axis)
+            throw(error("Please provide sorted vectors for each axis"))
+        end
     end
 
+    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
+        if coord < first(axis) || coord > last(axis)
+            return CartesianIndex(-1)
+        end
+    end
+
+    cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
+    
+    return CartesianIndex(cell_indices...)
+        
 end
+
+
+# function basin_cell_index(y_grid_state, bsn_nfo::BasinsInfo{B}) where {B}
+      
+#     if bsn_nfo.grid_nfo isa RegularGrid
+
+#         iswithingrid = true
+
+#         @inbounds for i in eachindex(bsn_nfo.grid_nfo.grid_minima)
+
+#             if !(bsn_nfo.grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ bsn_nfo.grid_nfo.grid_maxima[i])
+#                 iswithingrid = false
+#                 break
+#             end
+#         end
+#         if iswithingrid
+#             # Snap point to grid
+#             ind = @. round(Int, (y_grid_state - bsn_nfo.grid_nfo.grid_minima)/bsn_nfo.grid_nfo.grid_steps) + 1
+#             return CartesianIndex{B}(ind...)
+#         else
+#             return CartesianIndex{B}(-1)
+#         end
+#     else 
+#         for (axis, coord) in zip(bsn_nfo.grid_nfo.grid, y_grid_state)
+#             if coord < minimum(axis) || coord > maximum(axis)
+#                 return CartesianIndex{B}(-1)
+#             end
+#         end
+
+#         cell_indices = map(x -> searchsortedlast(x[1], x[2]), zip(bsn_nfo.grid_nfo.grid, y_grid_state))
+        
+#         return CartesianIndex{B}(cell_indices...)
+#     end
+
+# end
 
 
 
