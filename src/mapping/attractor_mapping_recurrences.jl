@@ -574,42 +574,6 @@ function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
 end
 
 
-# function basin_cell_index(y_grid_state, bsn_nfo::BasinsInfo{B}) where {B}
-      
-#     if bsn_nfo.grid_nfo isa RegularGrid
-
-#         iswithingrid = true
-
-#         @inbounds for i in eachindex(bsn_nfo.grid_nfo.grid_minima)
-
-#             if !(bsn_nfo.grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ bsn_nfo.grid_nfo.grid_maxima[i])
-#                 iswithingrid = false
-#                 break
-#             end
-#         end
-#         if iswithingrid
-#             # Snap point to grid
-#             ind = @. round(Int, (y_grid_state - bsn_nfo.grid_nfo.grid_minima)/bsn_nfo.grid_nfo.grid_steps) + 1
-#             return CartesianIndex{B}(ind...)
-#         else
-#             return CartesianIndex{B}(-1)
-#         end
-#     else 
-#         for (axis, coord) in zip(bsn_nfo.grid_nfo.grid, y_grid_state)
-#             if coord < minimum(axis) || coord > maximum(axis)
-#                 return CartesianIndex{B}(-1)
-#             end
-#         end
-
-#         cell_indices = map(x -> searchsortedlast(x[1], x[2]), zip(bsn_nfo.grid_nfo.grid, y_grid_state))
-        
-#         return CartesianIndex{B}(cell_indices...)
-#     end
-
-# end
-
-
-
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
     bsn_nfo.consecutive_lost = 0
