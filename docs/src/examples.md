@@ -53,12 +53,14 @@ in this case, to also get the attractors we simply extract them from the underly
 ```@example MAIN
 attractors = extract_attractors(mapper)
 ```
+
+
 ## Minimal Fatal Shock
 Finding Minimal Fatal Shock for some point `u0` on example of Newton's fractal attractors
 ```@example MAIN
 attractors = extract_attractors(mapper)
 shocks = Dict()
-algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 20000)
+algo_bb = Attractors.MFSBlackBoxOptim()
 for atr in values(attractors)
     u0 = vec(atr)[1]
     shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
@@ -72,9 +74,8 @@ ax =  content(fig[1,1])
 for (atr, shock) in shocks
     lines!(ax, [atr, atr + shock[1]])
 end
-fig
+display(fig)
 ```
-
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
 In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `ProjectedDynamicalSystem` to project the 4D system onto a 2D plane, saving a lot of computational time!
@@ -267,6 +268,59 @@ basins, attractors = basins_of_attraction(mapper; show_progress = false);
 heatmap_basins_attractors(grid, basins, attractors)
 ```
 _just like in the example above, there is a fourth attractor with 0 basin fraction. This is an unstable fixed point, and exists exactly because we provided a grid with the unstable fixed point exactly on this grid_
+
+
+## Irregular grid for `AttractorsViaRecurrences`
+It is possible to provide an irregularly spaced grid to `AttractorsViaRecurrences`. This can make algorithm performance better for continuous time systems where the state space flow has significantly different speed in some state space regions versus others.
+
+In the following example the dynamical system has only one attractor: a limit cycle. However, near the origin (0, 0) the timescale of the dynamics becomes very slow. As the trajectory is stuck there for quite a while, the recurrences algorithm may identify this region as an "attractor" (incorrectly). The solutions vary and can be to increase drastically the max time checks for finding attractors, or making the grid much more fine. Alternatively, one can provide a grid that is only more fine near the origin and not fine elsewhere.
+
+The example below highlights that for rather coarse settings of grid and convergence thresholds, using a grid that is finer near (0, 0) gives correct results:
+
+```@example MAIN
+using Attractors, CairoMakie
+
+function predator_prey_fastslow(u, p, t)
+	α, γ, ϵ, ν, h, K, m = p
+	N, P = u
+    du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
+    du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
+	return SVector(du1, du2)
+end
+γ = 2.5
+h = 1
+ν = 0.5
+m = 0.4
+ϵ = 1.0
+α = 0.8
+K = 15
+u0 = rand(2)
+p0 = [α, γ, ϵ, ν, h, K, m]
+ds = CoupledODEs(predator_prey_fastslow, u0, p0)
+
+fig = Figure()
+ax = Axis(fig[1,1])
+
+# when pow > 1, the grid is finer close to zero
+for pow in (1, 2)
+    xg = yg = range(0, 18.0^(1/pow); length = 200).^pow
+    mapper = AttractorsViaRecurrences(ds, (xg, yg);
+        Dt = 0.1, sparse = true,
+        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
+        mx_chk_safety = 1000,
+    )
+
+    # Find attractor and its fraction (fraction is always 1 here)
+    sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
+    fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+    attractors = extract_attractors(mapper)
+    scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
+end
+
+axislegend(ax)
+
+fig
+```
 
 ## Basin fractions continuation in the magnetic pendulum
 

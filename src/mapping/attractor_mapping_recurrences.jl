@@ -11,10 +11,11 @@ recurrences in the state space, as outlined by Datseris & Wagemakers [Datseris20
 `grid` is a tuple of ranges partitioning the state space so that a finite state
 machine can operate on top of it. For example
 `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)` for a two-dimensional
-system. The grid has to be the same dimensionality as the state space, use a
-[`ProjectedDynamicalSystem`](@ref) if you want to search for attractors in a lower
-dimensional subspace.
-
+system with regular grid or one can also define an irregular grid, for example 
+`xg = vcat(range(-5, -2; length = 50), range(-2, 5; length = 50)),
+yg = range(-5, 5; length = 100)`. The grid has to be the same dimensionality as
+the state space, use a [`ProjectedDynamicalSystem`](@ref) if you 
+want to search for attractors in a lower dimensional subspace.
 ## Keyword arguments
 
 * `sparse = true`: control the interval representation of the state space grid. If true,
@@ -185,15 +186,26 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     return basins, mapper.bsn_nfo.attractors
 end
 
-
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
-    basins::A # sparse or dense
+
+abstract type Grid end
+
+Base.@kwdef struct RegularGrid{D} <:Grid
     grid_steps::SVector{D, Float64}
-    grid_maxima::SVector{D, Float64}
     grid_minima::SVector{D, Float64}
+    grid_maxima::SVector{D, Float64}
+end
+
+struct IrregularGrid{D} <:Grid
+    grid::NTuple{D,Vector{Float64}}
+end
+
+
+mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int32, D}}
+    basins::A # sparse or dense
+    grid_nfo::G
     Δt::Δ
     state::Symbol
     current_att_label::Int
@@ -207,7 +219,12 @@ mutable struct BasinsInfo{D, Δ, T, Q, A <: AbstractArray{Int32, D}}
 end
 
 function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
+    
+    regular = all(r -> r isa AbstractRange, grid)
     Δt = if isnothing(Δtt)
+        if !regular
+            throw(error("Provide the Dt for irregular grid"))
+        end
         isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
     else
         Δtt
@@ -219,9 +236,18 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     if D ≠ G && (ds isa PoincareMap && G ∉ (D, D-1))
         error("Grid and dynamical system do not have the same dimension!")
     end
-    grid_steps = step.(grid)
-    grid_maxima = maximum.(grid)
-    grid_minima = minimum.(grid)
+   
+    D = length(grid)
+
+    if regular
+        grid_steps = SVector{D,Float64}(step.(grid))
+        grid_maxima = SVector{D,Float64}(maximum.(grid))
+        grid_minima = SVector{D,Float64}(minimum.(grid))
+        grid_info = RegularGrid(grid_steps, grid_minima, grid_maxima)
+    else
+        grid_info = IrregularGrid(grid)
+    end
+    
     basins_array = if sparse
         SparseArray{Int32}(undef, map(length, grid))
     else
@@ -229,18 +255,18 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     end
     bsn_nfo = BasinsInfo(
         basins_array,
-        SVector{G, Float64}(grid_steps),
-        SVector{G, Float64}(grid_maxima),
-        SVector{G, Float64}(grid_minima),
+        grid_info,
         Δt,
         :att_search,
         2,4,0,1,0,0,
         Dict{Int32, StateSpaceSet{G, T}}(),
         Vector{CartesianIndex{G}}(),
     )
+    
     reset_basins_counters!(bsn_nfo)
     return bsn_nfo
 end
+
 
 
 using LinearAlgebra: norm
@@ -344,9 +370,16 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # The internal function `_possibly_reduced_state` exists solely to
         # accommodate the special case of a Poincare map with the grid defined
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
-        y = _possibly_reduced_state(new_y, ds, bsn_nfo.grid_minima)
-        n = basin_cell_index(y, bsn_nfo)
+        if bsn_nfo.grid_nfo isa RegularGrid
+            grid_min = bsn_nfo.grid_nfo.grid_minima
+        else
+            grid_min = minimum.(bsn_nfo.grid_nfo.grid)
+        end
+           
+        y = _possibly_reduced_state(new_y, ds, grid_min)
+        n = basin_cell_index(y, bsn_nfo.grid_nfo)
         cell_label = _identify_basin_of_cell!(bsn_nfo, n, y; kwargs...)
+        
     end
     return cell_label
 end
@@ -478,8 +511,8 @@ function _identify_basin_of_cell!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{D, Δ, T},
-    u, show_progress = true) where {D, Δ, T}
+function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T},
+    u, show_progress = true) where {D, G, Δ, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
@@ -500,22 +533,46 @@ function relabel_visited_cell!(bsn_nfo::BasinsInfo, old_label, new_label)
     end
 end
 
-function basin_cell_index(y_grid_state, bsn_nfo::BasinsInfo{B}) where {B}
+
+
+function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
     iswithingrid = true
-    @inbounds for i in eachindex(bsn_nfo.grid_minima)
-        if !(bsn_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ bsn_nfo.grid_maxima[i])
+    @inbounds for i in eachindex(grid_nfo.grid_minima)
+
+        if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
             iswithingrid = false
             break
         end
     end
     if iswithingrid
         # Snap point to grid
-        ind = @. round(Int, (y_grid_state - bsn_nfo.grid_minima)/bsn_nfo.grid_steps) + 1
-        return CartesianIndex{B}(ind...)
+        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+        return CartesianIndex(ind...)
     else
-        return CartesianIndex{B}(-1)
+        return CartesianIndex(-1)
     end
 end
+
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
+    
+    for axis in grid_nfo.grid
+        if !issorted(axis)
+            throw(error("Please provide sorted vectors for each axis"))
+        end
+    end
+
+    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
+        if coord < first(axis) || coord > last(axis)
+            return CartesianIndex(-1)
+        end
+    end
+
+    cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
+    
+    return CartesianIndex(cell_indices...)
+        
+end
+
 
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
