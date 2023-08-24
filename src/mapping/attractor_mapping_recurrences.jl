@@ -202,6 +202,12 @@ struct IrregularGrid{D} <:Grid
     grid::NTuple{D,Vector{Float64}}
 end
 
+struct IrregularGridViaMatrix{D} <:Grid
+    grid::NTuple{D}
+    matrix::Vector{Vector{D, Float64}}
+end
+
+
 
 mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int32, D}}
     basins::A # sparse or dense
@@ -220,7 +226,11 @@ end
 
 function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     
-    regular = all(r -> r isa AbstractRange, grid)
+    if last(grid) isa Matrix
+        
+    else 
+        regular = all(r -> r isa AbstractRange, grid)
+    end
     Δt = if isnothing(Δtt)
         if !regular
             throw(error("Provide the Dt for irregular grid"))
@@ -574,6 +584,21 @@ function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
 end
 
 
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGridViaMatrix)
+
+    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
+        if coord < first(axis) || coord > last(axis)
+            return CartesianIndex(-1)
+        end
+    end
+    indices = []
+    for (axis, coord) in zip(grid_nfo, y_grid_state)
+        push!(indices, @. round(Int, (y_grid_state - first(axis))/step(axis)) + 1)
+    end
+    return CartesianIndex(indices...)
+end
+
+
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
     bsn_nfo.consecutive_lost = 0
@@ -615,3 +640,20 @@ function check_next_state!(bsn_nfo, ic_label)
     end
     bsn_nfo.state = next_state
 end
+
+
+function grid_resizer(matrix, grid)
+    max_d = maximum(matrix)
+    new_grid = []
+    for i in eachindex(grid)
+        push!(new_grid,range(first(grid[i]), last(grid[i]), length = Int(length(grid[i])*max_d)))
+    end
+    return new_grid
+end
+
+
+function coord_to_matrix_cell(matrix, coord)
+    dim_matrix = size(matrix)
+
+end
+

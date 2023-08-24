@@ -47,3 +47,27 @@ basins, attractors = basins_of_attraction(newton)
 @test length(attractors) == 3
 
 
+
+################################################
+####    New type of irregular grid          ####
+################################################
+
+
+matrix = [1. 0. 0. ;2. 0. 0.; 3. 3. 3. ; 4. 4. 4]
+size(matrix)
+array = [[[1.1 , 1.2], [1.3 ,1.4],[[1.5 , 1.6], [1.7 ,1.8]]
+
+max_d = maximum(matrix)
+
+xg = yg = range(0,5, length = 400)
+step(xg)
+grid = (xg, yg)
+new_grid = []
+for i in eachindex(grid)
+    push!(new_grid,range(first(grid[i]), last(grid[i]), length = Int(length(grid[i])*max_d)))
+end
+
+new_grid
+
+    
+
