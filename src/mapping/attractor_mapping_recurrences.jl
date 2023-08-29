@@ -71,6 +71,13 @@ want to search for attractors in a lower dimensional subspace.
   where a found attractor may intersect in the same cell with a new attractor the orbit
   traces (which leads to infinite resetting of all counters).
 
+### Grid irregularity specification
+* `density_matrix` while using regular grids of dimension 2, one can specify which regions 
+of the grid should be more dense than other by providing discretization levels of some grid
+areas via two dimensional `Matrix{Int64}`. For example, `density_matrix = [1 0; 0 2]` 
+specifies that top-right and bottom left quadrants of the grid has default range step size
+while top-left one `2^1 = 2` and bottom-right one `2^2 = 4` times smaller
+step size than default one.
 
 ## Description
 
@@ -114,9 +121,9 @@ struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
 end
 
 function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
-        Dt = nothing, Δt = Dt, sparse = true, force_non_adaptive = false, kwargs...
+        Dt = nothing, Δt = Dt, sparse = true, force_non_adaptive = false, density_matrix = nothing, kwargs...
     )
-    bsn_nfo = initialize_basin_info(ds, grid, Δt, sparse)
+    bsn_nfo = initialize_basin_info(ds, grid, Δt, sparse, density_matrix)
     if ds isa CoupledODEs && force_non_adaptive
         newdiffeq = (ds.diffeq..., adaptive = false, dt = bsn_nfo.Δt)
         ds = CoupledODEs(ds, newdiffeq)
@@ -159,7 +166,12 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
             `basins_of_attraction(mapper)`."""
         ))
     end
-    grid = mapper.grid
+    if (mapper.bsn_nfo.grid_nfo isa IrregularGridViaMatrix) &&(length(mapper.grid) == 2)
+        grid = (mapper.bsn_nfo.grid_nfo.grids[maximum(mapper.bsn_nfo.grid_nfo.matrix)][1],mapper.bsn_nfo.grid_nfo.grids[maximum(mapper.bsn_nfo.grid_nfo.matrix)][2])
+    else
+        grid = mapper.grid
+    end
+    
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
         length(basins); desc = "Basins of attraction: ", dt = 1.0
@@ -202,9 +214,9 @@ struct IrregularGrid{D} <:Grid
     grid::NTuple{D,Vector{Float64}}
 end
 
-struct IrregularGridViaMatrix{D} <:Grid
-    grid::NTuple{D}
-    matrix::Vector{Vector{D, Float64}}
+Base.@kwdef struct IrregularGridViaMatrix <:Grid
+    grids::Dict
+    matrix::Matrix{Int64}
 end
 
 
@@ -224,13 +236,13 @@ mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int32, D}}
     visited_list::Q
 end
 
-function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
+function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse, density_matrix)
     
-    if last(grid) isa Matrix
-        
-    else 
-        regular = all(r -> r isa AbstractRange, grid)
-    end
+    
+    regular = all(r -> r isa AbstractRange, grid)
+    
+
+
     Δt = if isnothing(Δtt)
         if !regular
             throw(error("Provide the Dt for irregular grid"))
@@ -248,8 +260,13 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     end
    
     D = length(grid)
-
-    if regular
+    if (density_matrix !== nothing)&&regular
+        
+        grids = collect_all_grids(grid, density_matrix)
+        grid = grids[maximum(density_matrix)]
+        G = length(grid)
+        grid_info = IrregularGridViaMatrix(grids, density_matrix)
+    elseif regular
         grid_steps = SVector{D,Float64}(step.(grid))
         grid_maxima = SVector{D,Float64}(maximum.(grid))
         grid_minima = SVector{D,Float64}(minimum.(grid))
@@ -261,7 +278,8 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     basins_array = if sparse
         SparseArray{Int32}(undef, map(length, grid))
     else
-        zeros(Int32, map(length, grid))
+        
+        zeros(Int32, map(length, grid)...)
     end
     bsn_nfo = BasinsInfo(
         basins_array,
@@ -382,8 +400,10 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
         if bsn_nfo.grid_nfo isa RegularGrid
             grid_min = bsn_nfo.grid_nfo.grid_minima
-        else
+        elseif bsn_nfo.grid_nfo isa IrregularGrid
             grid_min = minimum.(bsn_nfo.grid_nfo.grid)
+        else
+            grid_min = minimum.(first(values(bsn_nfo.grid_nfo.grids)))
         end
            
         y = _possibly_reduced_state(new_y, ds, grid_min)
@@ -545,6 +565,7 @@ end
 
 
 
+
 function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
     iswithingrid = true
     @inbounds for i in eachindex(grid_nfo.grid_minima)
@@ -562,6 +583,34 @@ function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
         return CartesianIndex(-1)
     end
 end
+
+
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGridViaMatrix)
+    
+    cell_area = point_to_index(first(values(grid_nfo.grids)), grid_nfo.matrix, y_grid_state)
+
+    grid = grid_nfo.grids[cell_area]
+    grid_steps = step.(grid)
+    grid_maxima = maximum.(grid)
+    grid_minima = minimum.(grid)
+
+    iswithingrid = true
+    @inbounds for i in eachindex(grid_minima)
+
+        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
+            iswithingrid = false
+            break
+        end
+    end
+    if iswithingrid
+        # Snap point to grid
+        ind = @. round(Int, (y_grid_state - grid_minima)/grid_steps) + 1
+        return CartesianIndex(ind...)
+    else
+        return CartesianIndex(-1)
+    end
+end
+
 
 function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
     
@@ -581,21 +630,6 @@ function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
     
     return CartesianIndex(cell_indices...)
         
-end
-
-
-function basin_cell_index(y_grid_state, grid_nfo::IrregularGridViaMatrix)
-
-    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
-        if coord < first(axis) || coord > last(axis)
-            return CartesianIndex(-1)
-        end
-    end
-    indices = []
-    for (axis, coord) in zip(grid_nfo, y_grid_state)
-        push!(indices, @. round(Int, (y_grid_state - first(axis))/step(axis)) + 1)
-    end
-    return CartesianIndex(indices...)
 end
 
 
@@ -642,18 +676,41 @@ function check_next_state!(bsn_nfo, ic_label)
 end
 
 
-function grid_resizer(matrix, grid)
-    max_d = maximum(matrix)
-    new_grid = []
-    for i in eachindex(grid)
-        push!(new_grid,range(first(grid[i]), last(grid[i]), length = Int(length(grid[i])*max_d)))
+
+function collect_all_grids(grid, matrix)
+    unique = Set(matrix)
+    grids = Dict()
+    for i in unique
+        grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
     end
-    return new_grid
+
+    return grids
 end
 
 
-function coord_to_matrix_cell(matrix, coord)
-    dim_matrix = size(matrix)
+function point_to_index(grid, matrix,  point)
+    size_y, size_x = size(matrix)
+    
+    step_x = abs(first(grid[1]) - point[1])
+    step_y = abs(last(grid[2]) - point[2])
 
+    ratio_x = step_x/(abs(first(grid[1])) + abs(last(grid[1])))
+    ratio_y = step_y/(abs(first(grid[2])) + abs(last(grid[2])))
+    temp_x = 0
+    temp_y = 0
+    for i in 1:size_x
+        temp_x += 1/size_x
+        if temp_x >= ratio_x
+            temp_x = i
+            break
+        end
+    end 
+    for j in 1:size_y
+        temp_y += 1/size_y
+        if temp_y >= ratio_y
+            temp_y = j
+            break
+        end
+    end 
+    return matrix[Int(temp_y), Int(temp_x)]
 end
-
