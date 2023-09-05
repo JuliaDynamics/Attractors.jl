@@ -1,5 +1,6 @@
-# v1.9.1
+# v1.10
 - Added support of irregular grids to `AttractorsViaRecurrences`, now user can provide ranges without fixed step along the same axis.
+
 # v1.9
 - Matching attractors during the continuation with `RAFM` has been improved and is done by the function `match_continuation!` which has two options regarding how to handle attractors of previous parameters that have vanished.
 
