@@ -74,7 +74,7 @@ want to search for attractors in a lower dimensional subspace.
 ### Grid irregularity specification
 * `density_matrix` while using regular grids of dimension 2, one can specify which regions 
 of the grid should be more dense than other by providing discretization levels of some grid
-areas via two dimensional `Matrix{Int64}`. For example, `density_matrix = [1 0; 0 2]` 
+areas via two dimensional `Matrix{Int}`. For example, `density_matrix = [1 0; 0 2]` 
 specifies that top-right and bottom left quadrants of the grid has default range step size
 while top-left one `2^1 = 2` and bottom-right one `2^2 = 4` times smaller
 step size than default one.
@@ -167,7 +167,9 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         ))
     end
     if (mapper.bsn_nfo.grid_nfo isa IrregularGridViaMatrix) &&(length(mapper.grid) == 2)
-        grid = (mapper.bsn_nfo.grid_nfo.grids[maximum(mapper.bsn_nfo.grid_nfo.matrix)][1],mapper.bsn_nfo.grid_nfo.grids[maximum(mapper.bsn_nfo.grid_nfo.matrix)][2])
+        grid = mapper.grid
+        grid = (mapper.bsn_nfo.grid_nfo.grid[1], mapper.bsn_nfo.grid_nfo.grid[2])
+        
     else
         grid = mapper.grid
     end
@@ -208,7 +210,25 @@ Base.@kwdef struct RegularGrid{D} <:Grid
     grid_steps::SVector{D, Float64}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
+end
+
+struct IrregularGrid{D} <:Grid
+    grid::NTuple{D,Vector{Float64}}
+end
+
+Base.@kwdef struct IrregularGridViaMatrix{D} <:Grid
+    grid_steps
     grid_minima::SVector{D, Float64}
+    grid_maxima::SVector{D, Float64}
+    matrix::Array
+    grid
+end
+
+
+
+mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
+    basins::A # sparse or dense
+    grid_nfo::G
     Δt::Δ
     state::Symbol
     current_att_label::Int
@@ -217,11 +237,17 @@ Base.@kwdef struct RegularGrid{D} <:Grid
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    attractors::Dict{Int32, StateSpaceSet{D, T}}
+    attractors::Dict{Int, StateSpaceSet{D, T}}
     visited_list::Q
 end
 
-function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
+function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse, density_matrix)
+    
+    
+    regular = all(r -> r isa AbstractRange, grid)
+    
+
+
     Δt = if isnothing(Δtt)
         if !regular
             throw(error("Provide the Dt for irregular grid"))
@@ -237,14 +263,30 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
     if D ≠ G && (ds isa PoincareMap && G ∉ (D, D-1))
         error("Grid and dynamical system do not have the same dimension!")
     end
-    grid_steps = step.(grid)
-    grid_maxima = maximum.(grid)
-    grid_minima = minimum.(grid)
+   
+    D = length(grid)
+    if (density_matrix !== nothing)&&regular
+        grid_maxima = SVector{D,Float64}(maximum.(grid))
+        grid_minima = SVector{D,Float64}(minimum.(grid))
+        grid_steps = collect_all_grids(grid, density_matrix)
+        
+        grid = [range(grid_minima[i], grid_maxima[i], length = grid_steps[maximum(density_matrix)][i]) for i in 1:D]
+        G = length(grid)
+        grid_info = IrregularGridViaMatrix(grid_steps, grid_minima, grid_maxima, density_matrix, grid)
+    elseif regular
+        grid_steps = SVector{D,Float64}(step.(grid))
+        grid_maxima = SVector{D,Float64}(maximum.(grid))
+        grid_minima = SVector{D,Float64}(minimum.(grid))
+        grid_info = RegularGrid(grid_steps, grid_minima, grid_maxima)
+    else
+        grid_info = IrregularGrid(grid)
+    end
+    
     basins_array = if sparse
-        SparseArray{Int32}(undef, map(length, grid))
+        SparseArray{Int}(undef, map(length, grid))
     else
         
-        zeros(Int32, map(length, grid)...)
+        zeros(Int, map(length, grid)...)
     end
     bsn_nfo = BasinsInfo(
         basins_array,
@@ -252,7 +294,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid, Δtt, sparse)
         Δt,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int32, StateSpaceSet{G, T}}(),
+        Dict{Int, StateSpaceSet{G, T}}(),
         Vector{CartesianIndex{G}}(),
     )
     
@@ -363,8 +405,13 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # The internal function `_possibly_reduced_state` exists solely to
         # accommodate the special case of a Poincare map with the grid defined
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
-        y = _possibly_reduced_state(new_y, ds, bsn_nfo.grid_minima)
-        n = basin_cell_index(y, bsn_nfo)
+        if (bsn_nfo.grid_nfo isa RegularGrid) || (bsn_nfo.grid_nfo isa IrregularGridViaMatrix)
+            grid_min = bsn_nfo.grid_nfo.grid_minima
+        else bsn_nfo.grid_nfo isa IrregularGrid
+            grid_min = minimum.(bsn_nfo.grid_nfo.grid)
+        end
+        y = _possibly_reduced_state(new_y, ds, grid_min)
+        n = basin_cell_index(y, bsn_nfo.grid_nfo)
         cell_label = _identify_basin_of_cell!(bsn_nfo, n, y; kwargs...)
         
     end
@@ -486,7 +533,7 @@ function _identify_basin_of_cell!(
     end
 
     if bsn_nfo.state == :lost
-        bsn_nfo.consecutive_lost += 1
+        bsn_nfo.consecutive_lost += 1  
         if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
             relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             reset_basins_counters!(bsn_nfo)
@@ -520,22 +567,77 @@ function relabel_visited_cell!(bsn_nfo::BasinsInfo, old_label, new_label)
     end
 end
 
-function basin_cell_index(y_grid_state, bsn_nfo::BasinsInfo{B}) where {B}
+
+
+
+function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
     iswithingrid = true
-    @inbounds for i in eachindex(bsn_nfo.grid_minima)
-        if !(bsn_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ bsn_nfo.grid_maxima[i])
+    @inbounds for i in eachindex(grid_nfo.grid_minima)
+
+        if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
             iswithingrid = false
             break
         end
     end
     if iswithingrid
         # Snap point to grid
-        ind = @. round(Int, (y_grid_state - bsn_nfo.grid_minima)/bsn_nfo.grid_steps) + 1
-        return CartesianIndex{B}(ind...)
+        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+        return CartesianIndex(ind...)
     else
         return CartesianIndex(-1)
     end
 end
+
+
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGridViaMatrix)
+    
+    cell_area = point_to_index(grid_nfo, grid_nfo.matrix, y_grid_state) ## correct first
+    
+    grid_maxima = grid_nfo.grid_maxima
+    grid_minima = grid_nfo.grid_minima
+    max_level = maximum(grid_nfo.matrix)
+    grid_steps = abs.(grid_minima - grid_maxima)./ grid_nfo.grid_steps[cell_area]
+    iswithingrid = true
+    @inbounds for i in eachindex(grid_minima)
+
+        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
+            iswithingrid = false
+            break
+        end
+    end
+    if iswithingrid
+        # Snap point to grid
+        ind = @. round(Int, (y_grid_state - grid_minima)/grid_steps/(2^(max_level-cell_area))) + 1 
+        return CartesianIndex(ind...) 
+        ## for each integer substruct `1` multiply by 2 as many time as discretization lvl difference 
+        ## then add 1 back to result 
+
+    else
+        return CartesianIndex(-1)
+    end
+end
+
+
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
+    
+    for axis in grid_nfo.grid
+        if !issorted(axis)
+            throw(error("Please provide sorted vectors for each axis"))
+        end
+    end
+
+    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
+        if coord < first(axis) || coord > last(axis)
+            return CartesianIndex(-1)
+        end
+    end
+
+    cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
+    
+    return CartesianIndex(cell_indices...)
+        
+end
+
 
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
@@ -583,24 +685,26 @@ end
 
 function collect_all_grids(grid, matrix)
     unique = Set(matrix)
-    grids = Dict()
+    grid_steps = Dict()
     for i in unique
-        grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
+        grid_steps[i] = [length(axis)*2^i for axis in grid]
+        #grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
     end
 
-    return grids
+    return grid_steps
 end
 
 
-function point_to_index(grid, matrix,  point)
+function point_to_index(grid_nfo, matrix,  point)
     size_y, size_x = size(matrix)
-    
-    step_x = abs(first(grid[1]) - point[1])
-    step_y = abs(last(grid[2]) - point[2])
+    grid_minima = grid_nfo.grid_minima
+    grid_maxima = grid_nfo.grid_maxima
+    step_x = abs(grid_minima[1] - point[1])
+    step_y = abs(grid_maxima[2]- point[2])
 
-    ratio_x = step_x/(abs(first(grid[1])) + abs(last(grid[1])))
-    ratio_y = step_y/(abs(first(grid[2])) + abs(last(grid[2])))
-    temp_x = 0
+    ratio_x = step_x/abs(grid_minima[1] - abs(grid_maxima[1]))
+    ratio_y = step_y/abs(grid_minima[2] - grid_maxima[2])
+    temp_x = 0 
     temp_y = 0
     for i in 1:size_x
         temp_x += 1/size_x
@@ -618,3 +722,4 @@ function point_to_index(grid, matrix,  point)
     end 
     return matrix[Int(temp_y), Int(temp_x)]
 end
+
