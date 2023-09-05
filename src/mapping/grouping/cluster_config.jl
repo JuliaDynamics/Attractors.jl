@@ -85,7 +85,7 @@ with similar accuracy. A third alternative is the`"elbow"` method, which works b
 calculating the distance of each point to its k-nearest-neighbors (with `k=min_neighbors`)
 and finding the distance corresponding to the highest derivative in the curve of the
 distances, sorted in ascending order. This distance is chosen as the optimal radius. It is
-described in [Ester1996](@ref) and [Schubert2017](@cite). It typically performs considerably worse
+described in [Ester1996](@cite) and [Schubert2017](@cite). It typically performs considerably worse
 than the `"silhouette"` methods.
 """
 struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingConfig
