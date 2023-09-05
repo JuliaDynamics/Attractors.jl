@@ -591,7 +591,7 @@ end
 
 function basin_cell_index(y_grid_state, grid_nfo::IrregularGridViaMatrix)
     
-    cell_area = point_to_index(grid_nfo, grid_nfo.matrix, y_grid_state) ## correct first
+    cell_area = point_to_index(grid_nfo, grid_nfo.matrix, y_grid_state) 
     
     grid_maxima = grid_nfo.grid_maxima
     grid_minima = grid_nfo.grid_minima
@@ -607,7 +607,7 @@ function basin_cell_index(y_grid_state, grid_nfo::IrregularGridViaMatrix)
     end
     if iswithingrid
         # Snap point to grid
-        ind = @. round(Int, (y_grid_state - grid_minima)/grid_steps/(2^(max_level-cell_area))) + 1 
+        ind = @. round(Int,(y_grid_state - grid_minima)/grid_steps, RoundDown) * (2^(max_level-cell_area)) + 1
         return CartesianIndex(ind...) 
         ## for each integer substruct `1` multiply by 2 as many time as discretization lvl difference 
         ## then add 1 back to result 
