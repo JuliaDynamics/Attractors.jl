@@ -152,13 +152,13 @@ end
 
 
 
-point_to_index(grid_info, matrix, (1,1))
+# point_to_index(grid_info, matrix, (1,1))
 
-matrix = [[1,2], [1, 0]]
+# matrix = [[1,2], [1, 0]]
 
 
-using Attractors
-using Test
+# using Attractors
+# using Test
 
 function collect_all_grids(grid, matrix)
     unique = Set(matrix)
@@ -243,9 +243,7 @@ function basin_cell_index(y_grid_state, grid_nfo)
 end
 
 
-matrix = [0 3; 3 0]
-grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-grid_steps = collect_all_grids(grid, matrix)
+
 # collect(range(0, 9, length = 10))
 # collect(range(0, 9, length = 20))[2:8]
 # collect(range(0, 9, length = 40))[1:6]
@@ -253,19 +251,22 @@ grid_steps = collect_all_grids(grid, matrix)
 
 #grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
 
+
+grid = (range(0, 10, length = 11),range(0, 10, length = 11))
 matrix = [0 3; 3 0]
+grid_steps = collect_all_grids(grid, matrix)
 grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
 @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(12,12)
 
 grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-grid_steps = collect_all_grids(grid, matrix)
 matrix = [0 3; 2 0]
+grid_steps = collect_all_grids(grid, matrix)
 grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
 @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(11, 11)
 
 grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-grid_steps = collect_all_grids(grid, matrix)
 matrix = [0 3; 0 0]
+grid_steps = collect_all_grids(grid, matrix)
 grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
 @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(9, 9)
 
@@ -274,33 +275,84 @@ grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum
 
 
 
+# function newton_map(z, p, n)
+#     z1 = z[1] + im*z[2]
+#     dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
+#     z1 = z1 - dz1
+#     return SVector(real(z1), imag(z1))
+# end
+# newton_f(x, p) = x^p - 1
+# newton_df(x, p)= p*x^(p-1)
+
+# ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
+# xg = yg = range(-1.5, 1.5, length = 100)
+
+# using LinearAlgebra
+
+# function automatic_Δt_basins(ds, grid; N = 50)
+#     #isdiscretetime(ds) && return 1
+#     if ds isa ProjectedDynamicalSystem
+#         # TODO:
+#         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
+#     end
+#     steps = step.(grid)
+#     s = sqrt(sum(x^2 for x in steps)) # diagonal length of a cell
+#     indices = CartesianIndices(length.(grid))
+#     random_points = [Attractors.generate_ic_on_grid(grid, ind) for ind in rand(indices, N)]
+#     dudt = 0.0
+#     udummy = copy(current_state(ds))
+#     f, p = dynamic_rule(ds), current_parameters(ds)
+#     for point in random_points
+#         deriv = if !isinplace(ds)
+#             f(point, p, 0.0)
+#         else
+#             f(udummy, point, p, 0.0)
+#             udummy
+#         end
+#         dudt += LinearAlgebra.norm(deriv)
+#     end
+#     Δt = 10*s*N/dudt
+#     return Δt
+# end
+
+
+# automatic_Δt_basins(ds, (xg,yg); N =5)
+
+
+# f, p = dynamic_rule(ds), current_parameters(ds)
+
+
+# matrix = [[[0 for _ in 1:6] for _ in 1:6] for _ in 1:6]
 
 
 
 
 
 
-
-matrix = [0 0; 1 0]
-grid = (range(-10, 10, length = 10),range(-10, 10, length = 10))
-grid_steps = collect_all_grids(grid, matrix)
-CartesianIndices(collect(range(0, 10, length = 10)))
-collect(range(0, 10, length = 20))
-collect(range(0, 10, length = 40))[1:10]
-grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-grid_info
-basin_cell_index((-10,-10), grid_info)
+# f((1,1.5), p, 0.0)
 
 
 
-vect = [ [1, 1], [1, 1]]
+# matrix = [0 0; 1 0]
+# grid = (range(-10, 10, length = 10),range(-10, 10, length = 10))
+# grid_steps = collect_all_grids(grid, matrix)
+# CartesianIndices(collect(range(0, 10, length = 10)))
+# collect(range(0, 10, length = 20))
+# collect(range(0, 10, length = 40))[1:10]
+# grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
+# grid_info
+# basin_cell_index((-10,-10), grid_info)
 
-A = rand(3,2)
-CartesianIndices(A)
 
-a = [-1 0 1; -1 0 1]
-CartesianIndices(a)
 
-round(1.4)
-typeof(-1)
+# vect = [ [1, 1], [1, 1]]
+
+# A = rand(3,2)
+# CartesianIndices(A)
+
+# a = [-1 0 1; -1 0 1]
+# CartesianIndices(a)
+
+# round(1.4)
+# typeof(-1)
 
