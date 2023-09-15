@@ -11,16 +11,17 @@ A Julia module for
 
 - finding attractors of arbitrary dynamical systems
 - finding their basins of attraction or the state space fractions of the basins
+- analyzing global stability of attractors (also called non-local stability or  resilience)
 - "continuing" the attractors and their basins over a parameter range
 - finding the basin boundaries and analyzing their fractal properties
 - tipping points related functionality for systems with known dynamic rule
 - and more!
 
 It can be used as a standalone package, or as part of
-[DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/stable/).
+[DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/stable/).
 
 To install it, run `import Pkg; Pkg.add("Attractors")`.
 
-All further information is provided in the documentation, which you can either find [online](https://juliadynamics.github.io/Attractors.jl/stable/) or build locally by running the `docs/make.jl` file.
+All further information is provided in the documentation, which you can either find [online](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/attractors/stable/) or build locally by running the `docs/make.jl` file.
 
 _Previously, Attractors.jl was part of ChaosTools.jl_
