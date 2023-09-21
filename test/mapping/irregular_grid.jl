@@ -49,51 +49,40 @@ basins, attractors = basins_of_attraction(newton)
 
 
 
-matrices = []
-for _ in 1:3
-    matrix = zeros(Int, rand((2,3,4)), rand((2,3,4)))
-    for i in eachindex(matrix)
-        matrix[i] = rand((0,1,2,3))
-    end
-
-    function newton_map(z, p, n)
-        z1 = z[1] + im*z[2]
-        dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
-        z1 = z1 - dz1
-        return SVector(real(z1), imag(z1))
-    end
-    newton_f(x, p) = x^p - 1
-    newton_df(x, p)= p*x^(p-1)
-
-    ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
-    xg = yg = range(-1.5, 1.5, length = 100)
-
-    newton = AttractorsViaRecurrences(ds, (xg, yg);
-        sparse = false, mx_chk_lost = 1000, Dt =1, density_matrix = matrix,
-    )
-
-    @test ((newton([-0.5, 0.86]) != newton([-0.5, -0.86]))& (newton([-0.5, 0.86]) != newton([1.0, 0.0])) & (newton([-0.5, -0.86]) != newton([1.0, 0.0])))
-
-    basins, attractors = basins_of_attraction(newton)
-
-    @test length(attractors) == 3
-end
-
-
-
-
-
-# function get_dimension(matrix)
-#     dim = [size(matrix)[1]]
-#     while !(matrix[1] isa Int)  
-#         println(dim)
-#         matrix = matrix[1]
-#         push!(dim, size(matrix)[1])
+# matrices = []
+# for _ in 1:3
+#     matrix = zeros(Int, rand((2,3,4)), rand((2,3,4)))
+#     for i in eachindex(matrix)
+#         matrix[i] = rand((0,1,2,3))
 #     end
 
+#     function newton_map(z, p, n)
+#         z1 = z[1] + im*z[2]
+#         dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
+#         z1 = z1 - dz1
+#         return SVector(real(z1), imag(z1))
+#     end
+#     newton_f(x, p) = x^p - 1
+#     newton_df(x, p)= p*x^(p-1)
 
-#     return dim
+#     ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
+#     xg = yg = range(-1.5, 1.5, length = 100)
+
+#     newton = AttractorsViaRecurrences(ds, (xg, yg);
+#         sparse = false, mx_chk_lost = 1000, Dt =1, density_matrix = matrix,
+#     )
+
+#     @test ((newton([-0.5, 0.86]) != newton([-0.5, -0.86]))& (newton([-0.5, 0.86]) != newton([1.0, 0.0])) & (newton([-0.5, -0.86]) != newton([1.0, 0.0])))
+
+#     basins, attractors = basins_of_attraction(newton)
+
+#     @test length(attractors) == 3
 # end
+
+
+
+
+
 
 
 
@@ -109,33 +98,30 @@ end
 # end
 
 # function point_to_index(grid_nfo, matrix,  point)
-#     dims = get_dimension(matrix)
+#     dims = length.(grid_nfo.grid)
 #     grid_minima = grid_nfo.grid_minima
 #     grid_maxima = grid_nfo.grid_maxima
 #     ratios = []
 #     for i in 1:length(dims)
-#         if i == 1
-#             ratio = abs(grid_minima[i] - point[i])/abs(grid_minima[i] - grid_maxima[i])
-#         else
-#             ratio = abs(grid_maxima[i] - point[i])/abs(grid_minima[i] - grid_maxima[i])
-#         end
+       
+#         ratio = (point[i] - grid_minima[i])/ (grid_maxima[i] - grid_minima[i])
 #         push!(ratios, ratio )
 
 #     end
     
 #     index = zeros(length(dims))
-
-#     for i in 1:length(dims)
+#     result = []
+#     for i in eachindex(dims)
 #         for j in 1:dims[i]
 #             index[i] += 1/dims[i]
 #             if index[i] >= ratios[i]
-#                 index[i] = Int(j)
+#                 push!(result, j )
 #                 break
 #             end
 #         end
 #     end
-#     println(index)
-#     return matrix[Int(index[2])][Int(index[1])]
+#     println(result)
+#     return CartesianIndex(result...)
 # end
 
 # matrix = [[1,2], [1, 0]]
@@ -143,104 +129,104 @@ end
 # grid = (range(-1.5, 1.5, length = 3),range(-1.5, 1.5, length = 3))
 # grid_steps = collect_all_grids(grid, matrix)
 # collect(range(-1.5, 1.5, length = 3))
-# grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, (range(-1.5, 1.5, length = 80),range(-1.5, 1.5, length = 80)))
+# grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, (range(-1.5, 1.5, length = 3),range(-1.5, 1.5, length = 3)))
 
 
 
 
+# point_to_index(grid_info, matrix, (-1,-1))
+
+# # matrix = [[1,2], [1, 0]]
 
 
+# # using Attractors
+# # using Test
 
+# function collect_all_grids(grid, matrix)
+#     unique = Set(matrix)
+#     grid_steps = Dict()
+#     for i in unique
+#         grid_steps[i] = [length(axis)*2^i for axis in grid]
+#         #grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
+#     end
 
-# point_to_index(grid_info, matrix, (1,1))
+#     return grid_steps
+# end
 
-# matrix = [[1,2], [1, 0]]
+# function point_to_index(grid_nfo, matrix,  point)
+#     size_y, size_x = size(matrix)
+#     grid_minima = grid_nfo.grid_minima
+#     grid_maxima = grid_nfo.grid_maxima
+#     step_x = abs(grid_minima[1] - point[1])
+#     step_y = abs(grid_maxima[2]- point[2])
 
+#     ratio_x = step_x/abs(grid_minima[1] - abs(grid_maxima[1]))
+#     ratio_y = step_y/abs(grid_minima[2] - grid_maxima[2])
+#     temp_x = 0
+#     temp_y = 0
+#     for i in 1:size_x
+#         temp_x += 1/size_x
+#         if temp_x >= ratio_x
+#             temp_x = i
+#             break
+#         end
+#     end 
+#     for j in 1:size_y
+#         temp_y += 1/size_y
+#         if temp_y >= ratio_y
+#             temp_y = j
+#             break
+#         end
+#     end 
+#     return matrix[Int(temp_y), Int(temp_x)]
+# end
 
-# using Attractors
-# using Test
-
-function collect_all_grids(grid, matrix)
-    unique = Set(matrix)
-    grid_steps = Dict()
-    for i in unique
-        grid_steps[i] = [length(axis)*2^i for axis in grid]
-        #grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
-    end
-
-    return grid_steps
-end
-
-function point_to_index(grid_nfo, matrix,  point)
-    size_y, size_x = size(matrix)
-    grid_minima = grid_nfo.grid_minima
-    grid_maxima = grid_nfo.grid_maxima
-    step_x = abs(grid_minima[1] - point[1])
-    step_y = abs(grid_maxima[2]- point[2])
-
-    ratio_x = step_x/abs(grid_minima[1] - abs(grid_maxima[1]))
-    ratio_y = step_y/abs(grid_minima[2] - grid_maxima[2])
-    temp_x = 0
-    temp_y = 0
-    for i in 1:size_x
-        temp_x += 1/size_x
-        if temp_x >= ratio_x
-            temp_x = i
-            break
-        end
-    end 
-    for j in 1:size_y
-        temp_y += 1/size_y
-        if temp_y >= ratio_y
-            temp_y = j
-            break
-        end
-    end 
-    return matrix[Int(temp_y), Int(temp_x)]
-end
-
-function basin_cell_index(y_grid_state, grid_nfo)
+# function basin_cell_index(y_grid_state, grid_nfo)
     
-    cell_area = point_to_index(grid_nfo, grid_nfo.matrix, y_grid_state) ## correct first
+#     cell_area = point_to_index(grid_nfo, grid_nfo.matrix, y_grid_state) ## correct first
     
-    grid_maxima = grid_nfo.grid_maxima
-    grid_minima = grid_nfo.grid_minima
-    max_level = maximum(grid_nfo.matrix)
-    println(grid_nfo.grid_steps)
-    grid_steps = abs.(grid_minima - grid_maxima)./ grid_nfo.grid_steps[cell_area]
-    iswithingrid = true
-    @inbounds for i in eachindex(grid_minima)
+#     grid_maxima = grid_nfo.grid_maxima
+#     grid_minima = grid_nfo.grid_minima
+#     max_level = maximum(grid_nfo.matrix)
+#     println(grid_nfo.grid_steps)
+#     grid_steps = (grid_maxima - grid_minima .+1)./ grid_nfo.grid_steps[cell_area]
+#     println(grid_steps)
+#     iswithingrid = true
+#     @inbounds for i in eachindex(grid_minima)
 
-        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
-            iswithingrid = false
-            break
-        end
-    end
-    if iswithingrid
-        # Snap point to grid
-        # rough_ind = @. (y_grid_state - grid_minima)/grid_steps 
-        # ind = []
-        # for i in rough_ind
-        #         (i % 1 <= 0.5) ? push!(ind, 1) : push!(ind, 0)
-        # end
-        # println(ind)
-        # indices = @. round(Int, rough_ind ) *(2^(max_level-cell_area)) + ind
+#         if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
+#             iswithingrid = false
+#             break
+#         end
+#     end
+#     if iswithingrid
+#         # Snap point to grid
+#         # rough_ind = @. (y_grid_state - grid_minima)/grid_steps 
+#         # ind = []
+#         # for i in rough_ind
+#         #         (i % 1 <= 0.5) ? push!(ind, 1) : push!(ind, 0)
+#         # end
+#         # println(ind)
+#         # indices = @. round(Int, rough_ind ) *(2^(max_level-cell_area)) + ind
 
+#         #println(@. (y_grid_state - grid_minima)/grid_steps)
+#         indices = @. round(Int,(y_grid_state - grid_minima)/grid_steps, RoundDown) * (2^(max_level-cell_area)) + 1
 
-        indices = @. round(Int,(y_grid_state - grid_minima)/grid_steps, RoundDown) * (2^(max_level-cell_area)) + 1
-
-        # indices = []
+#         # indices = []
         
-        # for ind in rough_indices
-        #     (ind % 1 < 0.5) ? push!(indices, round(Int, ind+1)) : push!(indices, round(Int, ind))
-        # end
-        # println(indices)
-        return CartesianIndex(indices...) 
+#         # for ind in rough_indices
+#         #     (ind % 1 < 0.5) ? push!(indices, round(Int, ind+1)) : push!(indices, round(Int, ind))
+#         # end
+#         # println(indices)
+#         return CartesianIndex(indices...) 
 
-    else
-        return CartesianIndex(-1)
-    end
-end
+#     else
+#         return CartesianIndex(-1)
+#     end
+# end
+
+
+
 
 
 
@@ -252,26 +238,37 @@ end
 #grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
 
 
-grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-matrix = [0 3; 3 0]
-grid_steps = collect_all_grids(grid, matrix)
-grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-@test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(12,12)
+# grid = (range(0, 10, length = 11),range(0, 10, length = 11))
+# matrix = [0 3; 3 0]
+# grid_steps = collect_all_grids(grid, matrix)
+# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
+# basin_cell_index((1.25, 1.25), grid)
+# @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(12,12)
 
-grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-matrix = [0 3; 2 0]
-grid_steps = collect_all_grids(grid, matrix)
-grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-@test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(11, 11)
+# grid = (range(0, 10, length = 11),range(0, 10, length = 11))
+# matrix = [0 3; 2 0]
+# grid_steps = collect_all_grids(grid, matrix)
+# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
+# @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(11, 11)
 
-grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-matrix = [0 3; 0 0]
-grid_steps = collect_all_grids(grid, matrix)
-grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-@test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(9, 9)
+# grid = (range(0, 10, length = 11),range(0, 10, length = 11))
+# matrix = [0 3; 0 0]
+# grid_steps = collect_all_grids(grid, matrix)
+# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
+# @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(9, 9)
 
+# ###################################################
 
+# grid = (range(0, 5, length = 6),range(0, 5, length = 6))
+# matrix = [0 0; 
+#           0 3]
+# grid_steps = collect_all_grids(grid, matrix)
+# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
+# basin_cell_index((1.6, 3.4), grid)
 
+# ###################################################
+
+# collect(range(0, 5, length = 6))
 
 
 
@@ -287,72 +284,129 @@ grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum
 # ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 # xg = yg = range(-1.5, 1.5, length = 100)
 
+
+# #xg = yg = range(0, 5; length = 100)
+
+# grid = (xg, yg)
+
 # using LinearAlgebra
 
-# function automatic_Δt_basins(ds, grid; N = 50)
-#     #isdiscretetime(ds) && return 1
-#     if ds isa ProjectedDynamicalSystem
-#         # TODO:
-#         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
-#     end
-#     steps = step.(grid)
-#     s = sqrt(sum(x^2 for x in steps)) # diagonal length of a cell
+# function make_irregular_array(ds, grid, maxlevel = 4)
 #     indices = CartesianIndices(length.(grid))
-#     random_points = [Attractors.generate_ic_on_grid(grid, ind) for ind in rand(indices, N)]
-#     dudt = 0.0
-#     udummy = copy(current_state(ds))
 #     f, p = dynamic_rule(ds), current_parameters(ds)
-#     for point in random_points
-#         deriv = if !isinplace(ds)
-#             f(point, p, 0.0)
+#     udummy = copy(current_state(ds))
+#     #velocities = Dict()
+#     velocities = zeros(length.(grid))
+
+#     for ind in indices
+#         u0 = Attractors.generate_ic_on_grid(grid, ind)
+#         velocity = if !isinplace(ds)
+#             f(u0, p, 0.0)
 #         else
-#             f(udummy, point, p, 0.0)
+#             f(udummy, u0, p, 0.0)
 #             udummy
 #         end
-#         dudt += LinearAlgebra.norm(deriv)
+#         if (isequal(LinearAlgebra.norm(velocity),NaN))
+#             #velos[ind] = 1
+#             velocities[ind] = 1
+#         else 
+#             #velos[ind] = LinearAlgebra.norm(velocity)
+#             velocities[ind] = LinearAlgebra.norm(velocity)
+#             if LinearAlgebra.norm(velocity)>100
+#                 println("error")
+#             end
+#         end
 #     end
-#     Δt = 10*s*N/dudt
-#     return Δt
+#     #println(velos)
+    
+
+
+#     #println(velocities)
+#     maxvel = maximum(velocities)
+#     #println(maxvel)
+#     #println(velocities[maxvel])
+#     velratios = maxvel./velocities
+
+#     result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
+#     #println(velratios)
+#     #velratios = Dict(x => maxvel[2]/velocities[x] for x in keys(velocities))
+#     #result = Dict(x =>  round(Int,log2(clamp(velratios[x], 1, 2^maxlevel))) for x in keys(velratios))
+
+#     return result
 # end
-
-
-# automatic_Δt_basins(ds, (xg,yg); N =5)
-
-
-# f, p = dynamic_rule(ds), current_parameters(ds)
-
-
-# matrix = [[[0 for _ in 1:6] for _ in 1:6] for _ in 1:6]
+# Set(make_irregular_array(ds, grid))
 
 
 
 
+# function make_irregular_array(ds, grid, maxlevel = 4)
+#     indices = CartesianIndices(length.(grid))
+#     f, p = dynamic_rule(ds), current_parameters(ds)
+#     udummy = copy(current_state(ds))
+#     velocities = Dict()
+#     #velocities = zeros(length.(grid))
+
+#     for ind in indices
+#         u0 = Attractors.generate_ic_on_grid(grid, ind)
+#         velocity = if !isinplace(ds)
+#             f(u0, p, 0.0)
+#         else
+#             f(udummy, u0, p, 0.0)
+#             udummy
+#         end
+#         if (isequal(LinearAlgebra.norm(velocity),NaN))
+#             #velos[ind] = 1
+#             velocities[ind] = 1
+#         else 
+#             #velos[ind] = LinearAlgebra.norm(velocity)
+#             velocities[ind] = LinearAlgebra.norm(velocity)
+#             if LinearAlgebra.norm(velocity) > 100
+#                 println("error 2")
+#             end
+
+#         end
+#     end
+#     #println(velos)
+    
 
 
-# f((1,1.5), p, 0.0)
+#     maxvel = maximum(values(velocities))
+#     println(maxvel)
+#     velratios = Dict(x => maxvel/velocities[x] for x in keys(velocities))
+#     println(velratios)
+#     result = Dict(x =>  round(Int,log2(clamp(velratios[x], 1, 2^maxlevel))) for x in keys(velratios))
+
+#     return result
+# end
+# println(Set(values(make_irregular_array(ds, grid))))
 
 
 
-# matrix = [0 0; 1 0]
-# grid = (range(-10, 10, length = 10),range(-10, 10, length = 10))
-# grid_steps = collect_all_grids(grid, matrix)
-# CartesianIndices(collect(range(0, 10, length = 10)))
-# collect(range(0, 10, length = 20))
-# collect(range(0, 10, length = 40))[1:10]
-# grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-# grid_info
-# basin_cell_index((-10,-10), grid_info)
+
+
+using Attractors
+
+function newton_map(z, p, n)
+    z1 = z[1] + im*z[2]
+    dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
+    z1 = z1 - dz1
+    return SVector(real(z1), imag(z1))
+end
+newton_f(x, p) = x^p - 1
+newton_df(x, p)= p*x^(p-1)
+
+ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
+xg = yg = range(-1.5, 1.5, length = 10)
 
 
 
-# vect = [ [1, 1], [1, 1]]
 
-# A = rand(3,2)
-# CartesianIndices(A)
+grid_nfo = subdivision_based_grid(ds, (xg,yg))
 
-# a = [-1 0 1; -1 0 1]
-# CartesianIndices(a)
+newton = AttractorsViaRecurrences(ds, grid_nfo;
+    sparse = false, mx_chk_lost = 1000, Dt =1,
+)
 
-# round(1.4)
-# typeof(-1)
+@test ((newton([-0.5, 0.86]) != newton([-0.5, -0.86]))& (newton([-0.5, 0.86]) != newton([1.0, 0.0])) & (newton([-0.5, -0.86]) != newton([1.0, 0.0])))
+
 
