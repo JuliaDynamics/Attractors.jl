@@ -185,10 +185,11 @@ for pow in (1, 2)
     sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
     fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
     attractors = extract_attractors(mapper)
+    #println(length(vec(attractors[1])))
     scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
 end
 
-display(fig)
+#display(fig)
 
 
 
@@ -202,8 +203,10 @@ xg = yg = range(0, 18, length = 30)
 
 grid = subdivision_based_grid(ds, (xg, yg))
 
-#constructed lvl_array
+# constructed lvl_array
 grid.lvl_array
+
+# passing SubdivisionBasedGrid into mapper
 mapper = AttractorsViaRecurrences(ds, grid;
         Dt = 0.1, sparse = true,
         mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
@@ -213,11 +216,10 @@ mapper = AttractorsViaRecurrences(ds, grid;
     # Find attractor and its fraction (fraction is always 1 here)
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
 fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
-attractors = extract_attractors(mapper)
+attractors_SBD = extract_attractors(mapper)
 scatter!(ax, vec(attractors[1]); )
-
-
-display(fig)
+#println(length(vec(attractors[1])))
+#display(fig)
 
 ###############################
 ## same setup, regular grid  ##
@@ -234,6 +236,10 @@ mapper = AttractorsViaRecurrences(ds, (xg, yg);
     # Find attractor and its fraction (fraction is always 1 here)
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
 fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
-attractors = extract_attractors(mapper)
+attractors_reg = extract_attractors(mapper)
 scatter!(ax, vec(attractors[1]);)
-display(fig)
+#println(length(vec(attractors[1])))
+#display(fig)
+
+
+@test (length(vec(attractors_SBD[1]))/10) > length(vec(attractors_reg[1]))
