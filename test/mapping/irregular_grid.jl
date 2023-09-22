@@ -47,344 +47,81 @@ basins, attractors = basins_of_attraction(newton)
 
 @test length(attractors) == 3
 
+#########################################################################
+###                 Basin cell index test                             ###
+#########################################################################
 
 
-# matrices = []
-# for _ in 1:3
-#     matrix = zeros(Int, rand((2,3,4)), rand((2,3,4)))
-#     for i in eachindex(matrix)
-#         matrix[i] = rand((0,1,2,3))
-#     end
+function newton_map(z, p, n)
+    z1 = z[1] + im*z[2]
+    dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
+    z1 = z1 - dz1
+    return SVector(real(z1), imag(z1))
+end
+newton_f(x, p) = x^p - 1
+newton_df(x, p)= p*x^(p-1)
 
-#     function newton_map(z, p, n)
-#         z1 = z[1] + im*z[2]
-#         dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
-#         z1 = z1 - dz1
-#         return SVector(real(z1), imag(z1))
-#     end
-#     newton_f(x, p) = x^p - 1
-#     newton_df(x, p)= p*x^(p-1)
+ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 
-#     ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
-#     xg = yg = range(-1.5, 1.5, length = 100)
-
-#     newton = AttractorsViaRecurrences(ds, (xg, yg);
-#         sparse = false, mx_chk_lost = 1000, Dt =1, density_matrix = matrix,
-#     )
-
-#     @test ((newton([-0.5, 0.86]) != newton([-0.5, -0.86]))& (newton([-0.5, 0.86]) != newton([1.0, 0.0])) & (newton([-0.5, -0.86]) != newton([1.0, 0.0])))
-
-#     basins, attractors = basins_of_attraction(newton)
-
-#     @test length(attractors) == 3
-# end
+grid = (range(0, 5, length = 6),range(0, 5, length = 6))
+lvl_array = subdivision_based_grid(ds, grid)
+grid_steps = Dict{Int, Vector{Int}}(i => [6*2^i, 6*2^i] for i in 0:4)
+grid_nfo = Attractors.SubdivisionBasedGrid(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), Array([]), grid)
 
 
 
+# the function is modified, as current approach doesn't allow us to test it directly
+# the math behind absolutely the same, just input was changed and expanded to allow quick testing
+# Usage: you need to provide manually lvl of discretization of the cell with `cell_area` and
+# `max_level` of discretization along the whole grid
+# `cell_area` <= `max_level` in any scenraio
 
-
-
-
-
-# function collect_all_grids(grid, matrix)
-#     unique = Set([0,1,2])
-#     grid_steps = Dict()
-#     for i in unique
-#         grid_steps[i] = [length(axis)*2^i for axis in grid]
-#         #grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
-#     end
-
-#     return grid_steps
-# end
-
-# function point_to_index(grid_nfo, matrix,  point)
-#     dims = length.(grid_nfo.grid)
-#     grid_minima = grid_nfo.grid_minima
-#     grid_maxima = grid_nfo.grid_maxima
-#     ratios = []
-#     for i in 1:length(dims)
-       
-#         ratio = (point[i] - grid_minima[i])/ (grid_maxima[i] - grid_minima[i])
-#         push!(ratios, ratio )
-
-#     end
+function basin_cell_index(y_grid_state, grid_nfo, cell_area, max_level)
     
-#     index = zeros(length(dims))
-#     result = []
-#     for i in eachindex(dims)
-#         for j in 1:dims[i]
-#             index[i] += 1/dims[i]
-#             if index[i] >= ratios[i]
-#                 push!(result, j )
-#                 break
-#             end
-#         end
-#     end
-#     println(result)
-#     return CartesianIndex(result...)
-# end
+    grid_maxima = grid_nfo.grid_maxima
+    grid_minima = grid_nfo.grid_minima
+    grid_steps = (grid_maxima - grid_minima .+1)./ grid_nfo.grid_steps[cell_area]
+    iswithingrid = true
+    @inbounds for i in eachindex(grid_minima)
 
-# matrix = [[1,2], [1, 0]]
+        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
+            iswithingrid = false
+            break
+        end 
+    end
+    if iswithingrid
 
-# grid = (range(-1.5, 1.5, length = 3),range(-1.5, 1.5, length = 3))
-# grid_steps = collect_all_grids(grid, matrix)
-# collect(range(-1.5, 1.5, length = 3))
-# grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, (range(-1.5, 1.5, length = 3),range(-1.5, 1.5, length = 3)))
+        indices = @. round(Int,(y_grid_state - grid_minima)/grid_steps, RoundDown) * (2^(max_level-cell_area)) + 1
 
+        return CartesianIndex(indices...) 
 
+    else
+        return CartesianIndex(-1)
+    end
+end
+@testset "Basin cell index for SubdivisionBasedGrid" begin
 
+@test basin_cell_index((1.4, 3.4), grid_nfo, 1 , 1) == CartesianIndex((3,7))
+@test basin_cell_index((1.4, 3.4), grid_nfo, 1 , 3) == CartesianIndex((9,25))
+@test basin_cell_index((1.4, 3.4), grid_nfo, 2 , 3) == CartesianIndex((11,27))
 
-# point_to_index(grid_info, matrix, (-1,-1))
+@test basin_cell_index((2.2, 3.7), grid_nfo, 0 , 0) == CartesianIndex((3,4))
+@test basin_cell_index((2.2, 3.7), grid_nfo, 1 , 2) == CartesianIndex((9,15))
+@test basin_cell_index((2.2, 3.7), grid_nfo, 3 , 3) == CartesianIndex((18,30))
 
-# # matrix = [[1,2], [1, 0]]
+@test basin_cell_index((0.35, 2.2), grid_nfo, 1 , 1) == CartesianIndex((1,5))
+@test basin_cell_index((0.35, 2.2), grid_nfo, 2 , 2) == CartesianIndex((2,9))
+@test basin_cell_index((0.35, 2.2), grid_nfo, 0 , 3) == CartesianIndex((1,17))
 
-
-# # using Attractors
-# # using Test
-
-# function collect_all_grids(grid, matrix)
-#     unique = Set(matrix)
-#     grid_steps = Dict()
-#     for i in unique
-#         grid_steps[i] = [length(axis)*2^i for axis in grid]
-#         #grids[i] = [range(first(axis), last(axis), length = length(axis)*2^i) for axis in grid]
-#     end
-
-#     return grid_steps
-# end
-
-# function point_to_index(grid_nfo, matrix,  point)
-#     size_y, size_x = size(matrix)
-#     grid_minima = grid_nfo.grid_minima
-#     grid_maxima = grid_nfo.grid_maxima
-#     step_x = abs(grid_minima[1] - point[1])
-#     step_y = abs(grid_maxima[2]- point[2])
-
-#     ratio_x = step_x/abs(grid_minima[1] - abs(grid_maxima[1]))
-#     ratio_y = step_y/abs(grid_minima[2] - grid_maxima[2])
-#     temp_x = 0
-#     temp_y = 0
-#     for i in 1:size_x
-#         temp_x += 1/size_x
-#         if temp_x >= ratio_x
-#             temp_x = i
-#             break
-#         end
-#     end 
-#     for j in 1:size_y
-#         temp_y += 1/size_y
-#         if temp_y >= ratio_y
-#             temp_y = j
-#             break
-#         end
-#     end 
-#     return matrix[Int(temp_y), Int(temp_x)]
-# end
-
-# function basin_cell_index(y_grid_state, grid_nfo)
-    
-#     cell_area = point_to_index(grid_nfo, grid_nfo.matrix, y_grid_state) ## correct first
-    
-#     grid_maxima = grid_nfo.grid_maxima
-#     grid_minima = grid_nfo.grid_minima
-#     max_level = maximum(grid_nfo.matrix)
-#     println(grid_nfo.grid_steps)
-#     grid_steps = (grid_maxima - grid_minima .+1)./ grid_nfo.grid_steps[cell_area]
-#     println(grid_steps)
-#     iswithingrid = true
-#     @inbounds for i in eachindex(grid_minima)
-
-#         if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
-#             iswithingrid = false
-#             break
-#         end
-#     end
-#     if iswithingrid
-#         # Snap point to grid
-#         # rough_ind = @. (y_grid_state - grid_minima)/grid_steps 
-#         # ind = []
-#         # for i in rough_ind
-#         #         (i % 1 <= 0.5) ? push!(ind, 1) : push!(ind, 0)
-#         # end
-#         # println(ind)
-#         # indices = @. round(Int, rough_ind ) *(2^(max_level-cell_area)) + ind
-
-#         #println(@. (y_grid_state - grid_minima)/grid_steps)
-#         indices = @. round(Int,(y_grid_state - grid_minima)/grid_steps, RoundDown) * (2^(max_level-cell_area)) + 1
-
-#         # indices = []
-        
-#         # for ind in rough_indices
-#         #     (ind % 1 < 0.5) ? push!(indices, round(Int, ind+1)) : push!(indices, round(Int, ind))
-#         # end
-#         # println(indices)
-#         return CartesianIndex(indices...) 
-
-#     else
-#         return CartesianIndex(-1)
-#     end
-# end
+@test basin_cell_index((2.65, 3.3), grid_nfo, 0 , 1) == CartesianIndex((5,7))
+@test basin_cell_index((2.65, 3.3), grid_nfo, 0 , 2) == CartesianIndex((9,13))
+@test basin_cell_index((2.65, 3.3), grid_nfo, 1 , 3) == CartesianIndex((21,25))
+end
 
 
-
-
-
-
-# collect(range(0, 9, length = 10))
-# collect(range(0, 9, length = 20))[2:8]
-# collect(range(0, 9, length = 40))[1:6]
-# collect(range(0, 9, length = 80))[10:13]
-
-#grid_info = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-
-
-# grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-# matrix = [0 3; 3 0]
-# grid_steps = collect_all_grids(grid, matrix)
-# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-# basin_cell_index((1.25, 1.25), grid)
-# @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(12,12)
-
-# grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-# matrix = [0 3; 2 0]
-# grid_steps = collect_all_grids(grid, matrix)
-# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-# @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(11, 11)
-
-# grid = (range(0, 10, length = 11),range(0, 10, length = 11))
-# matrix = [0 3; 0 0]
-# grid_steps = collect_all_grids(grid, matrix)
-# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-# @test basin_cell_index((1.25, 1.25), grid) == CartesianIndex(9, 9)
-
-# ###################################################
-
-# grid = (range(0, 5, length = 6),range(0, 5, length = 6))
-# matrix = [0 0; 
-#           0 3]
-# grid_steps = collect_all_grids(grid, matrix)
-# grid = Attractors.IrregularGridViaMatrix(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), matrix, grid)
-# basin_cell_index((1.6, 3.4), grid)
-
-# ###################################################
-
-# collect(range(0, 5, length = 6))
-
-
-
-# function newton_map(z, p, n)
-#     z1 = z[1] + im*z[2]
-#     dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
-#     z1 = z1 - dz1
-#     return SVector(real(z1), imag(z1))
-# end
-# newton_f(x, p) = x^p - 1
-# newton_df(x, p)= p*x^(p-1)
-
-# ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
-# xg = yg = range(-1.5, 1.5, length = 100)
-
-
-# #xg = yg = range(0, 5; length = 100)
-
-# grid = (xg, yg)
-
-# using LinearAlgebra
-
-# function make_irregular_array(ds, grid, maxlevel = 4)
-#     indices = CartesianIndices(length.(grid))
-#     f, p = dynamic_rule(ds), current_parameters(ds)
-#     udummy = copy(current_state(ds))
-#     #velocities = Dict()
-#     velocities = zeros(length.(grid))
-
-#     for ind in indices
-#         u0 = Attractors.generate_ic_on_grid(grid, ind)
-#         velocity = if !isinplace(ds)
-#             f(u0, p, 0.0)
-#         else
-#             f(udummy, u0, p, 0.0)
-#             udummy
-#         end
-#         if (isequal(LinearAlgebra.norm(velocity),NaN))
-#             #velos[ind] = 1
-#             velocities[ind] = 1
-#         else 
-#             #velos[ind] = LinearAlgebra.norm(velocity)
-#             velocities[ind] = LinearAlgebra.norm(velocity)
-#             if LinearAlgebra.norm(velocity)>100
-#                 println("error")
-#             end
-#         end
-#     end
-#     #println(velos)
-    
-
-
-#     #println(velocities)
-#     maxvel = maximum(velocities)
-#     #println(maxvel)
-#     #println(velocities[maxvel])
-#     velratios = maxvel./velocities
-
-#     result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
-#     #println(velratios)
-#     #velratios = Dict(x => maxvel[2]/velocities[x] for x in keys(velocities))
-#     #result = Dict(x =>  round(Int,log2(clamp(velratios[x], 1, 2^maxlevel))) for x in keys(velratios))
-
-#     return result
-# end
-# Set(make_irregular_array(ds, grid))
-
-
-
-
-# function make_irregular_array(ds, grid, maxlevel = 4)
-#     indices = CartesianIndices(length.(grid))
-#     f, p = dynamic_rule(ds), current_parameters(ds)
-#     udummy = copy(current_state(ds))
-#     velocities = Dict()
-#     #velocities = zeros(length.(grid))
-
-#     for ind in indices
-#         u0 = Attractors.generate_ic_on_grid(grid, ind)
-#         velocity = if !isinplace(ds)
-#             f(u0, p, 0.0)
-#         else
-#             f(udummy, u0, p, 0.0)
-#             udummy
-#         end
-#         if (isequal(LinearAlgebra.norm(velocity),NaN))
-#             #velos[ind] = 1
-#             velocities[ind] = 1
-#         else 
-#             #velos[ind] = LinearAlgebra.norm(velocity)
-#             velocities[ind] = LinearAlgebra.norm(velocity)
-#             if LinearAlgebra.norm(velocity) > 100
-#                 println("error 2")
-#             end
-
-#         end
-#     end
-#     #println(velos)
-    
-
-
-#     maxvel = maximum(values(velocities))
-#     println(maxvel)
-#     velratios = Dict(x => maxvel/velocities[x] for x in keys(velocities))
-#     println(velratios)
-#     result = Dict(x =>  round(Int,log2(clamp(velratios[x], 1, 2^maxlevel))) for x in keys(velratios))
-
-#     return result
-# end
-# println(Set(values(make_irregular_array(ds, grid))))
-
-
-
-
-
-using Attractors
+############################################################
+####  SubdivisionBasedGrid tests                        ####
+############################################################
 
 function newton_map(z, p, n)
     z1 = z[1] + im*z[2]
@@ -399,8 +136,6 @@ ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 xg = yg = range(-1.5, 1.5, length = 10)
 
 
-
-
 grid_nfo = subdivision_based_grid(ds, (xg,yg))
 
 newton = AttractorsViaRecurrences(ds, grid_nfo;
@@ -410,3 +145,95 @@ newton = AttractorsViaRecurrences(ds, grid_nfo;
 @test ((newton([-0.5, 0.86]) != newton([-0.5, -0.86]))& (newton([-0.5, 0.86]) != newton([1.0, 0.0])) & (newton([-0.5, -0.86]) != newton([1.0, 0.0])))
 
 
+
+
+using CairoMakie
+
+function predator_prey_fastslow(u, p, t)
+	α, γ, ϵ, ν, h, K, m = p
+	N, P = u
+    du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
+    du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
+	return SVector(du1, du2)
+end
+γ = 2.5
+h = 1
+ν = 0.5
+m = 0.4
+ϵ = 1.0
+α = 0.8
+K = 15
+u0 = rand(2)
+p0 = [α, γ, ϵ, ν, h, K, m]
+ds = CoupledODEs(predator_prey_fastslow, u0, p0)
+
+fig = Figure()
+ax = Axis(fig[1,1])
+
+#####################
+## IrregularGrid  ###
+#####################
+for pow in (1, 2)
+    xg = yg = range(0, 18.0^(1/pow); length = 200).^pow
+    mapper = AttractorsViaRecurrences(ds, (xg, yg);
+        Dt = 0.1, sparse = true,
+        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
+        mx_chk_safety = 1000,
+    )
+
+    # Find attractor and its fraction (fraction is always 1 here)
+    sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
+    fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+    attractors = extract_attractors(mapper)
+    scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
+end
+
+display(fig)
+
+
+
+######################
+### New approach  ####
+######################
+fig = Figure()
+ax = Axis(fig[1,1])
+
+xg = yg = range(0, 18, length = 30)
+
+grid = subdivision_based_grid(ds, (xg, yg))
+
+#constructed lvl_array
+grid.lvl_array
+mapper = AttractorsViaRecurrences(ds, grid;
+        Dt = 0.1, sparse = true,
+        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
+        mx_chk_safety = 1000,
+    )
+
+    # Find attractor and its fraction (fraction is always 1 here)
+sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
+fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+attractors = extract_attractors(mapper)
+scatter!(ax, vec(attractors[1]); )
+
+
+display(fig)
+
+###############################
+## same setup, regular grid  ##
+###############################
+fig = Figure()
+ax = Axis(fig[1,1])
+xg = yg = range(0, 18, length = 30)
+mapper = AttractorsViaRecurrences(ds, (xg, yg);
+        Dt = 0.1, sparse = true,
+        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
+        mx_chk_safety = 1000,
+    )
+
+    # Find attractor and its fraction (fraction is always 1 here)
+sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
+fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+attractors = extract_attractors(mapper)
+scatter!(ax, vec(attractors[1]);)
+display(fig)
