@@ -194,7 +194,6 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         
     else
         grid = mapper.grid.grid
-        println(grid)
     end
     
     I = CartesianIndices(basins)

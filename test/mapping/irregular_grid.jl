@@ -147,7 +147,7 @@ newton = AttractorsViaRecurrences(ds, grid_nfo;
 
 
 
-using CairoMakie
+#using CairoMakie
 
 function predator_prey_fastslow(u, p, t)
 	α, γ, ϵ, ν, h, K, m = p
@@ -204,7 +204,7 @@ xg = yg = range(0, 18, length = 30)
 grid = subdivision_based_grid(ds, (xg, yg))
 
 # constructed lvl_array
-grid.lvl_array
+#grid.lvl_array
 
 # passing SubdivisionBasedGrid into mapper
 mapper = AttractorsViaRecurrences(ds, grid;
