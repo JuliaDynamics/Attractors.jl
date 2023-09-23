@@ -194,6 +194,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         
     else
         grid = mapper.grid.grid
+        println(grid)
     end
     
     I = CartesianIndices(basins)
@@ -288,7 +289,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
    
     D = length(grid)
 
-    multiplier = 1
+    multiplier = 0
     if grid_nfo isa SubdivisionBasedGrid
         multiplier = maximum(keys(grid_nfo.grid_steps))
     end
@@ -358,14 +359,33 @@ function automatic_Δt_basins(ds, grid; N = 5000)
     return Δt
 end
 
-function subdivision_based_grid(ds, grid; maxlevel = 4)
+
+
+"""
+    function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4) 
+
+Construct a grid structure `SubdivisionBasedGrid`  that can be directly passed 
+as the `grid`` argument to the `mapper`` function.
+
+The approach is designed for continuous time systems in which different areas of 
+the state space flow may have significant difference in velocity vector. In case of 
+originally coarse grids it may lead to algorithm being stuck in some regions with
+a small motion speed and false identification of attractors. To prevent this from
+happening we provide an algorithm expansion to dynamically evaluate different regions speed
+of motion to handle areas of the grid which should be more coarse or dense than others.
+
+To achieve this, function make use of `make_irregular_array` which automatically constructs 
+an array of discretization levels indices for grid originally specified by user with 
+`grid` argument. Upon construction function automatically stores necessary parameters
+to further adopt mapping of initial conditions to specific grid density levels.
+"""
+function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
     lvl_array = make_irregular_array(ds, grid, maxlevel)
     unique_lvls = Set(lvl_array)
     grid_steps = Dict{Int, Vector{Int}}()
     for i in unique_lvls
         grid_steps[i] = [length(axis)*2^i for axis in grid]
     end
-    println(grid_steps)
     D = length(grid)
     grid_maxima = SVector{D,Float64}(maximum.(grid))
     grid_minima = SVector{D,Float64}(minimum.(grid))
@@ -397,7 +417,6 @@ function make_irregular_array(ds, grid, maxlevel = 4)
     maxvel = maximum(velocities)
     velratios = maxvel./velocities
     result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
-    println(typeof(result))
     return result
 end
 

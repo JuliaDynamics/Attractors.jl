@@ -217,15 +217,14 @@ mapper = AttractorsViaRecurrences(ds, grid;
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
 fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
 attractors_SBD = extract_attractors(mapper)
-scatter!(ax, vec(attractors[1]); )
+#scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 #println(length(vec(attractors[1])))
 #display(fig)
 
 ###############################
 ## same setup, regular grid  ##
 ###############################
-fig = Figure()
-ax = Axis(fig[1,1])
+
 xg = yg = range(0, 18, length = 30)
 mapper = AttractorsViaRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
@@ -237,9 +236,11 @@ mapper = AttractorsViaRecurrences(ds, (xg, yg);
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
 fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
 attractors_reg = extract_attractors(mapper)
-scatter!(ax, vec(attractors[1]);)
+#scatter!(ax, vec(attractors_reg[1]); label = "RegularGrid")
 #println(length(vec(attractors[1])))
+#axislegend(ax)
 #display(fig)
 
 
 @test (length(vec(attractors_SBD[1]))/10) > length(vec(attractors_reg[1]))
+

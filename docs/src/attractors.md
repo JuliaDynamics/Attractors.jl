@@ -10,6 +10,7 @@ AttractorMapper
 ```@docs
 AttractorsViaRecurrences
 automatic_Δt_basins
+subdivision_based_grid
 ```
 
 ## Proximity
