@@ -6,8 +6,13 @@ using PredefinedDynamicalSystems
 
 pages = [
     "index.md",
+    "dynsysref.md",
+    "attractors.md",
+    "basins.md",
+    "continuation.md",
+    "visualization.md",
     "examples.md",
-
+    "references.md",
 ]
 
 
