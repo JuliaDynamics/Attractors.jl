@@ -167,12 +167,13 @@ u0 = rand(2)
 p0 = [α, γ, ϵ, ν, h, K, m]
 ds = CoupledODEs(predator_prey_fastslow, u0, p0)
 
-fig = Figure()
-ax = Axis(fig[1,1])
+# fig = Figure()
+# ax = Axis(fig[1,1])
 
 #####################
 ## IrregularGrid  ###
 #####################
+attractors = []
 for pow in (1, 2)
     xg = yg = range(0, 18.0^(1/pow); length = 200).^pow
     mapper = AttractorsViaRecurrences(ds, (xg, yg);
@@ -184,11 +185,11 @@ for pow in (1, 2)
     # Find attractor and its fraction (fraction is always 1 here)
     sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
     fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
-    attractors = extract_attractors(mapper)
-    #println(length(vec(attractors[1])))
-    scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
+    push!(attractors, extract_attractors(mapper))
+    #scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
 end
 
+@test length(vec(values(attractors)[1][1])) *10 < length(vec(values(attractors)[2][1]))
 #display(fig)
 
 
@@ -196,8 +197,9 @@ end
 ######################
 ### New approach  ####
 ######################
-fig = Figure()
-ax = Axis(fig[1,1])
+
+# fig = Figure()
+# ax = Axis(fig[1,1])
 
 xg = yg = range(0, 18, length = 30)
 
