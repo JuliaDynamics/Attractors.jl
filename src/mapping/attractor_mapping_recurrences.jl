@@ -407,7 +407,7 @@ function make_irregular_array(ds, grid, maxlevel = 4)
             udummy
         end
         if (isequal(norm(velocity),NaN))
-            velocities[ind] = 1
+            velocities[ind] = Inf
         else 
             velocities[ind] = norm(velocity)
         end
