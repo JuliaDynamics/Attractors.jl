@@ -412,8 +412,8 @@ function make_irregular_array(ds, grid, maxlevel = 4)
             velocities[ind] = norm(velocity)
         end
     end
-
-    maxvel = maximum(velocities)
+    
+    maxvel = maximum(filter(x -> x != Inf, velocities))
     velratios = maxvel./velocities
     result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
     return result
