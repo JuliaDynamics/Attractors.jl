@@ -133,6 +133,7 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
             error("Incorrect grid specification")
         end
     elseif grid isa SubdivisionBasedGrid
+        
         finalgrid = grid
     else
         error("Incorrect grid specification")
@@ -183,15 +184,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     end
     
     if (mapper.bsn_nfo.grid_nfo isa SubdivisionBasedGrid)
-        function scale_axis(axis, multiplier)
-            new_length = length(axis) * (2^multiplier)
-            return range(first(axis), last(axis), length=new_length)
-        end 
-        multiplier = maximum(keys(mapper.bsn_nfo.grid_nfo.grid_steps))
-        scaled_axis = [scale_axis(axis, multiplier) for axis in mapper.bsn_nfo.grid_nfo.grid]
-        #grid = Tuple(scaled_axis...)
-        grid = mapper.grid.grid
-        
+        grid = mapper.grid.max_grid
     else
         grid = mapper.grid.grid
     end
@@ -243,8 +236,9 @@ Base.@kwdef struct SubdivisionBasedGrid{D} <:Grid
     grid_steps::Dict{Int, Vector{Int}}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
-    lvl_array
+    lvl_array::Union{Matrix{Int}, Array{Int, D}}
     grid::NTuple{D,AbstractRange}
+    max_grid::NTuple{D,AbstractRange}
 end
 
     
@@ -389,7 +383,15 @@ function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
     grid_maxima = SVector{D,Float64}(maximum.(grid))
     grid_minima = SVector{D,Float64}(minimum.(grid))
 
-    return SubdivisionBasedGrid(grid_steps, grid_minima, grid_maxima, lvl_array, grid)
+    function scale_axis(axis, multiplier)
+        new_length = length(axis) * (2^multiplier)
+        return range(first(axis), last(axis), length=new_length)
+    end 
+    multiplier = maximum(keys(grid_steps))
+    scaled_axis = [scale_axis(axis, multiplier) for axis in grid]
+    max_grid = Tuple(scaled_axis)
+
+    return SubdivisionBasedGrid(grid_steps, grid_minima, grid_maxima, lvl_array, grid, max_grid)
 end
 
 

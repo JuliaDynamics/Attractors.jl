@@ -64,9 +64,9 @@ newton_df(x, p)= p*x^(p-1)
 ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 
 grid = (range(0, 5, length = 6),range(0, 5, length = 6))
-lvl_array = subdivision_based_grid(ds, grid)
+lvl_array = subdivision_based_grid(ds, grid).lvl_array
 grid_steps = Dict{Int, Vector{Int}}(i => [6*2^i, 6*2^i] for i in 0:4)
-grid_nfo = Attractors.SubdivisionBasedGrid(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), Array([]), grid)
+grid_nfo = Attractors.SubdivisionBasedGrid(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), lvl_array, grid, grid)
 
 
 
@@ -133,7 +133,7 @@ newton_f(x, p) = x^p - 1
 newton_df(x, p)= p*x^(p-1)
 
 ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
-xg = yg = range(-1.5, 1.5, length = 10)
+xg = yg = range(-1.5, 1.5, length = 30)
 
 
 grid_nfo = subdivision_based_grid(ds, (xg,yg))
@@ -145,9 +145,6 @@ newton = AttractorsViaRecurrences(ds, grid_nfo;
 @test ((newton([-0.5, 0.86]) != newton([-0.5, -0.86]))& (newton([-0.5, 0.86]) != newton([1.0, 0.0])) & (newton([-0.5, -0.86]) != newton([1.0, 0.0])))
 
 
-
-
-#using CairoMakie
 
 function predator_prey_fastslow(u, p, t)
 	α, γ, ϵ, ν, h, K, m = p
@@ -167,8 +164,7 @@ u0 = rand(2)
 p0 = [α, γ, ϵ, ν, h, K, m]
 ds = CoupledODEs(predator_prey_fastslow, u0, p0)
 
-# fig = Figure()
-# ax = Axis(fig[1,1])
+
 
 #####################
 ## IrregularGrid  ###
@@ -181,16 +177,13 @@ for pow in (1, 2)
         mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
         mx_chk_safety = 1000,
     )
-
-    # Find attractor and its fraction (fraction is always 1 here)
     sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
     fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
     push!(attractors, extract_attractors(mapper))
-    #scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
+
 end
 
 @test length(vec(values(attractors)[1][1])) *10 < length(vec(values(attractors)[2][1]))
-#display(fig)
 
 
 
@@ -198,30 +191,20 @@ end
 ### New approach  ####
 ######################
 
-# fig = Figure()
-# ax = Axis(fig[1,1])
 
 xg = yg = range(0, 18, length = 30)
 
 grid = subdivision_based_grid(ds, (xg, yg))
 
-# constructed lvl_array
-#grid.lvl_array
-
-# passing SubdivisionBasedGrid into mapper
 mapper = AttractorsViaRecurrences(ds, grid;
         Dt = 0.1, sparse = true,
         mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
         mx_chk_safety = 1000,
     )
 
-    # Find attractor and its fraction (fraction is always 1 here)
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
 fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
 attractors_SBD = extract_attractors(mapper)
-#scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
-#println(length(vec(attractors[1])))
-#display(fig)
 
 ###############################
 ## same setup, regular grid  ##
@@ -234,15 +217,10 @@ mapper = AttractorsViaRecurrences(ds, (xg, yg);
         mx_chk_safety = 1000,
     )
 
-    # Find attractor and its fraction (fraction is always 1 here)
+
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
 fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
 attractors_reg = extract_attractors(mapper)
-#scatter!(ax, vec(attractors_reg[1]); label = "RegularGrid")
-#println(length(vec(attractors[1])))
-#axislegend(ax)
-#display(fig)
 
 
 @test (length(vec(attractors_SBD[1]))/10) > length(vec(attractors_reg[1]))
-
