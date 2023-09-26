@@ -361,7 +361,7 @@ Construct a grid structure `SubdivisionBasedGrid`  that can be directly passed
 as the `grid` argument to the `mapper` function.
 
 The approach is designed for continuous time systems in which different areas of 
-the state space flow may have significant difference in velocity vector. In case of 
+the state space flow may have significantly different velocity. In case of 
 originally coarse grids it may lead to algorithm being stuck in some regions with
 a small motion speed and false identification of attractors. To prevent this from
 happening we provide an algorithm expansion to dynamically evaluate different regions speed
