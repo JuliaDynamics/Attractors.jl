@@ -358,7 +358,7 @@ end
     function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4) 
 
 Construct a grid structure `SubdivisionBasedGrid`  that can be directly passed 
-as the `grid`` argument to the `mapper`` function.
+as the `grid` argument to the `mapper` function.
 
 The approach is designed for continuous time systems in which different areas of 
 the state space flow may have significant difference in velocity vector. In case of 
