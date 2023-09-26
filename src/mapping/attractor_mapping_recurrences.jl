@@ -13,7 +13,11 @@ machine can operate on top of it. For example
 `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)` for a two-dimensional
 system with regular grid or one can also define an irregular grid, for example 
 `xg = vcat(range(-5, -2; length = 50), range(-2, 5; length = 50)),
-yg = range(-5, 5; length = 100)`. The grid has to be the same dimensionality as
+yg = range(-5, 5; length = 100)`. Also, one can construct special grid type 
+`Subdivided Based Grid` using [`subdivision_based_grid`](@ref) and pass it as a grid 
+argument. This will allow user to automatically analyze and adopt grid discretization
+levels in accordance with state space flow speed in different regions. 
+The grid has to be the same dimensionality as
 the state space, use a [`ProjectedDynamicalSystem`](@ref) if you 
 want to search for attractors in a lower dimensional subspace.
 ## Keyword arguments
@@ -221,24 +225,24 @@ end
 
 abstract type Grid end
 
-Base.@kwdef struct RegularGrid{D} <:Grid
+Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <:Grid
     grid_steps::SVector{D, Float64}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
-    grid::NTuple{D,AbstractRange}
+    grid::NTuple{D, R}
 end
 
 struct IrregularGrid{D} <:Grid
     grid::NTuple{D,Vector{Float64}}
 end
 
-Base.@kwdef struct SubdivisionBasedGrid{D} <:Grid
+Base.@kwdef struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     grid_steps::Dict{Int, Vector{Int}}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
-    lvl_array::Union{Matrix{Int}, Array{Int, D}}
+    lvl_array::Array{Int, D}
     grid::NTuple{D,AbstractRange}
-    max_grid::NTuple{D,AbstractRange}
+    max_grid::NTuple{D, R}
 end
 
     
@@ -355,7 +359,7 @@ end
 
 
 """
-    function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4) 
+    subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4) 
 
 Construct a grid structure `SubdivisionBasedGrid`  that can be directly passed 
 as the `grid` argument to the `mapper` function.
@@ -395,7 +399,7 @@ function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
 end
 
 
-function make_irregular_array(ds, grid, maxlevel = 4)
+function make_irregular_array(ds::DynamicalSystem, grid, maxlevel = 4)
     indices = CartesianIndices(length.(grid))
     f, p = dynamic_rule(ds), current_parameters(ds)
     udummy = copy(current_state(ds))

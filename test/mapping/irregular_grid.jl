@@ -52,71 +52,39 @@ basins, attractors = basins_of_attraction(newton)
 #########################################################################
 
 
-function newton_map(z, p, n)
-    z1 = z[1] + im*z[2]
-    dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
-    z1 = z1 - dz1
-    return SVector(real(z1), imag(z1))
+
+function predator_prey_fastslow(u, p, t)
+	α, γ, ϵ, ν, h, K, m = p
+	N, P = u
+    du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
+    du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
+	return SVector(du1, du2)
 end
-newton_f(x, p) = x^p - 1
-newton_df(x, p)= p*x^(p-1)
+γ = 2.5
+h = 1
+ν = 0.5
+m = 0.4
+ϵ = 1.0
+α = 0.8
+K = 15
+u0 = rand(2)
+p0 = [α, γ, ϵ, ν, h, K, m]
+ds = CoupledODEs(predator_prey_fastslow, u0, p0)
 
-ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 
-grid = (range(0, 5, length = 6),range(0, 5, length = 6))
-lvl_array = subdivision_based_grid(ds, grid).lvl_array
-grid_steps = Dict{Int, Vector{Int}}(i => [6*2^i, 6*2^i] for i in 0:4)
-grid_nfo = Attractors.SubdivisionBasedGrid(grid_steps, SVector{2, Float64}(minimum.(grid)), SVector{2, Float64}(maximum.(grid)), lvl_array, grid, grid)
+xg = yg = range(0, 5, length = 6)
+
+grid = subdivision_based_grid(ds, (xg, yg); maxlevel = 3)
+lvl_array = grid.lvl_array
+
+@test (Attractors.basin_cell_index((2, 1.1) , grid) == CartesianIndex((17,9)))
+@test (Attractors.basin_cell_index((3.6, 2.1) , grid) == CartesianIndex((29,17)))
+@test (Attractors.basin_cell_index((4.9, 4.9) , grid) == CartesianIndex((33,33)))
+@test (Attractors.basin_cell_index((0.5, 0.5) , grid) == CartesianIndex((5,5)))
+@test (Attractors.basin_cell_index((3.4, 1.6) , grid) == CartesianIndex((27,13)))
+@test (Attractors.basin_cell_index((4.7, 2.2) , grid) == CartesianIndex((37,17)))
 
 
-
-# the function is modified, as current approach doesn't allow us to test it directly
-# the math behind absolutely the same, just input was changed and expanded to allow quick testing
-# Usage: you need to provide manually lvl of discretization of the cell with `cell_area` and
-# `max_level` of discretization along the whole grid
-# `cell_area` <= `max_level` in any scenraio
-
-function basin_cell_index(y_grid_state, grid_nfo, cell_area, max_level)
-    
-    grid_maxima = grid_nfo.grid_maxima
-    grid_minima = grid_nfo.grid_minima
-    grid_steps = (grid_maxima - grid_minima .+1)./ grid_nfo.grid_steps[cell_area]
-    iswithingrid = true
-    @inbounds for i in eachindex(grid_minima)
-
-        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
-            iswithingrid = false
-            break
-        end 
-    end
-    if iswithingrid
-
-        indices = @. round(Int,(y_grid_state - grid_minima)/grid_steps, RoundDown) * (2^(max_level-cell_area)) + 1
-
-        return CartesianIndex(indices...) 
-
-    else
-        return CartesianIndex(-1)
-    end
-end
-@testset "Basin cell index for SubdivisionBasedGrid" begin
-
-@test basin_cell_index((1.4, 3.4), grid_nfo, 1 , 1) == CartesianIndex((3,7))
-@test basin_cell_index((1.4, 3.4), grid_nfo, 1 , 3) == CartesianIndex((9,25))
-@test basin_cell_index((1.4, 3.4), grid_nfo, 2 , 3) == CartesianIndex((11,27))
-
-@test basin_cell_index((2.2, 3.7), grid_nfo, 0 , 0) == CartesianIndex((3,4))
-@test basin_cell_index((2.2, 3.7), grid_nfo, 1 , 2) == CartesianIndex((9,15))
-@test basin_cell_index((2.2, 3.7), grid_nfo, 3 , 3) == CartesianIndex((18,30))
-
-@test basin_cell_index((0.35, 2.2), grid_nfo, 1 , 1) == CartesianIndex((1,5))
-@test basin_cell_index((0.35, 2.2), grid_nfo, 2 , 2) == CartesianIndex((2,9))
-@test basin_cell_index((0.35, 2.2), grid_nfo, 0 , 3) == CartesianIndex((1,17))
-
-@test basin_cell_index((2.65, 3.3), grid_nfo, 0 , 1) == CartesianIndex((5,7))
-@test basin_cell_index((2.65, 3.3), grid_nfo, 0 , 2) == CartesianIndex((9,13))
-@test basin_cell_index((2.65, 3.3), grid_nfo, 1 , 3) == CartesianIndex((21,25))
-end
 
 
 ############################################################

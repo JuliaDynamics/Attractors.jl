@@ -323,7 +323,8 @@ axislegend(ax)
 
 fig
 ```
-To achieve even better results for this kind of problematic systems we provide a functionality to construct grids in which
+## Subdivision Based Grid for `AttractorsViaRecurrences`
+To achieve even better results for this kind of problematic systems than with previuosly introduced `Irregular Grids`  we provide a functionality to construct `Subdivision Based Grids` in which
 one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has 
 significantly different speed. [`subdivided_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified 
 grid to further treat those areas as having more dense or coarse structure than others.
@@ -350,6 +351,7 @@ p0 = [α, γ, ϵ, ν, h, K, m]
 ds = CoupledODEs(predator_prey_fastslow, u0, p0)
 
 xg = yg = range(0, 18, length = 30)
+# Construct `Subdivision Based Grid`
 grid = subdivision_based_grid(ds, (xg, yg))
 grid.lvl_array
 ```
