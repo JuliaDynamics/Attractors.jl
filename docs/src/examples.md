@@ -74,7 +74,7 @@ To visualize results we can make use of previously defined heatmap
 ```@example MAIN
 ax =  content(fig[1,1])
 for (atr, shock) in shocks
-    lines!(ax, [SVector{2, Float64}(atr), SVector{2, Float64}(atr + shock)]; color = :orange)
+    lines!(ax, [atr[1], atr[1] + shock]; color = :orange)
 end
 fig
 ```
