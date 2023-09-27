@@ -11,14 +11,14 @@ recurrences in the state space, as outlined by Datseris & Wagemakers [Datseris20
 `grid` is instructions for partitioning the state space into finite-sized cells
 so that a finite state machine can operate on top of it. Possibilities are:
 
-1. A tuple of `AbstractRange`s for a regular grid.
+1. A tuple of sorted `AbstractRange`s for a regular grid.
   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`
   for a two-dimensional system
 2. A tuple of sorted `AbstractVector`s for an irregular grid, for example
   `grid = (xg, yg)` with `xg = vcat(range(-5, -2; length = 50), range(-2, 5; length = 50)),
   yg = range(-5, 5; length = 100)`.
 3. An instance of the special grid type
-[`SubdividedBasedGrid`](@ref), which can be created either manually or by using [`subdivision_based_grid`](@ref),
+[`SubdividedBasedGrid`](@ref), which can be created either manually or by using [`subdivision_based_grid`](@ref).
   This will allow user to automatically analyze and adapt grid discretization
   levels in accordance with state space flow speed in different regions.
 
@@ -28,7 +28,7 @@ want to search for attractors in a lower dimensional subspace.
 
 ## Keyword arguments
 
-* `sparse = true`: control the interval representation of the state space grid. If true,
+* `sparse = true`: control the storage type of the state space grid. If true,
    uses a sparse array, whose memory usage is in general more efficient than a regular
    array obtained with `sparse=false`. In practice, the sparse representation should
    always be preferred when searching for [`basins_fractions`](@ref). Only for very low
@@ -53,13 +53,13 @@ want to search for attractors in a lower dimensional subspace.
   integrator timestep becomes commensurate with the limit cycle period, leading to
   incorrectly counting the limit cycle as more than one attractor.
 
-
 ### Finite state machine configuration
 
 * `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
   before declaring convergence to that existing attractor.
 * `mx_chk_hit_bas = 10`: Maximum check of consecutive visits of the same basin of
   attraction before declaring convergence to an existing attractor.
+  This is ignored if `sparse = true`, as basins are not stored internally.
 * `mx_chk_fnd_att = 100`: Maximum check of consecutive visits to a previously visited
   unlabeled cell before declaring we have found a new attractor.
 * `mx_chk_loc_att = 100`: Maximum check of consecutive visits to cells marked as a new
@@ -80,7 +80,6 @@ want to search for attractors in a lower dimensional subspace.
   This clause exists to stop the algorithm never haulting for innappropriate grids,
   where a found attractor may intersect in the same cell with a new attractor the orbit
   traces (which leads to infinite resetting of all counters).
-
 
 ## Description
 
@@ -127,16 +126,13 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
         Dt = nothing, Δt = Dt, sparse = true, force_non_adaptive = false, kwargs...
     )
 
-
     if grid isa Tuple  # regular or irregular
         D = length(grid)
-        if all(t -> t isa AbstractRange, grid) # regular
+        if all(t -> t isa AbstractRange, grid) && all(axis -> issorted(axis), grid) # regular
             grid_steps = SVector{D,Float64}(step.(grid))
             grid_maxima = SVector{D,Float64}(maximum.(grid))
             grid_minima = SVector{D,Float64}(minimum.(grid))
-
             finalgrid = RegularGrid(grid_steps, grid_minima, grid_maxima, grid)
-
         elseif any(t -> t isa AbstractVector, grid) && all(axis -> issorted(axis), grid) # irregular
             finalgrid = IrregularGrid(grid)
         else
@@ -225,23 +221,33 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
 end
 
 #####################################################################################
-# Definition of `BasinInfo` and initialization
+# Grid construction
 #####################################################################################
-
 abstract type Grid end
 
-Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <:Grid
+Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <: Grid
     grid_steps::SVector{D, Float64}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
     grid::NTuple{D, R}
 end
 
-struct IrregularGrid{D} <:Grid
+struct IrregularGrid{D} <: Grid
     grid::NTuple{D,Vector{Float64}}
 end
 
-Base.@kwdef struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
+"""
+    SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array{Int, D})
+
+Given a coarse `grid` tesselating the state space, construct a `SubdivisionBasedGrid`
+based on the given level array `lvl_array`.
+The level array is has non-negative integer values.
+Value 0 means that the corresponding cell of the coarse `grid` is not subdivided
+any further. Value `n > 0` means that the corresponding cell will be subdivided
+in total `2^n` times (along each dimension), resulting in finer cells
+within the original coarse cell.
+"""
+struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     grid_steps::Dict{Int, Vector{Int}}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
@@ -250,8 +256,83 @@ Base.@kwdef struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     max_grid::NTuple{D, R}
 end
 
+"""
+    subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
 
+Construct a grid structure `SubdivisionBasedGrid` that can be directly passed
+as a grid to [`AttractorsViaRecurrences`](@ref). The input `grid` is an
+orginally coarse grid (a tuple of `AbstractRange`s).
 
+This approach is designed for _continuous time_ systems in which different areas of
+the state space flow may have significantly different velocity. In case of
+originally coarse grids, this may lead [`AttractorsViaRecurrences`](@ref)
+being stuck in some state space regions with
+a small motion speed and false identification of attractors. To prevent this from
+happening we provide an algorithm expansion to dynamically evaluate different regions speed
+of motion to handle areas of the grid which should be more coarse or dense than others.
+
+To achieve this, function make use of `make_irregular_array` which automatically constructs
+an array of discretization levels indices for a `grid`
+(a tuple of `AbstractRange`s) originally specified by user.
+Upon construction function automatically stores necessary parameters
+to further adopt mapping of initial conditions to specific grid density levels.
+"""
+function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
+    lvl_array = make_irregular_array(ds, grid, maxlevel)
+    return SubdivisionBasedGrid(grid, lvl_array)
+end
+
+function SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array{Int, D}) where {D}
+    unique_lvls = unique(lvl_array)
+    any(<(0), unique_lvls) && error("Level array cannot contain negative values!")
+    grid_steps = Dict{Int, Vector{Int}}()
+    for i in unique_lvls
+        grid_steps[i] = [length(axis)*2^i for axis in grid]
+    end
+    grid_maxima = SVector{D,Float64}(maximum.(grid))
+    grid_minima = SVector{D,Float64}(minimum.(grid))
+
+    function scale_axis(axis, multiplier)
+        new_length = length(axis) * (2^multiplier)
+        return range(first(axis), last(axis), length=new_length)
+    end
+    multiplier = maximum(keys(grid_steps))
+    scaled_axis = [scale_axis(axis, multiplier) for axis in grid]
+    max_grid = Tuple(scaled_axis)
+
+    return SubdivisionBasedGrid(grid_steps, grid_minima, grid_maxima, lvl_array, grid, max_grid)
+end
+
+function make_irregular_array(ds::DynamicalSystem, grid, maxlevel = 4)
+    isdiscretetime(ds) && error("Dynamical system must be continuous time.")
+    indices = CartesianIndices(length.(grid))
+    f, p = dynamic_rule(ds), current_parameters(ds)
+    udummy = copy(current_state(ds))
+    velocities = zeros(length.(grid))
+    for ind in indices
+        u0 = Attractors.generate_ic_on_grid(grid, ind)
+        velocity = if !isinplace(ds)
+            f(u0, p, 0.0)
+        else
+            f(udummy, u0, p, 0.0)
+            udummy
+        end
+        if (isequal(norm(velocity),NaN))
+            velocities[ind] = Inf
+        else
+            velocities[ind] = norm(velocity)
+        end
+    end
+
+    maxvel = maximum(filter(x -> x != Inf, velocities))
+    velratios = maxvel./velocities
+    result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
+    return result
+end
+
+#####################################################################################
+# Definition of `BasinInfo` and initialization
+#####################################################################################
 mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
     basins::A # sparse or dense
     grid_nfo::G
@@ -266,8 +347,6 @@ mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
     attractors::Dict{Int, StateSpaceSet{D, T}}
     visited_list::Q
 end
-
-
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
 
@@ -359,78 +438,6 @@ function automatic_Δt_basins(ds, grid; N = 5000)
     end
     Δt = 10*s*N/dudt
     return Δt
-end
-
-
-
-"""
-    subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
-
-Construct a grid structure `SubdivisionBasedGrid`  that can be directly passed
-as a grid to [`AttractorsViaRecurrences`](@ref). The input `grid` is an
-orginally coarse grid (a tuple of `AbstractRange`s).
-
-This approach is designed for continuous time systems in which different areas of
-the state space flow may have significantly different velocity. In case of
-originally coarse grids, this may lead [`AttractorsViaRecurrences`](@ref)
-being stuck in some state space regions with
-a small motion speed and false identification of attractors. To prevent this from
-happening we provide an algorithm expansion to dynamically evaluate different regions speed
-of motion to handle areas of the grid which should be more coarse or dense than others.
-
-To achieve this, function make use of `make_irregular_array` which automatically constructs
-an array of discretization levels indices for a `grid`
-(a tuple of `AbstractRange`s) originally specified by user.
-Upon construction function automatically stores necessary parameters
-to further adopt mapping of initial conditions to specific grid density levels.
-"""
-function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
-    lvl_array = make_irregular_array(ds, grid, maxlevel)
-    unique_lvls = unique(lvl_array)
-    grid_steps = Dict{Int, Vector{Int}}()
-    for i in unique_lvls
-        grid_steps[i] = [length(axis)*2^i for axis in grid]
-    end
-    D = length(grid)
-    grid_maxima = SVector{D,Float64}(maximum.(grid))
-    grid_minima = SVector{D,Float64}(minimum.(grid))
-
-    function scale_axis(axis, multiplier)
-        new_length = length(axis) * (2^multiplier)
-        return range(first(axis), last(axis), length=new_length)
-    end
-    multiplier = maximum(keys(grid_steps))
-    scaled_axis = [scale_axis(axis, multiplier) for axis in grid]
-    max_grid = Tuple(scaled_axis)
-
-    return SubdivisionBasedGrid(grid_steps, grid_minima, grid_maxima, lvl_array, grid, max_grid)
-end
-
-
-function make_irregular_array(ds::DynamicalSystem, grid, maxlevel = 4)
-    indices = CartesianIndices(length.(grid))
-    f, p = dynamic_rule(ds), current_parameters(ds)
-    udummy = copy(current_state(ds))
-    velocities = zeros(length.(grid))
-    for ind in indices
-        u0 = Attractors.generate_ic_on_grid(grid, ind)
-        velocity = if !isinplace(ds)
-            f(u0, p, 0.0)
-        else
-            f(udummy, u0, p, 0.0)
-            udummy
-        end
-        if (isequal(norm(velocity),NaN))
-            velocities[ind] = Inf
-        else
-            velocities[ind] = norm(velocity)
-        end
-    end
-
-    maxvel = maximum(filter(x -> x != Inf, velocities))
-    velratios = maxvel./velocities
-    result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
-    return result
 end
 
 
@@ -653,80 +660,6 @@ function relabel_visited_cell!(bsn_nfo::BasinsInfo, old_label, new_label)
 end
 
 
-
-
-function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
-    iswithingrid = true
-    @inbounds for i in eachindex(grid_nfo.grid_minima)
-
-        if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
-            iswithingrid = false
-            break
-        end
-    end
-    if iswithingrid
-        # Snap point to grid
-        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
-        return CartesianIndex(ind...)
-    else
-        return CartesianIndex(-1)
-    end
-end
-
-
-
-function basin_cell_index(y_grid_state, grid_nfo::SubdivisionBasedGrid)
-
-
-    D = length(grid_nfo.grid)
-    initial_index = basin_cell_index(y_grid_state, RegularGrid(SVector{D,Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
-    if initial_index == CartesianIndex(-1)
-        return CartesianIndex(-1)
-    end
-    cell_area = grid_nfo.lvl_array[initial_index]
-    grid_maxima = grid_nfo.grid_maxima
-    grid_minima = grid_nfo.grid_minima
-    grid_steps = grid_nfo.grid_steps
-    max_level = maximum(keys(grid_steps))
-    grid_step = (grid_maxima - grid_minima .+1)./ grid_steps[cell_area]
-    iswithingrid = true
-    @inbounds for i in eachindex(grid_minima)
-
-        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
-            iswithingrid = false
-            break
-        end
-    end
-    if iswithingrid
-        ind = @. round(Int,(y_grid_state - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
-        return CartesianIndex(ind...)
-    else
-        return CartesianIndex(-1)
-    end
-end
-
-
-function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
-
-    for axis in grid_nfo.grid
-        if !issorted(axis)
-            throw(error("Please provide sorted vectors for each axis"))
-        end
-    end
-
-    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
-        if coord < first(axis) || coord > last(axis)
-            return CartesianIndex(-1)
-        end
-    end
-
-    cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
-
-    return CartesianIndex(cell_indices...)
-
-end
-
-
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
     bsn_nfo.consecutive_lost = 0
@@ -769,3 +702,67 @@ function check_next_state!(bsn_nfo, ic_label)
     bsn_nfo.state = next_state
 end
 
+
+#####################################################################################
+# Mapping a state to a cartesian index
+#####################################################################################
+function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
+    iswithingrid = true
+    @inbounds for i in eachindex(grid_nfo.grid_minima)
+        if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
+            iswithingrid = false
+            break
+        end
+    end
+    if iswithingrid
+        # Snap point to grid
+        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+        return CartesianIndex(ind...)
+    else
+        return CartesianIndex(-1)
+    end
+end
+
+function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
+    for axis in grid_nfo.grid
+        if !issorted(axis)
+            throw(error("Please provide sorted vectors for each axis"))
+        end
+    end
+
+    for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
+        if coord < first(axis) || coord > last(axis)
+            return CartesianIndex(-1)
+        end
+    end
+    cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
+    return CartesianIndex(cell_indices...)
+end
+
+
+function basin_cell_index(y_grid_state, grid_nfo::SubdivisionBasedGrid)
+    D = length(grid_nfo.grid)
+    initial_index = basin_cell_index(y_grid_state, RegularGrid(SVector{D,Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
+    if initial_index == CartesianIndex(-1)
+        return CartesianIndex(-1)
+    end
+    cell_area = grid_nfo.lvl_array[initial_index]
+    grid_maxima = grid_nfo.grid_maxima
+    grid_minima = grid_nfo.grid_minima
+    grid_steps = grid_nfo.grid_steps
+    max_level = maximum(keys(grid_steps))
+    grid_step = (grid_maxima - grid_minima .+1)./ grid_steps[cell_area]
+    iswithingrid = true
+    @inbounds for i in eachindex(grid_minima)
+        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
+            iswithingrid = false
+            break
+        end
+    end
+    if iswithingrid
+        ind = @. round(Int,(y_grid_state - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
+        return CartesianIndex(ind...)
+    else
+        return CartesianIndex(-1)
+    end
+end

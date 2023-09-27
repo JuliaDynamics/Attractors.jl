@@ -10,7 +10,8 @@ export AttractorMapper,
     basins_of_attraction,
     automatic_Δt_basins,
     extract_attractors,
-    subdivision_based_grid
+    subdivision_based_grid,
+    SubdivisionBasedGrid
 
 #########################################################################################
 # AttractorMapper structure definition
