@@ -241,7 +241,7 @@ Base.@kwdef struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
     lvl_array::Array{Int, D}
-    grid::NTuple{D,AbstractRange}
+    grid::NTuple{D, R}
     max_grid::NTuple{D, R}
 end
 
