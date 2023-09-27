@@ -232,8 +232,18 @@ Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <: Grid
     grid::NTuple{D, R}
 end
 
+minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
+mean_cell_diagonal(g::RegularGrid{D}) where {D} = norm(g.grid_steps)
+
 struct IrregularGrid{D} <: Grid
     grid::NTuple{D,Vector{Float64}}
+end
+minmax_grid_extent(g::RegularGrid) = minmax_grid_extent(g.grid)
+
+minmax_grid_extent(g::NTuple) = map(minimum, g), map(maximum, g)
+function mean_cell_diagonal(g::NTuple)
+    steps = map(r -> mean(diff(r)), g)
+    return norm(steps)
 end
 
 """
@@ -255,6 +265,8 @@ struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     grid::NTuple{D, R}
     max_grid::NTuple{D, R}
 end
+minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
+mean_cell_diagonal(g::SubdivisionBasedGrid) = mean_cell_diagonal(g.grid)
 
 """
     subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
@@ -349,8 +361,6 @@ mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
 end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
-
-
     Δt = if isnothing(Δtt)
         isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid_nfo)
     else
@@ -391,7 +401,6 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
 end
 
 
-
 using LinearAlgebra: norm
 
 """
@@ -400,49 +409,42 @@ using LinearAlgebra: norm
 Calculate an optimal `Δt` value for [`basins_of_attraction`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
 points within the bounding box of the grid.
-The average `f` is then compared with the diagonal length of a grid
+The average `f` is then compared with the average diagonal length of a grid
 cell and their ratio provides `Δt`.
 
 Notice that `Δt` should not be too small which happens typically if the grid resolution
-is high. It is okay for [`basins_of_attraction`](@ref) if the trajectory skips a few cells.
-But if `Δt` is too small the default values for all other keywords such
-as `mx_chk_hit_bas` need to be increased drastically.
-
+is high. It is okay if the trajectory skips a few cells.
 Also, `Δt` that is smaller than the internal step size of the integrator will cause
 a performance drop.
 """
 function automatic_Δt_basins(ds, grid_nfo; N = 5000)
     isdiscretetime(ds) && return 1
-
-    if grid_nfo isa IrregularGrid
-        throw(error("Provide the Dt for irregular grid"))
-    end
-    grid = grid_nfo.grid
-
     if ds isa ProjectedDynamicalSystem
-        # TODO:
         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
     end
-    steps = step.(grid)
-    s = sqrt(sum(x^2 for x in steps)) # diagonal length of a cell
-    indices = CartesianIndices(length.(grid))
-    random_points = [generate_ic_on_grid(grid, ind) for ind in rand(indices, N)]
-    dudt = 0.0
+
+    # Create a random sampler with min-max the grid range
+    mins, maxs = minmax_grid_extent(grid_nfo)
+    sampler, = statespace_sampler(HRectangle(mins, maxs))
+    # Sample velocity at random points
+    f, p, t0 = dynamic_rule(ds), current_parameters(ds), initial_time(ds)
     udummy = copy(current_state(ds))
-    f, p = dynamic_rule(ds), current_parameters(ds)
-    for point in random_points
+    dudt = 0.0
+    for _ in 1:N
+        point = sampler()
         deriv = if !isinplace(ds)
-            f(point, p, 0.0)
+            f(point, p, t0)
         else
-            f(udummy, point, p, 0.0)
+            f(udummy, point, p, t0)
             udummy
         end
         dudt += norm(deriv)
     end
+
+    s = mean_cell_diagonal(grid_nfo)
     Δt = 10*s*N/dudt
     return Δt
 end
-
 
 #####################################################################################
 # Implementation of the Finite State Machine (low level code)
