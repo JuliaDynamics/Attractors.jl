@@ -350,17 +350,14 @@ end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
 
-    grid = grid_nfo.grid
 
     Δt = if isnothing(Δtt)
-        if grid_nfo isa IrregularGrid
-            throw(error("Provide the Dt for irregular grid"))
-        end
-        isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
+        isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid_nfo)
     else
         Δtt
     end
 
+    grid = grid_nfo.grid # this is always a Tuple irrespectively of grid type
     D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
@@ -368,11 +365,10 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
         error("Grid and dynamical system do not have the same dimension!")
     end
 
-    D = length(grid)
-
-    multiplier = 0
     if grid_nfo isa SubdivisionBasedGrid
         multiplier = maximum(keys(grid_nfo.grid_steps))
+    else
+        multiplier = 0
     end
     basins_array = if sparse
         SparseArray{Int}(undef, (map(length, grid ).*(2^multiplier)))
@@ -403,7 +399,8 @@ using LinearAlgebra: norm
 
 Calculate an optimal `Δt` value for [`basins_of_attraction`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
-points of the grid. The average `f` is then compared with the diagonal length of a grid
+points within the bounding box of the grid.
+The average `f` is then compared with the diagonal length of a grid
 cell and their ratio provides `Δt`.
 
 Notice that `Δt` should not be too small which happens typically if the grid resolution
@@ -414,8 +411,14 @@ as `mx_chk_hit_bas` need to be increased drastically.
 Also, `Δt` that is smaller than the internal step size of the integrator will cause
 a performance drop.
 """
-function automatic_Δt_basins(ds, grid; N = 5000)
+function automatic_Δt_basins(ds, grid_nfo; N = 5000)
     isdiscretetime(ds) && return 1
+
+    if grid_nfo isa IrregularGrid
+        throw(error("Provide the Dt for irregular grid"))
+    end
+    grid = grid_nfo.grid
+
     if ds isa ProjectedDynamicalSystem
         # TODO:
         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
