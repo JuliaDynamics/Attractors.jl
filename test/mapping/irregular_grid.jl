@@ -12,7 +12,7 @@ newton_f(x, p) = x^p - 1
 newton_df(x, p)= p*x^(p-1)
 
 ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
-yg = collect(range(-1.5, 1.5; length = 400))  
+yg = collect(range(-1.5, 1.5; length = 400))
 xg = log.(collect(range(exp(-1.5), exp(1.5), length=400)))
 
 
@@ -192,3 +192,23 @@ attractors_reg = extract_attractors(mapper)
 
 
 @test (length(vec(attractors_SBD[1]))/10) > length(vec(attractors_reg[1]))
+
+
+############################################################
+####  Automatic Δt works                                ####
+############################################################
+reinit!(ds)
+
+xg = yg = range(0, 18, length = 30)
+grid0 = (xg, yg)
+xg = yg = range(0, 18.0^(1/2); length = 20).^2
+grid1 = (xg, yg)
+grid2 = SubdivisionBasedGrid(grid0, rand([0, 1, 2], (30, 30)))
+
+Dt0 = automatic_Δt_basins(ds, grid0)
+Dt1 = automatic_Δt_basins(ds, grid1)
+Dt2 = automatic_Δt_basins(ds, grid2)
+
+@test Dt0 > 0
+@test Dt1 > 0
+@test Dt2 > 0

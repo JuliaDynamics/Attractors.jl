@@ -19,7 +19,7 @@ so that a finite state machine can operate on top of it. Possibilities are:
   yg = range(-5, 5; length = 100)`.
 3. An instance of the special grid type
 [`SubdividedBasedGrid`](@ref), which can be created either manually or by using [`subdivision_based_grid`](@ref).
-  This will allow user to automatically analyze and adapt grid discretization
+  This automatically analyzes and adapts grid discretization
   levels in accordance with state space flow speed in different regions.
 
 The grid has to be the same dimensionality as
@@ -265,7 +265,7 @@ struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     grid::NTuple{D, R}
     max_grid::NTuple{D, R}
 end
-minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
+minmax_grid_extent(g::SubdivisionBasedGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::SubdivisionBasedGrid) = mean_cell_diagonal(g.grid)
 
 """
@@ -425,7 +425,7 @@ function automatic_Δt_basins(ds, grid_nfo; N = 5000)
 
     # Create a random sampler with min-max the grid range
     mins, maxs = minmax_grid_extent(grid_nfo)
-    sampler, = statespace_sampler(HRectangle(mins, maxs))
+    sampler, = statespace_sampler(HRectangle([mins...], [maxs...]))
     # Sample velocity at random points
     f, p, t0 = dynamic_rule(ds), current_parameters(ds), initial_time(ds)
     udummy = copy(current_state(ds))
