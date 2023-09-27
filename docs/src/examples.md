@@ -283,11 +283,11 @@ The example below highlights that for rather coarse settings of grid and converg
 using Attractors, CairoMakie
 
 function predator_prey_fastslow(u, p, t)
-	α, γ, ϵ, ν, h, K, m = p
-	N, P = u
+    α, γ, ϵ, ν, h, K, m = p
+    N, P = u
     du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
     du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
-	return SVector(du1, du2)
+    return SVector(du1, du2)
 end
 γ = 2.5
 h = 1
@@ -325,19 +325,19 @@ fig
 ```
 ## Subdivision Based Grid for `AttractorsViaRecurrences`
 To achieve even better results for this kind of problematic systems than with previuosly introduced `Irregular Grids`  we provide a functionality to construct `Subdivision Based Grids` in which
-one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has 
-significantly different speed. [`subdivided_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified 
+one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has
+significantly different speed. [`subdivided_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified
 grid to further treat those areas as having more dense or coarse structure than others.
 
 ```@example MAIN
 using Attractors, CairoMakie
 
 function predator_prey_fastslow(u, p, t)
-	α, γ, ϵ, ν, h, K, m = p
-	N, P = u
+    α, γ, ϵ, ν, h, K, m = p
+    N, P = u
     du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
     du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
-	return SVector(du1, du2)
+return SVector(du1, du2)
 end
 γ = 2.5
 h = 1
@@ -355,8 +355,8 @@ xg = yg = range(0, 18, length = 30)
 grid = subdivision_based_grid(ds, (xg, yg))
 grid.lvl_array
 ```
-The constructed array corresponds to levels of dicretization for specific regions of the grid as a powers of 2, 
-meaning that if area index is assigned to be `3`, for example, the algorithm will treat the region as one being 
+The constructed array corresponds to levels of dicretization for specific regions of the grid as a powers of 2,
+meaning that if area index is assigned to be `3`, for example, the algorithm will treat the region as one being
 `2^3 = 8` times more dense than originally user provided grid `(xg, yg)`.
 
 Now upon the construction of this structure, one can simply pass it into mapper function as usual.
@@ -378,7 +378,7 @@ attractors_SBD = extract_attractors(mapper)
 scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 
 
-# to compare the results we also construct RegularGrid of same length here 
+# to compare the results we also construct RegularGrid of same length here
 xg = yg = range(0, 18, length = 30)
 mapper = AttractorsViaRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
