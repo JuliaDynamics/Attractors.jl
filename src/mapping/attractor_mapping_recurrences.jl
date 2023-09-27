@@ -289,8 +289,8 @@ function SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array
     for i in unique_lvls
         grid_steps[i] = [length(axis)*2^i for axis in grid]
     end
-    grid_maxima = SVector{D,Float64}(maximum.(grid))
-    grid_minima = SVector{D,Float64}(minimum.(grid))
+    grid_maxima = SVector{D, Float64}(maximum.(grid))
+    grid_minima = SVector{D, Float64}(minimum.(grid))
 
     function scale_axis(axis, multiplier)
         new_length = length(axis) * (2^multiplier)
@@ -710,62 +710,40 @@ end
 # Mapping a state to a cartesian index
 #####################################################################################
 function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
-    iswithingrid = true
+    D = length(grid_nfo.grid_minima) # compile-type deduction
     @inbounds for i in eachindex(grid_nfo.grid_minima)
         if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
-            iswithingrid = false
-            break
+            return CartesianIndex{D}(-1)
         end
     end
-    if iswithingrid
-        # Snap point to grid
-        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
-        return CartesianIndex(ind...)
-    else
-        return CartesianIndex(-1)
-    end
+    # Snap point to grid
+    ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+    return CartesianIndex{D}(ind...)
 end
 
 function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
-    for axis in grid_nfo.grid
-        if !issorted(axis)
-            throw(error("Please provide sorted vectors for each axis"))
-        end
-    end
-
+    D = length(grid_nfo.grid) # compile-type deduction
     for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
         if coord < first(axis) || coord > last(axis)
-            return CartesianIndex(-1)
+            return CartesianIndex{D}(-1)
         end
     end
     cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
-    return CartesianIndex(cell_indices...)
+    return CartesianIndex{D}(cell_indices...)
 end
 
-
 function basin_cell_index(y_grid_state, grid_nfo::SubdivisionBasedGrid)
-    D = length(grid_nfo.grid)
+    D = length(grid_nfo.grid) # compile-type deduction
     initial_index = basin_cell_index(y_grid_state, RegularGrid(SVector{D,Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
-    if initial_index == CartesianIndex(-1)
-        return CartesianIndex(-1)
+    if initial_index == CartesianIndex{D}(-1)
+        return initial_index
     end
     cell_area = grid_nfo.lvl_array[initial_index]
     grid_maxima = grid_nfo.grid_maxima
     grid_minima = grid_nfo.grid_minima
     grid_steps = grid_nfo.grid_steps
     max_level = maximum(keys(grid_steps))
-    grid_step = (grid_maxima - grid_minima .+1)./ grid_steps[cell_area]
-    iswithingrid = true
-    @inbounds for i in eachindex(grid_minima)
-        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
-            iswithingrid = false
-            break
-        end
-    end
-    if iswithingrid
-        ind = @. round(Int,(y_grid_state - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
-        return CartesianIndex(ind...)
-    else
-        return CartesianIndex(-1)
-    end
+    grid_step = (grid_maxima - grid_minima .+ 1) ./ grid_steps[cell_area]
+    ind = @. round(Int, (y_grid_state - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
+    return CartesianIndex{D}(ind...)
 end
