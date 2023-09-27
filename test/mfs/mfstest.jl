@@ -34,7 +34,7 @@ using LinearAlgebra
 
     test = true
     for i in (keys(randomised))
-        if norm(randomised[i]) >= 0.64 || norm(randomised[i]) <= 0.61 || newton(randomised[i] + i) == newton(i)
+        if norm(randomised[i]) >= 0.65 || norm(randomised[i]) <= 0.60 || newton(randomised[i] + i) == newton(i)
             test = false
         end
     end

@@ -19,7 +19,7 @@ so that a finite state machine can operate on top of it. Possibilities are:
   yg = range(-5, 5; length = 100)`.
 3. An instance of the special grid type
 [`SubdividedBasedGrid`](@ref), which can be created either manually or by using [`subdivision_based_grid`](@ref).
-  This will allow user to automatically analyze and adapt grid discretization
+  This automatically analyzes and adapts grid discretization
   levels in accordance with state space flow speed in different regions.
 
 The grid has to be the same dimensionality as
@@ -232,8 +232,18 @@ Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <: Grid
     grid::NTuple{D, R}
 end
 
+minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
+mean_cell_diagonal(g::RegularGrid{D}) where {D} = norm(g.grid_steps)
+
 struct IrregularGrid{D} <: Grid
     grid::NTuple{D,Vector{Float64}}
+end
+minmax_grid_extent(g::RegularGrid) = minmax_grid_extent(g.grid)
+
+minmax_grid_extent(g::NTuple) = map(minimum, g), map(maximum, g)
+function mean_cell_diagonal(g::NTuple)
+    steps = map(r -> mean(diff(r)), g)
+    return norm(steps)
 end
 
 """
@@ -255,6 +265,8 @@ struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
     grid::NTuple{D, R}
     max_grid::NTuple{D, R}
 end
+minmax_grid_extent(g::SubdivisionBasedGrid) = g.grid_minima, g.grid_maxima
+mean_cell_diagonal(g::SubdivisionBasedGrid) = mean_cell_diagonal(g.grid)
 
 """
     subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
@@ -289,8 +301,8 @@ function SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array
     for i in unique_lvls
         grid_steps[i] = [length(axis)*2^i for axis in grid]
     end
-    grid_maxima = SVector{D,Float64}(maximum.(grid))
-    grid_minima = SVector{D,Float64}(minimum.(grid))
+    grid_maxima = SVector{D, Float64}(maximum.(grid))
+    grid_minima = SVector{D, Float64}(minimum.(grid))
 
     function scale_axis(axis, multiplier)
         new_length = length(axis) * (2^multiplier)
@@ -349,18 +361,13 @@ mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
 end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
-
-    grid = grid_nfo.grid
-
     Δt = if isnothing(Δtt)
-        if grid_nfo isa IrregularGrid
-            throw(error("Provide the Dt for irregular grid"))
-        end
-        isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid)
+        isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid_nfo)
     else
         Δtt
     end
 
+    grid = grid_nfo.grid # this is always a Tuple irrespectively of grid type
     D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
@@ -368,11 +375,10 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
         error("Grid and dynamical system do not have the same dimension!")
     end
 
-    D = length(grid)
-
-    multiplier = 0
     if grid_nfo isa SubdivisionBasedGrid
         multiplier = maximum(keys(grid_nfo.grid_steps))
+    else
+        multiplier = 0
     end
     basins_array = if sparse
         SparseArray{Int}(undef, (map(length, grid ).*(2^multiplier)))
@@ -395,7 +401,6 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
 end
 
 
-
 using LinearAlgebra: norm
 
 """
@@ -403,43 +408,43 @@ using LinearAlgebra: norm
 
 Calculate an optimal `Δt` value for [`basins_of_attraction`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
-points of the grid. The average `f` is then compared with the diagonal length of a grid
+points within the bounding box of the grid.
+The average `f` is then compared with the average diagonal length of a grid
 cell and their ratio provides `Δt`.
 
 Notice that `Δt` should not be too small which happens typically if the grid resolution
-is high. It is okay for [`basins_of_attraction`](@ref) if the trajectory skips a few cells.
-But if `Δt` is too small the default values for all other keywords such
-as `mx_chk_hit_bas` need to be increased drastically.
-
+is high. It is okay if the trajectory skips a few cells.
 Also, `Δt` that is smaller than the internal step size of the integrator will cause
 a performance drop.
 """
-function automatic_Δt_basins(ds, grid; N = 5000)
+function automatic_Δt_basins(ds, grid_nfo; N = 5000)
     isdiscretetime(ds) && return 1
     if ds isa ProjectedDynamicalSystem
-        # TODO:
         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
     end
-    steps = step.(grid)
-    s = sqrt(sum(x^2 for x in steps)) # diagonal length of a cell
-    indices = CartesianIndices(length.(grid))
-    random_points = [generate_ic_on_grid(grid, ind) for ind in rand(indices, N)]
-    dudt = 0.0
+
+    # Create a random sampler with min-max the grid range
+    mins, maxs = minmax_grid_extent(grid_nfo)
+    sampler, = statespace_sampler(HRectangle([mins...], [maxs...]))
+    # Sample velocity at random points
+    f, p, t0 = dynamic_rule(ds), current_parameters(ds), initial_time(ds)
     udummy = copy(current_state(ds))
-    f, p = dynamic_rule(ds), current_parameters(ds)
-    for point in random_points
+    dudt = 0.0
+    for _ in 1:N
+        point = sampler()
         deriv = if !isinplace(ds)
-            f(point, p, 0.0)
+            f(point, p, t0)
         else
-            f(udummy, point, p, 0.0)
+            f(udummy, point, p, t0)
             udummy
         end
         dudt += norm(deriv)
     end
+
+    s = mean_cell_diagonal(grid_nfo)
     Δt = 10*s*N/dudt
     return Δt
 end
-
 
 #####################################################################################
 # Implementation of the Finite State Machine (low level code)
@@ -707,62 +712,40 @@ end
 # Mapping a state to a cartesian index
 #####################################################################################
 function basin_cell_index(y_grid_state, grid_nfo::RegularGrid)
-    iswithingrid = true
+    D = length(grid_nfo.grid_minima) # compile-type deduction
     @inbounds for i in eachindex(grid_nfo.grid_minima)
         if !(grid_nfo.grid_minima[i] ≤ y_grid_state[i] ≤ grid_nfo.grid_maxima[i])
-            iswithingrid = false
-            break
+            return CartesianIndex{D}(-1)
         end
     end
-    if iswithingrid
-        # Snap point to grid
-        ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
-        return CartesianIndex(ind...)
-    else
-        return CartesianIndex(-1)
-    end
+    # Snap point to grid
+    ind = @. round(Int, (y_grid_state - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+    return CartesianIndex{D}(ind...)
 end
 
 function basin_cell_index(y_grid_state, grid_nfo::IrregularGrid)
-    for axis in grid_nfo.grid
-        if !issorted(axis)
-            throw(error("Please provide sorted vectors for each axis"))
-        end
-    end
-
+    D = length(grid_nfo.grid) # compile-type deduction
     for (axis, coord) in zip(grid_nfo.grid, y_grid_state)
         if coord < first(axis) || coord > last(axis)
-            return CartesianIndex(-1)
+            return CartesianIndex{D}(-1)
         end
     end
     cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, y_grid_state)
-    return CartesianIndex(cell_indices...)
+    return CartesianIndex{D}(cell_indices...)
 end
 
-
 function basin_cell_index(y_grid_state, grid_nfo::SubdivisionBasedGrid)
-    D = length(grid_nfo.grid)
+    D = length(grid_nfo.grid) # compile-type deduction
     initial_index = basin_cell_index(y_grid_state, RegularGrid(SVector{D,Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
-    if initial_index == CartesianIndex(-1)
-        return CartesianIndex(-1)
+    if initial_index == CartesianIndex{D}(-1)
+        return initial_index
     end
     cell_area = grid_nfo.lvl_array[initial_index]
     grid_maxima = grid_nfo.grid_maxima
     grid_minima = grid_nfo.grid_minima
     grid_steps = grid_nfo.grid_steps
     max_level = maximum(keys(grid_steps))
-    grid_step = (grid_maxima - grid_minima .+1)./ grid_steps[cell_area]
-    iswithingrid = true
-    @inbounds for i in eachindex(grid_minima)
-        if !(grid_minima[i] ≤ y_grid_state[i] ≤ grid_maxima[i])
-            iswithingrid = false
-            break
-        end
-    end
-    if iswithingrid
-        ind = @. round(Int,(y_grid_state - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
-        return CartesianIndex(ind...)
-    else
-        return CartesianIndex(-1)
-    end
+    grid_step = (grid_maxima - grid_minima .+ 1) ./ grid_steps[cell_area]
+    ind = @. round(Int, (y_grid_state - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
+    return CartesianIndex{D}(ind...)
 end
