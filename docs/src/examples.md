@@ -31,6 +31,7 @@ Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot 
 
 ```@example MAIN
 using CairoMakie
+xg = yg = range(-1.5, 1.5; length = 400)
 grid = (xg, yg)
 fig = heatmap_basins_attractors(grid, basins, attractors)
 ```
@@ -39,6 +40,7 @@ Instead of computing the full basins, we could get only the fractions of the bas
 In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
 
 ```@example MAIN
+
 grid = (xg, yg)
 mapper = AttractorsViaRecurrences(ds, grid;
     sparse = false, mx_chk_lost = 1000
@@ -72,9 +74,9 @@ To visualize results we can make use of previously defined heatmap
 ```@example MAIN
 ax =  content(fig[1,1])
 for (atr, shock) in shocks
-    lines!(ax, [atr, atr + shock[1]])
+    lines!(ax, [atr[1], atr[1] + shock]; color = :orange)
 end
-display(fig)
+fig
 ```
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
@@ -281,11 +283,11 @@ The example below highlights that for rather coarse settings of grid and converg
 using Attractors, CairoMakie
 
 function predator_prey_fastslow(u, p, t)
-	α, γ, ϵ, ν, h, K, m = p
-	N, P = u
+    α, γ, ϵ, ν, h, K, m = p
+    N, P = u
     du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
     du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
-	return SVector(du1, du2)
+    return SVector(du1, du2)
 end
 γ = 2.5
 h = 1
@@ -320,6 +322,78 @@ end
 axislegend(ax)
 
 fig
+```
+## Subdivision Based Grid for `AttractorsViaRecurrences`
+To achieve even better results for this kind of problematic systems than with previuosly introduced `Irregular Grids`  we provide a functionality to construct `Subdivision Based Grids` in which
+one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has
+significantly different speed. [`subdivided_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified
+grid to further treat those areas as having more dense or coarse structure than others.
+
+```@example MAIN
+using Attractors, CairoMakie
+
+function predator_prey_fastslow(u, p, t)
+    α, γ, ϵ, ν, h, K, m = p
+    N, P = u
+    du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
+    du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
+return SVector(du1, du2)
+end
+γ = 2.5
+h = 1
+ν = 0.5
+m = 0.4
+ϵ = 1.0
+α = 0.8
+K = 15
+u0 = rand(2)
+p0 = [α, γ, ϵ, ν, h, K, m]
+ds = CoupledODEs(predator_prey_fastslow, u0, p0)
+
+xg = yg = range(0, 18, length = 30)
+# Construct `Subdivision Based Grid`
+grid = subdivision_based_grid(ds, (xg, yg))
+grid.lvl_array
+```
+The constructed array corresponds to levels of dicretization for specific regions of the grid as a powers of 2,
+meaning that if area index is assigned to be `3`, for example, the algorithm will treat the region as one being
+`2^3 = 8` times more dense than originally user provided grid `(xg, yg)`.
+
+Now upon the construction of this structure, one can simply pass it into mapper function as usual.
+
+```@example MAIN
+fig = Figure()
+ax = Axis(fig[1,1])
+# passing SubdivisionBasedGrid into mapper
+mapper = AttractorsViaRecurrences(ds, grid;
+        Dt = 0.1, sparse = true,
+        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
+        mx_chk_safety = 1000,
+    )
+
+# Find attractor and its fraction (fraction is always 1 here)
+sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
+fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+attractors_SBD = extract_attractors(mapper)
+scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
+
+
+# to compare the results we also construct RegularGrid of same length here
+xg = yg = range(0, 18, length = 30)
+mapper = AttractorsViaRecurrences(ds, (xg, yg);
+        Dt = 0.1, sparse = true,
+        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
+        mx_chk_safety = 1000,
+    )
+
+sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
+fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+attractors_reg = extract_attractors(mapper)
+scatter!(ax, vec(attractors_reg[1]); label = "RegularGrid")
+
+axislegend(ax)
+fig
+
 ```
 
 ## Basin fractions continuation in the magnetic pendulum

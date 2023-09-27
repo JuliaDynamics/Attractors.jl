@@ -1,3 +1,6 @@
+# v1.11
+- New algorithm `subdivision_based_grid`. Allows user to automatically constuct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
+
 # v1.10
 - Added support of irregular grids to `AttractorsViaRecurrences`, now user can provide ranges without fixed step along the same axis.
 
