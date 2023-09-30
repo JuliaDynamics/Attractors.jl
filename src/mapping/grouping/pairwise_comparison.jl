@@ -22,11 +22,16 @@ features.
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
 
 ## Description
-
-This algorithm considers that features belong to the same attractor when their pairwise
-distance, computed using `distance_metric` is smaller or equal than `distance_threshold`,
-and belong to different attractors when the distance is bigger than the threshold.
-Attractors correspond to each grouping of similar features.  
+This algorithm assumes that the the features well-separated into distinct clouds, with the
+maximum radius of the cloud controlled by `distance_threshold`. Since the systems are
+deterministic, this is achievable with a good-enough `featurizer` function, by removing
+transients, and running the trajectories for sufficiently long. It then considers that
+features belong to the same attractor when their pairwise distance, computed using
+`distance_metric`, is smaller or equal than `distance_threshold`, and belong to different
+attractors when the distance is bigger than the threshold. Attractors correspond to each
+grouping of similar features. In this way, the key parameter `distance_threshold` is
+simply the amount of variations permissible in the features. If they are well-chosen, the
+value can be relatively small and does not need to be fine tuned.
 """
 struct GroupViaPairwiseComparison{R<:Real, M} <: GroupingConfig
     optimal_radius_method::R
@@ -36,11 +41,11 @@ end
 
 function GroupViaPairwiseComparison(;
         optimal_radius_method, #impossible to set a good default value, depends on the features
-        clust_distance_metric=Euclidean(), rescale_features=false, 
+        distance_metric=Euclidean(), rescale_features=false, 
     )
     return GroupViaPairwiseComparison(
         optimal_radius_method,
-        clust_distance_metric, rescale_features,
+        distance_metric, rescale_features,
     )
 end
 
@@ -71,16 +76,18 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
     cluster_labels = [1] # labels for the clusters, going from 1 : num_clusters
     next_cluster_label = 2
     
-    for (idx_feature, feature) in enumerate(features[2:end])
-        dist_to_clusters = Dict(cluster_label => evaluate(metric, feature, features[cluster_idxs[idx_cluster]]) for (idx_cluster, cluster_label) in enumerate(cluster_labels))
+    for idx_feature = 2:length(features)
+        feature = features[idx_feature]
+        dist_to_clusters = _distance_dict(feature, features, cluster_idxs, cluster_labels, metric)
         min_dist, closest_cluster_label = findmin(dist_to_clusters)
         
         if min_dist > distance_threshold #bigger than threshold => new attractor
+        @show feature, features[cluster_idxs]
             feature_label = next_cluster_label
             push!(cluster_idxs, idx_feature)
             push!(cluster_labels, next_cluster_label)
+            # @info "New attractor $next_cluster_label, min dist was $min_dist > $distance_threshold" #TODO: allow this when debugging verbose mode on!
             next_cluster_label += 1
-            @info "New attractor, min dist was $min_dist > $distance_threshold"
         else #smaller than threshold => assign to closest cluster 
             feature_label = closest_cluster_label
         end
@@ -88,4 +95,14 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
         labels_features[idx_feature] = feature_label 
     end 
     return labels_features
+end
+
+
+function _distance_dict(feature, features, cluster_idxs, cluster_labels, metric)
+    if metric isa Metric
+        dist_to_clusters = Dict(cluster_label => evaluate(metric, feature, features[cluster_idxs[idx_cluster]]) for (idx_cluster, cluster_label) in enumerate(cluster_labels))
+    else
+        dist_to_clusters = Dict(cluster_label => metric(feature, features[cluster_idxs[idx_cluster]]) for (idx_cluster, cluster_label) in enumerate(cluster_labels))
+    end
+    return dist_to_clusters 
 end
