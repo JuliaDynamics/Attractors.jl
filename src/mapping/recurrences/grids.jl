@@ -1,18 +1,24 @@
 #####################################################################################
 # Grid construction
 #####################################################################################
-Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <: Grid
+struct RegularGrid{D, R <: AbstractRange} <: Grid
     grid_steps::SVector{D, Float64}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
     grid::NTuple{D, R}
+end
+function RegularGrid(grid::NTuple)
+    grid_steps = SVector{D,Float64}(step.(grid))
+    grid_maxima = SVector{D,Float64}(maximum.(grid))
+    grid_minima = SVector{D,Float64}(minimum.(grid))
+    return RegularGrid(grid_steps, grid_minima, grid_maxima, grid)
 end
 
 minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::RegularGrid{D}) where {D} = norm(g.grid_steps)
 
 struct IrregularGrid{D} <: Grid
-    grid::NTuple{D,Vector{Float64}}
+    grid::NTuple{D, Vector{Float64}}
 end
 minmax_grid_extent(g::IrregularGrid) = minmax_grid_extent(g.grid)
 

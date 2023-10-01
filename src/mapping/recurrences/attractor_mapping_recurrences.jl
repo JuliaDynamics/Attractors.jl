@@ -126,15 +126,10 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
     )
 
     if grid isa Tuple  # regular or irregular
-        D = length(grid)
         if all(t -> t isa AbstractRange, grid) && all(axis -> issorted(axis), grid) # regular
-            grid_steps = SVector{D,Float64}(step.(grid))
-            grid_maxima = SVector{D,Float64}(maximum.(grid))
-            grid_minima = SVector{D,Float64}(minimum.(grid))
-            finalgrid = RegularGrid(grid_steps, grid_minima, grid_maxima, grid)
+            finalgrid = RegularGrid(grid)
         elseif any(t -> t isa AbstractVector, grid) && all(axis -> issorted(axis), grid) # irregular
             finalgrid = IrregularGrid(grid)
-        else
             error("Incorrect grid specification")
         end
     elseif grid isa SubdivisionBasedGrid
