@@ -152,9 +152,10 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
 end
 
 function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
-    # Call low level code of `basins_of_attraction` function. Notice that in this
-    # call signature the interal basins info array of the mapper is NOT updated.
-    lab = get_label_ic!(mapper.bsn_nfo, mapper.ds, u0; show_progress, mapper.kwargs...)
+    # Call low level code. Notice that in this
+    # call signature the interal basins info array of the mapper is NOT updated
+    # with the basins of attraction info. Only with the attractors info.
+    lab = recurrences_map_to_label!(mapper.bsn_nfo, mapper.ds, u0; show_progress, mapper.kwargs...)
     # Transform to integers indexing from odd-even indexing
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
@@ -206,7 +207,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         if basins[ind] == 0
             show_progress && ProgressMeter.update!(progress, k)
             y0 = generate_ic_on_grid(grid, ind)
-            basins[ind] = get_label_ic!(
+            basins[ind] = recurrences_map_to_label!(
                 mapper.bsn_nfo, mapper.ds, y0; show_progress, mapper.kwargs...
             )
         end
@@ -263,7 +264,6 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
         SparseArray{Int}(undef, (map(length, grid ).*(2^multiplier)))
     else
         zeros(Int, (map(length, grid).*(2^multiplier))...)
-
     end
     bsn_nfo = BasinsInfo(
         basins_array,
@@ -296,7 +296,7 @@ is high. It is okay if the trajectory skips a few cells.
 Also, `Δt` that is smaller than the internal step size of the integrator will cause
 a performance drop.
 """
-function automatic_Δt_basins(ds, grid_nfo; N = 5000)
+function automatic_Δt_basins(ds, grid_nfo::Grid; N = 5000)
     isdiscretetime(ds) && return 1
     if ds isa ProjectedDynamicalSystem
         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")

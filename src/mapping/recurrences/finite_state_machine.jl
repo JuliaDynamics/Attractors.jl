@@ -2,16 +2,16 @@
 # Implementation of the Finite State Machine (low level code)
 #####################################################################################
 """
-    get_label_ic!(bsn_nfo::BasinsInfo, ds, u0; kwargs...) -> ic_label
+    recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds, u0; kwargs...) -> ic_label
 
 Return the label of the attractor that the initial condition `u0` converges to,
 or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exceeding
 `mx_chk_safety`).
 
-Notice the numbering system `cell_label` is as in `_identify_basin_of_cell!`
+Notice the numbering system `cell_label` is as in `finite_state_machine!`
 so before the label processing done in e.g., `basins_of_attraction`.
 """
-function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
+function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         mx_chk_safety = Int(1e6), Ttr = 0, kwargs...
     )
     # This routine identifies the attractor using the previously defined basin.
@@ -61,7 +61,7 @@ function get_label_ic!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         end
         y = _possibly_reduced_state(new_y, ds, grid_min)
         n = basin_cell_index(y, bsn_nfo.grid_nfo)
-        cell_label = _identify_basin_of_cell!(bsn_nfo, n, y; kwargs...)
+        cell_label = finite_state_machine!(bsn_nfo, n, y; kwargs...)
 
     end
     return cell_label
@@ -79,8 +79,12 @@ end
 
 
 """
-Main procedure. Directly implements the algorithm of Datseris & Wagemakers 2021,
+Main procedure which performs one step of the finite state machine.
+Directly implements the algorithm of Datseris & Wagemakers 2021,
 see the flowchart (Figure 2).
+I.e., it obtains current state, updates state with respect to the cell
+code the trajectory it is currently on, performs the check of counters,
+and sets the f.s.m. to the new state, or increments counter if same state.
 
 The basins and attractors are coded in the array with odd numbers for the basins and
 even numbers for the attractors. The attractor `2n` has the corresponding basin `2n+1`.
@@ -89,7 +93,7 @@ Diverging trajectories and the trajectories staying outside the grid are coded w
 
 The label `1` (initial value) outlined in the paper is `0` here instead.
 """
-function _identify_basin_of_cell!(
+function finite_state_machine!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u;
         mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
         horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = true,
