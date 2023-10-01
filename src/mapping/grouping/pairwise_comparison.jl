@@ -2,7 +2,7 @@ export GroupViaPairwiseComparison
 
 
 """
-    GroupViaPairwiseComparison(; optimal_radius_method::Real, kwargs...)
+    GroupViaPairwiseComparison(; distance_threshold::Real, kwargs...)
 
 Initialize a struct that contains instructions on how to group features in
 [`AttractorsViaFeaturizing`](@ref). `GroupViaPairwiseComparison` groups features and
@@ -34,17 +34,17 @@ simply the amount of variations permissible in the features. If they are well-ch
 value can be relatively small and does not need to be fine tuned.
 """
 struct GroupViaPairwiseComparison{R<:Real, M} <: GroupingConfig
-    optimal_radius_method::R
+    distance_threshold::R
     distance_metric::M
     rescale_features::Bool 
 end
 
 function GroupViaPairwiseComparison(;
-        optimal_radius_method, #impossible to set a good default value, depends on the features
+        distance_threshold, #impossible to set a good default value, depends on the features
         distance_metric=Euclidean(), rescale_features=false, 
     )
     return GroupViaPairwiseComparison(
-        optimal_radius_method,
+        distance_threshold,
         distance_metric, rescale_features,
     )
 end
@@ -56,17 +56,13 @@ function group_features(
     if config.rescale_features
         features = _rescale_to_01(features)
     end
-    ϵ_optimal = _extract_ϵ_optimal(features, config)
-    labels = _cluster_features_into_labels(features, config, ϵ_optimal; kwargs...)
+    
+    labels = _cluster_features_into_labels(features, config, config.distance_threshold; kwargs...)
     return labels
 end
 
-function _extract_ϵ_optimal(features, config::GroupViaPairwiseComparison)
-    return config.optimal_radius_method
-end
-
-# TODO: add support for par_weight,plength and spp?
-function _cluster_features_into_labels(features, config::GroupViaPairwiseComparison, distance_threshold::Real; par_weight::Real = 0, plength::Int = 1, spp::Int = 1)
+# TODO: add support for par_weight,plength and spp in the computation of the distance metric?
+function _cluster_features_into_labels(features, config::GroupViaPairwiseComparison, distance_threshold::Real; kwargs...)
     labels_features = Vector{Int64}(undef, length(features)) #labels of all features
     metric = config.distance_metric
     
@@ -78,7 +74,7 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
     
     for idx_feature = 2:length(features)
         feature = features[idx_feature]
-        dist_to_clusters = _distance_dict(feature, features, cluster_idxs, cluster_labels, metric)
+        dist_to_clusters = _distance_dict(feature, features, cluster_idxs, cluster_labels, metric; kwargs...)
         min_dist, closest_cluster_label = findmin(dist_to_clusters)
         
         if min_dist > distance_threshold #bigger than threshold => new attractor
@@ -97,12 +93,12 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
     return labels_features
 end
 
-
-function _distance_dict(feature, features, cluster_idxs, cluster_labels, metric)
+function _distance_dict(feature, features, cluster_idxs, cluster_labels, metric; par_weight::Real = 0, plength::Int = 1, spp::Int = 1, kwargs...)
     if metric isa Metric
         dist_to_clusters = Dict(cluster_label => evaluate(metric, feature, features[cluster_idxs[idx_cluster]]) for (idx_cluster, cluster_label) in enumerate(cluster_labels))
     else
         dist_to_clusters = Dict(cluster_label => metric(feature, features[cluster_idxs[idx_cluster]]) for (idx_cluster, cluster_label) in enumerate(cluster_labels))
     end
+    
     return dist_to_clusters 
 end

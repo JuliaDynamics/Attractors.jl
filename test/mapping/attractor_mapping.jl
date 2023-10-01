@@ -90,7 +90,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 
     @testset "Featurizing, pairwise comparison" begin
-        config = GroupViaPairwiseComparison(; optimal_radius_method=distance_threshold_pairwise,
+        config = GroupViaPairwiseComparison(; distance_threshold=distance_threshold_pairwise,
         distance_metric=Euclidean(), rescale_features=false)
         mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr = 500)
         test_basins_fractions(mapper;
@@ -103,7 +103,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             function distance_metric_hausdorff(A,B)
                 set_distance(A, B, Hausdorff())
             end
-            config = GroupViaPairwiseComparison(; optimal_radius_method=distance_threshold_pairwise,
+            config = GroupViaPairwiseComparison(; distance_threshold=distance_threshold_pairwise,
             distance_metric=distance_metric_hausdorff, rescale_features=false)
             mapper = AttractorsViaFeaturizing(ds, featurizer_matrix, config; Ttr = 500)
             test_basins_fractions(mapper;
