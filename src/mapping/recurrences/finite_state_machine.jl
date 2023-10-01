@@ -155,10 +155,9 @@ function finite_state_machine!(
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
             store_once_per_cell || store_attractor!(bsn_nfo, u)
-        elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
-            # We have recorded the presence of an attractor: tidy up everything
-            # and set the empty counters for the new attractor.
-            # pick the next label for labeling the basin.
+        elseif iseven(ic_label) && bsn_nfo.consecutive_match ≥ mx_chk_loc_att
+            # We have recorded the attractor with sufficient accuracy.
+            # We now set the empty counters for the new attractor.
             bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
@@ -168,10 +167,9 @@ function finite_state_machine!(
         return 0
     end
 
+    # We've hit a cell labelled as a basin of an existing attractor.
+    # Note, this clause can only trigger if the basin array is NOT sparse.
     if bsn_nfo.state == :bas_hit
-        # hit a labeled basin point of the wrong basin, happens all the time,
-        # we check if it happens mx_chk_hit_bas times in a row. Note that
-        # this clause is never triggered if the basin array is sparse.
         if bsn_nfo.prev_label == ic_label
             bsn_nfo.consecutive_match += 1
         else
