@@ -103,7 +103,7 @@ function finite_state_machine!(
     #if n[1] == -1 means we are outside the grid
     ic_label = n[1] == -1 ? -1 : bsn_nfo.basins[n]
 
-    check_next_state!(bsn_nfo, ic_label)
+    set_next_state!(bsn_nfo, ic_label)
 
     if bsn_nfo.state == :att_hit
         if ic_label == bsn_nfo.prev_label
@@ -228,14 +228,14 @@ function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.state = :att_search
 end
 
-function check_next_state!(bsn_nfo, ic_label)
-    next_state = :undef
+function set_next_state!(bsn_nfo, ic_label)
     current_state = bsn_nfo.state
     if current_state == :att_found
         # this is a terminal state, once reached you don't get out
         return
     end
 
+    next_state = :undef
     if ic_label == 0 || ic_label == bsn_nfo.visited_cell
         # unlabeled box or previously visited box with the current label
         next_state = :att_search
@@ -261,5 +261,6 @@ function check_next_state!(bsn_nfo, ic_label)
         end
     end
     bsn_nfo.state = next_state
+    return
 end
 
