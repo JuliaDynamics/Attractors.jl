@@ -1,8 +1,6 @@
 #####################################################################################
 # Grid construction
 #####################################################################################
-abstract type Grid end
-
 Base.@kwdef struct RegularGrid{D, R <: AbstractRange} <: Grid
     grid_steps::SVector{D, Float64}
     grid_minima::SVector{D, Float64}

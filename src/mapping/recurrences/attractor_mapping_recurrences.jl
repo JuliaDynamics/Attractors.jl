@@ -1,4 +1,3 @@
-include("sparse_arrays.jl")
 #####################################################################################
 # Type definition and documentation
 #####################################################################################
@@ -223,7 +222,9 @@ end
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-mutable struct BasinsInfo{D, G <:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
+abstract type Grid end
+
+mutable struct BasinsInfo{D, G<:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
     basins::A # sparse or dense
     grid_nfo::G
     Δt::Δ
@@ -323,3 +324,7 @@ function automatic_Δt_basins(ds, grid_nfo; N = 5000)
     Δt = 10*s*N/dudt
     return Δt
 end
+
+include("sparse_arrays.jl")
+include("finite_state_machine.jl")
+include("grids.jl")
