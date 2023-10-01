@@ -220,7 +220,7 @@ end
 #####################################################################################
 abstract type Grid end
 
-mutable struct BasinsInfo{D, G<:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
+mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
     basins::A # sparse or dense
     grid_nfo::G
     Δt::Δ
@@ -232,7 +232,7 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, Q, A <: AbstractArray{Int, D}}
     prev_label::Int
     safety_counter::Int
     attractors::Dict{Int, StateSpaceSet{D, T}}
-    visited_list::Q
+    visited_list::Vector{CartesianIndex{D}}
 end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
