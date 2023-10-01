@@ -1,6 +1,8 @@
 # Definition of the attracting mapping API and exporting
 # At the end it also includes all files related to mapping
 
+const mx_dimension_sparse = 30
+
 export AttractorMapper,
     AttractorsViaRecurrences,
     AttractorsViaProximity,
@@ -166,12 +168,28 @@ corresponding to the state space partitioning indicated by `grid`.
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
-    I = CartesianIndices(basins)
-    A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
+    A = generate_ics_on_grid(grid)
     fs, labels = basins_fractions(mapper, A; kwargs...)
     attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
     return basins, attractors
+end
+
+"""
+    Generates ics on grid for a reduced grid, which contains only dimensions that are varying.
+    Then construct the full-dimension vector from that. 
+    Returns `A = Vector{Vector{B}}`, which `B` being the type of values from `grid`. 
+"""
+function generate_ics_on_grid(grid::NTuple{B, T}) where {B, T}
+    grid_lengths = length.(grid)
+    idxs_varying_dims = findall(len->len>1, grid_lengths)
+    reduced_grid = grid[idxs_varying_dims]
+    I_reduced = CartesianIndices(length.(reduced_grid))
+    A_reduced = [generate_ic_on_grid(reduced_grid, i) for i in vec(I_reduced)]
+    
+    ics_fixed = [grid_dim[1] for grid_dim in grid]
+    A = _expand_A(A_reduced, ics_fixed, idxs_varying_dims)
+    return Dataset(A)
 end
 
 # Type-stable generation of an initial condition given a grid array index
@@ -181,6 +199,37 @@ end
         Base.@_inline_meta
         @inbounds return SVector{$B, Float64}($(gens...))
     end
+end
+
+# function generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
+#     if B < mx_dimension_sparse 
+#         return _generate_ic_on_grid(grid, ind)
+#     else
+#         @show typeof(_generate_ic_on_grid_vec(grid, ind))
+#         return _generate_ic_on_grid_vec(grid, ind)
+#     end 
+# end
+# 
+# # Type-stable generation of an initial condition given a grid array index
+# @generated function _generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
+#     gens = [:(grid[$k][ind[$k]]) for k=1:B]
+#     quote
+#         Base.@_inline_meta
+#         @inbounds return SVector{$B, Float64}($(gens...))
+#     end
+# end
+# 
+# function _generate_ic_on_grid_vec(grid::NTuple{B, T}, ind) where {B, T}
+#     gens = [(grid[k][ind[k]]) for k=1:B]
+#     return gens
+# end
+
+function _expand_A(vec_reduced, ic_fixed, idxs_varying_dims) where {A}
+    vec = [deepcopy(ic_fixed) for _ in vec_reduced]
+    for i in eachindex(vec)
+        vec[i][idxs_varying_dims] .= vec_reduced[i]
+    end
+    return vec 
 end
 
 #########################################################################################
