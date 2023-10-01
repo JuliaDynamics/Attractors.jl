@@ -8,8 +8,8 @@ Return the label of the attractor that the initial condition `u0` converges to,
 or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exceeding
 `mx_chk_safety`).
 
-Notice the numbering system `cell_label` is as in `finite_state_machine!`
-so before the label processing done in e.g., `basins_of_attraction`.
+Notice the numbering system `cell_label` is as in `finite_state_machine!`.
+Even numbers are attractors, odd numbers are basins.
 """
 function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         mx_chk_safety = Int(1e6), Ttr = 0, kwargs...
@@ -24,6 +24,8 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
     bsn_nfo.safety_counter = 0
 
     while cell_label == 0
+        step!(ds, bsn_nfo.Δt)
+
         # This clause here is added because sometimes the algorithm will never hault
         # for e.g., an ill conditioned grid where two or more attractors intersect
         # within the same grid cell. In such a case, when starting on the second attractor
@@ -44,7 +46,6 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             return -1
         end
 
-        step!(ds, bsn_nfo.Δt)
         if !successful_step(ds)
             relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             return -1
@@ -54,21 +55,16 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # The internal function `_possibly_reduced_state` exists solely to
         # accommodate the special case of a Poincare map with the grid defined
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
-        if (bsn_nfo.grid_nfo isa RegularGrid) || (bsn_nfo.grid_nfo isa SubdivisionBasedGrid)
-            grid_min = bsn_nfo.grid_nfo.grid_minima
-        else bsn_nfo.grid_nfo isa IrregularGrid
-            grid_min = minimum.(bsn_nfo.grid_nfo.grid)
-        end
-        y = _possibly_reduced_state(new_y, ds, grid_min)
+        y = _possibly_reduced_state(new_y, ds, bsn_nfo)
         n = basin_cell_index(y, bsn_nfo.grid_nfo)
         cell_label = finite_state_machine!(bsn_nfo, n, y; kwargs...)
-
     end
     return cell_label
 end
 
 _possibly_reduced_state(y, ds, grid) = y
-function _possibly_reduced_state(y, ds::PoincareMap, grid)
+function _possibly_reduced_state(y, ds::PoincareMap, bsn_nfo)
+    grid = bsn_nfo.grid
     if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
         return y[ds.diffidxs]
     else
@@ -92,6 +88,7 @@ This codification is changed when the basins and attractors are returned to the 
 Diverging trajectories and the trajectories staying outside the grid are coded with -1.
 
 The label `1` (initial value) outlined in the paper is `0` here instead.
+The function returns `0` unless the FSM has terminated its operation.
 """
 function finite_state_machine!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u;
