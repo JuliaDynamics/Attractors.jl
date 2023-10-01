@@ -1,8 +1,6 @@
 # Definition of the attracting mapping API and exporting
 # At the end it also includes all files related to mapping
 
-const mx_dimension_sparse = 30
-
 export AttractorMapper,
     AttractorsViaRecurrences,
     AttractorsViaProximity,
@@ -234,7 +232,7 @@ function _expand_A(vec_reduced, ic_fixed, idxs_varying_dims) where {A}
     for i in eachindex(vec)
         vec[i][idxs_varying_dims] .= vec_reduced[i]
     end
-    return vec 
+    return vec
 end
 
 #########################################################################################
