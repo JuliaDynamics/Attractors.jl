@@ -42,12 +42,12 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
             # """
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             return -1
         end
 
         if !successful_step(ds)
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             return -1
         end
 
@@ -111,9 +111,9 @@ function finite_state_machine!(
         end
         if bsn_nfo.consecutive_match ≥ mx_chk_att
             # We've hit an existing attractor `mx_chk_att` times in a row
-            # so we assign
+            # so we assign the initial condition directly to the attractor
             hit_att = ic_label + 1
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             reset_basins_counters!(bsn_nfo)
             return hit_att
         end
@@ -126,6 +126,8 @@ function finite_state_machine!(
         if ic_label == 0
             # unlabeled box, label it with current odd label and reset counter
             bsn_nfo.basins[n] = bsn_nfo.visited_cell_label
+            # also keep track of visited cells. This makes it easier to clean
+            # up the basin array later!
             push!(bsn_nfo.visited_list, n) # keep track of visited cells
             bsn_nfo.consecutive_match = 1
         elseif ic_label == bsn_nfo.visited_cell_label
@@ -162,7 +164,7 @@ function finite_state_machine!(
         elseif iseven(ic_label) && bsn_nfo.consecutive_match ≥ mx_chk_loc_att
             # We have recorded the attractor with sufficient accuracy.
             # We now set the empty counters for the new attractor.
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
@@ -181,7 +183,7 @@ function finite_state_machine!(
             bsn_nfo.consecutive_match = 1
         end
         if  bsn_nfo.consecutive_match > mx_chk_hit_bas
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             reset_basins_counters!(bsn_nfo)
             return ic_label
         end
@@ -193,7 +195,7 @@ function finite_state_machine!(
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
         if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
             return -1
@@ -215,7 +217,7 @@ function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T}, u) where {D, G, Δ, 
     end
 end
 
-function relabel_visited_cell!(bsn_nfo::BasinsInfo, old_label, new_label)
+function cleanup_visited_cells!(bsn_nfo::BasinsInfo, old_label, new_label)
     while !isempty(bsn_nfo.visited_list)
         ind = pop!(bsn_nfo.visited_list)
         if bsn_nfo.basins[ind] == old_label
