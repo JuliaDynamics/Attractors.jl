@@ -109,10 +109,10 @@ The iteration of a given initial condition continues until one of the following 
    belongs to that basin and is numbered accordingly. Notice that basins are stored and
    used only when `sparse = false`.
 -  The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
-   of the integrator state becomes > than `horizon_limit`: the initial
-   condition's label is set to `-1`.
+   of the dynamical system state becomes > than `horizon_limit`: the initial
+   condition is labelled `-1`.
 -  If none of the above happens, the initial condition is labelled `-1` after
-   and `mx_chk_safety` integrator steps.
+   `mx_chk_safety` steps.
 """
 struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS

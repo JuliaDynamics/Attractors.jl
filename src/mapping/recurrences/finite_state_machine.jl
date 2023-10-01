@@ -107,13 +107,14 @@ function finite_state_machine!(
 
     update_fsm_state!(bsn_nfo, ic_label)
 
+    # This state means that we have visited a cell that contains a recorded attractor
     if bsn_nfo.state == :att_hit
         if ic_label == bsn_nfo.prev_label
              bsn_nfo.consecutive_match += 1
         end
         if bsn_nfo.consecutive_match ≥ mx_chk_att
-            # Wait if we hit the attractor a mx_chk_att times in a row just
-            # to check if it is not a nearby trajectory
+            # We've hit an existing attractor `mx_chk_att` times in a row
+            # so we assign
             hit_att = ic_label + 1
             relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             reset_basins_counters!(bsn_nfo)
@@ -123,6 +124,7 @@ function finite_state_machine!(
         return 0
     end
 
+    # This state is "searching for an attractor". It is the initial state.
     if bsn_nfo.state == :att_search
         if ic_label == 0
             # unlabeled box, label it with current odd label and reset counter
@@ -134,9 +136,11 @@ function finite_state_machine!(
             bsn_nfo.consecutive_match += 1
         end
 
+        # If we accummulated enough recurrences, we claim that we
+        # have found an attractor, and we switch to `:att_found`.
         if bsn_nfo.consecutive_match >= mx_chk_fnd_att
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
-            store_attractor!(bsn_nfo, u, show_progress)
+            store_attractor!(bsn_nfo, u)
             bsn_nfo.state = :att_found
             bsn_nfo.consecutive_match = 1
         end
@@ -144,35 +148,38 @@ function finite_state_machine!(
         return 0
     end
 
+    # This state can only be reached from `:att_found`. It means we have
+    # enough recurrences to claim we have found an attractor.
+    # We then locate the attractor by recording enough cells.
     if bsn_nfo.state == :att_found
         if ic_label == 0 || ic_label == bsn_nfo.visited_cell
-            # Maybe chaotic attractor, periodic or long recursion.
-            # label this box as part of an attractor
+            # label this cell as part of an attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             bsn_nfo.consecutive_match = 1
-            store_attractor!(bsn_nfo, u, show_progress)
+            store_attractor!(bsn_nfo, u)
         elseif iseven(ic_label) && (bsn_nfo.consecutive_match <  mx_chk_loc_att)
-            # We make sure we hit the attractor another mx_chk_loc_att consecutive times
+            # We make sure we hit the attractor another `mx_chk_loc_att` consecutive times
             # just to be sure that we have the complete attractor
             bsn_nfo.consecutive_match += 1
-            store_once_per_cell || store_attractor!(bsn_nfo, u, show_progress)
+            store_once_per_cell || store_attractor!(bsn_nfo, u)
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
-            # We have checked the presence of an attractor: tidy up everything
-            # and get a new cell
+            # We have recorded the presence of an attractor: tidy up everything
+            # and set the empty counters for the new attractor
             relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
             # pick the next label for labeling the basin.
             bsn_nfo.visited_cell += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
-            return ic_label + 1;
+            # We return the label corresponding to the *basin* of the attractor
+            return ic_label + 1
         end
         return 0
     end
 
     if bsn_nfo.state == :bas_hit
         # hit a labeled basin point of the wrong basin, happens all the time,
-        # we check if it happens mx_chk_hit_bas times in a row or if it happens
-        # N times along the trajectory whether to decide if it is another basin.
+        # we check if it happens mx_chk_hit_bas times in a row. Note that
+        # this clause is never triggered if the basin array is sparse.
         if bsn_nfo.prev_label == ic_label
             bsn_nfo.consecutive_match += 1
         else
@@ -187,6 +194,7 @@ function finite_state_machine!(
         return 0
     end
 
+    # This state occurs when the dynamical system state is outside the grid
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
         if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
@@ -200,8 +208,7 @@ function finite_state_machine!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T},
-    u, show_progress = true) where {D, G, Δ, T}
+function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T}, u) where {D, G, Δ, T}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
     V = SVector{D, T}
