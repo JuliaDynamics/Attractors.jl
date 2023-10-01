@@ -8,6 +8,7 @@ struct RegularGrid{D, R <: AbstractRange} <: Grid
     grid::NTuple{D, R}
 end
 function RegularGrid(grid::NTuple)
+    D = length(grid)
     grid_steps = SVector{D,Float64}(step.(grid))
     grid_maxima = SVector{D,Float64}(maximum.(grid))
     grid_minima = SVector{D,Float64}(minimum.(grid))
