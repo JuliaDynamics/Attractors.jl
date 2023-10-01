@@ -226,7 +226,7 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
     Δt::Δ
     state::Symbol
     current_att_label::Int
-    visited_cell::Int
+    visited_cell_label::Int
     consecutive_match::Int
     consecutive_lost::Int
     prev_label::Int

@@ -42,12 +42,12 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
             # """
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             return -1
         end
 
         if !successful_step(ds)
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             return -1
         end
 
@@ -113,7 +113,7 @@ function finite_state_machine!(
             # We've hit an existing attractor `mx_chk_att` times in a row
             # so we assign
             hit_att = ic_label + 1
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             reset_basins_counters!(bsn_nfo)
             return hit_att
         end
@@ -125,10 +125,10 @@ function finite_state_machine!(
     if bsn_nfo.state == :att_search
         if ic_label == 0
             # unlabeled box, label it with current odd label and reset counter
-            bsn_nfo.basins[n] = bsn_nfo.visited_cell
+            bsn_nfo.basins[n] = bsn_nfo.visited_cell_label
             push!(bsn_nfo.visited_list, n) # keep track of visited cells
             bsn_nfo.consecutive_match = 1
-        elseif ic_label == bsn_nfo.visited_cell
+        elseif ic_label == bsn_nfo.visited_cell_label
             # hit a previously visited box with the current label, possible attractor?
             bsn_nfo.consecutive_match += 1
         end
@@ -145,11 +145,11 @@ function finite_state_machine!(
         return 0
     end
 
-    # This state can only be reached from `:att_found`. It means we have
+    # This state can only be reached from `:att_search`. It means we have
     # enough recurrences to claim we have found an attractor.
     # We then locate the attractor by recording enough cells.
     if bsn_nfo.state == :att_found
-        if ic_label == 0 || ic_label == bsn_nfo.visited_cell
+        if ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
             # label this cell as part of an attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             bsn_nfo.consecutive_match = 1
@@ -162,9 +162,9 @@ function finite_state_machine!(
         elseif iseven(ic_label) && bsn_nfo.consecutive_match >= mx_chk_loc_att
             # We have recorded the presence of an attractor: tidy up everything
             # and set the empty counters for the new attractor
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             # pick the next label for labeling the basin.
-            bsn_nfo.visited_cell += 2
+            bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
             # We return the label corresponding to the *basin* of the attractor
@@ -183,7 +183,7 @@ function finite_state_machine!(
             bsn_nfo.consecutive_match = 1
         end
         if  bsn_nfo.consecutive_match > mx_chk_hit_bas
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             reset_basins_counters!(bsn_nfo)
             return ic_label
         end
@@ -195,7 +195,7 @@ function finite_state_machine!(
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
         if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
-            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell, 0)
+            relabel_visited_cell!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
             return -1
@@ -242,7 +242,7 @@ function update_fsm_state!(bsn_nfo, ic_label)
     end
 
     next_state = :undef
-    if ic_label == 0 || ic_label == bsn_nfo.visited_cell
+    if ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
         # unlabeled box or previously visited box with the current label
         next_state = :att_search
     elseif iseven(ic_label)
