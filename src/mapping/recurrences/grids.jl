@@ -14,7 +14,7 @@ mean_cell_diagonal(g::RegularGrid{D}) where {D} = norm(g.grid_steps)
 struct IrregularGrid{D} <: Grid
     grid::NTuple{D,Vector{Float64}}
 end
-minmax_grid_extent(g::RegularGrid) = minmax_grid_extent(g.grid)
+minmax_grid_extent(g::IrregularGrid) = minmax_grid_extent(g.grid)
 
 minmax_grid_extent(g::NTuple) = map(minimum, g), map(maximum, g)
 function mean_cell_diagonal(g::NTuple)
