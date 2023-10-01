@@ -100,10 +100,12 @@ function finite_state_machine!(
         show_progress = true, # show_progress only used when finding new attractor.
     )
 
-    #if n[1] == -1 means we are outside the grid
+    # if n[1] == -1 means we are outside the grid,
+    # otherwise, we retrieve the label stored at the grid
+    # (which by default is 0 unless we have visited the cell before)
     ic_label = n[1] == -1 ? -1 : bsn_nfo.basins[n]
 
-    set_next_state!(bsn_nfo, ic_label)
+    update_fsm_state!(bsn_nfo, ic_label)
 
     if bsn_nfo.state == :att_hit
         if ic_label == bsn_nfo.prev_label
@@ -228,7 +230,7 @@ function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.state = :att_search
 end
 
-function set_next_state!(bsn_nfo, ic_label)
+function update_fsm_state!(bsn_nfo, ic_label)
     current_state = bsn_nfo.state
     if current_state == :att_found
         # this is a terminal state, once reached you don't get out
