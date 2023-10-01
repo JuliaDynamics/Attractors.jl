@@ -232,6 +232,7 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
     prev_label::Int
     safety_counter::Int
     attractors::Dict{Int, StateSpaceSet{D, T}}
+    visited_list::Vector{CartesianIndex{D}}
 end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
@@ -266,6 +267,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
         :att_search,
         2,4,0,1,0,0,
         Dict{Int, StateSpaceSet{G, T}}(),
+        Vector{CartesianIndex{G}}(),
     )
 
     reset_basins_counters!(bsn_nfo)
