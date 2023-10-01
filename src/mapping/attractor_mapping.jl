@@ -13,7 +13,8 @@ export AttractorMapper,
     automatic_Δt_basins,
     extract_attractors,
     subdivision_based_grid,
-    SubdivisionBasedGrid
+    SubdivisionBasedGrid,
+    generate_ics_on_grid
 
 #########################################################################################
 # AttractorMapper structure definition
@@ -168,7 +169,7 @@ corresponding to the state space partitioning indicated by `grid`.
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
-    A = generate_ics_on_grid(grid)
+    A = generate_ics_on_grid(grid, basins)
     fs, labels = basins_fractions(mapper, A; kwargs...)
     attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
@@ -176,20 +177,31 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
 end
 
 """
-    Generates ics on grid for a reduced grid, which contains only dimensions that are varying.
-    Then construct the full-dimension vector from that. 
-    Returns `A = Vector{Vector{B}}`, which `B` being the type of values from `grid`. 
+Generates initial conditions on `grid`, used typically in `basins_of_attraction`. A common
+use case is studying basins in small-dimensional systems. In this case,
+`generate_ic_on_grid`, using CartesianIndices on all dimensions, works well. A particular
+case occurs when studying basins in high-dimensional systems, in which `grid` is
+high-dimensional but only has varying values in two dimensions. The first function will
+not work, so a special function `_generate_ics_on_grid_vary_few_dims` is used to avoid the
+problem. This separation is controlled by:
+
+* `min_num_fixed_dims`: minimum number of fixed dimensions above which it becomes worth it
+  to use the special function to generate ics.
 """
-function generate_ics_on_grid(grid::NTuple{B, T}) where {B, T}
+function generate_ics_on_grid(grid, basins; min_num_fixed_dims=4)
     grid_lengths = length.(grid)
-    idxs_varying_dims = findall(len->len>1, grid_lengths)
-    reduced_grid = grid[idxs_varying_dims]
-    I_reduced = CartesianIndices(length.(reduced_grid))
-    A_reduced = [generate_ic_on_grid(reduced_grid, i) for i in vec(I_reduced)]
-    
-    ics_fixed = [grid_dim[1] for grid_dim in grid]
-    A = _expand_A(A_reduced, ics_fixed, idxs_varying_dims)
-    return Dataset(A)
+    number_fixed_dims = length(findall(len->len<=1, grid_lengths))
+    if number_fixed_dims >= min_num_fixed_dims
+        return _generate_ics_on_grid_vary_few_dims(grid)
+    else
+        return _generate_ics_on_grid(grid, basins)
+    end
+end
+
+function _generate_ics_on_grid(grid, basins)
+    I = CartesianIndices(basins)
+    A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
+    return A
 end
 
 # Type-stable generation of an initial condition given a grid array index
@@ -201,28 +213,21 @@ end
     end
 end
 
-# function generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
-#     if B < mx_dimension_sparse 
-#         return _generate_ic_on_grid(grid, ind)
-#     else
-#         @show typeof(_generate_ic_on_grid_vec(grid, ind))
-#         return _generate_ic_on_grid_vec(grid, ind)
-#     end 
-# end
-# 
-# # Type-stable generation of an initial condition given a grid array index
-# @generated function _generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
-#     gens = [:(grid[$k][ind[$k]]) for k=1:B]
-#     quote
-#         Base.@_inline_meta
-#         @inbounds return SVector{$B, Float64}($(gens...))
-#     end
-# end
-# 
-# function _generate_ic_on_grid_vec(grid::NTuple{B, T}, ind) where {B, T}
-#     gens = [(grid[k][ind[k]]) for k=1:B]
-#     return gens
-# end
+"""
+    Generates ics on grid for a reduced grid, which contains only dimensions that are varying.
+    Then construct the full-dimension vector from that. 
+"""
+function _generate_ics_on_grid_vary_few_dims(grid::NTuple{B, T}) where {B, T} #only worth it if only a few varyign dims
+    grid_lengths = length.(grid)
+    idxs_varying_dims = findall(len->len>1, grid_lengths)
+    reduced_grid = grid[idxs_varying_dims]
+    I_reduced = CartesianIndices(length.(reduced_grid))
+    A_reduced = [generate_ic_on_grid(reduced_grid, i) for i in vec(I_reduced)]
+    
+    ics_fixed = [grid_dim[1] for grid_dim in grid]
+    A = _expand_A(A_reduced, ics_fixed, idxs_varying_dims)
+    return Dataset(A)
+end
 
 function _expand_A(vec_reduced, ic_fixed, idxs_varying_dims) where {A}
     vec = [deepcopy(ic_fixed) for _ in vec_reduced]
