@@ -42,12 +42,12 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
             # """
-            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo)
             return -1
         end
 
         if !successful_step(ds)
-            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo)
             return -1
         end
 
@@ -113,7 +113,7 @@ function finite_state_machine!(
             # We've hit an existing attractor `mx_chk_att` times in a row
             # so we assign the initial condition directly to the attractor
             hit_att = ic_label + 1
-            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
             return hit_att
         end
@@ -164,7 +164,7 @@ function finite_state_machine!(
         elseif iseven(ic_label) && bsn_nfo.consecutive_match ≥ mx_chk_loc_att
             # We have recorded the attractor with sufficient accuracy.
             # We now set the empty counters for the new attractor.
-            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo)
             bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
@@ -183,7 +183,7 @@ function finite_state_machine!(
             bsn_nfo.consecutive_match = 1
         end
         if  bsn_nfo.consecutive_match > mx_chk_hit_bas
-            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
             return ic_label
         end
@@ -195,7 +195,7 @@ function finite_state_machine!(
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
         if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
-            cleanup_visited_cells!(bsn_nfo, bsn_nfo.visited_cell_label, 0)
+            cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
             return -1
@@ -220,11 +220,12 @@ end
 # TODO: Here we should dispatch on the type of array.
 # If we use sparse array, doing `bsn_nfo = new_label` keeps
 # the visited cells in memory. We want to pop them out completely!!!
-function cleanup_visited_cells!(bsn_nfo::BasinsInfo, old_label, new_label)
+function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
+    old_label = bsn_nfo.visited_cell_label
     while !isempty(bsn_nfo.visited_list)
         ind = pop!(bsn_nfo.visited_list)
         if bsn_nfo.basins[ind] == old_label
-            bsn_nfo.basins[ind] = new_label
+            bsn_nfo.basins[ind] = 0 # 0 is the unvisited label / empty label
         end
     end
 end
