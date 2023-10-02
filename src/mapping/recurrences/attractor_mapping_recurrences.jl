@@ -63,7 +63,7 @@ want to search for attractors in a lower dimensional subspace.
   unlabeled cell before declaring we have found a new attractor.
 * `mx_chk_loc_att = 100`: Maximum check of consecutive visits to cells marked as a new
   attractor, during the attractor identification phase, before declaring we that we have
-  identified the new attractor with sufficient cells.
+  identified the new attractor with sufficient accuracy.
 * `store_once_per_cell = true`: Control if multiple points in state space that belong to
   the same cell are stored or not in the attractor, after an attractor is found.
   If `true`, each visited cell will only store a point once, which is desirable for fixed
