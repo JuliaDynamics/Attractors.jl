@@ -78,7 +78,6 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
         min_dist, closest_cluster_label = findmin(dist_to_clusters)
         
         if min_dist > distance_threshold #bigger than threshold => new attractor
-        @show feature, features[cluster_idxs]
             feature_label = next_cluster_label
             push!(cluster_idxs, idx_feature)
             push!(cluster_labels, next_cluster_label)
@@ -93,7 +92,7 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
     return labels_features
 end
 
-function _distance_dict(feature, features, cluster_idxs, cluster_labels, metric; par_weight::Real = 0, plength::Int = 1, spp::Int = 1, kwargs...)
+function _distance_dict(feature, features, cluster_idxs, cluster_labels, metric; kwargs...)
     if metric isa Metric
         dist_to_clusters = Dict(cluster_label => evaluate(metric, feature, features[cluster_idxs[idx_cluster]]) for (idx_cluster, cluster_label) in enumerate(cluster_labels))
     else
