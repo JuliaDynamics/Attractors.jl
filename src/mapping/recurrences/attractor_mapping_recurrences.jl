@@ -130,12 +130,13 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
             finalgrid = RegularGrid(grid)
         elseif any(t -> t isa AbstractVector, grid) && all(axis -> issorted(axis), grid) # irregular
             finalgrid = IrregularGrid(grid)
-            error("Incorrect grid specification")
+        else
+            error("Incorrect grid specification!")
         end
     elseif grid isa SubdivisionBasedGrid
         finalgrid = grid
     else
-        error("Incorrect grid specification")
+        error("Incorrect grid specification!")
     end
 
     bsn_nfo = initialize_basin_info(ds, finalgrid, Δt, sparse)
