@@ -217,9 +217,8 @@ function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T}, u) where {D, G, Δ, 
     end
 end
 
-# TODO: Here we should dispatch on the type of array.
-# If we use sparse array, doing `bsn_nfo = new_label` keeps
-# the visited cells in memory. We want to pop them out completely!!!
+# Notice that seting a basin index to 0 _deletes the index_ if the
+# array is a `SparseArray`, see the source code file!
 function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
     old_label = bsn_nfo.visited_cell_label
     while !isempty(bsn_nfo.visited_list)
