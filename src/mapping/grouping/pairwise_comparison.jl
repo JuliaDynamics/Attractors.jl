@@ -30,8 +30,9 @@ features belong to the same attractor when their pairwise distance, computed usi
 `distance_metric`, is smaller than or equal to `distance_threshold`, and that they belong
 to different attractors when the distance is bigger. Attractors correspond to each
 grouping of similar features. In this way, the key parameter `distance_threshold` is
-basically the amount of variation permissible in the features. If they are well-chosen,
-the value can be relatively small and does not need to be fine tuned. 
+basically the amount of variation permissible in the features belonging to the same
+attractor. If they are well-chosen, the value can be relatively small and does not need to
+be fine tuned. 
 
 The `distance_threshold` should achieve a balance: one one hand, it should be large enough
 to account for variations in the features from the same attractor - if it's not large

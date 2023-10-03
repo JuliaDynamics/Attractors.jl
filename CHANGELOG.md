@@ -1,3 +1,6 @@
+# v1.12
+- New algorithm `GroupViaPairwiseComparison` to group features in `AttractorsViaFeaturizing`. Simpler, typically faster and using less memory than DBSCAN, it can be useful in well-behaved systems.
+
 # v1.11
 - New algorithm `subdivision_based_grid`. Allows user to automatically constuct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
 
