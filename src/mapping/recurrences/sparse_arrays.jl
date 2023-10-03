@@ -32,7 +32,7 @@ struct SparseArray{T,N} <: AbstractArray{T,N}
     dims::NTuple{N,Int64}
 end
 function SparseArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
-    return new{T,N}(Dict{CartesianIndex{N},T}(), dims)
+    return SparseArray{T,N}(Dict{CartesianIndex{N},T}(), dims)
 end
 SparseArray{T}(::UndefInitializer, dims::Dims{N}) where {T,N} =
     SparseArray{T,N}(undef, dims)
