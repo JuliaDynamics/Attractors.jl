@@ -51,7 +51,7 @@ Base.@propagate_inbounds Base.getindex(a::SparseArray{T,N}, I::Vararg{Int,N}) wh
                                         getindex(a, CartesianIndex(I))
 
 @inline function Base.setindex!(a::SparseArray{T,N}, v, I::CartesianIndex{N}) where {T,N}
-    if v != zero(v)
+    if v != zero(T)
         a.data[I] = v
     else
         delete!(a.data, I) # does not do anything if there was no key corresponding to I
