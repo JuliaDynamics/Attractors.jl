@@ -33,9 +33,9 @@ end
     SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array{Int, D})
 
 Given a coarse `grid` tesselating the state space, construct a `SubdivisionBasedGrid`
-based on the given level array `lvl_array` that should have the same dimension as `grid`. 
-The level array has non-negative integer values, with 0 meaning that the 
-corresponding cell of the coarse `grid` should not be subdivided any further. 
+based on the given level array `lvl_array` that should have the same dimension as `grid`.
+The level array has non-negative integer values, with 0 meaning that the
+corresponding cell of the coarse `grid` should not be subdivided any further.
 Value `n > 0` means that the corresponding cell will be subdivided
 in total `2^n` times (along each dimension), resulting in finer cells
 within the original coarse cell.
@@ -52,28 +52,25 @@ minmax_grid_extent(g::SubdivisionBasedGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::SubdivisionBasedGrid) = mean_cell_diagonal(g.grid)
 
 """
-    subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
+    subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4, q = 0.99)
 
-Construct a grid structure `SubdivisionBasedGrid` that can be directly passed
+Construct a grid structure [`SubdivisionBasedGrid`](@ref) that can be directly passed
 as a grid to [`AttractorsViaRecurrences`](@ref). The input `grid` is an
 orginally coarse grid (a tuple of `AbstractRange`s).
+The state space speed is evaluate in all cells of the `grid`. Cells with small speed
+(when compared to the "max" speed) resultin in this cell being subdivided more.
+To avoid problems with spikes in the speed, the `q`-th quantile of the velocities
+is used as the "max" speed (use `q = 1` for true maximum).
+The subdivisions in the resulting grid are clamped to at most value `maxlevel`.
 
 This approach is designed for _continuous time_ systems in which different areas of
 the state space flow may have significantly different velocity. In case of
 originally coarse grids, this may lead [`AttractorsViaRecurrences`](@ref)
 being stuck in some state space regions with
-a small motion speed and false identification of attractors. To prevent this from
-happening we provide an algorithm expansion to dynamically evaluate different regions speed
-of motion to handle areas of the grid which should be more coarse or dense than others.
-
-To achieve this, function make use of `make_irregular_array` which automatically constructs
-an array of discretization levels indices for a `grid`
-(a tuple of `AbstractRange`s) originally specified by user.
-Upon construction function automatically stores necessary parameters
-to further adopt mapping of initial conditions to specific grid density levels.
+a small motion speed and false identification of attractors.
 """
-function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4)
-    lvl_array = make_irregular_array(ds, grid, maxlevel)
+function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4, q = 0.99)
+    lvl_array = make_lvl_array(ds, grid, maxlevel, q)
     return SubdivisionBasedGrid(grid, lvl_array)
 end
 
@@ -98,7 +95,7 @@ function SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array
     return SubdivisionBasedGrid(grid_steps, grid_minima, grid_maxima, lvl_array, grid, max_grid)
 end
 
-function make_irregular_array(ds::DynamicalSystem, grid, maxlevel = 4)
+function make_lvl_array(ds::DynamicalSystem, grid, maxlevel, q)
     isdiscretetime(ds) && error("Dynamical system must be continuous time.")
     indices = CartesianIndices(length.(grid))
     f, p = dynamic_rule(ds), current_parameters(ds)
@@ -119,9 +116,13 @@ function make_irregular_array(ds::DynamicalSystem, grid, maxlevel = 4)
         end
     end
 
-    maxvel = maximum(filter(x -> x != Inf, velocities))
-    velratios = maxvel./velocities
-    result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in velratios]
+    maxvel = quantile(filter(x -> x != Inf, velocities), q)
+    # large ratio means small velocity means high subdivision
+    ratios = maxvel ./ velocities
+    # subdivision is just the log2 of the ratio. We do this fancy
+    # computation because this way zeros are handled correctly
+    # (and we also clamp the values of the level array correctly in 0-maxlevel)
+    result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in ratios]
     return result
 end
 
