@@ -218,6 +218,8 @@ end
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
+# we need the abstract grid type because of the type parameterization in `BasinsInfo`
+# the grid subtypes are in the grids file.
 abstract type Grid end
 
 mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
