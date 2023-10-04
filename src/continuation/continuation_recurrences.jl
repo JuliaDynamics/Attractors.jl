@@ -173,7 +173,7 @@ function reset!(mapper::AttractorsViaRecurrences)
     mapper.bsn_nfo.prev_label = 0
     # notice that we do not reset the following:
     # mapper.bsn_nfo.current_att_label = 2
-    # mapper.bsn_nfo.visited_cell = 4
+    # mapper.bsn_nfo.visited_cell_label = 4
     # because we want the next attractor to be labelled differently in case
     # it doesn't actually match to any of the new ones
     return

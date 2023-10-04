@@ -1,5 +1,5 @@
 # This file contains parts of the source from SparseArrayKit.jl, which in all honestly
-# is very similar to how we compute histograms in Entropies.jl,
+# is very similar to how we used to compute histograms in the old Entropies.jl package,
 # but nevertheless here is the original license:
 
 # MIT License
@@ -30,9 +30,9 @@
 struct SparseArray{T,N} <: AbstractArray{T,N}
     data::Dict{CartesianIndex{N},T}
     dims::NTuple{N,Int64}
-    function SparseArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
-        return new{T,N}(Dict{CartesianIndex{N},T}(), dims)
-    end
+end
+function SparseArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
+    return SparseArray{T,N}(Dict{CartesianIndex{N},T}(), dims)
 end
 SparseArray{T}(::UndefInitializer, dims::Dims{N}) where {T,N} =
     SparseArray{T,N}(undef, dims)
@@ -51,7 +51,7 @@ Base.@propagate_inbounds Base.getindex(a::SparseArray{T,N}, I::Vararg{Int,N}) wh
                                         getindex(a, CartesianIndex(I))
 
 @inline function Base.setindex!(a::SparseArray{T,N}, v, I::CartesianIndex{N}) where {T,N}
-    if v != zero(v)
+    if v != zero(T)
         a.data[I] = v
     else
         delete!(a.data, I) # does not do anything if there was no key corresponding to I
