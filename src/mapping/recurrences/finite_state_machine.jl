@@ -102,7 +102,7 @@ function finite_state_machine!(
     # (which by default is 0 unless we have visited the cell before)
     ic_label = n[1] == -1 ? -1 : bsn_nfo.basins[n]
 
-    update_fsm_state!(bsn_nfo, ic_label)
+    update_fininite_state_machine!(bsn_nfo, ic_label)
 
     # This state means that we have visited a cell that contains a recorded attractor
     if bsn_nfo.state == :att_hit
@@ -237,7 +237,7 @@ function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.state = :att_search
 end
 
-function update_fsm_state!(bsn_nfo, ic_label)
+function update_fininite_state_machine!(bsn_nfo, ic_label)
     current_state = bsn_nfo.state
     if current_state == :att_found
         # this is a terminal state, once reached you don't get out
