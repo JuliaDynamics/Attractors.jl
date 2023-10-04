@@ -76,9 +76,8 @@ want to search for attractors in a lower dimensional subspace.
   limit we declare that the orbit diverged to infinity.
 * `mx_chk_safety = Int(1e6)`: A safety counter that is always increasing for
   each initial condition. Once exceeded, the algorithm assigns `-1` and throws a warning.
-  This clause exists to stop the algorithm never haulting for innappropriate grids,
-  where a found attractor may intersect in the same cell with a new attractor the orbit
-  traces (which leads to infinite resetting of all counters).
+  This clause exists to stop the algorithm never halting for inappropriate grids. It may happen 
+  when a newly found attractor orbit intersects in the same cell of a previously found attractor (which leads to infinite resetting of all counters).
 
 ## Description
 
