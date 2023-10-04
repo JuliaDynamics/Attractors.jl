@@ -28,6 +28,7 @@ function mean_cell_diagonal(g::NTuple)
     steps = map(r -> mean(diff(r)), g)
     return norm(steps)
 end
+mean_cell_diagonal(g::IrregularGrid) = mean_cell_diagonal(g.grid)
 
 """
     SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array{Int, D})

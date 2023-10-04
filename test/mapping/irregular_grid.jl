@@ -1,4 +1,3 @@
-
 using Attractors
 using Test
 
@@ -181,8 +180,10 @@ xg = yg = range(0, 18.0^(1/2); length = 20).^2
 grid1 = (xg, yg)
 grid2 = SubdivisionBasedGrid(grid0, rand([0, 1, 2], (30, 30)))
 
-Dt0 = automatic_Δt_basins(ds, grid0)
-Dt1 = automatic_Δt_basins(ds, grid1)
+using Attractors: RegularGrid, IrregularGrid
+
+Dt0 = automatic_Δt_basins(ds, RegularGrid(grid0))
+Dt1 = automatic_Δt_basins(ds, IrregularGrid(grid1))
 Dt2 = automatic_Δt_basins(ds, grid2)
 
 @test Dt0 > 0
