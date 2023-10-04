@@ -109,10 +109,11 @@ function make_lvl_array(ds::DynamicalSystem, grid, maxlevel, q)
             f(udummy, u0, p, 0.0)
             udummy
         end
-        if (isequal(norm(velocity),NaN))
+        speed = norm(velocity)
+        if isnan(speed)
             velocities[ind] = Inf
         else
-            velocities[ind] = norm(velocity)
+            velocities[ind] = speed
         end
     end
 
