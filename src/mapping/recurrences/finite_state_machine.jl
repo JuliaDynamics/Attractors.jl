@@ -128,7 +128,7 @@ function finite_state_machine!(
             bsn_nfo.basins[n] = bsn_nfo.visited_cell_label
             # also keep track of visited cells. This makes it easier to clean
             # up the basin array later!
-            push!(bsn_nfo.visited_list, n) # keep track of visited cells
+            push!(bsn_nfo.visited_cells, n) # keep track of visited cells
             bsn_nfo.consecutive_match = 1
         elseif ic_label == bsn_nfo.visited_cell_label
             # hit a previously visited box with the current label, possible attractor?
@@ -221,8 +221,8 @@ end
 # array is a `SparseArray`, see the source code file!
 function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
     old_label = bsn_nfo.visited_cell_label
-    while !isempty(bsn_nfo.visited_list)
-        ind = pop!(bsn_nfo.visited_list)
+    while !isempty(bsn_nfo.visited_cells)
+        ind = pop!(bsn_nfo.visited_cells)
         if bsn_nfo.basins[ind] == old_label
             bsn_nfo.basins[ind] = 0 # 0 is the unvisited label / empty label
         end
