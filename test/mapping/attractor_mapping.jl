@@ -16,7 +16,7 @@ using Statistics
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance = Inf,
         proximity_test = true, pairwise_comparison_matrix_test = false, featurizer_matrix = nothing,
-        distance_threshold_pairwise = 1,
+        threshold_pairwise = 1,
         kwargs... # kwargs are propagated to recurrences
     )
     # u0s is Vector{Pair}
@@ -90,8 +90,8 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 
     @testset "Featurizing, pairwise comparison" begin
-        config = GroupViaPairwiseComparison(; distance_threshold=distance_threshold_pairwise,
-        distance_metric=Euclidean(), rescale_features=false)
+        config = GroupViaPairwiseComparison(; threshold=threshold_pairwise,
+        metric=Euclidean(), rescale_features=false)
         mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr = 500)
         test_basins_fractions(mapper;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
@@ -100,11 +100,11 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     
     if pairwise_comparison_matrix_test
         @testset "Featurizing, pairwise comparison, matrix features" begin
-            function distance_metric_hausdorff(A,B)
+            function metric_hausdorff(A,B)
                 set_distance(A, B, Hausdorff())
             end
-            config = GroupViaPairwiseComparison(; distance_threshold=distance_threshold_pairwise,
-            distance_metric=distance_metric_hausdorff, rescale_features=false)
+            config = GroupViaPairwiseComparison(; threshold=threshold_pairwise,
+            metric=metric_hausdorff, rescale_features=false)
             mapper = AttractorsViaFeaturizing(ds, featurizer_matrix, config; Ttr = 500)
             test_basins_fractions(mapper;
                 err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
@@ -157,7 +157,7 @@ end
         return any(isinf, x) ? SVector(200.0, 200.0) : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    max_distance = 20, ε = 1e-3, proximity_test = false, distance_threshold_pairwise=1)
+    max_distance = 20, ε = 1e-3, proximity_test = false, threshold_pairwise=1)
 end
 
 @testset "Magnetic pendulum: projected system" begin
@@ -208,7 +208,7 @@ end
         return A
     end
     
-    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2, featurizer_matrix, pairwise_comparison_matrix_test=true, distance_threshold_pairwise=1)
+    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2, featurizer_matrix, pairwise_comparison_matrix_test=true, threshold_pairwise=1)
 end
 
 # Okay, all of these aren't fundamentally new tests.
@@ -247,7 +247,7 @@ if DO_EXTENSIVE_TESTS
         end
         
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20, distance_threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
+        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
     end
 
     @testset "Duffing oscillator: stroboscopic map" begin
@@ -274,7 +274,7 @@ if DO_EXTENSIVE_TESTS
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 1.0, ferr=1e-2, rerr = 1e-2, aerr = 5e-3, distance_threshold_pairwise=1)
+        ε = 1.0, ferr=1e-2, rerr = 1e-2, aerr = 5e-3, threshold_pairwise=1)
     end
 
 
