@@ -11,15 +11,14 @@ advantage that it is simpler, typically faster and uses less memory.
 
 ## Keyword arguments
     
-* `threshold`: a real number defining the maximum distance two features can be to
+* `threshold` (mandatory): A real number defining the maximum distance two features can be to
   be considered in the same cluster - above the threshold, features are different. This
   value simply needs to be large enough to differentiate clusters.
-* `metric = Euclidean()`: A metric to be used in the clustering. It can be any
-  function `f(a, b)` that returns the distance between any type of data structure (usually
-  vectors or matrices of reals). Needs to be consistent with the `featurizer` function. All
-  metrics from Distances.jl can be used here.
+* `metric = Euclidean()`: A function `metric(a, b)` that returns the distance between two
+  features `a` and `b`, outputs of `featurizer`. Any `Metric` from Distances.jl can be used
+  here.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
-  separately into the range `[0,1]`. This typically leads to more accurate clustering.
+  separately into the range `[0,1]`. This typically leads to more accurate grouping.
 
 ## Description
 This algorithm assumes that the features are well-separated into distinct clouds, with the
