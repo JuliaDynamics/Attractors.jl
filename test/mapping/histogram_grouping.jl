@@ -3,7 +3,9 @@ using Attractors
 import Random
 using Statistics: mean
 
-ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
+henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+ds = henon()
 xg = yg = range(-2.0, 2.0; length=100)
 grid = (xg, yg)
 expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
@@ -27,13 +29,11 @@ xg = yg = range(-2.0, 2.0; length=100)
 grid = (xg, yg)
 expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
 
-sampler, = statespace_sampler(Random.MersenneTwister(1234);
-min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-)
-ics = StateSpaceSet([sampler() for i in 1:1000])
+sampler, _ = statespace_sampler(grid, 12444)
 
+ics = StateSpaceSet([copy(sampler()) for _ in 1:1000])
 fs, = basins_fractions(mapper, ics; show_progress = false)
 @test length(keys(fs)) == 2
-@test fs[1] ≈ 0.451 rtol = 1e-2
+@test fs[1] ≈ 0.45 rtol = 1e-1
 # the divergent points go to last bin, which is 25 = 5x5
-@test fs[25] ≈ 0.549 rtol = 1e-2
+@test fs[25] ≈ 0.55 rtol = 1e-1

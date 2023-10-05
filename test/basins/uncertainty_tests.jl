@@ -65,7 +65,9 @@ end
     test_res, Sbb = basins_fractal_test(basin; ε = 5)
     @test test_res == :fractal
 
-    ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
+    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+    henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+    ds = henon()
     xg = yg = range(-2.,2.,length = 300)
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false)
     basin, attractors = basins_of_attraction(mapper; show_progress = false)

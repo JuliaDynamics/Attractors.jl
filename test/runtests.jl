@@ -16,6 +16,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("mapping/proximity_deduce_ε.jl")
         testfile("mapping/attractor_mapping.jl")
         testfile("mapping/histogram_grouping.jl")
+        testfile("mapping/irregular_grid.jl")
     end
 
     @testset "basins analysis" begin
@@ -27,6 +28,10 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("continuation/matching_attractors.jl")
         testfile("continuation/recurrences_continuation.jl")
         testfile("continuation/grouping_continuation.jl")
+    end
+
+    @testset "mfs" begin
+        testfile("mfs/mfstest.jl")
     end
 
     @testset "boundaries" begin

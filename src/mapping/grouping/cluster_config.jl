@@ -15,7 +15,7 @@ The defaults are a significant improvement over existing literature, see Descrip
 ## Keyword arguments
 
 * `clust_distance_metric = Euclidean()`: A metric to be used in the clustering.
-  It can be any function `f(a, b)` that returns the distance between vectors
+  It can be any function `f(a, b)` that returns the distance between real-valued vectors
   `a, b`. All metrics from Distances.jl can be used here.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0,1]`. This typically leads to more accurate clustering.
@@ -57,6 +57,7 @@ The defaults are a significant improvement over existing literature, see Descrip
   attraction).
 
 ## Description
+
 The DBSCAN clustering algorithm is used to automatically identify clusters of similar
 features. Each feature vector is a point in a feature space. Each cluster then basically
 groups points that are closely packed together. Closely packed means that the points have
@@ -66,6 +67,7 @@ task. Currently, three methods are implemented to automatically estimate an "opt
 radius.
 
 ### Estimating the optimal radius
+
 The default method is the **silhouettes method**, which includes keywords `silhouette` and
 `silhouette_optim`. Both of them search for the radius that optimizes the clustering,
 meaning the one that maximizes a statistic `silhouette_statistic` (e.g. mean value) of a
@@ -83,7 +85,7 @@ with similar accuracy. A third alternative is the`"elbow"` method, which works b
 calculating the distance of each point to its k-nearest-neighbors (with `k=min_neighbors`)
 and finding the distance corresponding to the highest derivative in the curve of the
 distances, sorted in ascending order. This distance is chosen as the optimal radius. It is
-described in [Ester1996](@ref) and [Schubert2017](@cite). It typically performs considerably worse
+described in [Ester1996](@cite) and [Schubert2017](@cite). It typically performs considerably worse
 than the `"silhouette"` methods.
 """
 struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingConfig
@@ -155,8 +157,8 @@ function _distance_matrix(features, config::GroupViaClustering;
     else # it is any arbitrary distance function, e.g., used in aggregating attractors
         @inbounds for i in eachindex(features)
             Threads.@threads for j in i:length(features)
-                dists[i, j] = metric(features[i], features[j])
-                dists[j, i] = dists[i, j] # symmetry
+                v = metric(features[i], features[j])
+                dists[i, j] = dists[j, i] = v # utilize symmetry
             end
         end
     end
@@ -169,7 +171,6 @@ function _distance_matrix(features, config::GroupViaClustering;
             # Instead of going over all `j` we go over `(k+1)` to end,
             # and also add value to transpose. (also assume that if j=k, distance is 0)
             for j in (k+1):size(dists, 1)
-                # TODO: Shouldn't we use `metric` here instead of `abs`?
                 pdist = par_weight*abs(par_vector[k] - par_vector[j])
                 dists[k,j] += pdist
                 dists[j,k] += pdist
@@ -184,12 +185,14 @@ function _extract_ϵ_optimal(features, config::GroupViaClustering)
     num_attempts_radius, silhouette_statistic, max_used_features) = config
 
     if optimal_radius_method isa String
+        # subsample features to accelerate optimal radius search
         if max_used_features == 0 || max_used_features > length(features)
             features_for_optimal = features
         else
             features_for_optimal = sample(features, max_used_features; replace = false)
         end
-        ϵ_optimal = optimal_radius_dbscan(
+        # get optimal radius (function dispatches on the radius method)
+        ϵ_optimal, v_optimal = optimal_radius_dbscan(
             features_for_optimal, min_neighbors, clust_distance_metric,
             optimal_radius_method, num_attempts_radius, silhouette_statistic
         )

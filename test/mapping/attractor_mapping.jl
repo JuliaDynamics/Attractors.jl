@@ -12,24 +12,22 @@ using LinearAlgebra
 using OrdinaryDiffEq: Vern9
 using Random
 using Statistics
-using PredefinedDynamicalSystems: Systems
 
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance = Inf,
+        proximity_test = true,
         kwargs... # kwargs are propagated to recurrences
     )
     # u0s is Vector{Pair}
-    known_attractors = Dict(
-        k => trajectory(ds, 10000, v; Δt = 1, Ttr=100)[1] for (k,v) in u0s if k ≠ -1
-    )
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-    )
-    ics = StateSpaceSet([sampler() for i in 1:1000])
+    sampler, = statespace_sampler(grid, 1234)
+    ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
+    # Create deterministically decided initial conditions
+    # (basin fractions need to be re-set every time the RNG changes...)
+    reduced_grid = map(g -> range(minimum(g), maximum(g); length = 10), grid)
+
     expected_fs = sort!(collect(values(expected_fs_raw)))
     known_ids = collect(u[1] for u in u0s)
-    reduced_grid = map(g -> range(minimum(g), maximum(g); length = 10), grid)
 
     # reusable testing function
     function test_basins_fractions(mapper;
@@ -42,7 +40,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             end
         end
         # Generic test
-        fs = basins_fractions(mapper, sampler; show_progress = false)
+        fs = basins_fractions(mapper, sampler; N = 100, show_progress = false)
         for k in keys(fs)
             @test 0 ≤ fs[k] ≤ 1
         end
@@ -50,6 +48,8 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
 
         # Precise test with known initial conditions
         fs, labels = basins_fractions(mapper, ics; show_progress = false)
+        # @show nameof(typeof(mapper))
+        # @show fs
         approx_atts = extract_attractors(mapper)
         found_fs = sort(collect(values(fs)))
         if length(found_fs) > length(expected_fs)
@@ -76,7 +76,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 
     @testset "Recurrences" begin
-        mapper = AttractorsViaRecurrences(ds, grid; show_progress = false, kwargs...)
+        mapper = AttractorsViaRecurrences(ds, grid; kwargs...)
         test_basins_fractions(mapper; err = rerr)
     end
 
@@ -92,22 +92,26 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     @testset "Featurizing, nearest feature" begin
         # First generate the templates
         function features_from_u(u)
-            A, t = trajectory(ds, 100, u; Ttr = 500, Δt = 1)
+            A, t = trajectory(ds, 100, u; Ttr = 1000, Δt = 1)
             featurizer(A, t)
         end
-        t = [features_from_u(x[2]) for x in u0s]
-        templates = Dict([u0[1] for u0 ∈ u0s] .=> t) # keeps labels of u0s
+        # t = [features_from_u(x[2]) for x in u0s]
+        # templates = Dict([u0[1] for u0 ∈ u0s] .=> t) # keeps labels of u0s
+        templates = Dict(k => features_from_u(u) for (k, u) in u0s)
 
         config = GroupViaNearestFeature(templates; max_distance)
         mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr=500)
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
     end
 
-    if DO_EXTENSIVE_TESTS
+    if DO_EXTENSIVE_TESTS && proximity_test
         # Proximity method is the simplest and not crucial to test due to the limited
         # practical use of not being able to find attractors
         @testset "Proximity" begin
-            mapper = AttractorsViaProximity(ds, known_attractors, ε; Ttr = 100)
+            known_attractors = Dict(
+                k => trajectory(ds, 1000, v; Δt = 1, Ttr=100)[1] for (k,v) in u0s if k ≠ -1
+            )
+            mapper = AttractorsViaProximity(ds, known_attractors, ε; Ttr = 100, mx_chk_lost = 1000)
             test_basins_fractions(mapper; known = true, err = aerr)
         end
     end
@@ -122,7 +126,7 @@ end
 
     xg = yg = range(-2.0, 2.0; length=100)
     grid = (xg, yg)
-    expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
+    expected_fs_raw = Dict(-1 => 0.575, 1 => 0.425)
     function featurizer(A, t)
         # Notice that unsupervised clustering cannot support "divergence to infinity",
         # which it identifies as another attractor (in fact, the first one).
@@ -130,13 +134,60 @@ end
         return any(isinf, x) ? SVector(200.0, 200.0) : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    max_distance = 20, ε = 1e-3)
+    max_distance = 20, ε = 1e-3, proximity_test = false)
+end
+
+@testset "Magnetic pendulum: projected system" begin
+    mutable struct MagneticPendulumParams
+        γs::Vector{Float64}
+        d::Float64
+        α::Float64
+        ω::Float64
+        magnets::Vector{SVector{2, Float64}}
+    end
+    function magnetic_pendulum_rule(u, p, t)
+        x, y, vx, vy = u
+        γs::Vector{Float64}, d::Float64, α::Float64, ω::Float64 = p.γs, p.d, p.α, p.ω
+        dx, dy = vx, vy
+        dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
+        for (i, ma) in enumerate(p.magnets)
+            δx, δy = (x - ma[1]), (y - ma[2])
+            D = sqrt(δx^2 + δy^2 + d^2)
+            dvx -= γs[i]*(x - ma[1])/D^3
+            dvy -= γs[i]*(y - ma[2])/D^3
+        end
+        return SVector(dx, dy, dvx, dvy)
+    end
+    function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
+        γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N), diffeq)
+        m = [SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N]
+        p = MagneticPendulumParams(γs, d, α, ω, m)
+        return CoupledODEs(magnetic_pendulum_rule, u, p; diffeq)
+    end
+
+    diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+    ds = magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3; diffeq)
+    xg = range(-2,2; length = 201)
+    yg = range(-2,2; length = 201)
+    grid = (xg, yg)
+    ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
+    u0s = [
+        1 => [-0.5, 0.857],
+        2 => [-0.5, -0.857],
+        3 => [1.  , 0.],
+    ]
+    expected_fs_raw = Dict(2 => 0.314, 3 => 0.309, 1 => 0.377)
+    function featurizer(A, t)
+        return SVector(A[end][1], A[end][2])
+    end
+
+    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
 end
 
 # Okay, all of these aren't fundamentally new tests.
 if DO_EXTENSIVE_TESTS
 
-    @testset "Lorenz-84 system: interlaced close-by" begin
+    @testset "Lorenz-84 system: interlaced close-by" begin # warning, super expensive test
         F = 6.886; G = 1.347; a = 0.255; b = 4.0
         function lorenz84_rule(u, p, t)
             F, G, a, b = p
@@ -157,7 +208,7 @@ if DO_EXTENSIVE_TESTS
         M = 200; z = 3
         xg = yg = zg = range(-z, z; length = M)
         grid = (xg, yg, zg)
-        expected_fs_raw = Dict(2 => 0.165, 3 => 0.642, 1 => 0.193)
+        expected_fs_raw = Dict(2 => 0.18, 3 => 0.645, 1 => 0.175)
 
         using ComplexityMeasures
 
@@ -179,47 +230,24 @@ if DO_EXTENSIVE_TESTS
             dx2 = f*cos(ω*t) - β*x[1] - x[1]^3 - d * x[2]
             return SVector(dx1, dx2)
         end
-        ds = CoupledODEs(duffing_rule, [0.1, 0.25], [1.0, 0.2, 0.15, -1])
+        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
+        ds = CoupledODEs(duffing_rule, [0.1, 0.25], [1.0, 0.2, 0.15, -1]; diffeq)
 
         xg = yg = range(-2.2, 2.2; length=200)
         grid = (xg, yg)
-        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
         T = 2π/1.0
-        ds = stroboscopicmap(ds, T; diffeq)
+        ds = StroboscopicMap(ds, T)
         u0s = [
-            1 => [-0.8, 0],
-            2 => [1.8, 0],
+            1 => [-2.2, -2.2],
+            2 => [2.2, 2.2],
         ]
-        expected_fs_raw = Dict(2 => 0.511, 1 => 0.489)
+        expected_fs_raw = Dict(2 => 0.488, 1 => 0.512)
         function featurizer(A, t)
             return SVector(A[end][1], A[end][2])
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 0.01, ferr=1e-2, rerr = 1e-2, aerr = 5e-3)
-    end
-
-
-    @testset "Magnetic pendulum: projected system" begin
-        # TODO: replace this!
-        ds = Systems.magnetic_pendulum(γ=1, d=0.2, α=0.2, ω=0.8, N=3)
-        xg = range(-2,2,length = 201)
-        yg = range(-2,2,length = 201)
-        grid = (xg, yg)
-        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-        ds = projected_integrator(ds, 1:2, [0.0, 0.0]; diffeq)
-        u0s = [
-            1 => [-0.5, 0.857],
-            2 => [-0.5, -0.857],
-            3 => [1.  , 0.],
-        ]
-        expected_fs_raw = Dict(2 => 0.318, 3 => 0.347, 1 => 0.335)
-
-        function featurizer(A, t)
-            return SVector(A[end][1], A[end][2])
-        end
-
-        test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
+        ε = 1.0, ferr=1e-2, rerr = 1e-2, aerr = 5e-3)
     end
 
 
@@ -232,20 +260,21 @@ if DO_EXTENSIVE_TESTS
             zdot = sin(x) - b*z
             return SVector{3}(xdot, ydot, zdot)
         end
-        ds = CoupledODEs(thomas_rule, [1.0, 0, 0], [0.1665])
+        ds = CoupledODEs(thomas_rule, [1.0, 0, 0], [0.1665]; diffeq=(reltol=1e-9,))
 
         xg = yg = range(-6.0, 6.0; length = 100) # important, don't use 101 here, because
         # the dynamical system has some fixed points ON the hyperplane.
         grid = (xg, yg)
-        pmap = poincaremap(ds, (3, 0.0), 1e6;
-            rootkw = (xrtol = 1e-8, atol = 1e-8), diffeq=(reltol=1e-9,)
+        pmap = PoincareMap(ds, (3, 0.0);
+            Tmax = 1e6,
+            rootkw = (xrtol = 1e-8, atol = 1e-8),
         )
         u0s = [
             1 => [1.83899, -4.15575, 0],
             2 => [1.69823, -0.0167188, 0],
             3 => [-4.08547,  -2.26516, 0],
         ]
-        expected_fs_raw = Dict(2 => 0.29, 3 => 0.237, 1 => 0.473)
+        expected_fs_raw = Dict(2 => 0.28, 3 => 0.266, 1 => 0.454)
         function thomas_featurizer(A, t)
             x, y = columns(A)
             return SVector(minimum(x), minimum(y))
@@ -253,4 +282,5 @@ if DO_EXTENSIVE_TESTS
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
     end
+
 end

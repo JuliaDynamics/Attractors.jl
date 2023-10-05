@@ -45,7 +45,7 @@ end
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
         Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, verbose = false
     )
-    dimension(ds) == dimension(first(attractors)[2]) || 
+    dimension(ds) == dimension(first(attractors)[2]) ||
             error("Dimension of the dynamical system and candidate attractors must match")
     search_trees = Dict(k => KDTree(att.data, Euclidean()) for (k, att) in attractors)
 
@@ -110,7 +110,7 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     while lost_count < mapper.mx_chk_lost
         step!(mapper.ds, mapper.Δt)
         lost_count += 1
-        u = get_state(mapper.ds)
+        u = current_state(mapper.ds)
         for (k, tree) in mapper.search_trees # this is a `Dict`
             Neighborhood.NearestNeighbors.knn_point!(
                 tree, u, false, mapper.dist, mapper.idx, Neighborhood.alwaysfalse

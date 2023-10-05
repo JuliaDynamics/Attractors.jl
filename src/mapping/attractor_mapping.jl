@@ -9,7 +9,9 @@ export AttractorMapper,
     basins_fractions,
     basins_of_attraction,
     automatic_Δt_basins,
-    extract_attractors
+    extract_attractors,
+    subdivision_based_grid,
+    SubdivisionBasedGrid
 
 #########################################################################################
 # AttractorMapper structure definition
@@ -185,5 +187,5 @@ end
 # Includes
 #########################################################################################
 include("attractor_mapping_proximity.jl")
-include("attractor_mapping_recurrences.jl")
-include("attractor_mapping_featurizing.jl")
+include("recurrences/attractor_mapping_recurrences.jl")
+include("grouping/attractor_mapping_featurizing.jl")

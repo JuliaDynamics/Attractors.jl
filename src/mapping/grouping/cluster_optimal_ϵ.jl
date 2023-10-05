@@ -44,21 +44,22 @@ end
 function optimal_radius_dbscan(features, min_neighbors, metric, optimal_radius_method,
     num_attempts_radius, silhouette_statistic)
     if optimal_radius_method == "silhouettes"
-        ϵ_optimal = optimal_radius_dbscan_silhouette(
+        ϵ_optimal, v_optimal = optimal_radius_dbscan_silhouette(
             features, min_neighbors, metric, num_attempts_radius, silhouette_statistic
         )
     elseif optimal_radius_method == "silhouettes_optim"
-        ϵ_optimal = optimal_radius_dbscan_silhouette_optim(
+        ϵ_optimal, v_optimal = optimal_radius_dbscan_silhouette_optim(
             features, min_neighbors, metric, num_attempts_radius, silhouette_statistic
         )
     elseif optimal_radius_method == "knee"
-        ϵ_optimal = optimal_radius_dbscan_knee(features, min_neighbors, metric)
+        ϵ_optimal, v_optimal = optimal_radius_dbscan_knee(features, min_neighbors, metric)
     elseif optimal_radius_method isa Real
       ϵ_optimal = optimal_radius_method
+      v_optimal = NaN
     else
         error("Unkown `optimal_radius_method`.")
     end
-    return ϵ_optimal
+    return ϵ_optimal, v_optimal
 end
 
 """
@@ -80,14 +81,14 @@ function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
     # vary ϵ to find the best one (which will maximize the mean sillhoute)
     dists = pairwise(metric, features)
     for i in eachindex(ϵ_grid)
-        clusters = dbscan(dists, ϵ_grid[i], min_neighbors)
+        clusters = dbscan(dists, ϵ_grid[i]; min_neighbors, metric = nothing)
         sils = silhouettes_new(clusters, dists)
         s_grid[i] = silhouette_statistic(sils)
     end
 
-    _, idx = findmax(s_grid)
+    optimal_val, idx = findmax(s_grid)
     ϵ_optimal = ϵ_grid[idx]
-    return ϵ_optimal
+    return ϵ_optimal, optimal_val
 end
 
 function features_ranges(features)
@@ -114,11 +115,12 @@ function optimal_radius_dbscan_silhouette_optim(
         f, minimum(feat_ranges)/100, minimum(feat_ranges); iterations=num_attempts_radius
     )
     ϵ_optimal = Optim.minimizer(opt)
-    return ϵ_optimal
+    optimal_val = -Optim.minimum(opt) # we minimize using `-`
+    return ϵ_optimal, optimal_val
 end
 
 function silhouettes_from_distances(ϵ, dists, min_neighbors, silhouette_statistic=mean)
-    clusters = dbscan(dists, ϵ, min_neighbors)
+    clusters = dbscan(dists, ϵ; min_neighbors, metric = nothing)
     sils = silhouettes_new(clusters, dists)
     # We return minus here because Optim finds minimum; we want maximum
     return -silhouette_statistic(sils)
@@ -139,7 +141,7 @@ function optimal_radius_dbscan_knee(_features::Vector, min_neighbors, metric)
     sort!(meandistances)
     maxdiff, idx = findmax(diff(meandistances))
     ϵ_optimal = meandistances[idx]
-    return ϵ_optimal
+    return ϵ_optimal, maxdiff
 end
 
 

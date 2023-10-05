@@ -1,3 +1,15 @@
+# v1.11
+- New algorithm `subdivision_based_grid`. Allows user to automatically constuct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
+
+# v1.10
+- Added support of irregular grids to `AttractorsViaRecurrences`, now user can provide ranges without fixed step along the same axis.
+
+# v1.9
+- Matching attractors during the continuation with `RAFM` has been improved and is done by the function `match_continuation!` which has two options regarding how to handle attractors of previous parameters that have vanished.
+
+# v1.8
+- New algorithm `minimal_fatal_shock` that finds the minimal perturbation for arbitrary initial condition `u0` which will kick the system into different from the current basin.
+
 # v1.7.1
 - Fixed issue where poincare map was not working with basins of attraction as intended (sampling points directly on the hyperplane)
 

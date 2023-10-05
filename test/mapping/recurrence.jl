@@ -42,9 +42,8 @@ using Random
             force_non_adaptive = stop_at_Δt,
         )
 
-        sampler, = Attractors.statespace_sampler(Random.MersenneTwister(1);
-            min_bounds = [-0.5, 0], max_bounds = [0.5, 1])
-        ics = StateSpaceSet([sampler() for i in 1:1000])
+        sampler, = statespace_sampler(HRectangle([-0.5, 0], [0.5, 1]), 155)
+        ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
 
         fs, labels = basins_fractions(mapper, ics; show_progress=false)
         num_att = length(fs)
@@ -67,10 +66,8 @@ end
 
 @testset "Compatibility sparse and nonsparse" begin
     function test_compatibility_sparse_nonsparse(ds, grid; kwargs...)
-        sampler, = statespace_sampler(Random.MersenneTwister(1234);
-            min_bounds = minimum.(grid), max_bounds = maximum.(grid)
-        )
-            ics = StateSpaceSet([sampler() for i in 1:1000])
+            sampler, = statespace_sampler(grid, 1244)
+            ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
 
             mapper = AttractorsViaRecurrences(ds, grid; sparse=true, show_progress = false, kwargs...)
             fs_sparse, labels_sparse = basins_fractions(mapper, ics; show_progress = false)
@@ -94,7 +91,7 @@ end
 end
 
 @testset "Escape to -1 test" begin
-# This is for testing if the chk safety keyword is working 
+# This is for testing if the chk safety keyword is working
 # as intended. The output should be only -1.
 
 function dissipative_standard_map_rule(u, p, n)

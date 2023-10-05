@@ -27,8 +27,7 @@ using Random
     r = 3.833
     ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 
-    sampler, = statespace_sampler(Random.MersenneTwister(1234);
-        min_bounds = [-3.0, -3.0], max_bounds = [3.0, 3.0])
+    sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
 
     rrange = range(0, 2; length = 21)
     ridx = 1
@@ -85,9 +84,7 @@ if DO_EXTENSIVE_TESTS
         ds = DeterministicIteratedMap(henon_rule, ones(2), [a,b])
         ps = range(0.6, 1.1; length = 11)
         pidx = 1
-        sampler, = statespace_sampler(Random.MersenneTwister(1234);
-            min_bounds = [-2,-2], max_bounds = [2,2]
-        )
+        sampler, = statespace_sampler(HRectangle([-2,-2], [2,2]), 1234)
 
         # Feature based on period.
         function featurizer(a, t) # feature based on period!
