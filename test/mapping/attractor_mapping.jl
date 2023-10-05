@@ -5,7 +5,6 @@
 # If not, a small, but representative subset of mappers and dynamical systems is used.
 
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
-
 using Test
 using Attractors
 using LinearAlgebra
@@ -16,7 +15,8 @@ using Statistics
 # Define generic testing framework
 function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         rerr = 1e-3, ferr = 1e-3, aerr = 1e-15, ε = nothing, max_distance = Inf,
-        proximity_test = true,
+        proximity_test = true, pairwise_comparison_matrix_test = false, featurizer_matrix = nothing,
+        threshold_pairwise = 1,
         kwargs... # kwargs are propagated to recurrences
     )
     # u0s is Vector{Pair}
@@ -89,6 +89,29 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         )
     end
 
+    @testset "Featurizing, pairwise comparison" begin
+        config = GroupViaPairwiseComparison(; threshold=threshold_pairwise,
+        metric=Euclidean(), rescale_features=false)
+        mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr = 500)
+        test_basins_fractions(mapper;
+            err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
+        )
+    end
+    
+    if pairwise_comparison_matrix_test
+        @testset "Featurizing, pairwise comparison, matrix features" begin
+            function metric_hausdorff(A,B)
+                set_distance(A, B, Hausdorff())
+            end
+            config = GroupViaPairwiseComparison(; threshold=threshold_pairwise,
+            metric=metric_hausdorff, rescale_features=false)
+            mapper = AttractorsViaFeaturizing(ds, featurizer_matrix, config; Ttr = 500)
+            test_basins_fractions(mapper;
+                err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
+            )
+        end
+    end
+
     @testset "Featurizing, nearest feature" begin
         # First generate the templates
         function features_from_u(u)
@@ -134,7 +157,7 @@ end
         return any(isinf, x) ? SVector(200.0, 200.0) : x
     end
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-    max_distance = 20, ε = 1e-3, proximity_test = false)
+    max_distance = 20, ε = 1e-3, proximity_test = false, threshold_pairwise=1)
 end
 
 @testset "Magnetic pendulum: projected system" begin
@@ -181,7 +204,11 @@ end
         return SVector(A[end][1], A[end][2])
     end
 
-    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2)
+    function featurizer_matrix(A, t)
+        return A
+    end
+    
+    test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2, featurizer_matrix, pairwise_comparison_matrix_test=true, threshold_pairwise=1)
 end
 
 # Okay, all of these aren't fundamentally new tests.
@@ -218,9 +245,9 @@ if DO_EXTENSIVE_TESTS
             g = exp(entropy(Renyi(; q = 0), probs))
             return SVector(g, minimum(A[:,1]))
         end
-
+        
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20)
+        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
     end
 
     @testset "Duffing oscillator: stroboscopic map" begin
@@ -247,7 +274,7 @@ if DO_EXTENSIVE_TESTS
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 1.0, ferr=1e-2, rerr = 1e-2, aerr = 5e-3)
+        ε = 1.0, ferr=1e-2, rerr = 1e-2, aerr = 5e-3, threshold_pairwise=1)
     end
 
 
@@ -282,5 +309,5 @@ if DO_EXTENSIVE_TESTS
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
     end
-
+    
 end
