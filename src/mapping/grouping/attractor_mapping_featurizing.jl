@@ -6,7 +6,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 # Structs and documentation string
 #####################################################################################
-include("grouping/all_grouping_configs.jl")
+include("all_grouping_configs.jl")
 
 struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, D, V} <: AttractorMapper
     ds::DS

@@ -187,5 +187,5 @@ end
 # Includes
 #########################################################################################
 include("attractor_mapping_proximity.jl")
-include("attractor_mapping_recurrences.jl")
-include("attractor_mapping_featurizing.jl")
+include("recurrences/attractor_mapping_recurrences.jl")
+include("grouping/attractor_mapping_featurizing.jl")
