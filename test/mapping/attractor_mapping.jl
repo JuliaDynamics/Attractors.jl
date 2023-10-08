@@ -97,7 +97,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
         )
     end
-    
+
     if pairwise_comparison_matrix_test
         @testset "Featurizing, pairwise comparison, matrix features" begin
             function metric_hausdorff(A,B)
@@ -207,7 +207,7 @@ end
     function featurizer_matrix(A, t)
         return A
     end
-    
+
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2, featurizer_matrix, pairwise_comparison_matrix_test=true, threshold_pairwise=1)
 end
 
@@ -245,9 +245,9 @@ if DO_EXTENSIVE_TESTS
             g = exp(entropy(Renyi(; q = 0), probs))
             return SVector(g, minimum(A[:,1]))
         end
-        
+
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
+        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 5, Ttr = 100, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
     end
 
     @testset "Duffing oscillator: stroboscopic map" begin
@@ -309,5 +309,5 @@ if DO_EXTENSIVE_TESTS
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
     end
-    
+
 end

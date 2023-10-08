@@ -1,6 +1,6 @@
 # Additional tests may be run in this test suite according to an environment variable
 # `ATTRACTORS_EXTENSIVE_TESTS` which can be true or false.
-# If false, a small, but representative subset of tests is used.
+# If false, a smaller, but representative subset of tests is used.
 
 # ENV["ATTRACTORS_EXTENSIVE_TESTS"] = true or false (set externally)
 
