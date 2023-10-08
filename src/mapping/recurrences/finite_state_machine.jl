@@ -92,9 +92,9 @@ The function returns `0` unless the FSM has terminated its operation.
 """
 function finite_state_machine!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u;
-        mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
+        mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 1000, mx_chk_loc_att = mx_chk_fnd_att÷10,
         horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = true,
-        show_progress = true, # show_progress only used when finding new attractor.
+        show_progress = true, # show_progress can be used when finding new attractor.
     )
 
     # if n[1] == -1 means we are outside the grid,

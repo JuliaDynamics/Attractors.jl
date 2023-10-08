@@ -72,7 +72,7 @@ want to search for attractors in a lower dimensional subspace.
   before declaring convergence to that existing attractor.
 * `mx_chk_hit_bas = 10`: Number of consecutive visits of the same basin of
   attraction required before declaring convergence to an existing attractor.
-  This is ignored if `sparse = true`, as basins are not stored internally.
+  This is ignored if `sparse = true`, as basins are not stored internally in that case.
 * `mx_chk_lost = 20`: Maximum check of iterations outside the defined grid before we
   declare the orbit lost outside and hence assign it label `-1`.
 * `horizon_limit = 1e6`: If the norm of the integrator state reaches this
