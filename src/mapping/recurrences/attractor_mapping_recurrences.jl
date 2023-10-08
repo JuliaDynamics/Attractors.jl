@@ -2,22 +2,23 @@
 # Type definition and documentation
 #####################################################################################
 """
-    AttractorsViaRecurrences(ds::DynamicalSystem, grid::Tuple; kwargs...)
+    AttractorsViaRecurrences(ds::DynamicalSystem, grid; kwargs...)
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
-recurrences in the state space, as outlined by Datseris & Wagemakers [Datseris2022](@cite).
+recurrences in the state space, as outlined in [Datseris2022](@cite).
 
 `grid` is instructions for partitioning the state space into finite-sized cells
 so that a finite state machine can operate on top of it. Possibilities are:
 
 1. A tuple of sorted `AbstractRange`s for a regular grid.
   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`
-  for a two-dimensional system
+  for a two-dimensional system.
 2. A tuple of sorted `AbstractVector`s for an irregular grid, for example
-  `grid = (xg, yg)` with `xg = vcat(range(-5, -2; length = 50), range(-2, 5; length = 50)),
+  `grid = (xg, yg)` with `xg = range(0, 10.0^(1/2); length = 200).^2,
   yg = range(-5, 5; length = 100)`.
 3. An instance of the special grid type
-[`SubdividedBasedGrid`](@ref), which can be created either manually or by using [`subdivision_based_grid`](@ref).
+  [`SubdividedBasedGrid`](@ref), which can be created either manually or by using
+  [`subdivision_based_grid`](@ref).
   This automatically analyzes and adapts grid discretization
   levels in accordance with state space flow speed in different regions.
 
@@ -54,22 +55,24 @@ want to search for attractors in a lower dimensional subspace.
 
 ### Finite state machine configuration
 
-* `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
-  before declaring convergence to that existing attractor.
-* `mx_chk_hit_bas = 10`: Maximum check of consecutive visits of the same basin of
-  attraction before declaring convergence to an existing attractor.
-  This is ignored if `sparse = true`, as basins are not stored internally.
-* `mx_chk_fnd_att = 100`: Maximum check of consecutive visits to a previously visited
-  unlabeled cell before declaring we have found a new attractor.
-* `mx_chk_loc_att = 100`: Maximum check of consecutive visits to cells marked as a new
-  attractor, during the attractor identification phase, before declaring we that we have
-  identified the new attractor with sufficient accuracy.
+* `mx_chk_fnd_att = 1000`: Number of consecutive visits to previously visited
+  unlabeled cells required before declaring we have converged to a new attractor.
+  This number tunes the accuracy of converging to attractors and should generally be high
+  (and even higher for chaotic systems).
+* `mx_chk_loc_att = mx_chk_fnd_att÷10`: Number of subsequent steps taken to locate accurately the new
+  attractor after the convergence phase is over. Once `mx_chk_loc_att` steps have been
+  taken, the new attractor has been identified with sufficient accuracy and iteration stops.
 * `store_once_per_cell = true`: Control if multiple points in state space that belong to
-  the same cell are stored or not in the attractor, after an attractor is found.
+  the same cell are stored or not in the attractor, when a new attractor is found.
   If `true`, each visited cell will only store a point once, which is desirable for fixed
-  points and limit cycles. If `false`, at least `mx_chk_loc_att` points are
+  points and limit cycles. If `false` then `mx_chk_loc_att` points are
   stored per attractor, leading to more densely stored attractors,
   which may be desirable for instance in chaotic attractors.
+* `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
+  before declaring convergence to that existing attractor.
+* `mx_chk_hit_bas = 10`: Number of consecutive visits of the same basin of
+  attraction required before declaring convergence to an existing attractor.
+  This is ignored if `sparse = true`, as basins are not stored internally.
 * `mx_chk_lost = 20`: Maximum check of iterations outside the defined grid before we
   declare the orbit lost outside and hence assign it label `-1`.
 * `horizon_limit = 1e6`: If the norm of the integrator state reaches this
@@ -86,7 +89,7 @@ based on the integrator corresponding to `ds`. A recurrence in the state space m
 that the trajectory has converged to an attractor. This is the basis for finding attractors.
 
 A finite state machine (FSM) follows the
-trajectory in the state space, and constantly maps it to the given `grid`. The FSM
+trajectory in the state space, and constantly maps it to a cell in the given `grid`. The FSM
 decides when an initial condition has successfully converged into an attractor. An array,
 internally called "basins", stores the state of the FSM on the grid, according to the
 indexing system described in [Datseris2022](@cite). As the system is integrated more and more,
@@ -98,10 +101,11 @@ attraction or exit basins is utilized. In other functions like `basins_fractions
 only the attractor locations are utilized, as the basins themselves are not stored.
 
 The iteration of a given initial condition continues until one of the following happens:
+
 -  The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
    it is considered that an attractor is found and is labelled with a new ID. Then,
    iteration continues a bit more until we have identified the attractor with sufficient
-   accuracy, i.e., until `mx_chk_loc_att` cells with the new ID have been visited.
+   accuracy, i.e., by taking `mx_chk_loc_att` more steps.
 -  The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
    the initial condition is numbered with the attractor's ID.
 -  The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
