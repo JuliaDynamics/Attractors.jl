@@ -129,7 +129,7 @@ function finite_state_machine!(
             # also keep track of visited cells. This makes it easier to clean
             # up the basin array later!
             push!(bsn_nfo.visited_cells, n) # keep track of visited cells
-            bsn_nfo.consecutive_match = 1
+            bsn_nfo.consecutive_match = 0
         elseif ic_label == bsn_nfo.visited_cell_label
             # hit a previously visited box with the current label, possible attractor?
             bsn_nfo.consecutive_match += 1
@@ -141,7 +141,7 @@ function finite_state_machine!(
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             store_attractor!(bsn_nfo, u)
             bsn_nfo.state = :att_found
-            bsn_nfo.consecutive_match = 1
+            bsn_nfo.consecutive_match = 0
         end
         bsn_nfo.prev_label = ic_label
         return 0
@@ -194,7 +194,7 @@ function finite_state_machine!(
         if bsn_nfo.prev_label == ic_label
             bsn_nfo.consecutive_match += 1
         else
-            bsn_nfo.consecutive_match = 1
+            bsn_nfo.consecutive_match = 0
         end
         if  bsn_nfo.consecutive_match > mx_chk_hit_bas
             cleanup_visited_cells!(bsn_nfo)
