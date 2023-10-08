@@ -151,17 +151,31 @@ function finite_state_machine!(
     # enough recurrences to claim we have found an attractor.
     # We then locate the attractor by recording enough cells.
     if bsn_nfo.state == :att_found
-        if ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
-            # label this cell as part of an attractor
-            bsn_nfo.basins[n] = bsn_nfo.current_att_label
-            bsn_nfo.consecutive_match = 1
-            store_attractor!(bsn_nfo, u)
-        elseif iseven(ic_label) && (bsn_nfo.consecutive_match <  mx_chk_loc_att)
-            # We make sure we hit the attractor another `mx_chk_loc_att` consecutive times
-            # just to be sure that we have the complete attractor
-            bsn_nfo.consecutive_match += 1
+        if ic_label == bsn_nfo.current_att_label
+            # Visited a cell already labelled as new attractor; check `store_once_per_cell`
             store_once_per_cell || store_attractor!(bsn_nfo, u)
-        elseif iseven(ic_label) && bsn_nfo.consecutive_match ≥ mx_chk_loc_att
+        elseif ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
+            # Visited a cells that was not labelled as the new attractor
+            # label it and store it as part of the attractor
+            bsn_nfo.basins[n] = bsn_nfo.current_att_label
+            store_attractor!(bsn_nfo, u)
+        elseif even(ic_label) && ic_label != bsn_nfo.current_att_label
+            # Visited a cell labelled as an *existing* attractor! We have
+            # attractors intersection in the grid! The algorithm can't handle this,
+            # so we throw an error.
+            error("""
+            During the phase of locating a new attractor, found via sufficient recurrences,
+            we encountered a cell of a previously-found attractor. This means that two
+            attractors intersect in the grid, or that the precision with which we find
+            and store attractors is not fine enough. Either decrease the grid spacing,
+            or increase `mx_chk_fnd_att` (or both).
+
+            Index of cell that this occured at: $(n).
+            """)
+        end
+        # in the `:att_found` phase, the consecutive match is always increasing
+        bsn_nfo.consecutive_match += 1
+        if bsn_nfo.consecutive_match ≥ mx_chk_loc_att
             # We have recorded the attractor with sufficient accuracy.
             # We now set the empty counters for the new attractor.
             cleanup_visited_cells!(bsn_nfo)
