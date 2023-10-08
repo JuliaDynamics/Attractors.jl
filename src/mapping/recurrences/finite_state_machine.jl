@@ -159,7 +159,7 @@ function finite_state_machine!(
             # label it and store it as part of the attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             store_attractor!(bsn_nfo, u)
-        elseif even(ic_label) && ic_label != bsn_nfo.current_att_label
+        elseif even(ic_label) && ic_label ≠ bsn_nfo.current_att_label
             # Visited a cell labelled as an *existing* attractor! We have
             # attractors intersection in the grid! The algorithm can't handle this,
             # so we throw an error.
@@ -167,7 +167,7 @@ function finite_state_machine!(
             During the phase of locating a new attractor, found via sufficient recurrences,
             we encountered a cell of a previously-found attractor. This means that two
             attractors intersect in the grid, or that the precision with which we find
-            and store attractors is not fine enough. Either decrease the grid spacing,
+            and store attractors is not high enough. Either decrease the grid spacing,
             or increase `mx_chk_fnd_att` (or both).
 
             Index of cell that this occured at: $(n).
