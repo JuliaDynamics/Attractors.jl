@@ -178,12 +178,13 @@ function finite_state_machine!(
         if bsn_nfo.consecutive_match ≥ mx_chk_loc_att
             # We have recorded the attractor with sufficient accuracy.
             # We now set the empty counters for the new attractor.
+            current_basin = bsn_nfo.current_att_label + 1
             cleanup_visited_cells!(bsn_nfo)
             bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
             # We return the label corresponding to the *basin* of the attractor
-            return ic_label + 1
+            return current_basin
         end
         return 0
     end
