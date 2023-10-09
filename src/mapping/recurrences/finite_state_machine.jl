@@ -159,7 +159,7 @@ function finite_state_machine!(
             # label it and store it as part of the attractor
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             store_attractor!(bsn_nfo, u)
-        elseif even(ic_label) && ic_label ≠ bsn_nfo.current_att_label
+        elseif iseven(ic_label) && ic_label ≠ bsn_nfo.current_att_label
             # Visited a cell labelled as an *existing* attractor! We have
             # attractors intersection in the grid! The algorithm can't handle this,
             # so we throw an error.
