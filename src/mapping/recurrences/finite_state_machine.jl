@@ -269,8 +269,7 @@ function update_finite_state_machine!(bsn_nfo, ic_label)
         # hit an attractor box
         next_state = :att_hit
     elseif ic_label == -1
-        # out of the grid we do not reset the counter of other state
-        # since the trajectory can follow an attractor that spans outside the grid
+        # out of the grid 
         next_state = :lost
     elseif isodd(ic_label)
         # hit an basin box
@@ -278,9 +277,11 @@ function update_finite_state_machine!(bsn_nfo, ic_label)
     end
 
     if next_state != current_state
-        # The consecutive_match counter is reset when we switch states
-        # However if we enter or leave  the :lost this counter is
-        # maintained
+        # The consecutive_match counter is reset when we switch states.
+        # However if we enter or leave  the :lost state 
+        # we do not reset the counter consecutive_match
+        # since the trajectory can follow an attractor 
+        # that spans outside the grid
         if current_state == :lost || next_state == :lost
             bsn_nfo.consecutive_lost = 1
         else
