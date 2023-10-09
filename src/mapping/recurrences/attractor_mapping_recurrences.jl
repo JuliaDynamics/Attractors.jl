@@ -55,13 +55,14 @@ want to search for attractors in a lower dimensional subspace.
 
 ### Finite state machine configuration
 
-* `mx_chk_fnd_att = 1000`: Number of consecutive visits to previously visited
-  unlabeled cells required before declaring we have converged to a new attractor.
+* `mx_chk_fnd_att = 100`: Number of consecutive visits to previously visited
+  unlabeled cells (i.e., recurrences) required before declaring we have converged to a new attractor.
   This number tunes the accuracy of converging to attractors and should generally be high
   (and even higher for chaotic systems).
-* `mx_chk_loc_att = mx_chk_fnd_att÷10`: Number of subsequent steps taken to locate accurately the new
+* `mx_chk_loc_att = 1000`: Number of subsequent steps taken to locate accurately the new
   attractor after the convergence phase is over. Once `mx_chk_loc_att` steps have been
   taken, the new attractor has been identified with sufficient accuracy and iteration stops.
+  This number can be very high without much impact to overall performance, as this phase.
 * `store_once_per_cell = true`: Control if multiple points in state space that belong to
   the same cell are stored or not in the attractor, when a new attractor is found.
   If `true`, each visited cell will only store a point once, which is desirable for fixed
