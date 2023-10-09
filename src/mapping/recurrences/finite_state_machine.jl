@@ -232,18 +232,20 @@ function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T}, u) where {D, G, Δ, 
     end
 end
 
-# Notice that seting a basin index to 0 _deletes the index_ if the
-# array is a `SparseArray`, see the source code file!
 function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
     old_label = bsn_nfo.visited_cell_label
+    basins = bsn_nfo.basins
     while !isempty(bsn_nfo.visited_cells)
         ind = pop!(bsn_nfo.visited_cells)
-        if bsn_nfo.basins[ind] == old_label
-            bsn_nfo.basins[ind] = 0 # 0 is the unvisited label / empty label
+        if basins[ind] == old_label
+            if basins isa SparseArray # The `if` clause is optimized away
+                delete!(basins.data, ind)
+            else # non-sparse
+                basins[ind] = 0 # 0 is the unvisited label / empty label
+            end
         end
     end
 end
-
 
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
