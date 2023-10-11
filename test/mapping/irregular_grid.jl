@@ -23,57 +23,38 @@ function predator_prey_ds()
 end
 
 @testset "Different grids" begin
-    @testset "Irregular grid" begin
-        # when pow = 1 we have regular grid that makes
-        # the unstable fixed point be an attractor due to trajectory slow-down
-        # The second initial condition is directly on the limit cycle
-        u0 = [9.0, 3.5]
-        u0 = [0.03, 0.5]
-        As = []
-        for pow in (1, 8)
-            ds = predator_prey_ds()
-            d = 21
-            xg = range(0, 18.0^(1/pow); length = d).^pow
-            yg = range(0, 18.0; length = d)
-            mapper = AttractorsViaRecurrences(ds, (xg, yg);
-                Dt = 0.05, sparse = true, force_non_adaptive = true,
-                mx_chk_fnd_att = 20, mx_chk_loc_att = 100,
-                store_once_per_cell = true,
-                mx_chk_safety = 1000,
-            )
-            id = mapper(u0)
-            A = extract_attractors(mapper)[1]
-            push!(As, A)
-            if pow == 1
-                @test length(A) == 1 # fixed point
-            elseif pow == 2
-                @test length(A) > 1 # limit cycle
-            end
-        end
+    ds = predator_prey_ds()
+    u0 = [0.03, 0.5]
+    d = 21
+    xg = yg = range(0, 18; length = d)
+    grid_reg = (xg, yg)
+    pow = 8
+    xg = range(0, 18.0^(1/pow); length = d).^pow
+    grid_irreg = (xg, yg)
+    grid_subdiv = subdivision_based_grid(ds, grid_reg)
+    function test_grid(grid, bool)
+        ds = predator_prey_ds()
+        mapper = AttractorsViaRecurrences(ds, grid;
+            Dt = 0.05, sparse = true, force_non_adaptive = true,
+            mx_chk_fnd_att = 20, mx_chk_loc_att = 100,
+            store_once_per_cell = true,
+            mx_chk_safety = 1000,
+        )
+        id = mapper(u0)
+        A = extract_attractors(mapper)[1]
+        @test (length(A) > 1) == bool
     end
 
-    @testset "Subdivision based grid" begin
-        u0 = [0.03, 0.5]
-        ds = predator_prey_ds()
-        xg = yg = range(0, 18; length = 21)
-        grid = (xg, yg)
-        gridsd = subdivision_based_grid(ds, (xg, yg))
-        for (i, g) in enumerate((grid, gridsd))
-            # we use the same mapper as the irregular grid (important!)
-            mapper = AttractorsViaRecurrences(ds, g;
-                Dt = 0.05, sparse = true, force_non_adaptive = true,
-                mx_chk_fnd_att = 20, mx_chk_loc_att = 100,
-                store_once_per_cell = true,
-                mx_chk_safety = 1000,
-            )
-            id = mapper(u0)
-            A = extract_attractors(mapper)[1]
-            if i == 1
-                @test length(A) == 1
-            else
-                @test length(A) > 1
-            end
-        end
+    @testset "regular fail" begin
+        test_grid(grid_reg, false)
+    end
+
+    @testset "irregular" begin
+        test_grid(grid_irreg, true)
+    end
+
+    @testset "subdivision" begin
+        test_grid(grid_subdiv, true)
     end
 end
 
