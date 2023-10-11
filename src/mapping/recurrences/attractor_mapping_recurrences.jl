@@ -6,6 +6,8 @@
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
 recurrences in the state space, as outlined in [Datseris2022](@cite).
+However, the Description section below for has a more accurate (and simpler)
+exposition to the algorithm than the paper.
 
 `grid` is instructions for partitioning the state space into finite-sized cells
 so that a finite state machine can operate on top of it. Possibilities are:
@@ -86,37 +88,38 @@ want to search for attractors in a lower dimensional subspace.
 ## Description
 
 An initial condition given to an instance of `AttractorsViaRecurrences` is iterated
-based on the integrator corresponding to `ds`. A recurrence in the state space means
+based on the integrator corresponding to `ds`. Enough recurrences in the state space
+(i.e., a trajectory visited a region it has visited before) means
 that the trajectory has converged to an attractor. This is the basis for finding attractors.
 
 A finite state machine (FSM) follows the
-trajectory in the state space, and constantly maps it to a cell in the given `grid`. The FSM
-decides when an initial condition has successfully converged into an attractor. An array,
-internally called "basins", stores the state of the FSM on the grid, according to the
-indexing system described in [Datseris2022](@cite). As the system is integrated more and more,
-the information of the "basins" becomes richer and richer with more identified attractors
-or with grid cells that belong to basins of already found attractors.
-Notice that only in the special method
-`basins_of_attraction(mapper::AttractorsViaRecurrences)` the information of the
-attraction or exit basins is utilized. In other functions like `basins_fractions`
-only the attractor locations are utilized, as the basins themselves are not stored.
+trajectory in the state space, and constantly maps it to a cell in the given `grid`.
+The grid cells store information: they are empty, visited, basins, or attractor cells.
+The state of the FSM is decided based on the cell type and the previous state of the FSM.
+Whenever the FSM re-occurs its state, its internal counter is increased, otherwise it is
+reset to 0. Once the internal counter reaches a threshold, the FSM terminates.
+The possibilities for termination are the following:
 
-The iteration of a given initial condition continues until one of the following happens:
-
--  The trajectory hits `mx_chk_fnd_att` times in a row grid cells previously visited:
+-  The trajectory hits `mx_chk_fnd_att` times in a row visited cells:
    it is considered that an attractor is found and is labelled with a new ID. Then,
-   iteration continues a bit more until we have identified the attractor with sufficient
-   accuracy, i.e., by taking `mx_chk_loc_att` more steps.
+   iteration continues for `mx_chk_loc_att` steps. Each cell visited in this period stores
+   the "attractor" information. Then iteration terminates and the initial condition is
+   numbered with the attractor's ID.
 -  The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
    the initial condition is numbered with the attractor's ID.
 -  The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
    belongs to that basin and is numbered accordingly. Notice that basins are stored and
-   used only when `sparse = false`.
+   used only when `sparse = false` otherwise this clause is ignored.
 -  The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
    of the dynamical system state becomes > than `horizon_limit`: the initial
    condition is labelled `-1`.
 -  If none of the above happens, the initial condition is labelled `-1` after
    `mx_chk_safety` steps.
+
+There are some special internatal optimizations and details that we do not describe
+here but can be found in comments in the source code.
+(E.g., a special timer exists for the "lost" state which does not interrupt the main
+timer of the FSM.)
 """
 struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS
