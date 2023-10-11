@@ -12,7 +12,8 @@ Notice the numbering system `cell_label` is as in `finite_state_machine!`.
 Even numbers are attractors, odd numbers are basins.
 """
 function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
-        maximum_iterations = Int(1e6), Ttr = 0, kwargs...
+        # `mx_chk_safety` is deprecated
+        mx_chk_safety = Int(1e6), maximum_iterations = mx_chk_safety, Ttr = 0, kwargs...
     )
     # This routine identifies the attractor using the previously defined basin.
 
@@ -92,9 +93,25 @@ The function returns `0` unless the FSM has terminated its operation.
 """
 function finite_state_machine!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u;
-        consecutive_attractor_steps = 2, consecutive_basin_steps = 10, consecutive_recurrences = 100, attractor_locate_steps = 1000,
-        horizon_limit = 1e6, consecutive_lost_steps = 20, store_once_per_cell = true,
+        # These are deprecated names:
+        mx_chk_att = 2,
+        mx_chk_hit_bas = 10,
+        mx_chk_fnd_att = 100,
+        mx_chk_loc_att = 1000,
+        mx_chk_lost = 20,
+
+        # These are the new names. They currently have the values of the
+        # deprecated names, so that existing code does not break. In the future,
+        # the deprecated names are removed and the new names get the values directly
+        consecutive_attractor_steps = mx_chk_att,
+        consecutive_basin_steps = mx_chk_hit_bas,
+        consecutive_recurrences = mx_chk_fnd_att,
+        attractor_locate_steps = mx_chk_loc_att,
+        consecutive_lost_steps = mx_chk_lost,
+        # other non-changed keywords
         show_progress = true, # show_progress can be used when finding new attractor.
+        horizon_limit = 1e6,
+        store_once_per_cell = true,
     )
 
     # if n[1] == -1 means we are outside the grid,
