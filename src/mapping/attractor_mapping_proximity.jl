@@ -76,7 +76,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
                 k == m && continue
                 for p in A # iterate over all points of attractor
                     Neighborhood.NearestNeighbors.knn_point!(
-                        tree, p, false, dist, idx, Neighborhood.alwaysfalse
+                        tree, p, false, dist, idx, Neighborhood.NearestNeighbors.always_false
                     )
                     dist[1] < minε && (minε = dist[1])
                 end
@@ -109,9 +109,11 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
         step!(mapper.ds, mapper.Δt)
         lost_count += 1
         u = current_state(mapper.ds)
+        # first check for Inf or NaN
+        any(x -> (isnan(x) || isinf(x)), u) && return -1
         for (k, tree) in mapper.search_trees # this is a `Dict`
             Neighborhood.NearestNeighbors.knn_point!(
-                tree, u, false, mapper.dist, mapper.idx, Neighborhood.alwaysfalse
+                tree, u, false, mapper.dist, mapper.idx, Neighborhood.NearestNeighbors.always_false
             )
             if mapper.dist[1] < mapper.ε
                 return k
