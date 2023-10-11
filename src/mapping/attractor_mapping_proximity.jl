@@ -9,17 +9,15 @@ The system gets stepped, and at each step the minimum distance to all
 attractors is computed. If any of these distances is `< ε`, then the label of the nearest
 attractor is returned.
 
-If an `ε::Real` is _not_ provided by the user, a value is computed
+If an `ε::Real` is not provided by the user, a value is computed
 automatically as half of the minimum distance between all attractors.
-This operation can be expensive for large attractor StateSpaceSets.
+This operation can be expensive for large `StateSpaceSet`s.
 If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box containing
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
 an error is thrown.
 
-Because in this method the attractors are already known to the user,
-the method can also be called _supervised_.
-
 ## Keywords
+
 * `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
@@ -84,7 +82,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
                 end
             end
         end
-        @info("Minimum distance between attractors computed: $(minε)")
+        verbose && @info("Minimum distance between attractors computed: $(minε)")
         ε = minε/2
     else
         attractor = first(attractors)[2] # get the single attractor

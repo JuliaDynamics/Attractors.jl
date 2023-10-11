@@ -84,8 +84,8 @@ end
     end
 
     @testset "Henon map: discrete & divergence" begin
-        ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
-        u0 = [0.0, 0.0]
+        henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+        ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
         xg = yg = range(-2.0, 2.0; length=100)
         grid = (xg, yg)
         test_compatibility_sparse_nonsparse(ds, grid)

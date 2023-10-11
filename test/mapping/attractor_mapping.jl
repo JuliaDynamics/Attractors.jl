@@ -22,9 +22,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     # u0s is Vector{Pair}
     sampler, = statespace_sampler(grid, 1234)
     ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
-    # Create deterministically decided initial conditions
-    # (basin fractions need to be re-set every time the RNG changes...)
-    reduced_grid = map(g -> range(minimum(g), maximum(g); length = 10), grid)
 
     expected_fs = sort!(collect(values(expected_fs_raw)))
     known_ids = collect(u[1] for u in u0s)
@@ -65,13 +62,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             for k in known_ids
                 @test abs(fs[k] - expected_fs_raw[k]) ≤ err
             end
-        end
-        # `basins_of_attraction` tests
-        basins, approx_atts = basins_of_attraction(mapper, reduced_grid; show_progress=false)
-        @test length(size(basins)) == length(grid)
-        if known
-            bids = sort!(unique(basins))
-            @test all(x -> x ∈ known_ids, bids)
         end
     end
 
@@ -144,9 +134,7 @@ end
 @testset "Henon map: discrete & divergence" begin
     u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] # template ics
     henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-    henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
-    ds = henon()
-
+    ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
     xg = yg = range(-2.0, 2.0; length=100)
     grid = (xg, yg)
     expected_fs_raw = Dict(-1 => 0.575, 1 => 0.425)

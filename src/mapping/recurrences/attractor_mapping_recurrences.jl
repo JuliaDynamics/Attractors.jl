@@ -64,7 +64,7 @@ want to search for attractors in a lower dimensional subspace.
 * `mx_chk_loc_att = 1000`: Number of subsequent steps taken to locate accurately the new
   attractor after the convergence phase is over. Once `mx_chk_loc_att` steps have been
   taken, the new attractor has been identified with sufficient accuracy and iteration stops.
-  This number can be very high without much impact to overall performance, as this phase.
+  This number can be very high without much impact to overall performance.
 * `store_once_per_cell = true`: Control if multiple points in state space that belong to
   the same cell are stored or not in the attractor, when a new attractor is found.
   If `true`, each visited cell will only store a point once, which is desirable for fixed
@@ -96,11 +96,11 @@ A finite state machine (FSM) follows the
 trajectory in the state space, and constantly maps it to a cell in the given `grid`.
 The grid cells store information: they are empty, visited, basins, or attractor cells.
 The state of the FSM is decided based on the cell type and the previous state of the FSM.
-Whenever the FSM re-occurs its state, its internal counter is increased, otherwise it is
+Whenever the FSM recurs its state, its internal counter is increased, otherwise it is
 reset to 0. Once the internal counter reaches a threshold, the FSM terminates.
 The possibilities for termination are the following:
 
--  The trajectory hits `mx_chk_fnd_att` times in a row visited cells:
+-  The trajectory hits `mx_chk_fnd_att` times in a row previously visited cells:
    it is considered that an attractor is found and is labelled with a new ID. Then,
    iteration continues for `mx_chk_loc_att` steps. Each cell visited in this period stores
    the "attractor" information. Then iteration terminates and the initial condition is
@@ -116,7 +116,7 @@ The possibilities for termination are the following:
 -  If none of the above happens, the initial condition is labelled `-1` after
    `mx_chk_safety` steps.
 
-There are some special internatal optimizations and details that we do not describe
+There are some special internal optimizations and details that we do not describe
 here but can be found in comments in the source code.
 (E.g., a special timer exists for the "lost" state which does not interrupt the main
 timer of the FSM.)
