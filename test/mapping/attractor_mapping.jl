@@ -49,6 +49,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         # @show fs
         approx_atts = extract_attractors(mapper)
         found_fs = sort(collect(values(fs)))
+        # @show found_fs
         if length(found_fs) > length(expected_fs)
             # drop -1 key if it corresponds to just unidentified points
             found_fs = found_fs[2:end]
@@ -130,7 +131,35 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 end
 
-# Actual tests
+# %% Actual tests
+@testset "Analytic dummy map" begin
+    function dumb_map(z, p, n)
+        x, y = z
+        r = p[1]
+        if r < 0.5
+            return SVector(0.0, 0.0)
+        else
+            if x ≥ 0
+                return SVector(r, r)
+            else
+                return SVector(-r, -r)
+            end
+        end
+    end
+
+    r = 1.0
+    ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r])
+    u0s = [1 => [r, r], 2 => [-r, -r]] # template ics
+
+    xg = yg = range(-2.0, 2.0; length=100)
+    grid = (xg, yg)
+    expected_fs_raw = Dict(1 => 0.5, 1 => 0.5)
+    featurizer(A, t) = SVector(A[1][1])
+    test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
+    max_distance = 20, ε = 1e-1, proximity_test = false, threshold_pairwise=1,
+    rerr = 1e-1, ferr = 1e-1, aerr = 1e-15)
+end
+
 @testset "Henon map: discrete & divergence" begin
     u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] # template ics
     henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])

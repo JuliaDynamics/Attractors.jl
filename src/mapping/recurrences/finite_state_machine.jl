@@ -64,7 +64,7 @@ end
 
 _possibly_reduced_state(y, ds, grid) = y
 function _possibly_reduced_state(y, ds::PoincareMap, bsn_nfo)
-    grid = bsn_nfo.grid
+    grid = bsn_nfo.grid_nfo.grid
     if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
         return y[ds.diffidxs]
     else
