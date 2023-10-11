@@ -1,5 +1,7 @@
 # v1.13
 
+- The algorithm of `AttractorsViaRecurrences` has been simplified a bit, and has better error handling. The action of the keyword `mx_chk_loc_att` has been changed which may lead to different results in some usage cases.
+- The documentation of `AttractorsViaRecurrences` has been improved and clarified.
 - A renaming of some of the options (keyword arguments) of `AttractorsViaRecurrences` has been done in line with the clarity increase of the algorithm. The following renames are in place and currently deprecated:
   - `mx_chk_fnd_att -> consecutive_recurrences`
   - `mx_chk_loc_att -> attractor_locate_steps`
