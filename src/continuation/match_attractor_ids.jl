@@ -194,7 +194,7 @@ are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they wi
 1, 2, 3. The special id -1 is unaffected by this.
 
 
-    rematch_continuation!(attractors_info::Vector{<:Dict}; kwargs...)
+    match_continuation!(attractors_info::Vector{<:Dict}; kwargs...)
 
 This is a convenience method that only uses and modifies the state space set dictionary
 container without the need for a basins fractions container.

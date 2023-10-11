@@ -26,8 +26,8 @@ of the `mapper`. Seeding initial conditions close to previous attractors acceler
 the main bottleneck of [`AttractorsViaRecurrences`](@ref), which is finding the attractors.
 
 After the special initial conditions are mapped to attractors, attractor basin fractions
-are computed by sampling random initial conditions.
-(using the provided `sampler` in [`continuation`](@ref)) and mapping them to attractors
+are computed by sampling random initial conditions using the provided `sampler` in
+[`continuation`](@ref)) and mapping them to attractors
 using the [`AttractorsViaRecurrences`](@ref) mapper.
 I.e., exactly as in [`basins_fractions`](@ref).
 Naturally, during this step new attractors may be found, besides those found
@@ -36,18 +36,21 @@ Once the basins fractions are computed,
 the parameter is incremented again and we perform the steps as before.
 
 This process continues for all parameter values. After all parameters are exhausted,
-the newly found attractors (and their fractions) are "matched" to the previous ones.
-I.e., their _IDs are changed_, so that attractors with closest distance to those at a
+the found attractors (and their fractions) are "matched" to the previous ones.
+I.e., their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
-Matching is rather sophisticated and is described in
+Matching is rather sophisticated and is described in detail in
 [`match_statespacesets!`](@ref) and [`match_continuation!`](@ref).
-Typically, the matching process matches attractor IDs that are closest in state space
+By default the matching process matches attractor IDs that are closest in state space
 distance, but more options are possible, see [`match_statespacesets!`](@ref).
+By default attractors that dissapear and later re-appear get assigned different IDs,
+use `use_vanished = true` for the alternative.
 
 Note that in this continuation the finding-attractors and matching-attractors
 steps are completely independent. This means, that if you don't like the initial
 outcome of the matching process, you may call [`match_continuation!`](@ref) again
 on the outcome with (possibly different) matching-related keywords.
+You do not need to compute attractors and basins again!
 
 ## Keyword arguments
 
@@ -91,7 +94,7 @@ function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = Mer
 end
 
 # This is the one used
-function _default_seeding_process(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
+function _default_seeding_process(attractor::AbstractStateSpaceSet)
     return (attractor[1],) # must be iterable
 end
 
