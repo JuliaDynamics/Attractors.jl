@@ -97,7 +97,7 @@ trajectory in the state space, and constantly maps it to a cell in the given `gr
 The grid cells store information: they are empty, visited, basins, or attractor cells.
 The state of the FSM is decided based on the cell type and the previous state of the FSM.
 Whenever the FSM recurs its state, its internal counter is increased, otherwise it is
-reset to 0. Once the internal counter reaches a threshold, the FSM terminates.
+reset to 0. Once the internal counter reaches a threshold, the FSM terminates or changes its state.
 The possibilities for termination are the following:
 
 -  The trajectory hits `mx_chk_fnd_att` times in a row previously visited cells:
