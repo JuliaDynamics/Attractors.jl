@@ -57,30 +57,30 @@ want to search for attractors in a lower dimensional subspace.
 
 ### Finite state machine configuration
 
-* `mx_chk_fnd_att = 100`: Number of consecutive visits to previously visited
+* `consecutive_recurrences = 100`: Number of consecutive visits to previously visited
   unlabeled cells (i.e., recurrences) required before declaring we have converged to a new attractor.
   This number tunes the accuracy of converging to attractors and should generally be high
   (and even higher for chaotic systems).
-* `mx_chk_loc_att = 1000`: Number of subsequent steps taken to locate accurately the new
-  attractor after the convergence phase is over. Once `mx_chk_loc_att` steps have been
+* `attractor_locate_steps = 1000`: Number of subsequent steps taken to locate accurately the new
+  attractor after the convergence phase is over. Once `attractor_locate_steps` steps have been
   taken, the new attractor has been identified with sufficient accuracy and iteration stops.
   This number can be very high without much impact to overall performance.
 * `store_once_per_cell = true`: Control if multiple points in state space that belong to
   the same cell are stored or not in the attractor, when a new attractor is found.
   If `true`, each visited cell will only store a point once, which is desirable for fixed
-  points and limit cycles. If `false` then `mx_chk_loc_att` points are
+  points and limit cycles. If `false` then `attractor_locate_steps` points are
   stored per attractor, leading to more densely stored attractors,
   which may be desirable for instance in chaotic attractors.
-* `mx_chk_att = 2`: Μaximum checks of consecutives hits of an existing attractor cell
+* `consecutive_attractor_steps = 2`: Μaximum checks of consecutives hits of an existing attractor cell
   before declaring convergence to that existing attractor.
-* `mx_chk_hit_bas = 10`: Number of consecutive visits of the same basin of
+* `consecutive_basin_steps = 10`: Number of consecutive visits of the same basin of
   attraction required before declaring convergence to an existing attractor.
   This is ignored if `sparse = true`, as basins are not stored internally in that case.
-* `mx_chk_lost = 20`: Maximum check of iterations outside the defined grid before we
+* `consecutive_lost_steps = 20`: Maximum check of iterations outside the defined grid before we
   declare the orbit lost outside and hence assign it label `-1`.
 * `horizon_limit = 1e6`: If the norm of the integrator state reaches this
   limit we declare that the orbit diverged to infinity.
-* `mx_chk_safety = Int(1e6)`: A safety counter that is always increasing for
+* `maximum_iterations = Int(1e6)`: A safety counter that is always increasing for
   each initial condition. Once exceeded, the algorithm assigns `-1` and throws a warning.
   This clause exists to stop the algorithm never halting for inappropriate grids. It may happen
   when a newly found attractor orbit intersects in the same cell of a previously found attractor (which leads to infinite resetting of all counters).
@@ -100,21 +100,21 @@ Whenever the FSM recurs its state, its internal counter is increased, otherwise 
 reset to 0. Once the internal counter reaches a threshold, the FSM terminates or changes its state.
 The possibilities for termination are the following:
 
--  The trajectory hits `mx_chk_fnd_att` times in a row previously visited cells:
+-  The trajectory hits `consecutive_recurrences` times in a row previously visited cells:
    it is considered that an attractor is found and is labelled with a new ID. Then,
-   iteration continues for `mx_chk_loc_att` steps. Each cell visited in this period stores
+   iteration continues for `attractor_locate_steps` steps. Each cell visited in this period stores
    the "attractor" information. Then iteration terminates and the initial condition is
    numbered with the attractor's ID.
--  The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
+-  The trajectory hits an already identified attractor `consecutive_attractor_steps` consecutive times:
    the initial condition is numbered with the attractor's basin ID.
--  The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
+-  The trajectory hits a known basin `consecutive_basin_steps` times in a row: the initial condition
    belongs to that basin and is numbered accordingly. Notice that basins are stored and
    used only when `sparse = false` otherwise this clause is ignored.
--  The trajectory spends `mx_chk_lost` steps outside the defined grid or the norm
+-  The trajectory spends `consecutive_lost_steps` steps outside the defined grid or the norm
    of the dynamical system state becomes > than `horizon_limit`: the initial
    condition is labelled `-1`.
 -  If none of the above happens, the initial condition is labelled `-1` after
-   `mx_chk_safety` steps.
+   `maximum_iterations` steps.
 
 There are some special internal optimizations and details that we do not describe
 here but can be found in comments in the source code.

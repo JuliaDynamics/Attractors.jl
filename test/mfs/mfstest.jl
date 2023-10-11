@@ -17,7 +17,7 @@ using LinearAlgebra
     xg = yg = range(-1.5, 1.5; length = 400)
 
     newton = AttractorsViaRecurrences(ds, (xg, yg);
-        sparse = false, mx_chk_lost = 1000
+        sparse = false, consecutive_lost_steps = 1000
     )
 
     attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]

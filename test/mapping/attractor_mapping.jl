@@ -125,7 +125,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             known_attractors = Dict(
                 k => trajectory(ds, 1000, v; Δt = 1, Ttr=100)[1] for (k,v) in u0s if k ≠ -1
             )
-            mapper = AttractorsViaProximity(ds, known_attractors, ε; Ttr = 100, mx_chk_lost = 1000)
+            mapper = AttractorsViaProximity(ds, known_attractors, ε; Ttr = 100, consecutive_lost_steps = 1000)
             test_basins_fractions(mapper; known = true, err = aerr)
         end
     end
@@ -264,7 +264,7 @@ if DO_EXTENSIVE_TESTS
         end
 
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 5, Ttr = 100, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
+        ε = 0.01, ferr=1e-2, Δt = 0.2, consecutive_attractor_steps = 5, Ttr = 100, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
     end
 
     @testset "Duffing oscillator: stroboscopic map" begin
