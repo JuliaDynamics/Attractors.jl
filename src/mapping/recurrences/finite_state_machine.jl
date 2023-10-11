@@ -275,7 +275,7 @@ function update_finite_state_machine!(bsn_nfo, ic_label)
         # since the trajectory can follow an attractor that spans outside the grid
         next_state = :lost
     elseif isodd(ic_label)
-        # hit an basin box
+        # hit an existing basin box
         next_state = :bas_hit
     end
 
@@ -296,5 +296,3 @@ function update_finite_state_machine!(bsn_nfo, ic_label)
     bsn_nfo.state = next_state
     return
 end
-
-
