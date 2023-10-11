@@ -116,9 +116,38 @@ end
 
 if DO_EXTENSIVE_TESTS
     @testset "magnetic pendulum" begin
+        using OrdinaryDiffEq: Vern9
         using LinearAlgebra: norm
+        mutable struct MagneticPendulumParams
+            γs::Vector{Float64}
+            d::Float64
+            α::Float64
+            ω::Float64
+            magnets::Vector{SVector{2, Float64}}
+        end
+        function magnetic_pendulum_rule(u, p, t)
+            x, y, vx, vy = u
+            γs, d, α, ω = p.γs, p.d, p.α, p.ω
+            dx, dy = vx, vy
+            dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
+            for (i, ma) in enumerate(p.magnets)
+                δx, δy = (x - ma[1]), (y - ma[2])
+                D = sqrt(δx^2 + δy^2 + d^2)
+                dvx -= γs[i]*(x - ma[1])/D^3
+                dvy -= γs[i]*(y - ma[2])/D^3
+            end
+            return SVector(dx, dy, dvx, dvy)
+        end
+        function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
+            γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N), diffeq)
+            m = [SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N]
+            p = MagneticPendulumParams(γs, d, α, ω, m)
+            return CoupledODEs(magnetic_pendulum_rule, u, p; diffeq)
+        end
+
+        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
         d, α, ω = 0.3, 0.2, 0.5
-        ds = Systems.magnetic_pendulum(; d, α, ω)
+        ds = magnetic_pendulum(; d, α, ω, diffeq)
         xg = yg = range(-3, 3, length = 100)
         ds = projected_integrator(ds, 1:2, [0.0, 0.0])
         mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)

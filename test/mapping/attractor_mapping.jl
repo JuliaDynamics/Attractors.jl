@@ -22,9 +22,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     # u0s is Vector{Pair}
     sampler, = statespace_sampler(grid, 1234)
     ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
-    # Create deterministically decided initial conditions
-    # (basin fractions need to be re-set every time the RNG changes...)
-    reduced_grid = map(g -> range(minimum(g), maximum(g); length = 10), grid)
 
     expected_fs = sort!(collect(values(expected_fs_raw)))
     known_ids = collect(u[1] for u in u0s)
@@ -52,6 +49,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
         # @show fs
         approx_atts = extract_attractors(mapper)
         found_fs = sort(collect(values(fs)))
+        # @show found_fs
         if length(found_fs) > length(expected_fs)
             # drop -1 key if it corresponds to just unidentified points
             found_fs = found_fs[2:end]
@@ -65,13 +63,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             for k in known_ids
                 @test abs(fs[k] - expected_fs_raw[k]) ≤ err
             end
-        end
-        # `basins_of_attraction` tests
-        basins, approx_atts = basins_of_attraction(mapper, reduced_grid; show_progress=false)
-        @test length(size(basins)) == length(grid)
-        if known
-            bids = sort!(unique(basins))
-            @test all(x -> x ∈ known_ids, bids)
         end
     end
 
@@ -97,7 +88,7 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
         )
     end
-    
+
     if pairwise_comparison_matrix_test
         @testset "Featurizing, pairwise comparison, matrix features" begin
             function metric_hausdorff(A,B)
@@ -140,13 +131,39 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 end
 
-# Actual tests
+# %% Actual tests
+@testset "Analytic dummy map" begin
+    function dumb_map(z, p, n)
+        x, y = z
+        r = p[1]
+        if r < 0.5
+            return SVector(0.0, 0.0)
+        else
+            if x ≥ 0
+                return SVector(r, r)
+            else
+                return SVector(-r, -r)
+            end
+        end
+    end
+
+    r = 1.0
+    ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r])
+    u0s = [1 => [r, r], 2 => [-r, -r]] # template ics
+
+    xg = yg = range(-2.0, 2.0; length=100)
+    grid = (xg, yg)
+    expected_fs_raw = Dict(1 => 0.5, 1 => 0.5)
+    featurizer(A, t) = SVector(A[1][1])
+    test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
+    max_distance = 20, ε = 1e-1, proximity_test = false, threshold_pairwise=1,
+    rerr = 1e-1, ferr = 1e-1, aerr = 1e-15)
+end
+
 @testset "Henon map: discrete & divergence" begin
     u0s = [1 => [0.0, 0.0], -1 => [0.0, 2.0]] # template ics
     henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-    henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
-    ds = henon()
-
+    ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
     xg = yg = range(-2.0, 2.0; length=100)
     grid = (xg, yg)
     expected_fs_raw = Dict(-1 => 0.575, 1 => 0.425)
@@ -207,7 +224,7 @@ end
     function featurizer_matrix(A, t)
         return A
     end
-    
+
     test_basins(ds, u0s, grid, expected_fs_raw, featurizer; ε = 0.2, Δt = 1.0, ferr=1e-2, featurizer_matrix, pairwise_comparison_matrix_test=true, threshold_pairwise=1)
 end
 
@@ -245,9 +262,9 @@ if DO_EXTENSIVE_TESTS
             g = exp(entropy(Renyi(; q = 0), probs))
             return SVector(g, minimum(A[:,1]))
         end
-        
+
         test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
-        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 20, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
+        ε = 0.01, ferr=1e-2, Δt = 0.2, mx_chk_att = 5, Ttr = 100, threshold_pairwise=100) #threshold is very high because features haven't really converged yet here
     end
 
     @testset "Duffing oscillator: stroboscopic map" begin
@@ -309,5 +326,5 @@ if DO_EXTENSIVE_TESTS
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
     end
-    
+
 end

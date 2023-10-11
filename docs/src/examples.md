@@ -323,7 +323,9 @@ axislegend(ax)
 
 fig
 ```
+
 ## Subdivision Based Grid for `AttractorsViaRecurrences`
+
 To achieve even better results for this kind of problematic systems than with previuosly introduced `Irregular Grids`  we provide a functionality to construct `Subdivision Based Grids` in which
 one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has
 significantly different speed. [`subdivided_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified

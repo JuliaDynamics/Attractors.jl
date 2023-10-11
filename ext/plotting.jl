@@ -259,7 +259,8 @@ function Attractors.animate_attractors_continuation(
 
     # setup fractions axis
     heights = Observable(fill(0.1, K))
-    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = colors)
+    barcolors = [colors[k] for k in ukeys]
+    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = barcolors)
 
     record(fig, savename, eachindex(prange); framerate) do i
         p = prange[i]

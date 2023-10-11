@@ -18,9 +18,10 @@ end
 minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::RegularGrid{D}) where {D} = norm(g.grid_steps)
 
-struct IrregularGrid{D} <: Grid
-    grid::NTuple{D, Vector{Float64}}
+struct IrregularGrid{D, T <: Tuple} <: Grid
+    grid::T
 end
+IrregularGrid(tuple::T) where {T} = IrregularGrid{length(tuple), T}(tuple)
 minmax_grid_extent(g::IrregularGrid) = minmax_grid_extent(g.grid)
 
 minmax_grid_extent(g::NTuple) = map(minimum, g), map(maximum, g)

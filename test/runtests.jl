@@ -1,6 +1,6 @@
 # Additional tests may be run in this test suite according to an environment variable
 # `ATTRACTORS_EXTENSIVE_TESTS` which can be true or false.
-# If false, a small, but representative subset of tests is used.
+# If false, a smaller, but representative subset of tests is used.
 
 # ENV["ATTRACTORS_EXTENSIVE_TESTS"] = true or false (set externally)
 
@@ -15,6 +15,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("mapping/recurrence.jl")
         testfile("mapping/proximity_deduce_ε.jl")
         testfile("mapping/attractor_mapping.jl")
+        testfile("mapping/basins_of_attraction.jl")
         testfile("mapping/histogram_grouping.jl")
         testfile("mapping/irregular_grid.jl")
     end
