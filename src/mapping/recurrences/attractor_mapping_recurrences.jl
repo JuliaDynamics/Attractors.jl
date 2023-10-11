@@ -106,7 +106,7 @@ The possibilities for termination are the following:
    the "attractor" information. Then iteration terminates and the initial condition is
    numbered with the attractor's ID.
 -  The trajectory hits an already identified attractor `mx_chk_att` consecutive times:
-   the initial condition is numbered with the attractor's ID.
+   the initial condition is numbered with the attractor's basin ID.
 -  The trajectory hits a known basin `mx_chk_hit_bas` times in a row: the initial condition
    belongs to that basin and is numbered accordingly. Notice that basins are stored and
    used only when `sparse = false` otherwise this clause is ignored.
