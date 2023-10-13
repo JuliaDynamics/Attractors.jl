@@ -120,10 +120,9 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         
     u1, u2 = bisect_to_edge(pds, mapper; bisect_thresh)
     edgestate = (u1 + u2)/2
-    
+
     track1 = [u1]
     track2 = [u2]
-    edge = [edgestate]
 
     # edge track iteration loop
     correction = Inf
@@ -133,24 +132,22 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     while (correction > abstol) & (maxiter > counter)
         set_state!(pds, u1, 1)
         set_state!(pds, u2, 2)
-        state = edgestate
         distance = diffnorm(pds)
-        T = 0
+        t = 0
         # forward integration loop
-        while (distance < diverge_thresh) && (T < tmax)
+        while (distance < diverge_thresh) && (t < tmax)
             step!(pds, Δt)
+            push!(track1, current_state(pds, 1))
+            push!(track2, current_state(pds, 2))
             distance = diffnorm(pds)
-            T += Δt
-            push!(edge, (current_state(pds, 1) + current_state(pds, 2))/2)
+            t += Δt
         end
         u1, u2 = bisect_to_edge(pds, mapper; bisect_thresh)
-        edgestate = (u1 + u2)/2
-        correction = diffnorm(edgestate, state)
-        counter += 1
-
-        push!(edge, edgestate)
         push!(track1, u1)
         push!(track2, u2)
+        correction = diffnorm(edgestate, (u1 + u2)/2)
+        edgestate = (u1 + u2)/2
+        counter += 1
         
         ProgressMeter.next!(progress;
             showvalues = [(:Iteration, counter), (:"Edge point", edgestate)])
@@ -159,10 +156,10 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     end
 
     (counter < maxiter) && println("Edge-tracking converged after $(counter) iterations.")
-
-    edge = StateSpaceSet(reduce(hcat, edge)')
+    
     track1 = StateSpaceSet(reduce(hcat, track1)')
     track2 = StateSpaceSet(reduce(hcat, track2)')
+    edge = StateSpaceSet((Matrix(track1) + Matrix(track2))/2)
 
     return edge, track1, track2
 end;
@@ -218,7 +215,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         end    
         distance = diffnorm(u1, u2)
     end
-    u1, u2
+    return u1, u2
 end;
 
 function diffnorm(u1, u2)
