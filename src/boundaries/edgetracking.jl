@@ -29,10 +29,12 @@ two initial states must belong to different basins of attraction.
 ## Description
 The edge tracking algorithm is a numerical method to find
 an *edge state* or (possibly chaotic) saddle on the boundary between two basins of
-attraction. Introduced by [^Battelino1988] and further described by [^Skufca2006], the
+attraction. Introduced by [Battelino1988](@cite) and further described by
+[Skufca2006](@cite), the
 algorithm has been applied to, e.g., the laminar-turbulent boundary in plane Couette
-flow[^Schneider2008], Wada basins [^Wagemakers2020], as well as Melancholia states in
-climate models [^Lucarini2017] [^Mehling2023]. 
+flow [Schneider2008](@cite), Wada basins [Wagemakers2020](@cite), as well as Melancholia
+states in conceptual [Mehling2023](@cite) and intermediate-complexity [Lucarini2017](@cite) 
+climate models. 
 Relying only on forward integration of the system, it works even in
 high-dimensional systems with complicated fractal basin boundary structures.
 
@@ -68,18 +70,6 @@ Returns a tuple `edge, track1, track2`, each of which is of type `StateSpaceSet`
 `track1` and `track2` are the concatenated trajectories of the parallel integration starting
 from `u1` and `u2`, respectively, whereas `edge = (track1 + track2)/2` is the
 pseudo-trajectory representing the edge, i.e. a path along the basin boundary.
-
-!!! warning
-    May behave erroneously when the DiffEq solver of `ds` is set to `alg = SimpleATsit5()`,
-    which is the default solver in DynamicalSystems. The recommended solver is `Vern9()`.
-
-## References
-[^Battelino1988]: [Battelino et al., Physica D: Nonlinear Phenomena 32, 2 (1988)](https://doi.org/10.1016/0167-2789(88)90057-7)
-[^Skufca2006]: [Skufca et al., Phys. Rev. Lett. 96, 174101 (2006)](https://doi.org/10.1103/PhysRevLett.96.174101)
-[^Schneider2008]: [Schneider et al., Phys. Rev. E 78, 037301 (2008)](https://doi.org/10.1103/PhysRevE.78.037301)
-[^Wagemakers2020]: [Wagemakers et al., Comm. Nonlinear Sci. Num. Simul. 84, 105167 (2020)](https://doi.org/10.1016/j.cnsns.2020.105167)
-[^Lucarini2017]: [Lucarini and Bódai, Nonlinearity 30, 7 (2017)](https://doi.org/10.1088/1361-6544/aa6b11)
-[^Mehling2023]: [Mehling et al., arxiv 2308.16251 (2023)](https://arxiv.org/abs/2308.16251)
 """
 function edgetracking(ds::DynamicalSystem, attractors::Dict;
     bisect_thresh=1e-7,
