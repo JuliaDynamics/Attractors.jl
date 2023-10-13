@@ -36,9 +36,9 @@ end
         ds = predator_prey_ds()
         mapper = AttractorsViaRecurrences(ds, grid;
             Dt = 0.05, sparse = true, force_non_adaptive = true,
-            mx_chk_fnd_att = 20, mx_chk_loc_att = 100,
+            consecutive_recurrences = 20, attractor_locate_steps = 100,
             store_once_per_cell = true,
-            mx_chk_safety = 1000,
+            maximum_iterations = 1000,
         )
         id = mapper(u0)
         A = extract_attractors(mapper)[1]

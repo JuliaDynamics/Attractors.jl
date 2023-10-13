@@ -18,7 +18,7 @@ ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 xg = yg = range(-1.5, 1.5; length = 400)
 # Use non-sparse for using `basins_of_attraction`
 mapper = AttractorsViaRecurrences(ds, (xg, yg);
-    sparse = false, mx_chk_lost = 1000
+    sparse = false, consecutive_lost_steps = 1000
 )
 basins, attractors = basins_of_attraction(mapper; show_progress = false)
 basins
@@ -43,7 +43,7 @@ In such cases it is also typically more useful to define a sampler that generate
 
 grid = (xg, yg)
 mapper = AttractorsViaRecurrences(ds, grid;
-    sparse = false, mx_chk_lost = 1000
+    sparse = false, consecutive_lost_steps = 1000
 )
 
 sampler, = statespace_sampler(grid)
@@ -308,8 +308,8 @@ for pow in (1, 2)
     xg = yg = range(0, 18.0^(1/pow); length = 200).^pow
     mapper = AttractorsViaRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
-        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
-        mx_chk_safety = 1000,
+        consecutive_recurrences = 10, attractor_locate_steps = 10,
+        maximum_iterations = 1000,
     )
 
     # Find attractor and its fraction (fraction is always 1 here)
@@ -369,8 +369,8 @@ ax = Axis(fig[1,1])
 # passing SubdivisionBasedGrid into mapper
 mapper = AttractorsViaRecurrences(ds, grid;
         Dt = 0.1, sparse = true,
-        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
-        mx_chk_safety = 1000,
+        consecutive_recurrences = 10, attractor_locate_steps = 10,
+        maximum_iterations = 1000,
     )
 
 # Find attractor and its fraction (fraction is always 1 here)
@@ -384,8 +384,8 @@ scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 xg = yg = range(0, 18, length = 30)
 mapper = AttractorsViaRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
-        mx_chk_fnd_att = 10, mx_chk_loc_att = 10,
-        mx_chk_safety = 1000,
+        consecutive_recurrences = 10, attractor_locate_steps = 10,
+        maximum_iterations = 1000,
     )
 
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
@@ -482,7 +482,7 @@ using Random: Xoshiro
 samples_per_parameter = 1000
 total_parameter_values = 101
 diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9, maxiters = Inf)
-recurrences_kwargs = (; Δt= 1.0, mx_chk_fnd_att=9, diffeq);
+recurrences_kwargs = (; Δt= 1.0, consecutive_recurrences=9, diffeq);
 # initialize dynamical syste and sampler
 ds = PredefinedDynamicalSystems.multispecies_competition() # 8-dimensional
 ds = CoupledODEs(ODEProblem(ds), diffeq)

@@ -211,8 +211,8 @@ if DO_EXTENSIVE_TESTS
     # throughout the range. Now we get one with period 14, a chaotic,
     # and one with period 7 that spans the second half of the parameter range
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false,
-        mx_chk_fnd_att = 3000,
-        mx_chk_loc_att = 3000
+        consecutive_recurrences = 3000,
+        attractor_locate_steps = 3000
     )
     rsc = RecurrencesFindAndMatch(mapper;
         threshold = 0.99, distance = distance_function

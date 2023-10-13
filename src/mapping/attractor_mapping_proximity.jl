@@ -23,7 +23,7 @@ an error is thrown.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
-* `mx_chk_lost = 1000`: If the integrator has been stepped this many times without
+* `consecutive_lost_steps = 1000`: If the integrator has been stepped this many times without
   coming `ε`-near to any attractor,  it is assumed
   that the trajectory diverged (gets labelled as `-1`).
 """
@@ -33,7 +33,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorM
     ε::Float64
     Δt::N
     Ttr::N
-    mx_chk_lost::Int
+    consecutive_lost_steps::Int
     horizon_limit::Float64
     search_trees::K
     dist::Vector{Float64}
@@ -41,7 +41,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorM
     maxdist::Float64
 end
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
-        Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, verbose = false
+        Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false
     )
     dimension(ds) == dimension(first(attractors)[2]) ||
             error("Dimension of the dynamical system and candidate attractors must match")
@@ -55,7 +55,7 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
 
     mapper = AttractorsViaProximity(
         ds, attractors,
-        ε, Δt, eltype(Δt)(Ttr), mx_chk_lost, horizon_limit,
+        ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0,
     )
 
@@ -105,7 +105,7 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     maxdist = 0.0
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0
-    while lost_count < mapper.mx_chk_lost
+    while lost_count < mapper.consecutive_lost_steps
         step!(mapper.ds, mapper.Δt)
         lost_count += 1
         u = current_state(mapper.ds)

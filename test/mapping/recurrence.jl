@@ -35,8 +35,8 @@ using Random
 
         xg = yg = range(-1,1,length = 2000)
         mapper = AttractorsViaRecurrences(df, (xg, yg);
-            mx_chk_loc_att = 1000,
-            mx_chk_fnd_att = 2,
+            attractor_locate_steps = 1000,
+            consecutive_recurrences = 2,
             store_once_per_cell,
             sparse = true,
             Δt,
@@ -115,7 +115,7 @@ yg = range(-ymax, ymax; length = density)
 grid = (xg, yg)
 
 mapper_kwargs = (
-    mx_chk_safety = 10,
+    maximum_iterations = 10,
     sparse = false, # we want to compute full basins
 )
 
