@@ -2,18 +2,28 @@ export RecurrencesFindAndMatch, RAFM
 import ProgressMeter
 using Random: MersenneTwister
 
-# The recurrences based distance is rather flexible because it works
-# in two independent steps: it first finds attractors and then matches them.
-
 """
     RecurrencesFindAndMatch <: AttractorsBasinsContinuation
     RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
 A method for [`continuation`](@ref) as in [Datseris2023](@cite) that is based on the
-recurrences-based algorithm for finding attractors ([`AttractorsViaRecurrences`](@ref))
-and the "matching attractors" functionality offered by [`match_statespacesets!`](@ref).
+recurrences algorithm for finding attractors ([`AttractorsViaRecurrences`](@ref))
+and the "matching attractors" functionality offered by [`match_continuation!`](@ref).
 
 You can use `RAFM` as an alias.
+
+## Keyword arguments
+
+- `distance = Centroid(), threshold = Inf, use_vanished = !isinf(threshold)`:
+  propagated to [`match_continuation!`](@ref).
+- `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
+  and outputs whatever information should be stored. It is used to return the
+  `attractors_info` in [`continuation`](@ref). Note that the same attractors that
+  are stored in `attractors_info` are also used to perform the matching in
+  [`match_continuation!`](@ref), hence this keyword should be altered with care.
+- `seeds_from_attractor`: A function that takes as an input an attractor and returns
+  an iterator of initial conditions to be seeded from the attractor for the next
+  parameter slice. By default, we sample only the first stored point on the attractor.
 
 ## Description
 
@@ -39,49 +49,44 @@ This process continues for all parameter values. After all parameters are exhaus
 the found attractors (and their fractions) are "matched" to the previous ones.
 I.e., their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
-Matching is rather sophisticated and is described in detail in
-[`match_statespacesets!`](@ref) and [`match_continuation!`](@ref).
-By default the matching process matches attractor IDs that are closest in state space
-distance, but more options are possible, see [`match_statespacesets!`](@ref).
-By default attractors that dissapear and later re-appear get assigned different IDs,
-use `use_vanished = true` for the alternative.
-
-Note that in this continuation the finding-attractors and matching-attractors
-steps are completely independent. This means, that if you don't like the initial
+Matching is done by the [`match_continuation!`](@ref) function and is an _orthogonal_
+step. This means, that if you don't like the initial
 outcome of the matching process, you may call [`match_continuation!`](@ref) again
-on the outcome with (possibly different) matching-related keywords.
+on the outcome with different matching-related keywords.
 You do not need to compute attractors and basins again!
 
-## Keyword arguments
-
-- `distance, threshold, use_vanished`: propagated to [`match_continuation!`](@ref).
-- `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
-  and outputs whatever information should be stored. It is used to return the
-  `attractors_info` in [`continuation`](@ref). Note that the same attractors that
-  are stored in `attractors_info` are also used to perform the matching in
-  [`match_continuation!`](@ref), hence this keyword should be altered with care.
-- `seeds_from_attractor`: A function that takes as an input an attractor and returns
-  an iterator of initial conditions to be seeded from the attractor for the next
-  parameter slice. By default, we sample only the first stored point on the attractor.
+Matching is a very sophisticated process that can be understood in detail by reading
+the docstrings of [`match_statespacesets!`](@ref) first and then [`match_continuation!`](@ref).
+Here is a short summary: attractors from previous and current parameter are matched
+based on their "distance". By default this is distance in state space, but any measure of
+"distance" may be used, such as the distance between Lyapunov spectra.
+Matching prioritizes new->old pairs with smallest distance: once these are matched
+the next available new->old pair with smallest distance is matched, until all new/old
+attractors have been matched. The `threshold` keyword establishes that attractors with
+distance > `threshold` do not get matched.
+Additionally, use `use_vanished = true` if you want to include as matching candidates
+attractors that have vanished during the continuation process.
 """
 struct RecurrencesFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
     mapper::A
     distance::M
     threshold::R
+    use_vanished::Bool
     seeds_from_attractor::S
     info_extraction::E
 end
 
-"Alias for [`RecurrencesFindAndMatch`](@ref)"
+"Alias for [`RecurrencesFindAndMatch`](@ref)."
 const RAFM = RecurrencesFindAndMatch
 
 function RecurrencesFindAndMatch(
         mapper::AttractorsViaRecurrences; distance = Centroid(),
-        threshold = Inf, seeds_from_attractor = _default_seeding_process,
+        threshold = Inf, use_vanished = !isinf(threshold),
+        seeds_from_attractor = _default_seeding_process,
         info_extraction = identity
     )
     return RecurrencesFindAndMatch(
-        mapper, distance, threshold, seeds_from_attractor, info_extraction
+        mapper, distance, threshold, use_vanished, seeds_from_attractor, info_extraction
     )
 end
 
@@ -110,7 +115,7 @@ function continuation(
         desc="Continuating basins fractions:", enabled=show_progress
     )
 
-    (; mapper, distance, threshold) = rsc
+    mapper = rsc.mapper
     reset!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
@@ -159,7 +164,8 @@ function continuation(
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     # Match attractors (and basins)
-    match_continuation!(fractions_curves, attractors_info; distance, threshold)
+    (; use_vanished, distance, threshold) = rsc
+    match_continuation!(fractions_curves, attractors_info; distance, threshold, use_vanished)
     return fractions_curves, attractors_info
 end
 

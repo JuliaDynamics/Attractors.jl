@@ -24,19 +24,9 @@ the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 
 ## Description
 
-When finding attractors and their fractions in Attractors.jl,
-different attractors get assigned different IDs. However
-which attractor gets which ID is somewhat arbitrary. Finding the attractors of the
-same system for slightly different parameters could label "similar" attractors (at
-the different parameters) with different IDs.
-`match_statespacesets!` tries to "match" them by modifying the IDs,
-i.e., the keys of the given dictionaries. Do note however that there is nothing
-in this function that is limited to attractors in the formal mathematical sense.
-Any dictionary with `StateSpaceSet` values is a valid input and these sets
-may represent attractors, trajectories, group of features, or anything else.
-
-The matching happens according to the output of the [`setsofsets_distances`](@ref)
-function with the keyword `distance`. `distance` can be whatever that function accepts,
+The distance between all possible pairs of sets between the "old" and "new" containers
+is computed using [`setsofsets_distances`](@ref) with the keyword `distance`.
+`distance` can be whatever that function accepts,
 i.e., one of `Centroid, Hausdorff, StrictlyMinimumDistance` or any arbitrary user-
 provided function that given two sets it returns a positive number (their distance).
 State space sets are then matched according to this distance.
@@ -60,6 +50,7 @@ end
 # `rematch_continuation!`
 """
     replacement_map(a₊, a₋; distance = Centroid(), threshold = Inf) → rmap
+
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
 as explained in [`match_statespacesets!`](@ref).
 """
@@ -125,6 +116,7 @@ end
 ###########################################################################################
 """
     match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
+
 Similar to [`match_statespacesets!`](@ref) but operate on basin arrays instead
 (the arrays typically returned by [`basins_of_attraction`](@ref)).
 
@@ -170,14 +162,14 @@ Loop over all entries in the given arguments (which are typically the direct out
 [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)), and match the
 attractor IDs in both the attractors container and the basins fractions container.
 This means that we loop over each entry of the vectors (skipping the first),
-and in each entry we attempt to match the dictionary keys to the keys of the
+and in each entry we attempt to match the current dictionary keys to the keys of the
 previous dictionary using [`match_statespacesets`](@ref).
 
 The keywords `distance, threshold` are propagated to [`match_statespacesets`](@ref).
 However, there is a unique keyword for `match_continuation!`: `use_vanished::Bool`.
 If `true`, then attractors that existed before but have vanished are kept in "memory"
-when it comes to matching: the new attractors are compared to the latest istance
-of all attractors that have ever existed, and get match to their closest ones
+when it comes to matching: the new attractors are compared to the latest instance
+of all attractors that have ever existed, and get matched to their closest ones
 as per [`match_statespacesets!`](@ref).
 If `false`, vanished attractors are ignored. Note that in this case new attractors
 that cannot be matched to any previous attractors will get an appropriately
