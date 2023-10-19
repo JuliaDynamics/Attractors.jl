@@ -21,7 +21,7 @@ xg = yg = range(-1.5, 1.5; length = 400)
 mapper_newton = AttractorsViaRecurrences(ds, (xg, yg);
     sparse = false, consecutive_lost_steps = 1000
 )
-basins, attractors = basins_of_attraction(mapper; show_progress = false)
+basins, attractors = basins_of_attraction(mapper_newton; show_progress = false)
 basins
 ```
 ```@example MAIN
@@ -53,9 +53,8 @@ attractors = extract_attractors(mapper_newton)
 
 
 ## Minimal Fatal Shock
-Finding Minimal Fatal Shock for some point `u0` on example of Newton's fractal attractors
+Here we find the Minimal Fatal Shock (MFS, see [`minimal_fatal_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
 ```@example MAIN
-attractors = extract_attractors(mapper_newton)
 shocks = Dict()
 algo_bb = Attractors.MFSBlackBoxOptim()
 for atr in values(attractors)
