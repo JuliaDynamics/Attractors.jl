@@ -44,9 +44,8 @@ abstract type AttractorMapper end
 # Generic pretty printing
 function generic_mapper_print(io, mapper)
     ps = 14
-    text = "$(nameof(typeof(mapper)))"
-    println(io, text)
-    println(io, rpad(" rule f: ", ps), DynamicalSystemsBase.rulestring(mapper))
+    println(io, "$(nameof(typeof(mapper)))")
+    println(io, rpad(" system: ", ps), nameof(typeof(mapper.ds)))
     return ps
 end
 Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)

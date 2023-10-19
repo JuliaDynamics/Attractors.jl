@@ -167,7 +167,6 @@ end
 
 function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" system: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" grid: ", ps), mapper.grid)
     println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.attractors)
     return

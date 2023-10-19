@@ -128,7 +128,6 @@ end
 
 function Base.show(io::IO, mapper::AttractorsViaProximity)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" type: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" ε: ", ps), mapper.ε)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)
