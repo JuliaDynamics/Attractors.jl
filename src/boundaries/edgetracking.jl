@@ -1,11 +1,31 @@
-export edgetracking, bisect_to_edge
+export edgetracking, bisect_to_edge, EdgeTrackingResults
 
 """
-    edgetracking(ds::DynamicalSystem, attractors::Dict; kwargs...) -> edge, track1, track2
+    EdgeTrackingResults(edge, track1, track2, time, bisect_idx)
+Data type that stores output of the [`edgetracking`](@ref) algorithm.
+
+## Fields
+* `edge::StateSpaceSet`: the pseudo-trajectory representing the edge track
+* `track1::StateSpaceSet`: the parallel pseudo-trajectory tracking the edge within basin 1
+* `track2::StateSpaceSet`: the parallel pseudo-trajectory tracking the edge within basin 2
+* `time::Vector`: time points of the above `StateSpaceSet`s
+* `bisect_idx::Vector`: indices of `time` at which a re-bisection was done
+"""
+struct EdgeTrackingResults
+    edge::StateSpaceSet
+    track1::StateSpaceSet
+    track2::StateSpaceSet
+    time::Vector{Float64}
+    bisect_idx::Vector{Int}
+end
+
+"""
+    edgetracking(ds::DynamicalSystem, attractors::Dict; kwargs...)
 Track along a basin boundary in a dynamical system `ds` with two or more `attractors`
 in order to find an *edge state* or saddle.
-Return a pseudo-trajectory `edge` describing the boundary, derived from two shadowing
-trajectories `track1`, `track2` tracking along either side of the boundary.
+Return a pseudo-trajectory `edge` describing the boundary, derived from two
+pseudo-trajectories `track1`, `track2` tracking in parallel along either side of the
+boundary.
 
 The system's `attractors` are specified as a Dict of `StateSpaceSet`s, as in
 [`AttractorsViaProximity`](@ref) or the output of `extract_attractors`. By default, the
@@ -64,12 +84,16 @@ direction of the flow away from the basin boundary. If the system possesses mult
 states, the algorithm will find one of them depending on where the initial bisection locates
 the boundary.
 
-## Output 
+## Output
 
-Returns a tuple `edge, track1, track2`, each of which is of type `StateSpaceSet`. Here 
-`track1` and `track2` are the concatenated trajectories of the parallel integration starting
-from `u1` and `u2`, respectively, whereas `edge = (track1 + track2)/2` is the
-pseudo-trajectory representing the edge, i.e. a path along the basin boundary.
+Returns a data type `EdgeTrackingResults` containing five fields:
+* `edge::StateSpaceSet`: the pseudo-trajectory representing the tracked edge segment
+* `track1::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 1
+* `track2::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 2
+* `time::Vector`: time points of the above `StateSpaceSet`s
+* `bisect_idx::Vector`: indices of `time` at which a re-bisection was done
+
+Note that `edge` is simply the spatial mean (in state space) of `track1` and `track2`.
 """
 function edgetracking(ds::DynamicalSystem, attractors::Dict;
     bisect_thresh=1e-7,
@@ -111,8 +135,8 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     u1, u2 = bisect_to_edge(pds, mapper; bisect_thresh)
     edgestate = (u1 + u2)/2
 
-    track1 = [u1]
-    track2 = [u2]
+    track1, track2 = [u1], [u2]
+    time, bisect_idx = [0.], []
 
     # edge track iteration loop
     correction = Inf
@@ -129,12 +153,15 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             step!(pds, Δt)
             push!(track1, current_state(pds, 1))
             push!(track2, current_state(pds, 2))
+            push!(time, time[end] + Δt)
             distance = diffnorm(pds)
             t += Δt
         end
         u1, u2 = bisect_to_edge(pds, mapper; bisect_thresh)
         push!(track1, u1)
         push!(track2, u2)
+        push!(time, time[end] + Δt)
+        push!(bisect_idx, length(time))
         correction = diffnorm(edgestate, (u1 + u2)/2)
         edgestate = (u1 + u2)/2
         counter += 1
@@ -149,9 +176,13 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     
     track1 = StateSpaceSet(reduce(hcat, track1)')
     track2 = StateSpaceSet(reduce(hcat, track2)')
-    edge = StateSpaceSet((Matrix(track1) + Matrix(track2))/2)
 
-    return edge, track1, track2
+    return EdgeTrackingResults(
+        StateSpaceSet((Matrix(track1) + Matrix(track2))/2),
+        track1,
+        track2,
+        time,
+        bisect_idx)
 end;
 
 """
