@@ -65,7 +65,7 @@ attractors = extract_attractors(mapper)
 shocks = Dict()
 algo_bb = Attractors.MFSBlackBoxOptim()
 for atr in values(attractors)
-    u0 = vec(atr)[1]
+    u0 = atr[1]
     shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
 
 end
@@ -75,7 +75,7 @@ To visualize results we can make use of previously defined heatmap
 ```@example MAIN
 ax =  content(fig[1,1])
 for (atr, shock) in shocks
-    lines!(ax, [atr[1], atr[1] + shock]; color = :orange)
+    lines!(ax, [atr, atr + shock]; color = :orange)
 end
 fig
 ```
