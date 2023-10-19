@@ -18,10 +18,10 @@ newton_df(x, p)= p*x^(p-1)
 ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 xg = yg = range(-1.5, 1.5; length = 400)
 # Use non-sparse for using `basins_of_attraction`
-mapper = AttractorsViaRecurrences(ds, (xg, yg);
+mapper_newton = AttractorsViaRecurrences(ds, (xg, yg);
     sparse = false, consecutive_lost_steps = 1000
 )
-basins, attractors = basins_of_attraction(mapper; show_progress = false)
+basins, attractors = basins_of_attraction(mapper_newton; show_progress = false)
 basins
 ```
 ```@example MAIN
@@ -41,33 +41,25 @@ Instead of computing the full basins, we could get only the fractions of the bas
 In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
 
 ```@example MAIN
-
-grid = (xg, yg)
-mapper = AttractorsViaRecurrences(ds, grid;
-    sparse = false, consecutive_lost_steps = 1000
-)
-
 sampler, = statespace_sampler(grid)
 
-basins = basins_fractions(mapper, sampler)
+basins = basins_fractions(mapper_newton, sampler)
 ```
 
 in this case, to also get the attractors we simply extract them from the underlying storage of the mapper:
 ```@example MAIN
-attractors = extract_attractors(mapper)
+attractors = extract_attractors(mapper_newton)
 ```
 
 
 ## Minimal Fatal Shock
-Finding Minimal Fatal Shock for some point `u0` on example of Newton's fractal attractors
+Here we find the Minimal Fatal Shock (MFS, see [`minimal_fatal_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
 ```@example MAIN
-attractors = extract_attractors(mapper)
 shocks = Dict()
 algo_bb = Attractors.MFSBlackBoxOptim()
 for atr in values(attractors)
-    u0 = vec(atr)[1]
-    shocks[u0] = minimal_fatal_shock(mapper, u0, (-1.5,1.5), algo_bb)
-
+    u0 = atr[1]
+    shocks[u0] = minimal_fatal_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
 end
 shocks
 ```
@@ -75,7 +67,7 @@ To visualize results we can make use of previously defined heatmap
 ```@example MAIN
 ax =  content(fig[1,1])
 for (atr, shock) in shocks
-    lines!(ax, [atr[1], atr[1] + shock]; color = :orange)
+    lines!(ax, [atr, atr + shock]; color = :orange, linewidth = 3)
 end
 fig
 ```

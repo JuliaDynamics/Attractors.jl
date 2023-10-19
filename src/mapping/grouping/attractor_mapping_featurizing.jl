@@ -80,11 +80,11 @@ DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsB
 
 function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" type: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
     println(io, rpad(" T: ", ps), mapper.total)
     println(io, rpad(" group via: ", ps), nameof(typeof(mapper.group_config)))
+    println(io, rpad(" featurizer: ", ps), nameof(mapper.featurizer))
     return
 end
 
