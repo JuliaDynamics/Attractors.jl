@@ -171,3 +171,12 @@ function basin_cell_index(u, grid_nfo::SubdivisionBasedGrid)
     ind = @. round(Int, (u - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
     return CartesianIndex{D}(ind...)
 end
+
+#####################################################################################
+# Pretty printing
+#####################################################################################
+Base.show(io::IO, g::RegularGrid) = Base.show(io, g.grid)
+Base.show(io::IO, g::IrregularGrid) = Base.show(io, g.grid)
+function Base.show(io::IO, g::SubdivisionBasedGrid)
+    println(io, "SubdivisionBasedGrid with $(maximum(g.lvl_array)) subdivisions")
+end
