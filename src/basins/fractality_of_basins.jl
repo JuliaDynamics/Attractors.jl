@@ -18,7 +18,7 @@ different basins, that is, for the boxes on the boundaries.
 The basin entropy is a measure of the uncertainty on the initial conditions of the basins.
 It is maximum at the value `log(n_att)` being `n_att` the number of attractors. In
 this case the boundary is intermingled: for a given initial condition we can find
-another initial condition that lead to another basin arbitriraly close. It provides also
+another initial condition that lead to another basin arbitrarily close. It provides also
 a simple criterion for fractality: if the boundary basin entropy `Sbb` is above `log(2)`
 then we have a fractal boundary. It doesn't mean that basins with values below cannot
 have a fractal boundary, for a more precise test see [`basins_fractal_test`](@ref).
@@ -95,7 +95,7 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
         @warn "Maybe the size of the grid is not fine enough."
     end
     if Ntotal < 100
-        error("Ntotal must be larger than 1000 to gather enough statitics.")
+        error("Ntotal must be larger than 1000 to gather enough statistics.")
     end
 
     v_pts = zeros(Float64, length(dims), prod(dims))
@@ -127,7 +127,7 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     else
         Sbb_s = 0.898*length(dims)^-0.4995
     end
-    # Systematic error aproximation for the disk of radius ε
+    # Systematic error approximation for the disk of radius ε
     δub = 0.224*ε^-1.006
 
     tst_res = :smooth
@@ -160,7 +160,7 @@ a box-counting algorithm for the boxes that contain at least two different basin
 
 The output `N_ε` is a vector with the number of the balls of radius `ε` (in pixels)
 that contain at least two initial conditions that lead to different attractors. `V_ε`
-is a vector with the corresponding size of the balls. The ouput `d` is the estimation
+is a vector with the corresponding size of the balls. The output `d` is the estimation
 of the box-counting dimension of the boundary by fitting a line in the `log.(N_ε)`
 vs `log.(1/V_ε)` curve. However it is recommended to analyze the curve directly
 for more accuracy.
@@ -216,7 +216,7 @@ to `0` represent completely fractalized basins, also called riddled basins.
 
 The output `N_ε` is a vector with the number of the balls of radius `ε` (in pixels)
 that contain at least two initial conditions that lead to different attractors.
-The ouput `α` is the estimation of the uncertainty exponent using the box-counting
+The output `α` is the estimation of the uncertainty exponent using the box-counting
 dimension of the boundary by fitting a line in the `log.(N_ε)` vs `log.(1/ε)` curve.
 However it is recommended to analyze the curve directly for more accuracy.
 

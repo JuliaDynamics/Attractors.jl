@@ -27,7 +27,7 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
     while cell_label == 0
         step!(ds, bsn_nfo.Δt)
 
-        # This clause here is added because sometimes the algorithm will never hault
+        # This clause here is added because sometimes the algorithm will never halt
         # for e.g., an ill conditioned grid where two or more attractors intersect
         # within the same grid cell. In such a case, when starting on the second attractor
         # the trajectory will forever reset between locating a new attractor and recurring
@@ -36,7 +36,7 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         if bsn_nfo.safety_counter ≥ maximum_iterations
             # TODO: Set up some debugging framework here via environment variable
             # @warn """
-            # `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
+            # `AttractorsViaRecurrences` algorithm exceeded safety count without halting.
             # It may be that the grid is not fine enough and attractors intersect in the
             # same cell, or `maximum_iterations` is not high enough for a very fine grid.
             # Here are some info on current status:\n
@@ -152,7 +152,7 @@ function finite_state_machine!(
             bsn_nfo.consecutive_match += 1
         end
 
-        # If we accummulated enough recurrences, we claim that we
+        # If we accumulated enough recurrences, we claim that we
         # have found an attractor, and we switch to `:att_found`.
         if bsn_nfo.consecutive_match >= consecutive_recurrences
             bsn_nfo.basins[n] = bsn_nfo.current_att_label

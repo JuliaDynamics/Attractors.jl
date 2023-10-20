@@ -158,7 +158,7 @@ end
 
 function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
     # Call low level code. Notice that in this
-    # call signature the interal basins info array of the mapper is NOT updated
+    # call signature the internal basins info array of the mapper is NOT updated
     # with the basins of attraction info. Only with the attractors info.
     lab = recurrences_map_to_label!(mapper.bsn_nfo, mapper.ds, u0; show_progress, mapper.kwargs...)
     # Transform to integers indexing from odd-even indexing

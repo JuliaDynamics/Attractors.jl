@@ -94,7 +94,7 @@ end
             end
         end
         @testset "finite thresh" begin
-            # okay here we test the case that the trehsold becomes too large
+            # okay here we test the case that the threshold becomes too large
             threshold = 10.0 # at the 5th index, we cannot match anymore
             atts = deepcopy(allatts)
             match_continuation!(atts; use_vanished = true, threshold)

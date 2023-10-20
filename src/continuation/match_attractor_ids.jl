@@ -77,7 +77,7 @@ function replacement_map(keys₊, keys₋, distances::Dict, threshold, next_id =
     # Iterate through distances, find match with least distance, and "remove" (skip)
     # all remaining same indices a'la Eratosthenis sieve
     # In the same loop we match keys according to distance of values,
-    # but also ensure that keys that have too high of a value distance are guaranteeed
+    # but also ensure that keys that have too high of a value distance are guaranteed
     # to have different keys, and ensure that there is unique mapping happening!
     rmap = Dict{eltype(keys₊), eltype(keys₋)}()
     done_keys₊ = eltype(keys₊)[] # stores keys of a₊ already processed
@@ -220,7 +220,7 @@ function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
         a₊, a₋ = attractors_info[i+1], attractors_info[i]
         # If there are no attractors, skip the matching
         (isempty(a₊) || isempty(a₋)) && continue
-        # Here we always compute a next id. In this way, if an attractor dissapears
+        # Here we always compute a next id. In this way, if an attractor disappears
         # and re-appears, it will get a different (incremented) id as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋))) + 1
         next_id = max(next_id+1, next_id_a)

@@ -46,12 +46,12 @@ The brute force randomized search algorithm used in [`minimal_fatal_shock`](@ref
 
 It consists of
 two steps: random initialization and sphere radius reduction. On the first step,
-the algorithm generates random pertubations within the search area and records
+the algorithm generates random perturbations within the search area and records
 the perturbation that leads to a different basin but with the smallest magnitude.
 With this
-obtained pertubation it proceeds to the second step. On the second step, the algorithm
-generates random pertubations on the surface of the hypersphere with radius equal to the
-norm of the pertubation found in the first step.
+obtained perturbation it proceeds to the second step. On the second step, the algorithm
+generates random perturbations on the surface of the hypersphere with radius equal to the
+norm of the perturbation found in the first step.
 It reduces the radius of the hypersphere and continues searching for the better result
 with a smaller radius. Each time a better result is found, the radius is reduced further.
 
@@ -59,7 +59,7 @@ The algorithm records the perturbation with smallest radius that leads to a diff
 
 ## Keyword arguments
 
-- `initial_iterations = 10000`: number of random pertubations to try in the first step of the
+- `initial_iterations = 10000`: number of random perturbations to try in the first step of the
   algorithm.
 - `sphere_iterations = 10000`: number of steps while initializing random points on hypersphere and
   decreasing its radius.
@@ -87,13 +87,13 @@ function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, id_u0)
 end
 
 """
-This function generates a random pertubation of the initial point `u0` within
+This function generates a random perturbation of the initial point `u0` within
 specified "search_area" and checks if it is in the same basin of attraction.
 It does so by generating a random vector of length dim and then adding it to u0.
-If the pertubation is not in the same basin of attraction, it calculates the norm
-of the pertubation and compares it to the best pertubation found so far.
-If the norm is smaller, it updates the best pertubation found so far.
-It repeats this process total_iterations times and returns the best pertubation found.
+If the perturbation is not in the same basin of attraction, it calculates the norm
+of the perturbation and compares it to the best perturbation found so far.
+If the norm is smaller, it updates the best perturbation found so far.
+It repeats this process total_iterations times and returns the best perturbation found.
 """
 function crude_initial_radius(mapper::AttractorMapper, u0, search_area, id_u0, total_iterations)
     best_dist = Inf
@@ -122,10 +122,10 @@ end
 """
 This function works on the results obtained by `crude_initial_radius`. It starts from
 the best shock found so far and tries to find a better one by continuously reducing
-the radius of the sphere on the surface of which it generates random pertubations.
-If pertubation with the same basin of attraction is found, it updates the best shock found
+the radius of the sphere on the surface of which it generates random perturbations.
+If perturbation with the same basin of attraction is found, it updates the best shock found
 so far and reduces the radius of the sphere. It repeats this process total_iterations times
-and returns the best pertubation found.
+and returns the best perturbation found.
 """
 function mfs_brute_force(mapper::AttractorMapper, u0,
         best_shock, best_dist, dim, id_u0,
@@ -175,7 +175,7 @@ The black box derivative-free optimization algorithm used in [`minimal_fatal_sho
 
 ## Description
 
-The algorithm uses BlackBoxOptim.jl and a penaltized objective function to minimize.
+The algorithm uses BlackBoxOptim.jl and a penalized objective function to minimize.
 y function used as a constraint function.
 So, if we hit another basin during the search we encourage the algorithm otherwise we
 punish it with some penalty. The function to minimize is (besides some details):
@@ -183,7 +183,7 @@ punish it with some penalty. The function to minimize is (besides some details):
 function mfs_objective(perturbation, u0, mapper, penalty)
     dist = norm(perturbation)
     if mapper(u0 + perturbation) == mapper(u0)
-        # penaltize if we stay in the same basin:
+        # penalized if we stay in the same basin:
         return dist + penalty
     else
         return dist

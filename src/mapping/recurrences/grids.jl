@@ -58,7 +58,7 @@ mean_cell_diagonal(g::SubdivisionBasedGrid) = mean_cell_diagonal(g.grid)
 
 Construct a grid structure [`SubdivisionBasedGrid`](@ref) that can be directly passed
 as a grid to [`AttractorsViaRecurrences`](@ref). The input `grid` is an
-orginally coarse grid (a tuple of `AbstractRange`s).
+originally coarse grid (a tuple of `AbstractRange`s).
 The state space speed is evaluate in all cells of the `grid`. Cells with small speed
 (when compared to the "max" speed) resultin in this cell being subdivided more.
 To avoid problems with spikes in the speed, the `q`-th quantile of the velocities

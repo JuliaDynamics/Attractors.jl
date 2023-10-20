@@ -18,7 +18,7 @@ end
 
 r = 1.0
 ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r])
-# determistic grid, we know exactly the array layout
+# deterministic grid, we know exactly the array layout
 xg = yg = range(-1.5, 2.5; length=3)
 grid = (xg, yg)
 attrs = Dict(1 => StateSpaceSet([SVector(r, r)]), 2 => StateSpaceSet([SVector(-r, -r)]))

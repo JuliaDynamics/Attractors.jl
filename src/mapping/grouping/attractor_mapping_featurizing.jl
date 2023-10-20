@@ -148,7 +148,7 @@ function extract_features_single(mapper, ics; show_progress = true, N = 1000)
 end
 
 # TODO: We need an alternative to deep copying integrators that efficiently
-# initialzes integrators for any given kind of system. But that can be done
+# initializes integrators for any given kind of system. But that can be done
 # later in the DynamicalSystems.jl 3.0 rework.
 function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
     N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs
