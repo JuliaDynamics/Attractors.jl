@@ -221,7 +221,7 @@ function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
         # If there are no attractors, skip the matching
         (isempty(a₊) || isempty(a₋)) && continue
         # Here we always compute a next id. In this way, if an attractor disappears
-        # and re-appears, it will get a different (incremented) id as it should!
+        # and reappears, it will get a different (incremented) id as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋))) + 1
         next_id = max(next_id+1, next_id_a)
         rmap = match_statespacesets!(a₊, a₋; next_id, kwargs...)

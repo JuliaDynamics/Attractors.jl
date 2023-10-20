@@ -183,7 +183,7 @@ punish it with some penalty. The function to minimize is (besides some details):
 function mfs_objective(perturbation, u0, mapper, penalty)
     dist = norm(perturbation)
     if mapper(u0 + perturbation) == mapper(u0)
-        # penalized if we stay in the same basin:
+        # penalize if we stay in the same basin:
         return dist + penalty
     else
         return dist
