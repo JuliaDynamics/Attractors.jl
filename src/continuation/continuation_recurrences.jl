@@ -112,7 +112,7 @@ function continuation(
         error("`ics` needs to be a function.")
     end
     progress = ProgressMeter.Progress(length(prange);
-        desc="Continuating basins fractions:", enabled=show_progress
+        desc="continuate basins fractions:", enabled=show_progress
     )
 
     mapper = rsc.mapper

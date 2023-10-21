@@ -16,7 +16,7 @@
 - New algorithm `GroupViaPairwiseComparison` to group features in `AttractorsViaFeaturizing`. Simpler, typically faster and using less memory than DBSCAN, it can be useful in well-behaved systems.
 
 # v1.11
-- New algorithm `subdivision_based_grid`. Allows user to automatically constuct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
+- New algorithm `subdivision_based_grid`. Allows user to automatically construct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
 
 # v1.10
 - Added support of irregular grids to `AttractorsViaRecurrences`, now user can provide ranges without fixed step along the same axis.
@@ -73,7 +73,7 @@ This is the first release. It continues from ChaosTools.jl v2.9, and hence, the 
 
 ## Basin fractions continuation
 - New function `continuation` that calculates basins fractions and how these change versus a parameter (given a continuation method)
-- New basins fraction continuation method `RecurrencesFindAndMatch` that utilizes a brand new algorithm to continuate basins fractions of arbitrary systems.
+- New basins fraction continuate method `RecurrencesFindAndMatch` that utilizes a brand new algorithm to continuate basins fractions of arbitrary systems.
 - `match_attractor_ids!` has been fully overhauled to be more flexible, allow more ways to match, and also allow arbitrary user-defined ways to match.
 - New function `match_basins_ids!` for matching the output of basins_of_attraction`.
 - New exported functions `swap_dict_keys!, unique_keys, replacement_map` used in code that matches attractors and could be useful to front-end users.

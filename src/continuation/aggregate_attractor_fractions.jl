@@ -17,7 +17,7 @@ a single parameter configuration, i.e., using the output of [`basins_fractions`]
 This function is useful in cases where you want the accuracy and performance of
 [`AttractorsViaRecurrences`](@ref), but you also want the convenience of "grouping"
 similar attractrors like in [`AttractorsViaFeaturizing`](@ref) for presentation or
-analysis purposes. For example, a high dimesional model of competition dynamics
+analysis purposes. For example, a high dimensional model of competition dynamics
 across multispecies may have extreme multistability. After finding this multistability
 however, one may care about aggregating all attractors into two groups: where a given
 species is extinct or not. This is the example highlighted in our documentation,

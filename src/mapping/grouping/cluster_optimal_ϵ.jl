@@ -1,5 +1,5 @@
 #####################################################################################
-# Calculate Silhuettes
+# Calculate Silhouettes
 #####################################################################################
 """
 Calculate silhouettes. A bit slower than the implementation in `Clustering.jl` but seems
@@ -57,7 +57,7 @@ function optimal_radius_dbscan(features, min_neighbors, metric, optimal_radius_m
       ϵ_optimal = optimal_radius_method
       v_optimal = NaN
     else
-        error("Unkown `optimal_radius_method`.")
+        error("Unknown `optimal_radius_method`.")
     end
     return ϵ_optimal, v_optimal
 end
@@ -78,7 +78,7 @@ function optimal_radius_dbscan_silhouette(features, min_neighbors, metric,
     )
     s_grid = zeros(size(ϵ_grid)) # silhouette statistic values (which we want to maximize)
 
-    # vary ϵ to find the best one (which will maximize the mean sillhoute)
+    # vary ϵ to find the best one (which will maximize the mean silhouette)
     dists = pairwise(metric, features)
     for i in eachindex(ϵ_grid)
         clusters = dbscan(dists, ϵ_grid[i]; min_neighbors, metric = nothing)
@@ -106,7 +106,7 @@ function optimal_radius_dbscan_silhouette_optim(
         features, min_neighbors, metric, num_attempts_radius, silhouette_statistic
     )
     feat_ranges = features_ranges(features)
-    # vary ϵ to find the best radius (which will maximize the mean sillhoute)
+    # vary ϵ to find the best radius (which will maximize the mean silhouette)
     dists = pairwise(metric, features)
     f = (ϵ) -> Attractors.silhouettes_from_distances(
         ϵ, dists, min_neighbors, silhouette_statistic
@@ -158,7 +158,7 @@ function optimal_radius_dbscan_silhouette_original(features, min_neighbors, metr
     ϵ_grid = range(minimum(feat_ranges)/num_attempts_radius, minimum(feat_ranges), length=num_attempts_radius)
     s_grid = zeros(size(ϵ_grid)) # average silhouette values (which we want to maximize)
 
-    # vary ϵ to find the best one (which will maximize the minimum sillhoute)
+    # vary ϵ to find the best one (which will maximize the minimum silhouette)
     for i in eachindex(ϵ_grid)
         clusters = dbscan(features, ϵ_grid[i]; min_neighbors)
         dists = pairwise(metric, features)

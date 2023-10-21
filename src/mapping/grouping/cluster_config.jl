@@ -115,7 +115,7 @@ function GroupViaClustering(;
 end
 
 #####################################################################################
-# API funtion (group features)
+# API function (group features)
 #####################################################################################
 # The keywords `par_weight, plength, spp` enable the "for-free" implementation of the
 # MCBB algorithm (weighting the distance matrix by parameter value as well).

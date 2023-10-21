@@ -17,7 +17,7 @@ function grebogi_map()
 end
 
 
-@testset "orginal paper" begin
+@testset "original paper" begin
     ds = grebogi_map()
     θg = range(0, 2π, length = 251)
     xg = range(-0.5, 0.5, length = 251)

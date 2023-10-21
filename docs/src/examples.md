@@ -350,7 +350,7 @@ xg = yg = range(0, 18, length = 30)
 grid = subdivision_based_grid(ds, (xg, yg))
 grid.lvl_array
 ```
-The constructed array corresponds to levels of dicretization for specific regions of the grid as a powers of 2,
+The constructed array corresponds to levels of discretization for specific regions of the grid as a powers of 2,
 meaning that if area index is assigned to be `3`, for example, the algorithm will treat the region as one being
 `2^3 = 8` times more dense than originally user provided grid `(xg, yg)`.
 
@@ -476,7 +476,7 @@ samples_per_parameter = 1000
 total_parameter_values = 101
 diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9, maxiters = Inf)
 recurrences_kwargs = (; Δt= 1.0, consecutive_recurrences=9, diffeq);
-# initialize dynamical syste and sampler
+# initialize dynamical system and sampler
 ds = PredefinedDynamicalSystems.multispecies_competition() # 8-dimensional
 ds = CoupledODEs(ODEProblem(ds), diffeq)
 # define grid in state space
@@ -712,7 +712,7 @@ function animate_attractors_via_recurrences(
     # holds the face color of the rectangle!
 
     # Only 6 colors; need 3 for base, and extra 2 for each attractor.
-    # will coose initial conditions that are only in the first 2 attractors
+    # will choose initial conditions that are only in the first 2 attractors
     COLORS = map(c -> Makie.RGBA(Makie.RGB(to_color(c)), 0.9), colors)
 
     function initialize_cells2!(ax, grid; kwargs...)
@@ -827,7 +827,7 @@ function animate_attractors_via_recurrences(
                 if cell_label ≠ 0 # FSM terminated; we assume no lost/divergence in the system
                     stateobs[] = :terminated
 
-                    # color-code initial condition if we convegerd to attarctor
+                    # color-code initial condition if we converged to attractor
                     # or to basin (even or odd cell label)
                     u0n = Attractors.basin_cell_index(u0, bsn_nfo.grid_nfo)
 

@@ -4,7 +4,7 @@
 using Random: shuffle!, Xoshiro
 function colors_from_keys(ukeys)
     # Unfortunately, until `to_color` works with `Cycled`,
-    # we need to explitily add here some default colors...
+    # we need to explicitly add here some default colors...
     COLORS = [
         "#7143E0",
         "#191E44",
