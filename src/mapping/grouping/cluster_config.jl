@@ -8,7 +8,7 @@ export GroupViaClustering
 Initialize a struct that contains instructions on how to group features in
 [`AttractorsViaFeaturizing`](@ref). `GroupViaClustering` clusters features into
 groups using DBSCAN, similar to the original work by bSTAB [Stender2021](@cite) and
-MCBB [Gelbrecht2021](@cite). Several options on clustering are available, see keywords below.
+MCBB [Gelbrecht2020](@cite). Several options on clustering are available, see keywords below.
 
 The defaults are a significant improvement over existing literature, see Description.
 
