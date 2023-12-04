@@ -218,7 +218,8 @@ Do "min-max" rescaling of vector of feature vectors so that its values span `[0,
 _rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(StateSpaceSet(features))
 function _rescale_to_01(features::AbstractStateSpaceSet)
     mini, maxi = minmaxima(features)
-    return map(f -> (f .- mini) ./ (maxi .- mini), features)
+    rescaled = map(f -> (f .- mini) ./ (maxi .- mini), features)
+    return typeof(features)(rescaled) # ensure it stays the same type
 end
 
 #####################################################################################
