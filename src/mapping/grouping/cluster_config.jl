@@ -153,7 +153,8 @@ function _distance_matrix(features, config::GroupViaClustering;
         dists = zeros(L, L)
     end
     if metric isa Metric # then the `pairwise` function is valid
-        pairwise!(metric, dists, features; symmetric = true)
+        # ensure that we give the vector of static vectors to pairwise!
+        pairwise!(metric, dists, vec(features); symmetric = true)
     else # it is any arbitrary distance function, e.g., used in aggregating attractors
         @inbounds for i in eachindex(features)
             Threads.@threads for j in i:length(features)
