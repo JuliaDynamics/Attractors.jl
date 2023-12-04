@@ -188,9 +188,9 @@ function _extract_ϵ_optimal(features, config::GroupViaClustering)
     if optimal_radius_method isa String
         # subsample features to accelerate optimal radius search
         if max_used_features == 0 || max_used_features > length(features)
-            features_for_optimal = features
+            features_for_optimal = vec(features)
         else
-            features_for_optimal = sample(features, max_used_features; replace = false)
+            features_for_optimal = sample(vec(features), max_used_features; replace = false)
         end
         # get optimal radius (function dispatches on the radius method)
         ϵ_optimal, v_optimal = optimal_radius_dbscan(
