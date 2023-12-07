@@ -1,5 +1,22 @@
+# v1.13
+
+- The algorithm of `AttractorsViaRecurrences` has been simplified a bit. The action of the keyword `mx_chk_loc_att` has been changed which may lead to different results in some usage cases. Now `mx_chk_loc_att` counts how many steps to take after collecting enough recurrences, and this step count is only increasing.
+- Additional benefit of this change is that incorrect algorithm behaviour can be caught eagerly. Now an error is thrown when we know in advance the algorithm will fail. (This also affects `continuation` with `RAFM`)
+- The documentation of `AttractorsViaRecurrences` has been improved and clarified. Additionally a video illustrating algorithm behaviour has been added.
+- A renaming of some of the options (keyword arguments) of `AttractorsViaRecurrences` has been done in line with the clarity increase of the algorithm. The following renames are in place and currently deprecated:
+  - `mx_chk_fnd_att -> consecutive_recurrences`
+  - `mx_chk_loc_att -> attractor_locate_steps`
+  - `mx_chk_att -> consecutive_attractor_steps`
+  - `mx_chk_hit_bas -> consecutive_basin_steps`
+  - `mx_chk_lost -> consecutive_lost_steps`
+  - `mx_chk_safety -> maximum_iterations`
+
+
+# v1.12
+- New algorithm `GroupViaPairwiseComparison` to group features in `AttractorsViaFeaturizing`. Simpler, typically faster and using less memory than DBSCAN, it can be useful in well-behaved systems.
+
 # v1.11
-- New algorithm `subdivision_based_grid`. Allows user to automatically constuct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
+- New algorithm `subdivision_based_grid`. Allows user to automatically construct the grid which simulates subdivision into regions with different discretization levels in accordance with state space flow speed.
 
 # v1.10
 - Added support of irregular grids to `AttractorsViaRecurrences`, now user can provide ranges without fixed step along the same axis.

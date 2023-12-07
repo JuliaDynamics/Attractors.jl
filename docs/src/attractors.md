@@ -31,6 +31,7 @@ GroupingConfig
 GroupViaClustering
 GroupViaHistogram
 GroupViaNearestFeature
+GroupViaPairwiseComparison
 ```
 
 ### Grouping utility functions

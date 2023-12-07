@@ -44,9 +44,8 @@ abstract type AttractorMapper end
 # Generic pretty printing
 function generic_mapper_print(io, mapper)
     ps = 14
-    text = "$(nameof(typeof(mapper)))"
-    println(io, text)
-    println(io, rpad(" rule f: ", ps), DynamicalSystemsBase.rulestring(mapper))
+    println(io, "$(nameof(typeof(mapper)))")
+    println(io, rpad(" system: ", ps), nameof(typeof(mapper.ds)))
     return ps
 end
 Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
@@ -63,7 +62,7 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
     )
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
-stystem by mapping initial conditions to attractors using `mapper`
+system by mapping initial conditions to attractors using `mapper`
 (which contains a reference to a [`DynamicalSystem`](@ref)).
 The fractions are simply the ratios of how many initial conditions ended up
 at each attractor.
@@ -138,7 +137,7 @@ For `AttractorsViaFeaturizing`, the attractors are only stored if
 the mapper was called with pre-defined initial conditions rather than
 a sampler (function returning initial conditions).
 """
-extract_attractors(::AttractorMapper) = error("not imlemented")
+extract_attractors(::AttractorMapper) = error("not implemented")
 
 #########################################################################################
 # Generic basins of attraction method structure definition
@@ -161,7 +160,7 @@ scenario the grid can be one dimension smaller than the state space, in which ca
 the partitioning happens directly on the hyperplane the Poincaré map operates on.
 
 `basins_of_attraction` function is a convenience 5-lines-of-code wrapper which uses the
-`labels` returned by [`basins_fractions`](@ref) and simply assings them to a full array
+`labels` returned by [`basins_fractions`](@ref) and simply assigns them to a full array
 corresponding to the state space partitioning indicated by `grid`.
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)

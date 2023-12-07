@@ -4,7 +4,7 @@
 using Random: shuffle!, Xoshiro
 function colors_from_keys(ukeys)
     # Unfortunately, until `to_color` works with `Cycled`,
-    # we need to explitily add here some default colors...
+    # we need to explicitly add here some default colors...
     COLORS = [
         "#7143E0",
         "#191E44",
@@ -259,7 +259,8 @@ function Attractors.animate_attractors_continuation(
 
     # setup fractions axis
     heights = Observable(fill(0.1, K))
-    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = colors)
+    barcolors = [colors[k] for k in ukeys]
+    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = barcolors)
 
     record(fig, savename, eachindex(prange); framerate) do i
         p = prange[i]

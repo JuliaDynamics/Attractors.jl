@@ -8,7 +8,7 @@ using Test
     @testset "single attractor, no ε" begin
         attractors = Dict(1 => trajectory(ds, 10000, [0.0, 0.0]; Δt = 1, Ttr=100)[1])
         mapper = AttractorsViaProximity(ds, attractors)
-        @test trunc(mapper.ε, digits = 2)  ≈ 0.18 # approximate size of attractor here
+        @test trunc(mapper.ε, digits = 2) ≈ 0.18 # approximate size of attractor here
     end
     @testset "two attractors, analytically known ε" begin
         attractors = Dict(
@@ -24,4 +24,14 @@ using Test
         )
         @test_throws ArgumentError AttractorsViaProximity(ds, attractors)
     end
+end
+
+@testset "Fix #61" begin
+    cubicmap(u, p, n) = SVector{1}(p[1]*u[1] - u[1]^3)
+    ds = DeterministicIteratedMap(cubicmap, [1.0], [2.0])
+    fp = [sqrt(2)]
+    attrs = Dict(1 => StateSpaceSet([fp]), 2 => StateSpaceSet([-fp]))
+    mapper = AttractorsViaProximity(ds, attrs)
+    label = mapper([2.0])
+    @test label == -1
 end

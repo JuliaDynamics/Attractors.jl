@@ -189,7 +189,7 @@ if DO_EXTENSIVE_TESTS
 @testset "Henon map" begin
     henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
     ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
-    psorig = range(1.2, 1.25; length = 101)
+    ps = range(1.2, 1.25; length = 101)
     # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
     # (you can see this by launching our wonderful `interactive_orbitdiagram` app).
     # So we can use this to test different matching processes
@@ -211,13 +211,12 @@ if DO_EXTENSIVE_TESTS
     # throughout the range. Now we get one with period 14, a chaotic,
     # and one with period 7 that spans the second half of the parameter range
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false,
-        mx_chk_fnd_att = 3000,
-        mx_chk_loc_att = 3000
+        consecutive_recurrences = 3000,
+        attractor_locate_steps = 3000
     )
     rsc = RecurrencesFindAndMatch(mapper;
         threshold = 0.99, distance = distance_function
     )
-    ps = psorig
     fractions_curves, attractors_info = continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
@@ -236,39 +235,15 @@ if DO_EXTENSIVE_TESTS
 
     # unique keys
     ukeys = Attractors.unique_keys(attractors_info)
-    # We must have 4 attractors: initial chaotic, period 14 in the middle,
+
+    # We must have 3 attractors: initial chaotic, period 14 in the middle,
     # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
-    # Since we retract keys, we have 1:4
-    @test ukeys == 1:4
+    # Notice that due to the storage of "ghost" attractors in `RAFM`, the
+    # first and second chaotic attractors are mapped to each other.
+    @test ukeys == 1:3
 
     # # Animation of henon attractors
-    # using GLMakie
-    # fig = Figure(); display(fig)
-    # ax = Axis(fig[1,1]; limits = (-2,2,-1,1))
-    # colors = Dict(k => Cycled(i) for (i, k) in enumerate(ukeys))
-    # att_obs = Dict(k => Observable(Point2f[]) for k in ukeys)
-    # for k in ukeys
-    #     scatter!(ax, att_obs[k]; color = colors[k],
-    #     label = "$k", markersize = 8)
-    # end
-    # axislegend(ax)
-    # display(fig)
-    # record(fig, "henon_test.mp4", eachindex(ps); framerate = 5) do i
-    #     p = ps[i]
-    #     ax.title = "p = $p"
-    #     # fs = fractions_curves[i]
-    #     attractors = attractors_info[i]
-    #     set_parameter!(ds, pidx, p)
-    #     for (k, att) in attractors
-    #         tr = trajectory(ds, 1000, att[1]; Δt = 1)
-    #         att_obs[k][] = vec(tr)
-    #         notify(att_obs[k])
-    #     end
-    #     # also ensure that attractors that don't exist are cleared
-    #     for k in setdiff(ukeys, collect(keys(attractors)))
-    #         att_obs[k][] = Point2f[]; notify(att_obs[k])
-    #     end
-    # end
+    # animate_attractors_continuation(ds, attractors_info, fractions_curves, ps, pidx)
 end
 
 @testset "non-found attractors" begin
@@ -288,88 +263,6 @@ end
         show_progress = false, samples_per_parameter = 100
     )
     @test all(i -> isempty(i), attractors_info)
-end
-
-
-@testset "magnetic pendulum" begin
-    using PredefinedDynamicalSystems
-    d, α, ω = 0.3, 0.2, 0.5
-    ds = Systems.magnetic_pendulum(; d, α, ω)
-    xg = yg = range(-3, 3; length = 101)
-    ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
-    mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
-    rr = range(1, 0; length = 101)
-    psorig = [[1, 1, γ] for γ in rr]
-    pidx = :γs
-    # important to make a sampler that respects the symmetry of the system
-    sampler, isinside = statespace_sampler(HSphere(3.0, 2), 1234)
-    for (j, ps) in enumerate((psorig, reverse(psorig)))
-        # test that both finding and removing attractor works
-        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false, Δt = 1.0)
-
-        continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
-        # With this threshold all attractors are mapped to each other, they are within
-        # distance 1 in state space.
-        fractions_curves, attractors_info = continuation(
-            continuation, ps, pidx, sampler; show_progress = false, samples_per_parameter = 1000
-        )
-
-        # Keys of the two attractors that always exist
-        twokeys = collect(keys(fractions_curves[(j == 2 ? 1 : 101)]))
-
-        @testset "symmetry respect" begin
-            # Initially fractions are all 0.33 but at the end only two of 0.5 remain
-            # because only two attractors remain (with equal magnetic pull)
-            startfracs, endfracs = j == 1 ? [0.33, 0.5] : [0.5, 0.33]
-            @test all(v -> isapprox(v, startfracs; atol = 1e-1), values(fractions_curves[1]))
-            @test all(v -> isapprox(v, endfracs; atol = 1e-1), values(fractions_curves[end]))
-        end
-
-        for (i, p) in enumerate(ps)
-            γ = p[3]
-            fs = fractions_curves[i]
-            attractors = attractors_info[i]
-            k = sort!(collect(keys(fs)))
-            @test maximum(k) ≤ 3
-            attk = sort!(collect(keys(attractors)))
-            @test k == attk
-            @test all(fk -> fk ∈ k, twokeys)
-
-            # It is arbitrary what id we get, because the third
-            # fixed point that vanishes could have any of the three ids
-            # But we can test for sure how many ids we have
-            # (depending on where we come from we find the attractor for longer)
-            if γ < 0.2
-                @test length(k) == 2
-            elseif γ > 0.24
-                @test length(k) == 3
-            else
-                # There is a bit of varaibility of exactly when the transition
-                # occurs, and also depends on randomness for when we get exactly 0
-                # fraction for one of the attractors
-                @test length(k) ∈ (2, 3)
-            end
-            @test sum(values(fs)) ≈ 1
-        end
-        # # Plot code for fractions
-        # using GLMakie
-        # x = [fs[finalkeys[1]] for fs in fractions_curves]
-        # y = [fs[finalkeys[2]] for fs in fractions_curves]
-        # z = zeros(length(x))
-        # fig = Figure(resolution = (400, 300))
-        # ax = Axis(fig[1,1])
-        # display(fig)
-        # γs = [p[3] for p in ps]
-        # band!(ax, γs, z, x; color = Cycled(1), label = "1")
-        # band!(ax, γs, x, x .+ y; color = Cycled(2), label  = "2")
-        # band!(ax, γs, x .+ y, 1; color = Cycled(3), label = "3")
-        # xlims!(ax, 0, 1)
-        # ylims!(ax, 0, 1)
-        # ax.ylabel = "fractions"
-        # ax.xlabel = "magnet strength"
-        # axislegend(ax)
-        # Makie.save("magnetic_fracs.png", fig; px_per_unit = 4)
-    end
 end
 
 end

@@ -6,7 +6,7 @@ using Test
     fs = basins_fractions(b₋)
     @test keytype(fs) == Int16
     @test all(v -> 0.31 < v < 0.35, values(fs))
-    # Also test analytically resolved juuuuust to be sure
+    # Also test analytically resolved just to be sure
     ba = [1 2; 2 1]
     fs = basins_fractions(ba)
     @test fs[1] == 0.5

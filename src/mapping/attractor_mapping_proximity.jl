@@ -9,23 +9,21 @@ The system gets stepped, and at each step the minimum distance to all
 attractors is computed. If any of these distances is `< ε`, then the label of the nearest
 attractor is returned.
 
-If an `ε::Real` is _not_ provided by the user, a value is computed
+If an `ε::Real` is not provided by the user, a value is computed
 automatically as half of the minimum distance between all attractors.
-This operation can be expensive for large attractor StateSpaceSets.
+This operation can be expensive for large `StateSpaceSet`s.
 If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box containing
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
 an error is thrown.
 
-Because in this method the attractors are already known to the user,
-the method can also be called _supervised_.
-
 ## Keywords
+
 * `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
-* `mx_chk_lost = 1000`: If the integrator has been stepped this many times without
+* `consecutive_lost_steps = 1000`: If the integrator has been stepped this many times without
   coming `ε`-near to any attractor,  it is assumed
   that the trajectory diverged (gets labelled as `-1`).
 """
@@ -35,7 +33,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorM
     ε::Float64
     Δt::N
     Ttr::N
-    mx_chk_lost::Int
+    consecutive_lost_steps::Int
     horizon_limit::Float64
     search_trees::K
     dist::Vector{Float64}
@@ -43,7 +41,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorM
     maxdist::Float64
 end
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
-        Δt=1, Ttr=100, mx_chk_lost=1000, horizon_limit=1e3, verbose = false
+        Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false
     )
     dimension(ds) == dimension(first(attractors)[2]) ||
             error("Dimension of the dynamical system and candidate attractors must match")
@@ -57,7 +55,7 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
 
     mapper = AttractorsViaProximity(
         ds, attractors,
-        ε, Δt, eltype(Δt)(Ttr), mx_chk_lost, horizon_limit,
+        ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0,
     )
 
@@ -78,13 +76,13 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
                 k == m && continue
                 for p in A # iterate over all points of attractor
                     Neighborhood.NearestNeighbors.knn_point!(
-                        tree, p, false, dist, idx, Neighborhood.alwaysfalse
+                        tree, p, false, dist, idx, Neighborhood.NearestNeighbors.always_false
                     )
                     dist[1] < minε && (minε = dist[1])
                 end
             end
         end
-        @info("Minimum distance between attractors computed: $(minε)")
+        verbose && @info("Minimum distance between attractors computed: $(minε)")
         ε = minε/2
     else
         attractor = first(attractors)[2] # get the single attractor
@@ -107,13 +105,15 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     maxdist = 0.0
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0
-    while lost_count < mapper.mx_chk_lost
+    while lost_count < mapper.consecutive_lost_steps
         step!(mapper.ds, mapper.Δt)
         lost_count += 1
         u = current_state(mapper.ds)
+        # first check for Inf or NaN
+        any(x -> (isnan(x) || isinf(x)), u) && return -1
         for (k, tree) in mapper.search_trees # this is a `Dict`
             Neighborhood.NearestNeighbors.knn_point!(
-                tree, u, false, mapper.dist, mapper.idx, Neighborhood.alwaysfalse
+                tree, u, false, mapper.dist, mapper.idx, Neighborhood.NearestNeighbors.always_false
             )
             if mapper.dist[1] < mapper.ε
                 return k
@@ -128,7 +128,6 @@ end
 
 function Base.show(io::IO, mapper::AttractorsViaProximity)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" type: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" ε: ", ps), mapper.ε)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)

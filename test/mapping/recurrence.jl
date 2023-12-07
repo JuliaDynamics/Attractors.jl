@@ -1,4 +1,6 @@
+# This file performs more extensive tests specifically for `AttractorsViaRecurrences`
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
+
 
 if DO_EXTENSIVE_TESTS
 # The functionality tested here has been resolved and is only added as a test
@@ -33,8 +35,8 @@ using Random
 
         xg = yg = range(-1,1,length = 2000)
         mapper = AttractorsViaRecurrences(df, (xg, yg);
-            mx_chk_loc_att = 1000,
-            mx_chk_fnd_att = 2,
+            attractor_locate_steps = 1000,
+            consecutive_recurrences = 2,
             store_once_per_cell,
             sparse = true,
             Δt,
@@ -82,8 +84,8 @@ end
     end
 
     @testset "Henon map: discrete & divergence" begin
-        ds = Systems.henon(zeros(2); a = 1.4, b = 0.3)
-        u0 = [0.0, 0.0]
+        henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+        ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
         xg = yg = range(-2.0, 2.0; length=100)
         grid = (xg, yg)
         test_compatibility_sparse_nonsparse(ds, grid)
@@ -113,7 +115,7 @@ yg = range(-ymax, ymax; length = density)
 grid = (xg, yg)
 
 mapper_kwargs = (
-    mx_chk_safety = 10,
+    maximum_iterations = 10,
     sparse = false, # we want to compute full basins
 )
 
@@ -123,4 +125,19 @@ ids = sort!(unique(basins))
 @test ids... == -1
 
 end
+
+@testset "continuing lost state" begin
+    # see discussion in https://github.com/JuliaDynamics/Attractors.jl/pull/103#issuecomment-1754617229
+    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
+    henon() = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+    ds = henon()
+    xg = yg = range(-1.0, 1.0; length=100)
+    grid = (xg, yg)
+    mapper = AttractorsViaRecurrences(ds, grid)
+    id = mapper([0. ,0.])
+    @test id == 1 # we resume going into the attractor outside the grid
+    id2 = mapper([10. ,10.])
+    @test id2 == -1 # actual divergence to infinity is still detected
+end
+
 end # extensive tests clause
