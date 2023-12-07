@@ -29,6 +29,14 @@ basins_fractal_test
 uncertainty_exponent
 ```
 
+## Edge tracking and edge states
+The edge tracking algorithm allows to locate and construct so-called edge states (sometimes also referred to as Melancholia states) embedded in the basin boundary separating different basins of attraction. These could be saddle points, unstable periodic orbits or chaotic saddles. The general idea is that these sets can be found because they act as attractors when restricting to the basin boundary.
+
+```@docs
+edgetracking
+bisect_to_edge
+```
+
 ## Tipping points
 This page discusses functionality related with tipping points in dynamical systems with known rule. If instead you are interested in identifying tipping points in measured timeseries, have a look at [TransitionIndicators.jl](https://github.com/JuliaDynamics/TransitionIndicators.jl).
 
