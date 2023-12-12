@@ -14,7 +14,7 @@ A more detailed comparison between these two fundamentally different approaches 
 continuation
 ```
 
-## Recurrences continuation (best)
+## Recurrences continuation
 
 ```@docs
 RecurrencesFindAndMatch
