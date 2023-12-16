@@ -86,7 +86,7 @@ export plot_attractors_curves, plot_attractors_curves!
         kwargs...
     )
 
-Convinience combination of [`plot_basins_curves`](@ref) and [`plot_attractors_curves`](@ref)
+Convenience combination of [`plot_basins_curves`](@ref) and [`plot_attractors_curves`](@ref)
 in a two-panel plot that shares legend, colors, markers, etc.
 """
 function plot_basins_attractors_curves end

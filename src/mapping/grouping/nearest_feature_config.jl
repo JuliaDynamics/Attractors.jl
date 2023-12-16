@@ -45,7 +45,7 @@ end
 
 # The following function comes from the source code of the `bulksearch` function
 # from Neighborhood.jl. It's the most efficient way to perform one knn search,
-# and makes it unecessary to also implement `group_features`. The bulk version
+# and makes it unnecessary to also implement `group_features`. The bulk version
 # has the same performance!
 @inbounds function feature_to_group(feature, config::GroupViaNearestFeature)
     (; tree, max_distance, dummy_idxs, dummy_dist) = config

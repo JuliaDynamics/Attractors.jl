@@ -80,11 +80,11 @@ DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsB
 
 function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" type: ", ps), nameof(typeof(mapper.ds)))
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
     println(io, rpad(" T: ", ps), mapper.total)
     println(io, rpad(" group via: ", ps), nameof(typeof(mapper.group_config)))
+    println(io, rpad(" featurizer: ", ps), nameof(mapper.featurizer))
     return
 end
 
@@ -148,7 +148,7 @@ function extract_features_single(mapper, ics; show_progress = true, N = 1000)
 end
 
 # TODO: We need an alternative to deep copying integrators that efficiently
-# initialzes integrators for any given kind of system. But that can be done
+# initializes integrators for any given kind of system. But that can be done
 # later in the DynamicalSystems.jl 3.0 rework.
 function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
     N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs

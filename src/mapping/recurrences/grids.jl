@@ -18,9 +18,10 @@ end
 minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::RegularGrid{D}) where {D} = norm(g.grid_steps)
 
-struct IrregularGrid{D} <: Grid
-    grid::NTuple{D, Vector{Float64}}
+struct IrregularGrid{D, T <: Tuple} <: Grid
+    grid::T
 end
+IrregularGrid(tuple::T) where {T} = IrregularGrid{length(tuple), T}(tuple)
 minmax_grid_extent(g::IrregularGrid) = minmax_grid_extent(g.grid)
 
 minmax_grid_extent(g::NTuple) = map(minimum, g), map(maximum, g)
@@ -57,7 +58,7 @@ mean_cell_diagonal(g::SubdivisionBasedGrid) = mean_cell_diagonal(g.grid)
 
 Construct a grid structure [`SubdivisionBasedGrid`](@ref) that can be directly passed
 as a grid to [`AttractorsViaRecurrences`](@ref). The input `grid` is an
-orginally coarse grid (a tuple of `AbstractRange`s).
+originally coarse grid (a tuple of `AbstractRange`s).
 The state space speed is evaluate in all cells of the `grid`. Cells with small speed
 (when compared to the "max" speed) resultin in this cell being subdivided more.
 To avoid problems with spikes in the speed, the `q`-th quantile of the velocities
@@ -169,4 +170,13 @@ function basin_cell_index(u, grid_nfo::SubdivisionBasedGrid)
     grid_step = (grid_maxima - grid_minima .+ 1) ./ grid_steps[cell_area]
     ind = @. round(Int, (u - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
     return CartesianIndex{D}(ind...)
+end
+
+#####################################################################################
+# Pretty printing
+#####################################################################################
+Base.show(io::IO, g::RegularGrid) = Base.show(io, g.grid)
+Base.show(io::IO, g::IrregularGrid) = Base.show(io, g.grid)
+function Base.show(io::IO, g::SubdivisionBasedGrid)
+    println(io, "SubdivisionBasedGrid with $(maximum(g.lvl_array)) subdivisions")
 end

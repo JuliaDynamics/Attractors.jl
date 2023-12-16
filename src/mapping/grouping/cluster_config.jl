@@ -8,7 +8,7 @@ export GroupViaClustering
 Initialize a struct that contains instructions on how to group features in
 [`AttractorsViaFeaturizing`](@ref). `GroupViaClustering` clusters features into
 groups using DBSCAN, similar to the original work by bSTAB [Stender2021](@cite) and
-MCBB [Gelbrecht2021](@cite). Several options on clustering are available, see keywords below.
+MCBB [Gelbrecht2020](@cite). Several options on clustering are available, see keywords below.
 
 The defaults are a significant improvement over existing literature, see Description.
 
@@ -115,7 +115,7 @@ function GroupViaClustering(;
 end
 
 #####################################################################################
-# API funtion (group features)
+# API function (group features)
 #####################################################################################
 # The keywords `par_weight, plength, spp` enable the "for-free" implementation of the
 # MCBB algorithm (weighting the distance matrix by parameter value as well).
@@ -153,7 +153,8 @@ function _distance_matrix(features, config::GroupViaClustering;
         dists = zeros(L, L)
     end
     if metric isa Metric # then the `pairwise` function is valid
-        pairwise!(metric, dists, features; symmetric = true)
+        # ensure that we give the vector of static vectors to pairwise!
+        pairwise!(metric, dists, vec(features); symmetric = true)
     else # it is any arbitrary distance function, e.g., used in aggregating attractors
         @inbounds for i in eachindex(features)
             Threads.@threads for j in i:length(features)
@@ -187,9 +188,9 @@ function _extract_ϵ_optimal(features, config::GroupViaClustering)
     if optimal_radius_method isa String
         # subsample features to accelerate optimal radius search
         if max_used_features == 0 || max_used_features > length(features)
-            features_for_optimal = features
+            features_for_optimal = vec(features)
         else
-            features_for_optimal = sample(features, max_used_features; replace = false)
+            features_for_optimal = sample(vec(features), max_used_features; replace = false)
         end
         # get optimal radius (function dispatches on the radius method)
         ϵ_optimal, v_optimal = optimal_radius_dbscan(
@@ -218,7 +219,8 @@ Do "min-max" rescaling of vector of feature vectors so that its values span `[0,
 _rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(StateSpaceSet(features))
 function _rescale_to_01(features::AbstractStateSpaceSet)
     mini, maxi = minmaxima(features)
-    return map(f -> (f .- mini) ./ (maxi .- mini), features)
+    rescaled = map(f -> (f .- mini) ./ (maxi .- mini), features)
+    return typeof(features)(rescaled) # ensure it stays the same type
 end
 
 #####################################################################################

@@ -6,13 +6,14 @@
 
 Return the label of the attractor that the initial condition `u0` converges to,
 or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exceeding
-`mx_chk_safety`).
+`maximum_iterations`).
 
 Notice the numbering system `cell_label` is as in `finite_state_machine!`.
 Even numbers are attractors, odd numbers are basins.
 """
 function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
-        mx_chk_safety = Int(1e6), Ttr = 0, kwargs...
+        # `mx_chk_safety` is deprecated
+        mx_chk_safety = Int(1e6), maximum_iterations = mx_chk_safety, Ttr = 0, kwargs...
     )
     # This routine identifies the attractor using the previously defined basin.
 
@@ -26,18 +27,18 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
     while cell_label == 0
         step!(ds, bsn_nfo.Δt)
 
-        # This clause here is added because sometimes the algorithm will never hault
+        # This clause here is added because sometimes the algorithm will never halt
         # for e.g., an ill conditioned grid where two or more attractors intersect
         # within the same grid cell. In such a case, when starting on the second attractor
         # the trajectory will forever reset between locating a new attractor and recurring
         # on the previously found one...
         bsn_nfo.safety_counter += 1
-        if bsn_nfo.safety_counter ≥ mx_chk_safety
+        if bsn_nfo.safety_counter ≥ maximum_iterations
             # TODO: Set up some debugging framework here via environment variable
             # @warn """
-            # `AttractorsViaRecurrences` algorithm exceeded safety count without haulting.
+            # `AttractorsViaRecurrences` algorithm exceeded safety count without halting.
             # It may be that the grid is not fine enough and attractors intersect in the
-            # same cell, or `mx_chk_safety` is not high enough for a very fine grid.
+            # same cell, or `maximum_iterations` is not high enough for a very fine grid.
             # Here are some info on current status:\n
             # state: $(current_state(ds)),\n
             # parameters: $(current_parameters(ds)).
@@ -64,7 +65,7 @@ end
 
 _possibly_reduced_state(y, ds, grid) = y
 function _possibly_reduced_state(y, ds::PoincareMap, bsn_nfo)
-    grid = bsn_nfo.grid
+    grid = bsn_nfo.grid_nfo.grid
     if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
         return y[ds.diffidxs]
     else
@@ -92,9 +93,25 @@ The function returns `0` unless the FSM has terminated its operation.
 """
 function finite_state_machine!(
         bsn_nfo::BasinsInfo, n::CartesianIndex, u;
-        mx_chk_att = 2, mx_chk_hit_bas = 10, mx_chk_fnd_att = 100, mx_chk_loc_att = 100,
-        horizon_limit = 1e6, mx_chk_lost = 20, store_once_per_cell = true,
-        show_progress = true, # show_progress only used when finding new attractor.
+        # These are deprecated names:
+        mx_chk_att = 2,
+        mx_chk_hit_bas = 10,
+        mx_chk_fnd_att = 100,
+        mx_chk_loc_att = 1000,
+        mx_chk_lost = 20,
+
+        # These are the new names. They currently have the values of the
+        # deprecated names, so that existing code does not break. In the future,
+        # the deprecated names are removed and the new names get the values directly
+        consecutive_attractor_steps = mx_chk_att,
+        consecutive_basin_steps = mx_chk_hit_bas,
+        consecutive_recurrences = mx_chk_fnd_att,
+        attractor_locate_steps = mx_chk_loc_att,
+        consecutive_lost_steps = mx_chk_lost,
+        # other non-changed keywords
+        show_progress = true, # show_progress can be used when finding new attractor.
+        horizon_limit = 1e6,
+        store_once_per_cell = true,
     )
 
     # if n[1] == -1 means we are outside the grid,
@@ -109,8 +126,8 @@ function finite_state_machine!(
         if ic_label == bsn_nfo.prev_label
              bsn_nfo.consecutive_match += 1
         end
-        if bsn_nfo.consecutive_match ≥ mx_chk_att
-            # We've hit an existing attractor `mx_chk_att` times in a row
+        if bsn_nfo.consecutive_match ≥ consecutive_attractor_steps
+            # We've hit an existing attractor `consecutive_attractor_steps` times in a row
             # so we assign the initial condition directly to the attractor
             hit_att = ic_label + 1
             cleanup_visited_cells!(bsn_nfo)
@@ -129,19 +146,19 @@ function finite_state_machine!(
             # also keep track of visited cells. This makes it easier to clean
             # up the basin array later!
             push!(bsn_nfo.visited_cells, n) # keep track of visited cells
-            bsn_nfo.consecutive_match = 1
+            bsn_nfo.consecutive_match = 0
         elseif ic_label == bsn_nfo.visited_cell_label
             # hit a previously visited box with the current label, possible attractor?
             bsn_nfo.consecutive_match += 1
         end
 
-        # If we accummulated enough recurrences, we claim that we
+        # If we accumulated enough recurrences, we claim that we
         # have found an attractor, and we switch to `:att_found`.
-        if bsn_nfo.consecutive_match >= mx_chk_fnd_att
+        if bsn_nfo.consecutive_match >= consecutive_recurrences
             bsn_nfo.basins[n] = bsn_nfo.current_att_label
             store_attractor!(bsn_nfo, u)
             bsn_nfo.state = :att_found
-            bsn_nfo.consecutive_match = 1
+            bsn_nfo.consecutive_match = 0
         end
         bsn_nfo.prev_label = ic_label
         return 0
@@ -151,25 +168,40 @@ function finite_state_machine!(
     # enough recurrences to claim we have found an attractor.
     # We then locate the attractor by recording enough cells.
     if bsn_nfo.state == :att_found
-        if ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
-            # label this cell as part of an attractor
-            bsn_nfo.basins[n] = bsn_nfo.current_att_label
-            bsn_nfo.consecutive_match = 1
-            store_attractor!(bsn_nfo, u)
-        elseif iseven(ic_label) && (bsn_nfo.consecutive_match <  mx_chk_loc_att)
-            # We make sure we hit the attractor another `mx_chk_loc_att` consecutive times
-            # just to be sure that we have the complete attractor
-            bsn_nfo.consecutive_match += 1
+        if ic_label == bsn_nfo.current_att_label
+            # Visited a cell already labelled as new attractor; check `store_once_per_cell`
             store_once_per_cell || store_attractor!(bsn_nfo, u)
-        elseif iseven(ic_label) && bsn_nfo.consecutive_match ≥ mx_chk_loc_att
+        elseif ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
+            # Visited a cells that was not labelled as the new attractor
+            # label it and store it as part of the attractor
+            bsn_nfo.basins[n] = bsn_nfo.current_att_label
+            store_attractor!(bsn_nfo, u)
+        elseif iseven(ic_label) && ic_label ≠ bsn_nfo.current_att_label
+            # Visited a cell labelled as an *existing* attractor! We have
+            # attractors intersection in the grid! The algorithm can't handle this,
+            # so we throw an error.
+            error("""
+            During the phase of locating a new attractor, found via sufficient recurrences,
+            we encountered a cell of a previously-found attractor. This means that two
+            attractors intersect in the grid, or that the precision with which we find
+            and store attractors is not high enough. Either decrease the grid spacing,
+            or increase `consecutive_recurrences` (or both).
+
+            Index of cell that this occured at: $(n).
+            """)
+        end
+        # in the `:att_found` phase, the consecutive match is always increasing
+        bsn_nfo.consecutive_match += 1
+        if bsn_nfo.consecutive_match ≥ attractor_locate_steps
             # We have recorded the attractor with sufficient accuracy.
             # We now set the empty counters for the new attractor.
+            current_basin = bsn_nfo.current_att_label + 1
             cleanup_visited_cells!(bsn_nfo)
             bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
             # We return the label corresponding to the *basin* of the attractor
-            return ic_label + 1
+            return current_basin
         end
         return 0
     end
@@ -180,9 +212,9 @@ function finite_state_machine!(
         if bsn_nfo.prev_label == ic_label
             bsn_nfo.consecutive_match += 1
         else
-            bsn_nfo.consecutive_match = 1
+            bsn_nfo.consecutive_match = 0
         end
-        if  bsn_nfo.consecutive_match > mx_chk_hit_bas
+        if bsn_nfo.consecutive_match > consecutive_basin_steps
             cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
             return ic_label
@@ -194,7 +226,7 @@ function finite_state_machine!(
     # This state occurs when the dynamical system state is outside the grid
     if bsn_nfo.state == :lost
         bsn_nfo.consecutive_lost += 1
-        if bsn_nfo.consecutive_lost > mx_chk_lost || norm(u) > horizon_limit
+        if bsn_nfo.consecutive_lost > consecutive_lost_steps || norm(u) > horizon_limit
             cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
@@ -217,18 +249,20 @@ function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T}, u) where {D, G, Δ, 
     end
 end
 
-# Notice that seting a basin index to 0 _deletes the index_ if the
-# array is a `SparseArray`, see the source code file!
 function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
     old_label = bsn_nfo.visited_cell_label
+    basins = bsn_nfo.basins
     while !isempty(bsn_nfo.visited_cells)
         ind = pop!(bsn_nfo.visited_cells)
-        if bsn_nfo.basins[ind] == old_label
-            bsn_nfo.basins[ind] = 0 # 0 is the unvisited label / empty label
+        if basins[ind] == old_label
+            if basins isa SparseArray # The `if` clause is optimized away
+                delete!(basins.data, ind)
+            else # non-sparse
+                basins[ind] = 0 # 0 is the unvisited label / empty label
+            end
         end
     end
 end
-
 
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
@@ -244,6 +278,7 @@ function update_finite_state_machine!(bsn_nfo, ic_label)
         return
     end
 
+    # Decide the next state based on the input cell
     next_state = :undef
     if ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
         # unlabeled box or previously visited box with the current label
@@ -252,24 +287,29 @@ function update_finite_state_machine!(bsn_nfo, ic_label)
         # hit an attractor box
         next_state = :att_hit
     elseif ic_label == -1
-        # out of the grid we do not reset the counter of other state
+        # out of the grid
+        # remember that when out of the grid we do not reset the counter of other state
         # since the trajectory can follow an attractor that spans outside the grid
-        bsn_nfo.state = :lost
-        return
+        next_state = :lost
     elseif isodd(ic_label)
-        # hit an basin box
+        # hit an existing basin box
         next_state = :bas_hit
     end
 
+    # Take action if the state has changed.
     if next_state != current_state
-        # reset counter except in lost state (the counter freezes in this case)
-        if current_state == :lost
+        # The consecutive_match counter is reset when we switch states.
+        # However if we enter or leave  the :lost state
+        # we do not reset the counter consecutive_match
+        # since the trajectory can follow an attractor
+        # that spans outside the grid
+        if current_state == :lost || next_state == :lost
             bsn_nfo.consecutive_lost = 1
         else
             bsn_nfo.consecutive_match = 1
         end
     end
+
     bsn_nfo.state = next_state
     return
 end
-
