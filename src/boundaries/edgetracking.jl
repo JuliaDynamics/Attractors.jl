@@ -5,11 +5,13 @@ export edgetracking, bisect_to_edge, EdgeTrackingResults
 Data type that stores output of the [`edgetracking`](@ref) algorithm.
 
 ## Fields
-* `edge::StateSpaceSet`: the pseudo-trajectory representing the edge track
-* `track1::StateSpaceSet`: the parallel pseudo-trajectory tracking the edge within basin 1
-* `track2::StateSpaceSet`: the parallel pseudo-trajectory tracking the edge within basin 2
+* `edge::StateSpaceSet`: the pseudo-trajectory representing the tracked edge segment
+  (given by the average in state space between `track1` and `track2`)
+* `track1::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 1
+* `track2::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 2
 * `time::Vector`: time points of the above `StateSpaceSet`s
-* `bisect_idx::Vector`: indices of `time` at which a re-bisection was done
+* `bisect_idx::Vector`: indices of `time` at which a re-bisection occurred
+* `success::Bool`: indicates whether the edge tracking has been successful or not
 """
 struct EdgeTrackingResults{D, T}
     edge::StateSpaceSet{D, T}
@@ -17,7 +19,11 @@ struct EdgeTrackingResults{D, T}
     track2::StateSpaceSet{D, T}
     time::Vector{Float64}
     bisect_idx::Vector{Int}
+    success::Bool
 end
+
+EdgeTrackingResults(nothing) = EdgeTrackingResults(StateSpaceSet([NaN]),
+    StateSpaceSet([NaN]), StateSpaceSet([NaN]), [NaN], [0], false)
 
 """
     edgetracking(ds::DynamicalSystem, attractors::Dict; kwargs...)
@@ -39,6 +45,7 @@ two initial states must belong to different basins of attraction.
 * `u2`: second initial state (defaults to first point in second entry of `attractors`)
 * `maxiter = 100`: maximum number of iterations before the algorithm stops
 * `abstol = 0.0`: distance threshold for convergence of the updated edge state
+* `T_transient = 0.0`: transient time before the algorithm starts saving the edge track
 * `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection 
 * `Δt = 0.01`: time step passed to [`step!`](@ref) when evolving the two trajectories
 * `ϵ_mapper = nothing`: `ϵ` parameter in [`AttractorsViaProximity`](@ref)
@@ -87,12 +94,16 @@ the boundary.
 
 Returns a data type `EdgeTrackingResults` containing five fields:
 * `edge::StateSpaceSet`: the pseudo-trajectory representing the tracked edge segment
+  (given by the average in state space between `track1` and `track2`)
 * `track1::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 1
 * `track2::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 2
 * `time::Vector`: time points of the above `StateSpaceSet`s
-* `bisect_idx::Vector`: indices of `time` at which a re-bisection was done
+* `bisect_idx::Vector`: indices of `time` at which a re-bisection occurred
+* `success::Bool`: indicates whether the edge tracking has been successful or not
 
-Note that `edge` is simply the spatial mean (in state space) of `track1` and `track2`.
+Sometimes, the AttractorMapper used in the algorithm may erroneously identify both states
+`u1` and `u2` with the same basin of attraction due to being very close to the basin
+boundary. If this happens, a warning is raised and `EdgeTrackingResults.success = false`.
 """
 function edgetracking(ds::DynamicalSystem, attractors::Dict;
     bisect_thresh=1e-6,
@@ -102,8 +113,8 @@ function edgetracking(ds::DynamicalSystem, attractors::Dict;
     maxiter=100,
     abstol=0.0,
     T_transient=0.0,
-    Δt=0.01,
     tmax=Inf,
+    Δt=0.01,
     ϵ_mapper=nothing,
     show_progress=true,
     kwargs...)
@@ -137,11 +148,12 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         error("diverge_thresh must be larger than bisect_thresh.")
     end
 
-    
     # initial bisection
-    u1, u2 = bisect_to_edge(pds, mapper; bisect_thresh)
+    u1, u2, success = bisect_to_edge(pds, mapper; bisect_thresh)
+    if ~success
+        return EdgeTrackingResults(nothing)
+    end
     edgestate = (u1 + u2)/2
-    
     track1, track2 = [u1], [u2]
     time, bisect_idx = Float64[], Int[]
     progress = ProgressMeter.Progress(maxiter; desc = "Running edge tracking algorithm",
@@ -167,7 +179,15 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             end
         end
         # re-bisect
-        u1, u2 = bisect_to_edge(pds, mapper; bisect_thresh)
+        u1, u2, success = bisect_to_edge(pds, mapper; bisect_thresh)
+        if ~success
+            track1 = StateSpaceSet(reduce(hcat, track1)')
+            track2 = StateSpaceSet(reduce(hcat, track2)')
+
+            return EdgeTrackingResults(
+                StateSpaceSet((vec(track1) .+ vec(track2))./2),
+                track1, track2, time, bisect_idx, false)
+        end
         T += Δt
         if T >= T_transient
             push!(track1, current_state(pds, 1))
@@ -194,7 +214,8 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         track1,
         track2,
         time,
-        bisect_idx)
+        bisect_idx,
+        true)
 end;
 
 """
@@ -203,8 +224,11 @@ Finds the basin boundary between two states `u1, u2 = current_states(pds)` by bi
 along a straight line in phase space. The states `u1` and `u2` must belong to different
 basins.
 
-Returns two new states `u1, u2` located on either side of the basin boundary that lie less
-than `bisect_thresh` (Euclidean distance in state space) apart from each other.
+Returns a triple `u1, u2, success`, where `u1, u2` are two new states located on either side
+of the basin boundary that lie less than `bisect_thresh` (Euclidean distance in state space)
+apart from each other, and `success` is a Bool indicating whether the bisection was
+successful (it may fail if the `mapper` maps both states to the same basin of attraction,
+in which case a warning is raised).
 
 ## Keyword arguments
 * `bisect_thresh = 1e-7`: The maximum (Euclidean) distance between the two returned states.
@@ -223,16 +247,17 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     bisect_thresh=1e-6)
     u1, u2 = current_states(pds)
     idx1, idx2 = mapper(u1), mapper(u2)
-    
+
     if (idx1 == idx2)
         if idx1 == -1
             error("AttractorMapper returned label -1 (could not match the initial condition with any attractor).
             Try changing the settings of AttractorsViaProximity or increasing bisect_thresh, diverge_thresh.")
         else
-            error("Both initial conditions belong to the same basin of attraction.
+            @warn "Both initial conditions belong to the same basin of attraction.
                 Attractor label: $(idx1)
                 u1 = $(u1)
-                u2 = $(u2)")
+                u2 = $(u2)"
+            return u1, u2, false
         end
     end
     
@@ -243,7 +268,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         # slightly shift u_new if it lands too close to the boundary
         retry_counter = 1
         while (idx_new == -1) && retry_counter < 3 # ToDO: make kwarg
-            @warn "Shifting new point $(retry_counter)"
+            @warn "Shifting new point slightly because AttractorMapper returned -1"
             u_new += bisect_thresh*(u1 - u2)
             idx_new = mapper(u_new)
             retry_counter += 1
@@ -264,7 +289,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         end
         distance = diffnorm(u1, u2)
     end
-    return u1, u2
+    return u1, u2, true
 end;
 
 function diffnorm(u1, u2)
