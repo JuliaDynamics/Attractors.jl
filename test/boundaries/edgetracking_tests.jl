@@ -1,7 +1,6 @@
 using Attractors
 using Test
 using OrdinaryDiffEq
-using ProgressMeter
 using LinearAlgebra
 
 @testset "Saddle point of cubic map" begin
