@@ -15,6 +15,21 @@ function heatmap_basins_attractors end
 function heatmap_basins_attractors! end
 export heatmap_basins_attractors, heatmap_basins_attractors!
 
+""" 
+    shaded_basins_heatmap(grid, basins, iterations, attractors; kwargs...) 
+
+Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
+`attractors`, i.e., the output of [`basins_of_attraction`](@ref).
+
+
+## Keyword arguments
+
+- All the [common plotting keywords](@ref).
+"""
+# function shaded_basins_heatmap end
+export shaded_basins_heatmap
+   
+
 ##########################################################################################
 # Continuation
 ##########################################################################################

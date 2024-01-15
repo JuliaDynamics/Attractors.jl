@@ -85,7 +85,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     return ax
 end
 
-function colors_from_keys(ukeys)
+function colors_from_keys_shaded(ukeys)
     # Unfortunately, until `to_color` works with `Cycled`,
     # we need to explicitly add here some default colors...
     COLORS =[ 
@@ -105,7 +105,7 @@ function colors_from_keys(ukeys)
     return Dict(k => v_col[i] for (i, k) in enumerate(ukeys))
 end
 
-function custom_colormap(ukeys)
+function custom_colormap_shaded(ukeys)
     # Unfortunately, until `to_color` works with `Cycled`,
     # we need to explicitly add here some default colors...
     LIGHT_COLORS = [
@@ -122,7 +122,7 @@ function custom_colormap(ukeys)
         :navyblue,
         :purple4,
         :gold4,]      
-    n = length(COLORS)
+    n = length(LIGHT_COLORS)
     v_col = []
     vals = zeros(2*length(ukeys))
     for k in eachindex(ukeys)
@@ -140,6 +140,7 @@ function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors;
     ukeys = unique(basins), 
     shaded = true, 
     show_attractors = true, 
+    maxit = maximum(iterations), 
     title = "") 
 
     sort!(ukeys) # necessary because colormap is ordered
@@ -153,10 +154,9 @@ function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors;
     markers = markers_from_keys(ukeys)
     labels = Dict(ukeys .=> ukeys)
     add_legend = length(ukeys) < 7
-
-    # maxit = median(iterations)*2
-    # it = findall(iterations .> maxit)
-    # iterations[it] .= maxit
+        
+    it = findall(iterations .> maxit)
+    iterations[it] .= maxit
     for i in ids 
         ind = findall(basins_to_plot .== i) 
         mn = minimum(iterations[ind])

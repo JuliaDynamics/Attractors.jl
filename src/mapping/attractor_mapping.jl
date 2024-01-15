@@ -9,6 +9,7 @@ export AttractorMapper,
     basins_fractions,
     basins_of_attraction,
     automatic_Δt_basins,
+    get_iterations,
     extract_attractors,
     subdivision_based_grid,
     SubdivisionBasedGrid
@@ -138,6 +139,15 @@ the mapper was called with pre-defined initial conditions rather than
 a sampler (function returning initial conditions).
 """
 extract_attractors(::AttractorMapper) = error("not implemented")
+
+"""
+    get_iterations(mapper::AttractorsMapper) → n
+
+Returns the number of steps taken by the algorithm for the previous mapping. 
+It is usefull in combination with [`shaded_basins_heatmap`](@ref) to include
+the iteration numbers in the basins of attraction in 2D
+"""
+get_iterations(::AttractorMapper) = error("not implemented")
 
 #########################################################################################
 # Generic basins of attraction method structure definition

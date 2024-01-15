@@ -140,3 +140,6 @@ function Base.show(io::IO, mapper::AttractorsViaProximity)
 end
 
 extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
+
+get_iterations(mapper::AttractorsViaProximity) = mapper.ds.t
+
