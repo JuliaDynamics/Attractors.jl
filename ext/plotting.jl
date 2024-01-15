@@ -141,7 +141,7 @@ function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors;
     shaded = true, 
     show_attractors = true, 
     maxit = maximum(iterations), 
-    title = "") 
+    kwargs...) 
 
     sort!(ukeys) # necessary because colormap is ordered
     ids = 1:length(ukeys)
@@ -165,7 +165,7 @@ function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors;
     end
 
     fig = Figure()
-    ax = Axis(fig[1,1], title = title)
+    ax = Axis(fig[1,1]; kwargs...)
     heatmap!(ax, grid..., basins_to_plot;
         colormap = cmap,
         colorrange = (ids[1], ids[end]+1),

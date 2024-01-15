@@ -26,7 +26,7 @@ Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 
 - All the [common plotting keywords](@ref).
 """
-# function shaded_basins_heatmap end
+function shaded_basins_heatmap end
 export shaded_basins_heatmap
    
 
