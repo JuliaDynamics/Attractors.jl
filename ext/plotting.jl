@@ -136,12 +136,23 @@ function custom_colormap_shaded(ukeys)
     return cgrad(v_col, vals/maximum(vals))
 end
 
-function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors; 
-    ukeys = unique(basins), 
-    shaded = true, 
+function Attractors.shaded_basins_heatmap(grid, basins::AbstractArray, iterations, attractors; 
     show_attractors = true, 
     maxit = maximum(iterations), 
-    kwargs...) 
+    kwargs...)
+    if length(size(basins)) != 2
+        error("Heatmaps only work in two dimensional basins!")
+    end
+    fig = Figure()
+    ax = Axis(fig[1,1]; kwargs...)
+    shaded_basins_heatmap!(ax, grid, basins, iterations, attractors; maxit, show_attractors)
+    return fig
+end
+
+function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attractors; 
+    ukeys = unique(basins), 
+    show_attractors = true, 
+    maxit = maximum(iterations)) 
 
     sort!(ukeys) # necessary because colormap is ordered
     ids = 1:length(ukeys)
@@ -164,8 +175,6 @@ function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors;
         basins_to_plot[ind] .= basins_to_plot[ind] .+ 0.99.*(iterations[ind].-mn)/mx
     end
 
-    fig = Figure()
-    ax = Axis(fig[1,1]; kwargs...)
     heatmap!(ax, grid..., basins_to_plot;
         colormap = cmap,
         colorrange = (ids[1], ids[end]+1),
@@ -187,7 +196,7 @@ function Attractors.shaded_basins_heatmap(grid, basins, iterations, attractors;
         add_legend && axislegend(ax)
     end
 
-  return fig
+  return ax
 end
 
 

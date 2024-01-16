@@ -174,7 +174,7 @@ end
 
 extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
- get_iterations(m::AttractorsViaRecurrences) =  mapper.bsn_nfo.safety_counter
+get_iterations(m::AttractorsViaRecurrences) =  m.bsn_nfo.safety_counter
 
 
 """

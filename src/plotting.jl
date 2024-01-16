@@ -19,7 +19,11 @@ export heatmap_basins_attractors, heatmap_basins_attractors!
     shaded_basins_heatmap(grid, basins, iterations, attractors; kwargs...) 
 
 Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
-`attractors`, i.e., the output of [`basins_of_attraction`](@ref).
+`attractors`. An matrix `iterations` with the same size of `basins` must be provided
+to shade the color according to the value of this matrix. An small value corresponds 
+to a light color and a large value to a darker tone. This is useful to represent
+the number of iterations taken for each initial conditions. See also 
+[`get_iterations`]@ref to store this iteration number.
 
 
 ## Keyword arguments
@@ -27,7 +31,8 @@ Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 - All the [common plotting keywords](@ref).
 """
 function shaded_basins_heatmap end
-export shaded_basins_heatmap
+function shaded_basins_heatmap! end
+export shaded_basins_heatmap, shaded_basins_heatmap!
    
 
 ##########################################################################################
