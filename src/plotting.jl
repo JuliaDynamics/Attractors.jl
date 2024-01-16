@@ -25,7 +25,6 @@ to a light color and a large value to a darker tone. This is useful to represent
 the number of iterations taken for each initial conditions. See also 
 [`get_iterations`]@ref to store this iteration number.
 
-
 ## Keyword arguments
 - `show_attractors = true`: shows the attractor on plot
 - `maxit = maximum(iterations)`: clip the values of the matrix iterations to 
