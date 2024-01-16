@@ -27,7 +27,10 @@ the number of iterations taken for each initial conditions. See also
 
 
 ## Keyword arguments
-
+- `show_attractors = true`: shows the attractor on plot
+- `maxit = maximum(iterations)`: clip the values of the matrix iterations to 
+the value `maxit`. Useful when there are some very long iterations and keep the 
+range constrained to a give interval.
 - All the [common plotting keywords](@ref).
 """
 function shaded_basins_heatmap end
