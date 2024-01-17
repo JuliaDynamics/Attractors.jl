@@ -34,6 +34,7 @@ The edge tracking algorithm allows to locate and construct so-called edge states
 
 ```@docs
 edgetracking
+EdgeTrackingResults
 bisect_to_edge
 ```
 
