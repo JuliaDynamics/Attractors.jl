@@ -106,8 +106,7 @@ function colors_from_keys_shaded(ukeys)
 end
 
 function custom_colormap_shaded(ukeys)
-    # Unfortunately, until `to_color` works with `Cycled`,
-    # we need to explicitly add here some default colors...
+    # Light and corresponding dark colors for shading of basins of attraction
     LIGHT_COLORS = [
         :gray95,
         :lightsalmon,
@@ -126,8 +125,6 @@ function custom_colormap_shaded(ukeys)
     v_col = []
     vals = zeros(2*length(ukeys))
     for k in eachindex(ukeys)
-        # push!(v_col, COLORS[mod(k-1,n)+1])
-        # push!(v_col, :black)
         push!(v_col, LIGHT_COLORS[mod(k-1,n)+1])
         push!(v_col, DARK_COLORS[mod(k-1,n)+1])
         vals[2*k-1] = k-1
@@ -175,6 +172,11 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
         basins_to_plot[ind] .= basins_to_plot[ind] .+ 0.99.*(iterations[ind].-mn)/mx
     end
 
+    # The colormap is constructed in such a way that the first color maps 
+    # from id to id+0.99, id is an integer describing the current basin.
+    # Each id has a specific color associated and the gradient goes from 
+    # light color (value id) to dark color (value id+0.99). It produces
+    # a shading proportional to a value associated to a specific pixel. 
     heatmap!(ax, grid..., basins_to_plot;
         colormap = cmap,
         colorrange = (ids[1], ids[end]+1),
