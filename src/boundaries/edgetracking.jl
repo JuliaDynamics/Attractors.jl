@@ -29,11 +29,11 @@ EdgeTrackingResults(nothing) = EdgeTrackingResults(StateSpaceSet([NaN]),
     edgetracking(ds::DynamicalSystem, attractors::Dict; kwargs...)
 Track along a basin boundary in a dynamical system `ds` with two or more attractors
 in order to find an *edge state*. Results are returned in the form of
-`EdgeTrackingResults`, which contains the pseudo-trajectory `edge` representing the track on
+[`EdgeTrackingResults`](@ref), which contains the pseudo-trajectory `edge` representing the track on
 the basin boundary, along with additional output (see below).
 
-The system's `attractors` are specified as a Dict of `StateSpaceSet`s, as in
-[`AttractorsViaProximity`](@ref) or the output of `extract_attractors`. By default, the
+The system's `attractors` are specified as a `Dict` of `StateSpaceSet`s, as in
+[`AttractorsViaProximity`](@ref) or the output of [`extract_attractors`](@ref). By default, the
 algorithm is initialized from the first and second attractor in `attractors`. Alternatively,
 the initial states can be set via keyword arguments `u1`, `u2` (see below). Note that the
 two initial states must belong to different basins of attraction.
@@ -93,14 +93,7 @@ the boundary.
 
 ## Output
 
-Returns a data type `EdgeTrackingResults` containing five fields:
-* `edge::StateSpaceSet`: the pseudo-trajectory representing the tracked edge segment
-  (given by the average in state space between `track1` and `track2`)
-* `track1::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 1
-* `track2::StateSpaceSet`: the pseudo-trajectory tracking the edge within basin 2
-* `time::Vector`: time points of the above `StateSpaceSet`s
-* `bisect_idx::Vector`: indices of `time` at which a re-bisection occurred
-* `success::Bool`: indicates whether the edge tracking has been successful or not
+Returns a data type [`EdgeTrackingResults`](@ref) containing the results.
 
 Sometimes, the AttractorMapper used in the algorithm may erroneously identify both states
 `u1` and `u2` with the same basin of attraction due to being very close to the basin
@@ -154,7 +147,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
 
     # initial bisection
     u1, u2, success = bisect_to_edge(pds, mapper; bisect_thresh, verbose)
-    if ~success
+    if !success
         return EdgeTrackingResults(nothing)
     end
     edgestate = (u1 + u2)/2
@@ -261,7 +254,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     if (idx1 == idx2)
         if idx1 == -1
             error("AttractorMapper returned label -1 (could not match the initial condition with any attractor).
-            Try changing the settings of AttractorsViaProximity or increasing bisect_thresh, diverge_thresh.")
+            Try changing the settings of the `AttractorMapper` or increasing bisect_thresh, diverge_thresh.")
         else
             if verbose
             @warn "Both initial conditions belong to the same basin of attraction.
@@ -316,5 +309,6 @@ function diffnorm(u1, u2)
     sqrt(d)
 end
 
-diffnorm(pds::ParallelDynamicalSystem) = diffnorm(current_state(pds, 1),
-    current_state(pds, 2))
+function diffnorm(pds::ParallelDynamicalSystem)
+    diffnorm(current_state(pds, 1), current_state(pds, 2))
+end
