@@ -4,7 +4,7 @@ using OrdinaryDiffEq
 using LinearAlgebra
 
 @testset "Saddle point of cubic map" begin
-    cubicmap(u, p, n) = SVector{1}(p[1]*u[1] - u[1]^3)    
+    cubicmap(u, p, n) = SVector{1}(p[1]*u[1] - u[1]^3)
     ds = DeterministicIteratedMap(cubicmap, [1.0], [2.0])
     attrs = Dict(1 => StateSpaceSet([1.0]), 2 => StateSpaceSet([-1.0]))
     saddle = edgetracking(ds, attrs; Δt=1, abstol=1e-8).edge[end]
@@ -34,7 +34,7 @@ end
         return SVector{3}(xdot, ydot, zdot)
     end
     ds = CoupledODEs(thomas_rule, [1.0, 0, 0], [0.16]; diffeq=(reltol=1e-12,))
-    
+
     # Find attractors on a 3D grid
     xg = yg = yz = range(-6.0, 6.0; length = 101)
     grid = (xg, yg, yz)
@@ -58,7 +58,7 @@ end
             et23 = edgetracking(ds, attractors;
                     u1=attractors[2][i], u2=attractors[3][j], bisect_thresh=1e-4,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
-        
+
             et12.success ? push!(_pairs12, et12.edge[end]) : nothing
             et13.success ? push!(_pairs13, et13.edge[end]) : nothing
             et23.success ? push!(_pairs23, et23.edge[end]) : nothing

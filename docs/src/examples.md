@@ -321,7 +321,7 @@ fig
 
 To achieve even better results for this kind of problematic systems than with previuosly introduced `Irregular Grids`  we provide a functionality to construct `Subdivision Based Grids` in which
 one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has
-significantly different speed. [`subdivided_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified
+significantly different speed. [`subdivision_based_grid`](@ref) enables automatic evaluation of velocity vectors for regions of originally user specified
 grid to further treat those areas as having more dense or coarse structure than others.
 
 ```@example MAIN
@@ -536,7 +536,7 @@ plot_basins_curves(aggregated_fractions, prange;
 
 ## Trivial featurizing and grouping for basins fractions
 
-This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsviaFeaturizing`](@ref) we just create a julia function that returns this last point
+This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsViaFeaturizing`](@ref) we just create a julia function that returns this last point
 
 ```@example MAIN
 using Attractors

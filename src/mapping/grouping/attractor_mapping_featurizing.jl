@@ -27,7 +27,7 @@ end
 
 Initialize a `mapper` that maps initial conditions to attractors using a featurizing and
 grouping approach. This is a supercase of the featurizing and clustering approach that
-is utilized by bSTAB [Stender2021](@cite) and MCBB [Gelbrecht2021](@cite).
+is utilized by bSTAB [Stender2021](@cite) and MCBB [Gelbrecht2020](@cite).
 See [`AttractorMapper`](@ref) for how to use the `mapper`.
 This `mapper` also allows the syntax `mapper(u0)` but only if the `grouping_config`
 is _not_ `GroupViaClustering`.

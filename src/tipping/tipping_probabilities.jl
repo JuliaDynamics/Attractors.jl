@@ -4,14 +4,14 @@ export tipping_probabilities
     tipping_probabilities(basins_before, basins_after) → P
 
 Return the tipping probabilities of the computed basins before and after a change
-in the system parameters (or time forcing), according to the definition of [Kaszás2019](@cite).
+in the system parameters (or time forcing), according to the definition of [Kaszas2019](@cite).
 
 The input `basins` are integer-valued arrays, where the integers enumerate the attractor,
 e.g. the output of [`basins_of_attraction`](@ref).
 
 ## Description
 Let ``\\mathcal{B}_i(p)`` denote the basin of attraction of attractor ``A_i`` at
-parameter(s) ``p``. Kaszás et al [Kaszás2019](@cite) define the tipping probability
+parameter(s) ``p``. Kaszás et al [Kaszas2019](@cite) define the tipping probability
 from ``A_i`` to ``A_j``, given a parameter change in the system of ``p_- \\to p_+``, as
 
 ```math

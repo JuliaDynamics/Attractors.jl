@@ -15,7 +15,6 @@ pages = [
     "references.md",
 ]
 
-
 import Downloads
 Downloads.download(
     "https://raw.githubusercontent.com/JuliaDynamics/doctheme/master/build_docs_with_style.jl",
@@ -31,5 +30,5 @@ bib = CitationBibliography(
 )
 
 build_docs_with_style(pages, Attractors, DynamicalSystemsBase, StateSpaceSets;
-    expandfirst = ["index.md"], bib,
+    expandfirst = ["index.md"], bib, warnonly = true,
 )
