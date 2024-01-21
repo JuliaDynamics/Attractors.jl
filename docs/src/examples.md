@@ -871,3 +871,92 @@ animate_attractors_via_recurrences(mapper, u0s)
 <source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/recurrence_algorithm.mp4?raw=true" type="video/mp4">
 </video>
 ```
+
+## Edge tracking
+
+To showcase how to run the [`edgetracking`](@ref) algorithm, let us use it to find the
+saddle point of the bistable FitzHugh-Nagumo (FHN) model, a two-dimensional ODE system
+originally conceived to represent a spiking neuron.
+We define the system in the following form:
+
+```@example MAIN
+function fitzhugh_nagumo(u,p,t)
+    x, y = u
+    eps, beta = p
+    dx = (x - x^3 - y)/eps
+    dy = -beta*y + x
+    return SVector{2}([dx, dy])
+end
+
+params = [0.1, 3.0]
+ds = CoupledODEs(fitzhugh_nagumo, ones(2), params, diffeq=(;alg = Vern9(), reltol=1e-11))
+```
+
+Now, we can use Attractors.jl to compute the fixed points and basins of attraction of the
+FHN model.
+
+```@example MAIN
+xg = yg = range(-1.5, 1.5; length = 201)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(ds, grid; sparse=false)
+basins, attractors = basins_of_attraction(mapper)
+
+for i in 1:length(attractors)
+    println(attractors[i][1])
+end
+```
+
+The `basins_of_attraction` function found three fixed points: the two stable nodes of the
+system (labeled A and B) and the saddle point at the origin. The saddle is an unstable
+equilibrium and can therefore not be found by simulation, but we can find it using the
+[`edgetracking`](@ref) algorithm. For illustration, let us initialize the algorithm from
+two initial conditions `init1` and `init2` (which must belong to different basins
+of attraction, see figure below).
+
+```julia
+attractors_AB = Dict(1 => attractors[1], 2 => attractors[2])
+init1, init2 = [-1.0, -1.0], [-1.0, 0.2]
+```
+
+Now, we run the edge tracking algorithm:
+
+```@example MAIN
+bisect_thresh, diverge_thresh, Δt, abstol = 1e-3, 2e-3, 1e-5, 1e-3
+et = edgetracking(ds, attractors_AB; u1=init1, u2=init2,
+    bisect_thresh, diverge_thresh, Δt, abstol)
+
+et.edge[end]
+```
+
+The algorithm has converged to the origin (up to the specified accuracy) where the saddle
+is located. The figure below shows how the algorithm has iteratively tracked along the basin
+boundary from the two initial conditions (red points) to the saddle (green square). Points
+of the edge track (orange) at which a re-bisection occured are marked with a white border.
+The figure also depicts two trajectories (blue) intialized on either side of the basin
+boundary at the first bisection point. We see that these trajectories follow the basin
+boundary for a while but then relax to either attractor before reaching the saddle. By
+counteracting the instability of the saddle, the edge tracking algorithm instead allows to
+track the basin boundary all the way to the saddle, or edge state.
+
+```@example MAIN
+traj1 = trajectory(ds, 2, et.track1[et.bisect_idx[1]], Δt=1e-5)
+traj2 = trajectory(ds, 2, et.track2[et.bisect_idx[1]], Δt=1e-5)
+
+fig = Figure()
+ax = Axis(fig[1,1], xlabel="x", ylabel="y")
+heatmap_basins_attractors!(ax, grid, basins, attractors, add_legend=false, labels=Dict(1=>"Attractor A", 2=>"Attractor B", 3=>"Saddle"))
+lines!(ax, traj1[1][:,1], traj1[1][:,2], color=:dodgerblue, linewidth=2, label="Trajectories")
+lines!(ax, traj2[1][:,1], traj2[1][:,2], color=:dodgerblue, linewidth=2)
+lines!(ax, et.edge[:,1], et.edge[:,2], color=:orange, linestyle=:dash)
+scatter!(ax, et.edge[et.bisect_idx,1], et.edge[et.bisect_idx,2], color=:white, markersize=15, marker=:circle, zorder=10)
+scatter!(ax, et.edge[:,1], et.edge[:,2], color=:orange, markersize=11, marker=:circle, zorder=10, label="Edge track")
+scatter!(ax, [-1.0,-1.0], [-1.0, 0.2], color=:red, markersize=15, label="Initial conditions")
+xlims!(ax, -1.2, 1.1); ylims!(ax, -1.3, 0.8)
+axislegend(ax, position=:rb)
+fig        
+```
+
+In this simple two-dimensional model, we could of course have found the saddle directly by
+computing the zeroes of the ODE system. However, the edge tracking algorithm allows finding
+edge states also in high-dimensional and chaotic systems where a simple computation of
+unstable equilibria becomes infeasible.

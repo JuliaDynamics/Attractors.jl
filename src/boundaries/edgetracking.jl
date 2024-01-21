@@ -152,7 +152,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     end
     edgestate = (u1 + u2)/2
     track1, track2 = [u1], [u2]
-    time, bisect_idx = Float64[], Int[]
+    time, bisect_idx = Float64[], Int[1]
     progress = ProgressMeter.Progress(maxiter; desc = "Running edge tracking algorithm",
         enabled = show_progress)
     
