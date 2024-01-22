@@ -237,9 +237,9 @@ This function is interesting when used with [`shaded_basins_heatmap`]@ref.
 
 """
 function iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid; show_progress = true)
-    if length(grid) != 2
-        @error "This function currently only supports 2D grid"
-    end
+    # if length(grid) != 2
+    #     @error "This function currently only supports 2D grid"
+    # end
     basins = zeros(length.(grid))
     iterations = zeros(length.(grid))
     I = CartesianIndices(basins)
