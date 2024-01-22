@@ -102,8 +102,8 @@ function custom_colormap_shaded(ukeys)
     n = length(colors)
     # Note that the factor to define light and dark color
     # is arbitrary. 
-    LIGHT_COLORS = [darken_color(colors[k],0.3) for k in 1:n]
-    DARK_COLORS = [darken_color(colors[k],1.7) for k in 1:n]
+    LIGHT_COLORS = [darken_color(colors[k],0.3) for k in ukeys]
+    DARK_COLORS = [darken_color(colors[k],1.7) for k in ukeys]
     v_col = Array{typeof(LIGHT_COLORS[1]),1}(undef,2*n)
     vals = zeros(2*n)
     for k in eachindex(ukeys)
@@ -112,7 +112,7 @@ function custom_colormap_shaded(ukeys)
         vals[2*k-1] = k-1
         vals[2*k] = k-1+0.9999999999
     end
-    return cgrad(v_col, vals/maximum(vals))
+    return cgrad(v_col, vals/maximum(vals)), colors
 end
 
 function Attractors.shaded_basins_heatmap(grid, basins::AbstractArray, iterations, attractors; 
@@ -139,8 +139,7 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
     basins_to_plot = replace(basins.*1., replace_dict...)
     access = SVector(1,2)
     
-    cmap = custom_colormap_shaded(ukeys)
-    colors = colors_from_keys(ukeys)
+    cmap, colors = custom_colormap_shaded(ukeys)
     markers = markers_from_keys(ukeys)
     labels = Dict(ukeys .=> ukeys)
     add_legend = length(ukeys) < 7
