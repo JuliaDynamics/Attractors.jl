@@ -85,48 +85,47 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     return ax
 end
 
-function colors_from_keys_shaded(ukeys)
-    # Unfortunately, until `to_color` works with `Cycled`,
-    # we need to explicitly add here some default colors...
-    COLORS =[ 
-        :black,
-        :red,
-        :green, 
-        :blue,
-        :purple,
-        :yellow,]
-    n = length(COLORS)
-    v_col = []
-    vals = zeros(2*length(ukeys))
-    for k in eachindex(ukeys)
-        push!(v_col, COLORS[mod(k-1,n)+1])
-    end
+# function colors_from_keys_shaded(ukeys)
+#     # Unfortunately, until `to_color` works with `Cycled`,
+#     # we need to explicitly add here some default colors...
+#     COLORS =[ 
+#         :black,
+#         :red,
+#         :green, 
+#         :blue,
+#         :purple,
+#         :yellow,]
+#     n = length(COLORS)
+#     v_col = []
+#     vals = zeros(2*length(ukeys))
+#     for k in eachindex(ukeys)
+#         push!(v_col, COLORS[mod(k-1,n)+1])
+#     end
 
-    return Dict(k => v_col[i] for (i, k) in enumerate(ukeys))
+#     return Dict(k => v_col[i] for (i, k) in enumerate(ukeys))
+# end
+
+"""
+    darken_color(c, f = 1.2)
+Darken given color `c` by a factor `f`.
+If `f` is less than 1, the color is lightened instead.
+"""
+function darken_color(c, f = 1.2)
+    c = to_color(c)
+    return RGBAf(clamp.((c.r/f, c.g/f, c.b/f, c.alpha), 0, 1)...)
 end
 
 function custom_colormap_shaded(ukeys)
     # Light and corresponding dark colors for shading of basins of attraction
-    LIGHT_COLORS = [
-        :gray95,
-        :lightsalmon,
-        :darkseagreen1,
-        :azure,
-        :lavenderblush,
-        :lightyellow,]      
-    DARK_COLORS = [
-        :black,
-        :red4,
-        :darkgreen,
-        :navyblue,
-        :purple4,
-        :gold4,]      
-    n = length(LIGHT_COLORS)
-    v_col = []
-    vals = zeros(2*length(ukeys))
+    colors = colors_from_keys(ukeys)
+    n = length(colors)
+    LIGHT_COLORS = [darken_color(colors[k],0.5) for k in 1:n]
+    DARK_COLORS = [darken_color(colors[k],1.5) for k in 1:n]
+    v_col = Array{typeof(LIGHT_COLORS[1]),1}(undef,2*n)
+    vals = zeros(2*n)
     for k in eachindex(ukeys)
-        push!(v_col, LIGHT_COLORS[mod(k-1,n)+1])
-        push!(v_col, DARK_COLORS[mod(k-1,n)+1])
+        v_col[2*k-1] = LIGHT_COLORS[k]
+        v_col[2*k] = DARK_COLORS[k]
         vals[2*k-1] = k-1
         vals[2*k] = k-1+0.9999999999
     end
@@ -158,7 +157,7 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
     access = SVector(1,2)
     
     cmap = custom_colormap_shaded(ukeys)
-    colors = colors_from_keys_shaded(ukeys)
+    colors = colors_from_keys(ukeys)
     markers = markers_from_keys(ukeys)
     labels = Dict(ukeys .=> ukeys)
     add_legend = length(ukeys) < 7
