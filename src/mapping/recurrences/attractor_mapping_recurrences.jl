@@ -235,11 +235,15 @@ This special functions takes a mapper and a grid as input and returns three
 objects: `basins`, `attractors` and `iterations` computed at each point of the input  grid.  
 This function is interesting when used with [`shaded_basins_heatmap`]@ref. 
 
+# Keyword arguments
+
+- `show_progress = true`: show progress bar
+
 """
 function iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid; show_progress = true)
-    # if length(grid) != 2
-    #     @error "This function currently only supports 2D grid"
-    # end
+    if length(grid) != dimension(mapper.ds)
+        @error "The mapper and the grid must have the same dimension"
+    end
     basins = zeros(length.(grid))
     iterations = zeros(length.(grid))
     I = CartesianIndices(basins)
