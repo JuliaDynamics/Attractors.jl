@@ -237,20 +237,22 @@ This function is interesting when used with [`shaded_basins_heatmap`]@ref.
 
 """
 function iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid; show_progress = true)
-
-    I = CartesianIndices(grid)
-    basins = zeros(size(grid))
-    iterations = zeros(size(grid))
+    if length(grid) != 2
+        @error "This function currently only supports 2D grid"
+    end
+    basins = zeros(length.(grid))
+    iterations = zeros(length.(grid))
+    I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
         length(basins); desc = "Basins of attraction: ", dt = 1.0
     )
 
     for (k, ind) in enumerate(I)
         show_progress && ProgressMeter.update!(progress, k)
-        basins[ind] = mapper(grid[ind])
+        u0 = Attractors.generate_ic_on_grid(grid, ind)
+        basins[ind] = mapper(u0)
         iterations[ind] = iterations_to_converge(mapper)
     end
-
     attractors = extract_attractors(mapper)
     return basins, attractors, iterations
 end
