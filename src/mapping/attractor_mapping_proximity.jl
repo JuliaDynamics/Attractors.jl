@@ -141,5 +141,5 @@ end
 
 extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
 
-get_iterations(mapper::AttractorsViaProximity) = mapper.ds.t
+iterations_to_converge(mapper::AttractorsViaProximity) = mapper.ds.t
 

@@ -174,7 +174,7 @@ end
 
 extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
-get_iterations(m::AttractorsViaRecurrences) =  m.bsn_nfo.safety_counter
+iterations_to_converge(m::AttractorsViaRecurrences) =  m.bsn_nfo.safety_counter
 
 
 """
@@ -225,6 +225,34 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     basins[ind] .+= 1
     basins .= (basins .- 1) .÷ 2
     return basins, mapper.bsn_nfo.attractors
+end
+
+
+"""
+    iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid) -> basins, attractors, iterations
+
+This special functions takes a mapper and a grid as input and returns three
+objects: `basins`, `attractors` and `iterations` computed at each point of the input  grid.  
+This function is interesting when used with [`shaded_basins_heatmap`]@ref. 
+
+"""
+function iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid; show_progress = true)
+
+    I = CartesianIndices(grid)
+    basins = zeros(size(grid))
+    iterations = zeros(size(grid))
+    progress = ProgressMeter.Progress(
+        length(basins); desc = "Basins of attraction: ", dt = 1.0
+    )
+
+    for (k, ind) in enumerate(I)
+        show_progress && ProgressMeter.update!(progress, k)
+        basins[ind] = mapper(grid[ind])
+        iterations[ind] = iterations_to_converge(mapper)
+    end
+
+    attractors = extract_attractors(mapper)
+    return basins, attractors, iterations
 end
 
 #####################################################################################
