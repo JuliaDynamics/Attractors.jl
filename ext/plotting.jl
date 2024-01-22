@@ -85,25 +85,6 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     return ax
 end
 
-# function colors_from_keys_shaded(ukeys)
-#     # Unfortunately, until `to_color` works with `Cycled`,
-#     # we need to explicitly add here some default colors...
-#     COLORS =[ 
-#         :black,
-#         :red,
-#         :green, 
-#         :blue,
-#         :purple,
-#         :yellow,]
-#     n = length(COLORS)
-#     v_col = []
-#     vals = zeros(2*length(ukeys))
-#     for k in eachindex(ukeys)
-#         push!(v_col, COLORS[mod(k-1,n)+1])
-#     end
-
-#     return Dict(k => v_col[i] for (i, k) in enumerate(ukeys))
-# end
 
 """
     darken_color(c, f = 1.2)
@@ -119,8 +100,10 @@ function custom_colormap_shaded(ukeys)
     # Light and corresponding dark colors for shading of basins of attraction
     colors = colors_from_keys(ukeys)
     n = length(colors)
-    LIGHT_COLORS = [darken_color(colors[k],0.5) for k in 1:n]
-    DARK_COLORS = [darken_color(colors[k],1.5) for k in 1:n]
+    # Note that the factor to define light and dark color
+    # is arbitrary. 
+    LIGHT_COLORS = [darken_color(colors[k],0.3) for k in 1:n]
+    DARK_COLORS = [darken_color(colors[k],1.7) for k in 1:n]
     v_col = Array{typeof(LIGHT_COLORS[1]),1}(undef,2*n)
     vals = zeros(2*n)
     for k in eachindex(ukeys)
