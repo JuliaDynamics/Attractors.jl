@@ -30,5 +30,5 @@ bib = CitationBibliography(
 )
 
 build_docs_with_style(pages, Attractors, DynamicalSystemsBase, StateSpaceSets;
-    expandfirst = ["index.md"], bib, warnonly = true,
+    expandfirst = ["index.md"], bib
 )
