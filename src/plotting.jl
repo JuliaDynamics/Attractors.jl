@@ -9,7 +9,7 @@ Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 
 ## Keyword arguments
 
-- All the [common plotting keywords](@ref).
+- All the [common plotting keywords](@ref common_plot_kwargs).
 """
 function heatmap_basins_attractors end
 function heatmap_basins_attractors! end
@@ -40,7 +40,7 @@ while `ds, prange, pidx` are the input to [`continuation`](@ref).
 - `markersize = 10`
 - `Δt, T`: propagated to `trajectory` for evolving an initial condition sampled
   from an attractor
-- Also all [common plotting keywords](@ref).
+- Also all [common plotting keywords](@ref common_plot_kwargs).
 """
 function animate_attractors_continuation end
 export animate_attractors_continuation
@@ -60,7 +60,7 @@ i.e., visualize the output of [`continuation`](@ref).
   if the style is `:band`
 - `axislegend_kwargs = (position = :lt,)`: propagated to `axislegend` if a legend is added
 - `series_kwargs = NamedTuple()`: propagated to the band or scatterline plot
-- Also all [common plotting keywords](@ref).
+- Also all [common plotting keywords](@ref common_plot_kwargs).
 """
 function plot_basins_curves end
 function plot_basins_curves! end
@@ -74,7 +74,7 @@ the parameter instead of their fraction.
 The function `attractor_to_real` takes as input a `StateSpaceSet` (attractor)
 and returns a real number so that it can be plotted versus the parameter axis.
 
-Same keywords as [`plot_basins_curves`](@ref).
+Same keywords as [`plot_basins_curves`](@ref common_plot_kwargs).
 """
 function plot_attractors_curves end
 function plot_attractors_curves! end

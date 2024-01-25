@@ -1,11 +1,11 @@
 # Notice this file uses heavily `dict_utils.jl`!
-export match_statespacesets!, match_basins_ids!, replacement_map, match_continuation!
+export match_statespacesets!!, match_basins_ids!, replacement_map, match_continuation!
 
 ###########################################################################################
 # Matching attractors and key swapping business
 ###########################################################################################
 """
-    match_statespacesets!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
+    match_statespacesets!!(a₊::AbstractDict, a₋; distance = Centroid(), threshold = Inf)
 
 Given dictionaries `a₊, a₋` mapping IDs to `StateSpaceSet` instances,
 match the IDs in dictionary `a₊` so that its sets that are the closest to
@@ -39,7 +39,7 @@ Additionally, you can provide a `threshold` value. If the distance between two a
 is larger than this `threshold`, then it is guaranteed that the attractors will get assigned
 different key in the dictionary `a₊` (which is the next available integer).
 """
-function match_statespacesets!(a₊::AbstractDict, a₋; kwargs...)
+function match_statespacesets!!(a₊::AbstractDict, a₋; kwargs...)
     rmap = replacement_map(a₊, a₋; kwargs...)
     swap_dict_keys!(a₊, rmap)
     return rmap
@@ -52,7 +52,7 @@ end
     replacement_map(a₊, a₋; distance = Centroid(), threshold = Inf) → rmap
 
 Return a dictionary mapping keys in `a₊` to new keys in `a₋`,
-as explained in [`match_statespacesets!`](@ref).
+as explained in [`match_statespacesets!!`](@ref).
 """
 function replacement_map(a₊::Dict, a₋::Dict;
         distance = Centroid(), threshold = Inf, next_id = nothing
@@ -117,7 +117,7 @@ end
 """
     match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
 
-Similar to [`match_statespacesets!`](@ref) but operate on basin arrays instead
+Similar to [`match_statespacesets!!`](@ref) but operate on basin arrays instead
 (the arrays typically returned by [`basins_of_attraction`](@ref)).
 
 This method matches IDs of attractors whose basins of attraction before and after `b₋,b₊`
@@ -163,14 +163,14 @@ Loop over all entries in the given arguments (which are typically the direct out
 attractor IDs in both the attractors container and the basins fractions container.
 This means that we loop over each entry of the vectors (skipping the first),
 and in each entry we attempt to match the current dictionary keys to the keys of the
-previous dictionary using [`match_statespacesets`](@ref).
+previous dictionary using [`match_statespacesets!`](@ref).
 
-The keywords `distance, threshold` are propagated to [`match_statespacesets`](@ref).
+The keywords `distance, threshold` are propagated to [`match_statespacesets!`](@ref).
 However, there is a unique keyword for `match_continuation!`: `use_vanished::Bool`.
 If `true`, then attractors that existed before but have vanished are kept in "memory"
 when it comes to matching: the new attractors are compared to the latest instance
 of all attractors that have ever existed, and get matched to their closest ones
-as per [`match_statespacesets!`](@ref).
+as per [`match_statespacesets!!`](@ref).
 If `false`, vanished attractors are ignored. Note that in this case new attractors
 that cannot be matched to any previous attractors will get an appropriately
 incremented ID. E.g., if we started with three attractors, and attractor 3 vanished,
@@ -224,7 +224,7 @@ function _rematch_ignored!(fractions_curves, attractors_info; kwargs...)
         # and reappears, it will get a different (incremented) id as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋))) + 1
         next_id = max(next_id+1, next_id_a)
-        rmap = match_statespacesets!(a₊, a₋; next_id, kwargs...)
+        rmap = match_statespacesets!!(a₊, a₋; next_id, kwargs...)
         swap_dict_keys!(fractions_curves[i+1], rmap)
     end
 end
@@ -240,7 +240,7 @@ function _rematch_with_past!(fractions_curves, attractors_info; kwargs...)
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
-        rmap = match_statespacesets!(a₊, latest_ghosts; kwargs...)
+        rmap = match_statespacesets!!(a₊, latest_ghosts; kwargs...)
         swap_dict_keys!(fractions_curves[i+1], rmap)
     end
 end
