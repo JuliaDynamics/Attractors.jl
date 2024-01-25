@@ -34,4 +34,8 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     @testset "mfs" begin
         testfile("mfs/mfstest.jl")
     end
+
+    @testset "boundaries" begin
+        testfile("boundaries/edgetracking_tests.jl")
+    end
 end

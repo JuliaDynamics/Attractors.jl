@@ -24,6 +24,9 @@ RecurrencesFindAndMatch
 
 ```@docs
 match_statespacesets!
+Centroid
+Hausdorff
+StrictlyMinimumDistance
 replacement_map
 set_distance
 setsofsets_distances

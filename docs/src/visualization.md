@@ -11,7 +11,7 @@ heatmap_basins_attractors(grid, basins, attractors; kwargs...)
 heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
 ```
 
-## Common plotting keywords
+## [Common plotting keywords](@id common_plot_kwargs)
 Common keywords for plotting functions in Attractors.jl are:
 
 - `ukeys`: the basin ids (unique keys, vector of integers) to use. By default all existing keys are used.

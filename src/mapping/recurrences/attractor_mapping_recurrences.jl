@@ -19,7 +19,7 @@ so that a finite state machine can operate on top of it. Possibilities are:
   `grid = (xg, yg)` with `xg = range(0, 10.0^(1/2); length = 200).^2,
   yg = range(-5, 5; length = 100)`.
 3. An instance of the special grid type
-  [`SubdividedBasedGrid`](@ref), which can be created either manually or by using
+  [`SubdivisionBasedGrid`](@ref), which can be created either manually or by using
   [`subdivision_based_grid`](@ref).
   This automatically analyzes and adapts grid discretization
   levels in accordance with state space flow speed in different regions.
@@ -181,7 +181,7 @@ iterations_to_converge(m::AttractorsViaRecurrences) =  m.bsn_nfo.safety_counter
     basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
 
 This is a special method of `basins_of_attraction` that using recurrences does
-_exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@ref).
+_exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@cite).
 By enforcing that the internal grid of `mapper` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.

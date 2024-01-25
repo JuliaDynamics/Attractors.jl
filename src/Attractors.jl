@@ -18,6 +18,7 @@ include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
 include("basins/basins.jl")
 include("continuation/basins_fractions_continuation_api.jl")
+include("boundaries/edgetracking.jl")
 include("deprecated.jl")
 include("tipping/tipping.jl")
 
