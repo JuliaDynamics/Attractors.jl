@@ -22,9 +22,8 @@ end
 """
     iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid) -> basins, attractors, iterations
 
-This special functions takes a mapper and a grid as input and returns three
-objects: `basins`, `attractors` and `iterations` computed at each point of the input grid.
-The `iterations` is the number of iterations each initial condition took to converge
+An extension of [`basins_of_attraction`](@ref). This version also returns `iterations`,
+which is the number of iterations each initial condition took to converge
 to the attractor. Useful to give to [`shaded_basins_heatmap`]@ref.
 
 # Keyword arguments

@@ -11,6 +11,7 @@ Calculating basins of attraction, or their state space fractions, can be done wi
 basins_fractions
 extract_attractors
 basins_of_attraction
+iterates_of_basins_of_attraction
 statespace_sampler
 ```
 
@@ -46,7 +47,7 @@ tipping_probabilities
 ```
 
 ## Minimal Fatal Shock
-The algorithm to find minimal perturbation for arbitrary initial condition `u0` which will kick the system into different from the current basin. 
+The algorithm to find minimal perturbation for arbitrary initial condition `u0` which will kick the system into different from the current basin.
 ```@docs
 minimal_fatal_shock
 MFSBlackBoxOptim
