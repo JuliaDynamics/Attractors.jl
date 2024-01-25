@@ -227,40 +227,6 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     return basins, mapper.bsn_nfo.attractors
 end
 
-
-"""
-    iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid) -> basins, attractors, iterations
-
-This special functions takes a mapper and a grid as input and returns three
-objects: `basins`, `attractors` and `iterations` computed at each point of the input  grid.  
-This function is interesting when used with [`shaded_basins_heatmap`]@ref. 
-
-# Keyword arguments
-
-- `show_progress = true`: show progress bar
-
-"""
-function iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid; show_progress = true)
-    if length(grid) != dimension(mapper.ds)
-        @error "The mapper and the grid must have the same dimension"
-    end
-    basins = zeros(length.(grid))
-    iterations = zeros(length.(grid))
-    I = CartesianIndices(basins)
-    progress = ProgressMeter.Progress(
-        length(basins); desc = "Basins of attraction: ", dt = 1.0
-    )
-
-    for (k, ind) in enumerate(I)
-        show_progress && ProgressMeter.update!(progress, k)
-        u0 = Attractors.generate_ic_on_grid(grid, ind)
-        basins[ind] = mapper(u0)
-        iterations[ind] = iterations_to_converge(mapper)
-    end
-    attractors = extract_attractors(mapper)
-    return basins, attractors, iterations
-end
-
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
