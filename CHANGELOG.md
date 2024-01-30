@@ -1,3 +1,9 @@
+# v1.14
+
+- New function `edgetrack` for finding saddles.
+- New function `iterates_of_basins_of_attraction` for obtaining the iterates each initial condition took to reach the attractor.
+- New plotting function `shaded_basins_heatmap`.
+
 # v1.13
 
 - The algorithm of `AttractorsViaRecurrences` has been simplified a bit. The action of the keyword `mx_chk_loc_att` has been changed which may lead to different results in some usage cases. Now `mx_chk_loc_att` counts how many steps to take after collecting enough recurrences, and this step count is only increasing.

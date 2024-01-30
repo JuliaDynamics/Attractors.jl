@@ -2,7 +2,6 @@ cd(@__DIR__)
 using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.StateSpaceSets
-using PredefinedDynamicalSystems
 
 pages = [
     "index.md",
