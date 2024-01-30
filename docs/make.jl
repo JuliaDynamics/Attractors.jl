@@ -3,6 +3,7 @@ using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.StateSpaceSets
 using PredefinedDynamicalSystems
+using OrdinaryDiffEq:Vern9
 
 pages = [
     "index.md",
