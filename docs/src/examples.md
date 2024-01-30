@@ -247,9 +247,9 @@ plane = (3, 0.0)
 pmap = PoincareMap(ds, plane)
 ```
 
-We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the [`PoincareMap`](@ref), that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
+We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the `PoincareMap`, that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
 ```@example MAIN
-xg = yg = range(-6.0, 6.0; length = 251)
+xg = yg = range(-6.0, 6.0; length = 250)
 grid = (xg, yg)
 mapper = AttractorsViaRecurrences(pmap, grid; sparse = false)
 ```
