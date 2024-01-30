@@ -209,7 +209,7 @@ end
 """
     uncertainty_exponent(basins; kwargs...) -> ε, N_ε, α
 
-Estimate the uncertainty exponent[Grebogi1983](@ref) of the basins of attraction. This exponent
+Estimate the uncertainty exponent[Grebogi1983](@cite) of the basins of attraction. This exponent
 is related to the final state sensitivity of the trajectories in the phase space.
 An exponent close to `1` means basins with smooth boundaries whereas an exponent close
 to `0` represent completely fractalized basins, also called riddled basins.
