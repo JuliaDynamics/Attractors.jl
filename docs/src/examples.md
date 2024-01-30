@@ -880,6 +880,7 @@ originally conceived to represent a spiking neuron.
 We define the system in the following form:
 
 ```@example MAIN
+using OrdinaryDiffEq:Vern9
 function fitzhugh_nagumo(u,p,t)
     x, y = u
     eps, beta = p
