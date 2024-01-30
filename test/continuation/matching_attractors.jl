@@ -8,7 +8,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     @testset "infinite threshold" begin
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = match_statespacesets!!(a_afte, a_befo)
+        rmap = match_statespacesets!(a_afte, a_befo)
         @test rmap == Dict(1 => 2, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
         @test haskey(a_afte, 2)
@@ -17,7 +17,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     @testset "separating threshold" begin
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = match_statespacesets!!(a_afte, a_befo; threshold = 0.1)
+        rmap = match_statespacesets!(a_afte, a_befo; threshold = 0.1)
         @test rmap == Dict(1 => 3, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
         @test !haskey(a_afte, 2)
@@ -158,7 +158,7 @@ if DO_EXTENSIVE_TESTS
             mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)
             b₊, a₊ = basins_of_attraction(mapper; show_progress = false)
             @testset "distances match" begin
-                rmap = match_statespacesets!!(a₊, a₋)
+                rmap = match_statespacesets!(a₊, a₋)
                 for k in keys(a₊)
                     dist = minimum(norm(x .- y) for x ∈ a₊[k] for y ∈ a₋[k])
                     @test dist < 0.2

@@ -56,7 +56,7 @@ on the outcome with different matching-related keywords.
 You do not need to compute attractors and basins again!
 
 Matching is a very sophisticated process that can be understood in detail by reading
-the docstrings of [`match_statespacesets!!`](@ref) first and then [`match_continuation!`](@ref).
+the docstrings of [`match_statespacesets!`](@ref) first and then [`match_continuation!`](@ref).
 Here is a short summary: attractors from previous and current parameter are matched
 based on their "distance". By default this is distance in state space, but any measure of
 "distance" may be used, such as the distance between Lyapunov spectra.
