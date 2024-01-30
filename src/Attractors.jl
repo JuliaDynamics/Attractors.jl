@@ -9,7 +9,6 @@ end Attractors
 
 using Reexport
 
-
 @reexport using StateSpaceSets
 @reexport using DynamicalSystemsBase
 

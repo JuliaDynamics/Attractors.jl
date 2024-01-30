@@ -20,17 +20,17 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
 end
 
 """
-    iterates_of_basins_of_attraction(mapper::AttractorsViaRecurrences, grid) -> basins, attractors, iterations
+    convergence_and_basins_of_attraction(mapper::AttractorsViaRecurrences, grid) -> basins, attractors, iterations
 
 An extension of [`basins_of_attraction`](@ref). This version also returns `iterations`,
 which is the number of iterations each initial condition took to converge
-to the attractor. Useful to give to [`shaded_basins_heatmap`]@ref.
+to the attractor. Useful to give to [`shaded_basins_heatmap`](@ref).
 
 # Keyword arguments
 
 - `show_progress = true`: show progress bar
 """
-function iterates_of_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
+function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
     if length(grid) != dimension(mapper.ds)
         @error "The mapper and the grid must have the same dimension"
     end

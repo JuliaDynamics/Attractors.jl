@@ -17,8 +17,9 @@ newton_df(x, p)= p*x^(p-1)
 
 ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 xg = yg = range(-1.5, 1.5; length = 400)
+grid = (xg, yg)
 # Use non-sparse for using `basins_of_attraction`
-mapper_newton = AttractorsViaRecurrences(ds, (xg, yg);
+mapper_newton = AttractorsViaRecurrences(ds, grid;
     sparse = false, consecutive_lost_steps = 1000
 )
 basins, attractors = basins_of_attraction(mapper_newton; show_progress = false)
@@ -32,8 +33,6 @@ Now let's plot this as a heatmap, and on top of the heatmap, let's scatter plot 
 
 ```@example MAIN
 using CairoMakie
-xg = yg = range(-1.5, 1.5; length = 400)
-grid = (xg, yg)
 fig = heatmap_basins_attractors(grid, basins, attractors)
 ```
 
@@ -51,8 +50,25 @@ in this case, to also get the attractors we simply extract them from the underly
 attractors = extract_attractors(mapper_newton)
 ```
 
+## Shading basins according to convergence time
+
+Continuing from above, we can utilize the [`convergence_and_basins_of_attraction`](@ref) function, and the [`shaded_basins_heatmap`](@ref) plotting utility function, to shade the basins of attraction based on the convergence time, with lighter colors indicating faster convergence to the attractor.
+
+```@example MAIN
+mapper_newton = AttractorsViaRecurrences(ds, grid;
+    sparse = false, consecutive_lost_steps = 1000
+)
+
+basins, attractors, iterations = convergence_and_basins_of_attraction(
+    mapper_newton, grid; show_progress = false
+)
+
+shaded_basins_heatmap(grid, basins, attractors, iterations)
+```
+
 
 ## Minimal Fatal Shock
+
 Here we find the Minimal Fatal Shock (MFS, see [`minimal_fatal_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
 ```@example MAIN
 shocks = Dict()

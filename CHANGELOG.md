@@ -1,7 +1,7 @@
 # v1.14
 
 - New function `edgetrack` for finding saddles.
-- New function `iterates_of_basins_of_attraction` for obtaining the iterates each initial condition took to reach the attractor.
+- New function `convergence_and_basins_of_attraction` for obtaining the iterates each initial condition took to reach the attractor.
 - New plotting function `shaded_basins_heatmap`.
 
 # v1.13

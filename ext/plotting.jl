@@ -86,7 +86,7 @@ end
 ##########################################################################################
 # Shaded basins
 ##########################################################################################
-function Attractors.shaded_basins_heatmap(grid, basins::AbstractArray, iterations, attractors;
+function Attractors.shaded_basins_heatmap(grid, basins::AbstractArray, attractors, iterations;
     show_attractors = true,
     maxit = maximum(iterations),
     kwargs...)
