@@ -7,6 +7,7 @@ export AttractorMapper,
     AttractorsViaFeaturizing,
     ClusteringConfig,
     basins_fractions,
+    iterates_of_basins_of_attraction,
     basins_of_attraction,
     automatic_Δt_basins,
     extract_attractors,
@@ -138,6 +139,7 @@ the mapper was called with pre-defined initial conditions rather than
 a sampler (function returning initial conditions).
 """
 extract_attractors(::AttractorMapper) = error("not implemented")
+
 
 #########################################################################################
 # Generic basins of attraction method structure definition

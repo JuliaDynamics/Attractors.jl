@@ -247,9 +247,9 @@ plane = (3, 0.0)
 pmap = PoincareMap(ds, plane)
 ```
 
-We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the [`PoincareMap`](@ref), that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
+We define the same grid as before, but now only we only use the x-y coordinates. This is because we can utilize the special `reinit!` method of the `PoincareMap`, that allows us to initialize a new state directly on the hyperplane (and then the remaining variable of the dynamical system takes its value from the hyperplane itself).
 ```@example MAIN
-xg = yg = range(-6.0, 6.0; length = 251)
+xg = yg = range(-6.0, 6.0; length = 250)
 grid = (xg, yg)
 mapper = AttractorsViaRecurrences(pmap, grid; sparse = false)
 ```
@@ -880,6 +880,8 @@ originally conceived to represent a spiking neuron.
 We define the system in the following form:
 
 ```@example MAIN
+using OrdinaryDiffEq: Vern9
+
 function fitzhugh_nagumo(u,p,t)
     x, y = u
     eps, beta = p
@@ -900,20 +902,17 @@ xg = yg = range(-1.5, 1.5; length = 201)
 grid = (xg, yg)
 mapper = AttractorsViaRecurrences(ds, grid; sparse=false)
 basins, attractors = basins_of_attraction(mapper)
-
-for i in 1:length(attractors)
-    println(attractors[i][1])
-end
+attractors
 ```
 
 The `basins_of_attraction` function found three fixed points: the two stable nodes of the
-system (labeled A and B) and the saddle point at the origin. The saddle is an unstable
-equilibrium and can therefore not be found by simulation, but we can find it using the
-[`edgetracking`](@ref) algorithm. For illustration, let us initialize the algorithm from
+system (labelled A and B) and the saddle point at the origin. The saddle is an unstable
+equilibrium and typically will not be found by `basins_of_attraction`. Coincidentally here we initialized an initial condition exactly on the saddle, and hence it was found.
+We can always find saddles with the [`edgetracking`](@ref) function. For illustration, let us initialize the algorithm from
 two initial conditions `init1` and `init2` (which must belong to different basins
 of attraction, see figure below).
 
-```julia
+```@example MAIN
 attractors_AB = Dict(1 => attractors[1], 2 => attractors[2])
 init1, init2 = [-1.0, -1.0], [-1.0, 0.2]
 ```
@@ -921,9 +920,9 @@ init1, init2 = [-1.0, -1.0], [-1.0, 0.2]
 Now, we run the edge tracking algorithm:
 
 ```@example MAIN
-bisect_thresh, diverge_thresh, Δt, abstol = 1e-3, 2e-3, 1e-5, 1e-3
 et = edgetracking(ds, attractors_AB; u1=init1, u2=init2,
-    bisect_thresh, diverge_thresh, Δt, abstol)
+    bisect_thresh = 1e-3, diverge_thresh = 2e-3, Δt = 1e-5, abstol = 1e-3
+)
 
 et.edge[end]
 ```
@@ -953,7 +952,7 @@ scatter!(ax, et.edge[:,1], et.edge[:,2], color=:orange, markersize=11, marker=:c
 scatter!(ax, [-1.0,-1.0], [-1.0, 0.2], color=:red, markersize=15, label="Initial conditions")
 xlims!(ax, -1.2, 1.1); ylims!(ax, -1.3, 0.8)
 axislegend(ax, position=:rb)
-fig        
+fig
 ```
 
 In this simple two-dimensional model, we could of course have found the saddle directly by

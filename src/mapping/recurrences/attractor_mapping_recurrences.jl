@@ -174,6 +174,9 @@ end
 
 extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
+iterations_to_converge(m::AttractorsViaRecurrences) =  m.bsn_nfo.safety_counter
+
+
 """
     basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
 

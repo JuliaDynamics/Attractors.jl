@@ -17,7 +17,7 @@ function colors_from_keys(ukeys)
         colors = [COLORS[i] for i in eachindex(ukeys)]
     else # keep colorscheme, but add extra random colors
         n = length(ukeys) - length(COLORS)
-        colors = shuffle!(Xoshiro(123), collect(cgrad(:darktest, n+1; categorical = true)))
+        colors = shuffle!(Xoshiro(123), collect(cgrad(COLORS, n+1; categorical = true)))
         colors = append!(to_color.(COLORS), colors[1:(end-1)])
     end
     return Dict(k => colors[i] for (i, k) in enumerate(ukeys))
@@ -29,7 +29,6 @@ function markers_from_keys(ukeys)
     markers = Dict(k => MARKERS[mod1(i, length(MARKERS))] for (i, k) in enumerate(ukeys))
     return markers
 end
-
 
 ##########################################################################################
 # Basins
@@ -43,7 +42,6 @@ function Attractors.heatmap_basins_attractors(grid, basins::AbstractArray, attra
     heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
     return fig
 end
-
 
 function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
         ukeys = unique(basins), # internal argument just for other keywords
@@ -85,7 +83,103 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     return ax
 end
 
+##########################################################################################
+# Shaded basins
+##########################################################################################
+function Attractors.shaded_basins_heatmap(grid, basins::AbstractArray, iterations, attractors;
+    show_attractors = true,
+    maxit = maximum(iterations),
+    kwargs...)
+    if length(size(basins)) != 2
+        error("Heatmaps only work in two dimensional basins!")
+    end
+    fig = Figure()
+    ax = Axis(fig[1,1]; kwargs...)
+    shaded_basins_heatmap!(ax, grid, basins, iterations, attractors; maxit, show_attractors)
+    return fig
+end
 
+function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attractors;
+    ukeys = unique(basins),
+    show_attractors = true,
+    maxit = maximum(iterations))
+
+    sort!(ukeys) # necessary because colormap is ordered
+    ids = 1:length(ukeys)
+    replace_dict = Dict(k => i for (i, k) in enumerate(ukeys))
+    basins_to_plot = replace(basins.*1., replace_dict...)
+    access = SVector(1,2)
+
+    cmap, colors = custom_colormap_shaded(ukeys)
+    markers = markers_from_keys(ukeys)
+    labels = Dict(ukeys .=> ukeys)
+    add_legend = length(ukeys) < 7
+
+    it = findall(iterations .> maxit)
+    iterations[it] .= maxit
+    for i in ids
+        ind = findall(basins_to_plot .== i)
+        mn = minimum(iterations[ind])
+        mx = maximum(iterations[ind])
+        basins_to_plot[ind] .= basins_to_plot[ind] .+ 0.99.*(iterations[ind].-mn)/mx
+    end
+
+    # The colormap is constructed in such a way that the first color maps
+    # from id to id+0.99, id is an integer describing the current basin.
+    # Each id has a specific color associated and the gradient goes from
+    # light color (value id) to dark color (value id+0.99). It produces
+    # a shading proportional to a value associated to a specific pixel.
+    heatmap!(ax, grid..., basins_to_plot;
+        colormap = cmap,
+        colorrange = (ids[1], ids[end]+1),
+    )
+    # Scatter attractors
+    if show_attractors
+        for (i, k) ∈ enumerate(ukeys)
+            k ≤ 0 && continue
+            A = attractors[k]
+            x, y = columns(A[:, access])
+            scatter!(ax, x, y;
+                color = colors[k], markersize = 20,
+                marker = markers[k],
+                strokewidth = 1.5, strokecolor = :white,
+                label = "$(labels[k])"
+            )
+        end
+        # Add legend using colors only
+        add_legend && axislegend(ax)
+    end
+  return ax
+end
+
+function custom_colormap_shaded(ukeys)
+    # Light and corresponding dark colors for shading of basins of attraction
+    colors = colors_from_keys(ukeys)
+    n = length(colors)
+    # Note that the factor to define light and dark color
+    # is arbitrary.
+    LIGHT_COLORS = [darken_color(colors[k],0.3) for k in ukeys]
+    DARK_COLORS = [darken_color(colors[k],1.7) for k in ukeys]
+    v_col = Array{typeof(LIGHT_COLORS[1]),1}(undef,2*n)
+    vals = zeros(2*n)
+    for k in eachindex(ukeys)
+        v_col[2*k-1] = LIGHT_COLORS[k]
+        v_col[2*k] = DARK_COLORS[k]
+        vals[2*k-1] = k-1
+        vals[2*k] = k-1+0.9999999999
+    end
+    return cgrad(v_col, vals/maximum(vals)), colors
+end
+
+"""
+    darken_color(c, f = 1.2)
+Darken given color `c` by a factor `f`.
+If `f` is less than 1, the color is lightened instead.
+"""
+function darken_color(c, f = 1.2)
+    c = to_color(c)
+    return RGBAf(clamp.((c.r/f, c.g/f, c.b/f, c.alpha), 0, 1)...)
+end
 
 ##########################################################################################
 # Continuation

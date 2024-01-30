@@ -140,3 +140,5 @@ function Base.show(io::IO, mapper::AttractorsViaProximity)
 end
 
 extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
+
+iterations_to_converge(mapper::AttractorsViaProximity) = current_time(mapper.ds) - initial_time(mapper.ds)

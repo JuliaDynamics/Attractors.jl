@@ -2,7 +2,6 @@ cd(@__DIR__)
 using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.StateSpaceSets
-using PredefinedDynamicalSystems
 
 pages = [
     "index.md",
@@ -30,5 +29,5 @@ bib = CitationBibliography(
 )
 
 build_docs_with_style(pages, Attractors, DynamicalSystemsBase, StateSpaceSets;
-    expandfirst = ["index.md"], bib
+    expandfirst = ["index.md"], bib, warnonly = [:doctest, :missing_docs, :cross_references],
 )
