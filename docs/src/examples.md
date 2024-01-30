@@ -912,7 +912,7 @@ We can always find saddles with the [`edgetracking`](@ref) function. For illustr
 two initial conditions `init1` and `init2` (which must belong to different basins
 of attraction, see figure below).
 
-```julia
+```@example MAIN
 attractors_AB = Dict(1 => attractors[1], 2 => attractors[2])
 init1, init2 = [-1.0, -1.0], [-1.0, 0.2]
 ```
