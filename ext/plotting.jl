@@ -1,6 +1,7 @@
 ##########################################################################################
 # Auto colors/markers
 ##########################################################################################
+
 using Random: shuffle!, Xoshiro
 function colors_from_keys(ukeys)
     # Unfortunately, until `to_color` works with `Cycled`,
