@@ -258,6 +258,8 @@ end
 function Attractors.plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
+    ax.xlabel = "parameter"
+    ax.ylabel = "attractors"
     plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)
     return fig
 end
