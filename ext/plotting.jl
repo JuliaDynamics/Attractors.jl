@@ -258,6 +258,8 @@ end
 function Attractors.plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
+    ax.xlabel = "parameter"
+    ax.ylabel = "attractors"
     plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)
     return fig
 end
@@ -275,7 +277,7 @@ function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_re
         for (k, A) in attractors
             val = attractor_to_real(A)
             scatter!(ax, prange[i], val;
-                color = colors[k], markers = markers[k], label = string(labels[k]),
+                color = colors[k], marker = markers[k], label = string(labels[k]),
             )
         end
     end
