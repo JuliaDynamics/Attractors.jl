@@ -1,3 +1,12 @@
+# v1.15
+
+Improvements in the `minimal_fatal_shock` algorithm:
+
+- Can now chose target attractors to shock towards, enabling computation
+  of the excitability threshold
+- Can give in custom metric function for estimating the norm
+- Exported alias `excitability_threshold` for `minimal_fatal_shock`
+
 # v1.14
 
 - New function `edgetrack` for finding saddles.
