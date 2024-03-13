@@ -6,6 +6,8 @@ Improvements in the `minimal_fatal_shock` algorithm:
   of the excitability threshold
 - Can give in custom metric function for estimating the norm
 - Exported alias `excitability_threshold` for `minimal_fatal_shock`
+- New argument `bbkwargs` can be given to `MFSBlackBoxOptim` to propagate more keywords
+  to BlackBoxOptimization.jl
 
 # v1.14
 
