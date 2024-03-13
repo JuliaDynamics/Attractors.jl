@@ -1,5 +1,5 @@
-using Test
 using Attractors
+using Test
 using LinearAlgebra
 
 @testset "Newton 2d" begin
@@ -63,6 +63,28 @@ using LinearAlgebra
         end
     end
     @test test
+
+    @testset "target id" begin
+        atrdict = Dict(i => StateSpaceSet([a]) for (i, a) in enumerate(attractors))
+        mapper = AttractorsViaProximity(ds, atrdict, 0.01)
+        algo_bb = Attractors.MFSBlackBoxOptim()
+        # multiple target attractors
+        mfs_1 = [
+            i => minimal_fatal_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i]))
+            for (i, a) in enumerate(attractors)
+        ]
+        # specific target attractors
+        mfs_2 = [
+            i => minimal_fatal_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i])[1])
+            for (i, a) in enumerate(attractors)
+        ]
+        # due to the symmetries of the system all mfs should be identical in magnitude
+        for mfs in (mfs_1, mfs_2)
+            for f in mfs
+                @test norm(f[2]) ≈ 0.622 rtol = 1e-2
+            end
+        end
+    end
 end
 
 
