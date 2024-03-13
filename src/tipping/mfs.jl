@@ -1,5 +1,6 @@
 using BlackBoxOptim: bboptimize, best_candidate
 using Random: GLOBAL_RNG
+import LinearAlgebra
 export minimal_fatal_shock, MFSBruteForce, MFSBlackBoxOptim
 export excitability_threshold
 
@@ -24,7 +25,7 @@ An alias to `minimal_fata_shock` is `excitability_threshold`.
 
 ## Keyword arguments
 
-- `metric = Euclidean()`: a metric function that gives the norm of a perturbation vector.
+- `metric = LinearAlgebra.norm`: a metric function that gives the norm of a perturbation vector.
   This keyword is ignored for the [`MFSBruteForce`](@ref) algorithm.
 - `target_id = nothing`: when not `nothing`, it should be an integer or a vector of
   integers corresponding to target attractor label(s).
@@ -44,7 +45,7 @@ perturbation that brings us into specified basin(s). This is enabled via the key
 `target_id`.
 """
 function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm;
-        metric = Euclidean(), target_id = nothing
+        metric = LinearAlgebra.norm, target_id = nothing
     )
     id_u0 = mapper(u0)
     # generate a function that returns `true` for ids that that are in the target basin
