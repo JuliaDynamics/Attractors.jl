@@ -354,7 +354,7 @@ end
 ##########################################################################################
 function Attractors.animate_attractors_continuation(
         ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
-        savename = "test.mp4", access = SVector(1, 2),
+        savename = "attracont.mp4", access = SVector(1, 2),
         limits = (0,1,0,1),
         framerate = 4, markersize = 10,
         ukeys = unique_keys(attractors_info),

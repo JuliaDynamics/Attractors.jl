@@ -57,7 +57,7 @@ while `ds, prange, pidx` are the input to [`continuation`](@ref).
 
 ## Keyword arguments
 
-- `savename = "test.mp4"`: name of video output file
+- `savename = "attracont.mp4"`: name of video output file
 - `framerate = 4`: framerate of video output
 - `markersize = 10`
 - `Δt, T`: propagated to `trajectory` for evolving an initial condition sampled
