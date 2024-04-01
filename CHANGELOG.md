@@ -1,3 +1,7 @@
+# v1.16
+
+The function `plot_basins_attractors_curves` can now take a vector of functions for mapping attractors to real numbers. Each makes a new panel with the chosen projection.
+
 # v1.15
 
 Improvements in the `minimal_fatal_shock` algorithm:
