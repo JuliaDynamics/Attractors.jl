@@ -286,23 +286,49 @@ function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_re
     return
 end
 
-function Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+# Mixed: basins and attractors
+function Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, a2r::Function, prange = 1:length(attractors_info);
         kwargs...
     )
+    return Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, [a2r], prange; kwargs...)
+end
+
+# Special case with multiple attractor projections:
+function Attractors.plot_basins_attractors_curves(
+        fractions_curves, attractors_info,
+        a2rs::Vector, prange = 1:length(attractors_info);
+        ukeys = unique_keys(fractions_curves), # internal argument
+        colors = colors_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        markers = markers_from_keys(ukeys),
+        kwargs...
+    )
+    # generate figure and axes; add labels and stuff
     fig = Figure()
     axb = Axis(fig[1,1])
-    axa = Axis(fig[2,1])
-    axa.xlabel = "parameter"
-    axa.ylabel = "attractors"
+    A = length(a2rs)
+    axs = [Axis(fig[1+i, 1]; ylabel = "attractors_$(i)") for i in 1:A]
+    linkxaxes!(axb, axs...)
+    if A == 1 # if we have only 1, make it pretier
+        axs[1].ylabel = "attractors"
+    end
+    axs[end].xlabel = "parameter"
     axb.ylabel = "basins %"
     hidexdecorations!(axb; grid = false)
-
-    Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
-        attractor_to_real, prange; kwargs...,
-    )
+    for i in 1:A-1
+        hidexdecorations!(axs[i]; grid = false)
+    end
+    # plot basins and attractors
+    plot_basins_curves!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
+    for (axa, a2r) in zip(axs, a2rs)
+        plot_attractors_curves!(axa, attractors_info, a2r, prange;
+            ukeys, colors, markers, add_legend = false, # coz its true for fractions
+        )
+    end
     return fig
 end
 
+# This function is kept for backwards compatibility only, really.
 function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
         attractor_to_real, prange = 1:length(attractors_info);
         ukeys = unique_keys(fractions_curves), # internal argument
@@ -323,12 +349,13 @@ function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, a
     return
 end
 
+
 ##########################################################################################
 # Videos
 ##########################################################################################
 function Attractors.animate_attractors_continuation(
         ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
-        savename = "test.mp4", access = SVector(1, 2),
+        savename = "attracont.mp4", access = SVector(1, 2),
         limits = (0,1,0,1),
         framerate = 4, markersize = 10,
         ukeys = unique_keys(attractors_info),
