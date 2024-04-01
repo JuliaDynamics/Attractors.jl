@@ -300,6 +300,7 @@ function Attractors.plot_basins_attractors_curves(
         ukeys = unique_keys(fractions_curves), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
+        markers = markers_from_keys(ukeys),
         kwargs...
     )
     # generate figure and axes; add labels and stuff
@@ -321,7 +322,7 @@ function Attractors.plot_basins_attractors_curves(
     plot_basins_curves!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
     for (axa, a2r) in zip(axs, a2rs)
         plot_attractors_curves!(axa, attractors_info, a2r, prange;
-            ukeys, colors, add_legend = false, # coz its true for fractions
+            ukeys, colors, markers, add_legend = false, # coz its true for fractions
         )
     end
     return fig
