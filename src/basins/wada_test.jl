@@ -126,10 +126,10 @@ property using the merging technique [Daza2018](@cite).
 
 ## Description 
 
-The technique consists in computing 
-the generalized basins of each attractor, consisting is two new basins
-formed by one of the basins and the union of the other basins. 
-The algorithm then computes the distance between 
+The technique consists in computing the generalized basins 
+of each attractor. These new basins are formed with on of the basins 
+and the union of the other basins. A new boundary is defined by 
+these two objects. The algorithm then computes the distance between 
 each boundaries of these basins pairwise. If all the boundaries are 
 within some distance `r`, there is a unique boundary separating 
 the basins and we have the wada property. 
