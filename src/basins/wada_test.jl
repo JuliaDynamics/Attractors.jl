@@ -1,4 +1,4 @@
-export test_wada_merge
+export test_wada_merge, haussdorff_distance
 
 # Generate all pairs of the number in ids without 
 # repetition
@@ -121,21 +121,26 @@ end
 """
     test_wada_merge(basins, r) -> p
 
-This function test if the matrix `basins` has the Wada property 
-using the merging technique [Daza2018](@cite). The technique consists in computing 
-the generalized basins of each attractor, this is two new basins
-formed by one of the attractor and the union of the basins of all 
-other attractors. The algorithm then computes the distance between 
-each pair of boundaries of these basins. If all the boundaries are 
-within some distance `r`, then we have the wada property. 
-The algorithm returns the proportion of pixels with distance 
-strictly greater than `r`. If `p == 0`  we have the Wada 
-property for this resolution. If `p > 0`, the criteria to decide if
-the basins are Wada is left to the researcher. 
-Numerical inaccuracies may be responsible for a small percentage
-of points with distance larger than `r`
+This function test if the 2D array `basins` has the Wada 
+property using the merging technique [Daza2018](@cite). 
 
-A. Daza, Alexandre Wagemakers and Miguel A.F. Sanjuán.Ascertaining when a basin is Wada: The merging method. Scientific Reports 8, 9954, 2018.
+## Description 
+
+The technique consists in computing 
+the generalized basins of each attractor, consisting is two new basins
+formed by one of the basins and the union of the other basins. 
+The algorithm then computes the distance between 
+each boundaries of these basins pairwise. If all the boundaries are 
+within some distance `r`, there is a unique boundary separating 
+the basins and we have the wada property. 
+The algorithm returns the maximum proportion of pixels of a boundary 
+with distance strictly greater than `r` from another boundary. 
+
+If `p == 0`,  we have the Wada property for this value of `r`. 
+If `p > 0`, the criteria to decide if
+the basins are Wada is left to the researcher. Numerical inaccuracies 
+may be responsible for a small percentage of points with distance larger than `r`
+
 """
 function test_wada_merge(basins,r) 
     ids = unique(basins)
