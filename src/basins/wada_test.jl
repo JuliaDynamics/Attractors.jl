@@ -138,7 +138,7 @@ with distance strictly greater than `r` from another boundary.
 
 If `p == 0`,  we have the Wada property for this value of `r`. 
 If `p > 0`, the criteria to decide if
-the basins are Wada is left to the researcher. Numerical inaccuracies 
+the basins are Wada is left to the user. Numerical inaccuracies 
 may be responsible for a small percentage of points with distance larger than `r`
 
 """
