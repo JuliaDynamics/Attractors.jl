@@ -37,7 +37,7 @@ function test_wada_merge(basins,r)
     for k in ids
        M[k] = merged_basins(basins,k)
     end
-    v = []
+    v = Vector{Float64}()
     for k in 1:length(M)-1, j in k+1:length(M)
         push!(v,wada_fractions(M[k],M[j],r))
     end
@@ -47,12 +47,12 @@ end
 """
     haussdorff_distance(M1, M2) -> hd
 
-    Compute the Hausdorff distance between two binary matrices of
-    the same size. First a distance matrix is computed using
-    `distance_matrix` for each matrix M1 and M2. The entries
-    of this matrix are the distance in L1 metric to the
-    closest 0 pixel in the initial matrix. The distance being
-    0 if it belongs to the basin with id 0.
+Compute the Hausdorff distance between two binary matrices of
+the same size. First a distance matrix is computed using
+`distance_matrix` for each matrix M1 and M2. The entries
+of this matrix are the distance in L1 metric to the
+closest 0 pixel in the initial matrix. The distance being
+0 if it belongs to the basin with id 0.
 """
 function haussdorff_distance(M1::BitMatrix, M2::BitMatrix)
     bd1 = distance_matrix(M1)
@@ -79,7 +79,6 @@ function wada_fractions(bas1::BitMatrix, bas2::BitMatrix, r::Int)
 
     c1 = count(bd1.*bnd2 .> r)
     c2 = count(bd2.*bnd1 .> r)
-    # @show c1, c2
     return max(c1,c2)./length(bnd1)
 end
 
