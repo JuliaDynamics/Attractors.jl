@@ -186,7 +186,7 @@ function iterations_to_converge(m::AttractorsViaRecurrences)
     else
         x = get(kw, :consecutive_attractor_steps, 2)
     end
-    return i - x
+    return i - x + 1 # cannot be less than 1
 end
 
 
