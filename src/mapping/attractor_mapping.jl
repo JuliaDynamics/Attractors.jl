@@ -8,6 +8,7 @@ export AttractorMapper,
     ClusteringConfig,
     basins_fractions,
     convergence_and_basins_of_attraction,
+    convergence_and_basins_fractions,
     iterations_to_converge,
     basins_of_attraction,
     automatic_Δt_basins,
@@ -90,8 +91,10 @@ condition was mapped to.
 See [`AttractorMapper`](@ref) for all possible `mapper` types, and use
 [`extract_attractors`](@ref) (after calling `basins_fractions`) to extract
 the stored attractors from the `mapper`.
+See also [`convergence_and_basins_fractions`](@ref).
 
 ## Keyword arguments
+
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
@@ -149,6 +152,10 @@ Return the number of iterations the `mapper` took to converge to an attractor.
 This function should be called just right after `mapper(u0)` was called with
 `u0` the initial condition of interest. Hence it is only valid with `AttractorMapper`
 subtypes that support this syntax.
+
+Obtaining the convergence iterations is computationally free,
+so that [`convergence_and_basins_fractions`](@ref) can always
+be used instead of [`basins_fractions`](@ref).
 """
 function iterations_to_converge end
 
@@ -176,6 +183,8 @@ the partitioning happens directly on the hyperplane the Poincaré map operates o
 `basins_of_attraction` function is a convenience 5-lines-of-code wrapper which uses the
 `labels` returned by [`basins_fractions`](@ref) and simply assigns them to a full array
 corresponding to the state space partitioning indicated by `grid`.
+
+See also [`convergence_and_basins_of_attraction`](@ref).
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))

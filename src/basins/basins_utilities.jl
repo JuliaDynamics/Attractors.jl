@@ -59,8 +59,40 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
 end
 
 """
-    convergence_and_basins_of_attraction(mapper::AttractorsViaRecurrences, grid)
+    convergence_and_basins_fractions(mapper::AttractorMapper, ics::StateSpaceSet)
 
 An extension of [`basins_fractions`](@ref).
-TODO.
+Return `fs, labels, iterations`. The first two are as in `basins_fractions`,
+and `iterations` is a vector containing the number of iterations each initial condition took
+to converge to its attractor.
+Only usable with mappers that support `id = mapper(u0)`.
+
+See also [`iterations_to_converge`](@ref).
+
+# Keyword arguments
+
+- `show_progress = true`: show progress bar.
 """
+function convergence_and_basins_fractions(mapper::AttractorMapper, ics::AbstractStateSpaceSet;
+        show_progress = true,
+    )
+    N = size(ics, 1)
+    progress = ProgressMeter.Progress(N;
+        desc="Mapping initial conditions to attractors:", enabled = show_progress
+    )
+    fs = Dict{Int, Int}()
+    labels = Vector{Int}(undef, N)
+    iterations = Vector{Int}(undef, N)
+
+    for i ∈ 1:N
+        ic = _get_ic(ics, i)
+        label = mapper(ic; show_progress)
+        fs[label] = get(fs, label, 0) + 1
+        labels[i] = label
+        iterations[i] = iterations_to_converge(mapper)
+        show_progress && ProgressMeter.next!(progress)
+    end
+    # Transform count into fraction
+    ffs = Dict(k => v/N for (k, v) in fs)
+    return ffs, labels, iterations
+end
