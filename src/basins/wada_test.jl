@@ -61,7 +61,7 @@ end
 
 
 """
-    function haussdorff_distance(M1, M2) -> hd
+    haussdorff_distance(M1, M2) -> hd
 
     Compute the Hausdorff distance between two binary matrices of
     the same size. First a distance matrix is computed using 
