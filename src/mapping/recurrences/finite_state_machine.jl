@@ -99,7 +99,6 @@ function finite_state_machine!(
         mx_chk_fnd_att = 100,
         mx_chk_loc_att = 1000,
         mx_chk_lost = 20,
-
         # These are the new names. They currently have the values of the
         # deprecated names, so that existing code does not break. In the future,
         # the deprecated names are removed and the new names get the values directly
