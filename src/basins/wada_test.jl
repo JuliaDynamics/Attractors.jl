@@ -121,8 +121,8 @@ end
 """
     test_wada_merge(basins, r) -> p
 
-This function test if the 2D array `basins` has the Wada 
-property using the merging technique [Daza2018](@cite). 
+Test if the 2D array `basins` has the Wada 
+property using the merging technique of [Daza2018](@cite). 
 
 ## Description 
 
