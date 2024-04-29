@@ -21,7 +21,7 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
 end
 
 """
-    convergence_and_basins_of_attraction(mapper::AttractorsViaRecurrences, grid)
+    convergence_and_basins_of_attraction(mapper::AttractorMapper, grid)
 
 An extension of [`basins_of_attraction`](@ref).
 Return `basins, attractors, iterations`, with `basins, attractors` as in
@@ -30,6 +30,8 @@ as `basins`. It contains the number of iterations each initial condition took
 to converge to its attractor. Multiply this with the time step timescale
 `Δt` given to `mapper` to obtain normal time units.
 `iterations` is useful to give to [`shaded_basins_heatmap`](@ref).
+
+See also [`iterations_to_converge`](@ref).
 
 # Keyword arguments
 
@@ -40,10 +42,10 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
         @error "The mapper and the grid must have the same dimension"
     end
     basins = zeros(length.(grid))
-    iterations = zeros(length.(grid))
+    iterations = zeros(Int, length.(grid))
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
-        length(basins); desc = "Basins of attraction: ", dt = 1.0
+        length(basins); desc = "Basins and convergence: ", dt = 1.0
     )
 
     for (k, ind) in enumerate(I)
@@ -56,3 +58,9 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
     return basins, attractors, iterations
 end
 
+"""
+    convergence_and_basins_of_attraction(mapper::AttractorsViaRecurrences, grid)
+
+An extension of [`basins_fractions`](@ref).
+TODO.
+"""

@@ -176,16 +176,17 @@ extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
 function iterations_to_converge(m::AttractorsViaRecurrences)
     i = m.bsn_nfo.safety_counter
+    kw = m.kwargs
     if m.bsn_nfo.state == :att_found
         # in this scenario we have an addition amount of iterations that is
-        # equal to the locate steps. We subtract this for more correct
+        # equal to the recurrences steps. We subtract this for more correct
         # estimation of convergence time that will be closer to the convergence
         # time of neighboring grid cells.
-        x = get(kwargs, :attractor_locate_steps, 1000)
-        return i - x
+        x = get(kw, :consecutive_recurrences, 100) + get(kw, :attractor_locate_steps, 1000)
     else
-        return i
+        x = get(kw, :consecutive_attractor_steps, 2)
     end
+    return i - x
 end
 
 
