@@ -1,3 +1,9 @@
+# v1.17
+
+Add new function `convergence_and_basins_fractions`, and improve the algorithm
+counting the convergence iterations for `AttractorsViaRecurrences` to give
+more accurate results, by taking into account the user-provided convergence criteria.
+
 # v1.16
 
 The function `plot_basins_attractors_curves` can now take a vector of functions for mapping attractors to real numbers. Each makes a new panel with the chosen projection.
