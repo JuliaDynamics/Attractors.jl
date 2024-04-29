@@ -1,5 +1,6 @@
 """
     basins_fractions(basins::AbstractArray) → fs::Dict
+
 Calculate the state space fraction of the basins of attraction encoded in `basins`.
 The elements of `basins` are integers, enumerating the attractor that the entry of
 `basins` converges to (i.e., like the output of [`basins_of_attraction`](@ref)).
@@ -20,15 +21,19 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
 end
 
 """
-    convergence_and_basins_of_attraction(mapper::AttractorsViaRecurrences, grid) -> basins, attractors, iterations
+    convergence_and_basins_of_attraction(mapper::AttractorsViaRecurrences, grid)
 
-An extension of [`basins_of_attraction`](@ref). This version also returns `iterations`,
-which is the number of iterations each initial condition took to converge
-to the attractor. Useful to give to [`shaded_basins_heatmap`](@ref).
+An extension of [`basins_of_attraction`](@ref).
+Return `basins, attractors, iterations`, with `basins, attractors` as in
+`basins_of_attraction`, and `iterations` being an array with same shape
+as `basins`. It contains the number of iterations each initial condition took
+to converge to its attractor. Multiply this with the time step timescale
+`Δt` given to `mapper` to obtain normal time units.
+`iterations` is useful to give to [`shaded_basins_heatmap`](@ref).
 
 # Keyword arguments
 
-- `show_progress = true`: show progress bar
+- `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
     if length(grid) != dimension(mapper.ds)
@@ -50,3 +55,4 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
     attractors = extract_attractors(mapper)
     return basins, attractors, iterations
 end
+
