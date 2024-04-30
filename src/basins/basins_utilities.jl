@@ -31,7 +31,7 @@ to converge to its attractor. Multiply this with the time step timescale
 `Δt` given to `mapper` to obtain normal time units.
 `iterations` is useful to give to [`shaded_basins_heatmap`](@ref).
 
-See also [`iterations_to_converge`](@ref).
+See also [`convergence_time`](@ref).
 
 # Keyword arguments
 
@@ -52,7 +52,7 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
         show_progress && ProgressMeter.update!(progress, k)
         u0 = Attractors.generate_ic_on_grid(grid, ind)
         basins[ind] = mapper(u0)
-        iterations[ind] = iterations_to_converge(mapper)
+        iterations[ind] = convergence_time(mapper)
     end
     attractors = extract_attractors(mapper)
     return basins, attractors, iterations
@@ -67,7 +67,7 @@ and `iterations` is a vector containing the number of iterations each initial co
 to converge to its attractor.
 Only usable with mappers that support `id = mapper(u0)`.
 
-See also [`iterations_to_converge`](@ref).
+See also [`convergence_time`](@ref).
 
 # Keyword arguments
 
@@ -89,7 +89,7 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::Abstract
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
         labels[i] = label
-        iterations[i] = iterations_to_converge(mapper)
+        iterations[i] = convergence_time(mapper)
         show_progress && ProgressMeter.next!(progress)
     end
     # Transform count into fraction

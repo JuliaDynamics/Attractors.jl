@@ -23,7 +23,7 @@ Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 to shade the color according to the value of this matrix. A small value corresponds
 to a light color and a large value to a darker tone. This is useful to represent
 the number of iterations taken for each initial condition to converge. See also
-[`iterations_to_converge`](@ref) to store this iteration number.
+[`convergence_time`](@ref) to store this iteration number.
 
 ## Keyword arguments
 

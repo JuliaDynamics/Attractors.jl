@@ -174,7 +174,7 @@ end
 
 extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
-function iterations_to_converge(m::AttractorsViaRecurrences)
+function convergence_time(m::AttractorsViaRecurrences)
     i = m.bsn_nfo.safety_counter
     kw = m.kwargs
     if m.bsn_nfo.return_code == :new_att
@@ -183,10 +183,12 @@ function iterations_to_converge(m::AttractorsViaRecurrences)
         # estimation of convergence time that will be closer to the convergence
         # time of neighboring grid cells.
         x = get(kw, :consecutive_recurrences, 100) + get(kw, :attractor_locate_steps, 1000)
+    elseif m.bsn_nfo.return_code == :bas_hit
+        return NaN
     else
         x = get(kw, :consecutive_attractor_steps, 2)
     end
-    return i - x + 1 # cannot be less than 1
+    return (i - x + 1)*m.bsn_nfo.Δt
 end
 
 

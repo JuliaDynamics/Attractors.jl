@@ -19,7 +19,7 @@ statespace_sampler
 ```@docs
 convergence_and_basins_fractions
 convergence_and_basins_of_attraction
-iterations_to_converge
+convergence_time
 ```
 
 ## Final state sensitivity / fractal boundaries

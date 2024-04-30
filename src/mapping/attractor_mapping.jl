@@ -9,7 +9,7 @@ export AttractorMapper,
     basins_fractions,
     convergence_and_basins_of_attraction,
     convergence_and_basins_fractions,
-    iterations_to_converge,
+    convergence_time,
     basins_of_attraction,
     automatic_Δt_basins,
     extract_attractors,
@@ -146,18 +146,18 @@ extract_attractors(::AttractorMapper) = error("not implemented")
 
 
 """
-    iterations_to_converge(mapper::AttractorMapper) → n::Int
+    convergence_time(mapper::AttractorMapper) → t
 
-Return the number of iterations the `mapper` took to converge to an attractor.
+Return the approximate time the `mapper` took to converge to an attractor.
 This function should be called just right after `mapper(u0)` was called with
 `u0` the initial condition of interest. Hence it is only valid with `AttractorMapper`
 subtypes that support this syntax.
 
-Obtaining the convergence iterations is computationally free,
+Obtaining the convergence time is computationally free,
 so that [`convergence_and_basins_fractions`](@ref) can always
 be used instead of [`basins_fractions`](@ref).
 """
-function iterations_to_converge end
+function convergence_time end
 
 #########################################################################################
 # Generic basins of attraction method structure definition
