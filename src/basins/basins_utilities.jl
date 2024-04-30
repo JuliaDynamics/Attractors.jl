@@ -83,7 +83,7 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::Abstract
     )
     fs = Dict{Int, Int}()
     labels = Vector{Int}(undef, N)
-    iterations = Vector{Int}(undef, N)
+    iterations = Vector{typeof(current_time(mapper.ds))}(undef, N)
 
     for i ∈ 1:N
         ic = _get_ic(ics, i)
