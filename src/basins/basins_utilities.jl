@@ -24,12 +24,11 @@ end
     convergence_and_basins_of_attraction(mapper::AttractorMapper, grid)
 
 An extension of [`basins_of_attraction`](@ref).
-Return `basins, attractors, iterations`, with `basins, attractors` as in
-`basins_of_attraction`, and `iterations` being an array with same shape
-as `basins`. It contains the number of iterations each initial condition took
-to converge to its attractor. Multiply this with the time step timescale
-`Δt` given to `mapper` to obtain normal time units.
-`iterations` is useful to give to [`shaded_basins_heatmap`](@ref).
+Return `basins, attractors, convergence`, with `basins, attractors` as in
+`basins_of_attraction`, and `convergence` being an array with same shape
+as `basins`. It contains the time each initial condition took
+to converge to its attractor.
+It is useful to give to [`shaded_basins_heatmap`](@ref).
 
 See also [`convergence_time`](@ref).
 
@@ -62,8 +61,8 @@ end
     convergence_and_basins_fractions(mapper::AttractorMapper, ics::StateSpaceSet)
 
 An extension of [`basins_fractions`](@ref).
-Return `fs, labels, iterations`. The first two are as in `basins_fractions`,
-and `iterations` is a vector containing the number of iterations each initial condition took
+Return `fs, labels, convergence`. The first two are as in `basins_fractions`,
+and `convergence` is a vector containing the time each initial condition took
 to converge to its attractor.
 Only usable with mappers that support `id = mapper(u0)`.
 
