@@ -1,3 +1,8 @@
+# v1.15
+
+- New function `test_wada_merge` to test the Wada property in 2D basins of attraction.
+- New function `haussdorff_distance` to compute distance between two binary matrices. 
+
 # v1.14
 
 - New function `edgetrack` for finding saddles.
