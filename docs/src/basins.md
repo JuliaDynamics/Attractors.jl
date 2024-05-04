@@ -23,12 +23,14 @@ Several functions are provided related with analyzing the fractality of the boun
 - [`basin_entropy`](@ref)
 - [`basins_fractal_test`](@ref)
 - [`uncertainty_exponent`](@ref)
+- [`test_wada_merge`](@ref)
 
 ```@docs
 basins_fractal_dimension
 basin_entropy
 basins_fractal_test
 uncertainty_exponent
+test_wada_merge
 ```
 
 ## Edge tracking and edge states
