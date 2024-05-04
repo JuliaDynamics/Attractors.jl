@@ -159,15 +159,19 @@ end
     match_continuation!(fractions_curves::Vector{<:Dict}, attractors_info::Vector{<:Dict}; kwargs...)
 
 Loop over all entries in the given arguments (which are typically the direct outputs of
-[`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)), and match the
+[`continuation`](@ref)), and match the
 attractor IDs in both the attractors container and the basins fractions container.
 This means that we loop over each entry of the vectors (skipping the first),
 and in each entry we attempt to match the current dictionary keys to the keys of the
 previous dictionary using [`match_statespacesets!`](@ref).
 
 The keywords `distance, threshold` are propagated to [`match_statespacesets!`](@ref).
-However, there is a unique keyword for `match_continuation!`: `use_vanished::Bool`.
-If `true`, then attractors that existed before but have vanished are kept in "memory"
+However, there are two unique keywords for `match_continuation!`:
+
+- `use_vanished::Bool`
+- `retract_keys::Bool`
+
+If `use_vanised = true`, then attractors that existed before but have vanished are kept in "memory"
 when it comes to matching: the new attractors are compared to the latest instance
 of all attractors that have ever existed, and get matched to their closest ones
 as per [`match_statespacesets!`](@ref).

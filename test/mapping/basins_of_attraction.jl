@@ -32,13 +32,13 @@ basins, atts = basins_of_attraction(mapper, grid; show_progress=false)
 
 
 
-basins, atts, iterations = iterates_of_basins_of_attraction(mapper, grid; show_progress=false)
+basins, atts, iterations = convergence_and_basins_of_attraction(mapper, grid; show_progress=false)
 
 @test basins[1, :] == fill(2, 3)
 @test basins[2, :] == fill(1, 3)
 @test basins[3, :] == fill(1, 3)
 @test length(atts) == 2
-@test iterations == fill(1,3,3) 
+@test iterations == fill(1,3,3)
 
 
 

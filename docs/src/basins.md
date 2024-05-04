@@ -11,7 +11,8 @@ Calculating basins of attraction, or their state space fractions, can be done wi
 basins_fractions
 extract_attractors
 basins_of_attraction
-iterates_of_basins_of_attraction
+convergence_and_basins_of_attraction
+iterations_to_converge
 statespace_sampler
 ```
 

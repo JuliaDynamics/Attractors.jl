@@ -7,7 +7,8 @@ export AttractorMapper,
     AttractorsViaFeaturizing,
     ClusteringConfig,
     basins_fractions,
-    iterates_of_basins_of_attraction,
+    convergence_and_basins_of_attraction,
+    iterations_to_converge,
     basins_of_attraction,
     automatic_Δt_basins,
     extract_attractors,
@@ -140,6 +141,16 @@ a sampler (function returning initial conditions).
 """
 extract_attractors(::AttractorMapper) = error("not implemented")
 
+
+"""
+    iterations_to_converge(mapper::AttractorMapper) → n::Int
+
+Return the number of iterations the `mapper` took to converge to an attractor.
+This function should be called just right after `mapper(u0)` was called with
+`u0` the initial condition of interest. Hence it is only valid with `AttractorMapper`
+subtypes that support this syntax.
+"""
+function iterations_to_converge end
 
 #########################################################################################
 # Generic basins of attraction method structure definition
