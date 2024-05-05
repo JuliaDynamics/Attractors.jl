@@ -8,7 +8,8 @@ export AttractorMapper,
     ClusteringConfig,
     basins_fractions,
     convergence_and_basins_of_attraction,
-    iterations_to_converge,
+    convergence_and_basins_fractions,
+    convergence_time,
     basins_of_attraction,
     automatic_Δt_basins,
     extract_attractors,
@@ -83,15 +84,17 @@ a dictionary whose keys are the labels given to each attractor
 values are the respective basins fractions. The label `-1` is given to any initial condition
 where `mapper` could not match to an attractor (this depends on the `mapper` type).
 
-If `ics` is a `StateSpaceSet` the function will also return `labels`, which is
+If `ics` is a `StateSpaceSet` the function will also return `labels`, which is a
 _vector_, of equal length to `ics`, that contains the label each initial
 condition was mapped to.
 
 See [`AttractorMapper`](@ref) for all possible `mapper` types, and use
 [`extract_attractors`](@ref) (after calling `basins_fractions`) to extract
 the stored attractors from the `mapper`.
+See also [`convergence_and_basins_fractions`](@ref).
 
 ## Keyword arguments
+
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
@@ -143,14 +146,18 @@ extract_attractors(::AttractorMapper) = error("not implemented")
 
 
 """
-    iterations_to_converge(mapper::AttractorMapper) → n::Int
+    convergence_time(mapper::AttractorMapper) → t
 
-Return the number of iterations the `mapper` took to converge to an attractor.
+Return the approximate time the `mapper` took to converge to an attractor.
 This function should be called just right after `mapper(u0)` was called with
 `u0` the initial condition of interest. Hence it is only valid with `AttractorMapper`
 subtypes that support this syntax.
+
+Obtaining the convergence time is computationally free,
+so that [`convergence_and_basins_fractions`](@ref) can always
+be used instead of [`basins_fractions`](@ref).
 """
-function iterations_to_converge end
+function convergence_time end
 
 #########################################################################################
 # Generic basins of attraction method structure definition
@@ -176,6 +183,8 @@ the partitioning happens directly on the hyperplane the Poincaré map operates o
 `basins_of_attraction` function is a convenience 5-lines-of-code wrapper which uses the
 `labels` returned by [`basins_fractions`](@ref) and simply assigns them to a full array
 corresponding to the state space partitioning indicated by `grid`.
+
+See also [`convergence_and_basins_of_attraction`](@ref).
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))

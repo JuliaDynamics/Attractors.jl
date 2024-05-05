@@ -26,6 +26,7 @@ Common keywords for plotting functions in Attractors.jl are:
 
 ```@docs
 heatmap_basins_attractors
+shaded_basins_heatmap
 ```
 
 ## Continuation related

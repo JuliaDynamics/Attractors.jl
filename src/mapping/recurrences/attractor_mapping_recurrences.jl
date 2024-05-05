@@ -174,7 +174,22 @@ end
 
 extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
-iterations_to_converge(m::AttractorsViaRecurrences) =  m.bsn_nfo.safety_counter
+function convergence_time(m::AttractorsViaRecurrences)
+    i = m.bsn_nfo.safety_counter
+    kw = m.kwargs
+    if m.bsn_nfo.return_code == :new_att
+        # in this scenario we have an addition amount of iterations that is
+        # equal to the recurrences steps. We subtract this for more correct
+        # estimation of convergence time that will be closer to the convergence
+        # time of neighboring grid cells.
+        x = get(kw, :consecutive_recurrences, 100) + get(kw, :attractor_locate_steps, 1000)
+    elseif m.bsn_nfo.return_code == :bas_hit
+        return NaN
+    else
+        x = get(kw, :consecutive_attractor_steps, 2)
+    end
+    return (i - x + 1)*m.bsn_nfo.Δt
+end
 
 
 """
@@ -247,6 +262,7 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
     safety_counter::Int
     attractors::Dict{Int, StateSpaceSet{D, T}}
     visited_cells::Vector{CartesianIndex{D}}
+    return_code::Symbol
 end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
@@ -282,6 +298,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
         2,4,0,1,0,0,
         Dict{Int, StateSpaceSet{G, T}}(),
         Vector{CartesianIndex{G}}(),
+        :search,
     )
 
     reset_basins_counters!(bsn_nfo)

@@ -99,7 +99,6 @@ function finite_state_machine!(
         mx_chk_fnd_att = 100,
         mx_chk_loc_att = 1000,
         mx_chk_lost = 20,
-
         # These are the new names. They currently have the values of the
         # deprecated names, so that existing code does not break. In the future,
         # the deprecated names are removed and the new names get the values directly
@@ -132,9 +131,11 @@ function finite_state_machine!(
             hit_att = ic_label + 1
             cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
+            bsn_nfo.return_code = :att_hit
             return hit_att
         end
         bsn_nfo.prev_label = ic_label
+        bsn_nfo.return_code = :search
         return 0
     end
 
@@ -161,6 +162,7 @@ function finite_state_machine!(
             bsn_nfo.consecutive_match = 0
         end
         bsn_nfo.prev_label = ic_label
+        bsn_nfo.return_code = :search
         return 0
     end
 
@@ -200,6 +202,7 @@ function finite_state_machine!(
             bsn_nfo.visited_cell_label += 2
             bsn_nfo.current_att_label += 2
             reset_basins_counters!(bsn_nfo)
+            bsn_nfo.return_code = :new_att
             # We return the label corresponding to the *basin* of the attractor
             return current_basin
         end
@@ -217,6 +220,7 @@ function finite_state_machine!(
         if bsn_nfo.consecutive_match > consecutive_basin_steps
             cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
+            bsn_nfo.return_code = :bas_hit
             return ic_label
         end
         bsn_nfo.prev_label = ic_label
@@ -230,6 +234,7 @@ function finite_state_machine!(
             cleanup_visited_cells!(bsn_nfo)
             reset_basins_counters!(bsn_nfo)
             # problematic IC: diverges or wanders outside the defined grid
+            bsn_nfo.return_code = :diverge
             return -1
         end
         bsn_nfo.prev_label = ic_label

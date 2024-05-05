@@ -141,4 +141,4 @@ end
 
 extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
 
-iterations_to_converge(mapper::AttractorsViaProximity) = current_time(mapper.ds) - initial_time(mapper.ds)
+convergence_time(mapper::AttractorsViaProximity) = current_time(mapper.ds) - initial_time(mapper.ds)
