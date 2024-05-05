@@ -4,6 +4,12 @@ Add new function `convergence_and_basins_fractions`, and improve the algorithm
 counting the convergence iterations for `AttractorsViaRecurrences` to give
 more accurate results, by taking into account the user-provided convergence criteria.
 
+# v1.17
+
+- New function `test_wada_merge` to test the Wada property in 2D basins of attraction.
+- New function `haussdorff_distance` to compute distance between two binary matrices. 
+
+
 # v1.16
 
 The function `plot_basins_attractors_curves` can now take a vector of functions for mapping attractors to real numbers. Each makes a new panel with the chosen projection.
@@ -18,6 +24,7 @@ Improvements in the `minimal_fatal_shock` algorithm:
 - Exported alias `excitability_threshold` for `minimal_fatal_shock`
 - New argument `bbkwargs` can be given to `MFSBlackBoxOptim` to propagate more keywords
   to BlackBoxOptimization.jl
+
 
 # v1.14
 
