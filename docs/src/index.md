@@ -10,7 +10,7 @@ using CairoMakie, Attractors
 
 ## Latest news
 
-- New functions [`edgetracking`](@ref) and [`bisect_to_edge`](@ref) added that implement an **edge tracking algorithm** to find saddles or *edge states* in dynamical systems, also when they are unstable chaotic sets.
+- New functions [`test_wada_merge`](@ref) and [`convergence_and_basins_fractions`](@ref)!
 
 ## Outline of Attractors.jl
 

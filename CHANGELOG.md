@@ -1,13 +1,11 @@
 # v1.17
 
-Add new function `convergence_and_basins_fractions`, and improve the algorithm
+- New function `convergence_and_basins_fractions`
+- improved the algorithm
 counting the convergence iterations for `AttractorsViaRecurrences` to give
-more accurate results, by taking into account the user-provided convergence criteria.
-
-# v1.17
-
+more accurate results, by taking into account the user-provided convergence criteria, and multiplying with `Δt` to obtain the time in correct units.
 - New function `test_wada_merge` to test the Wada property in 2D basins of attraction.
-- New function `haussdorff_distance` to compute distance between two binary matrices. 
+- New function `haussdorff_distance` to compute distance between two binary matrices.
 
 
 # v1.16
