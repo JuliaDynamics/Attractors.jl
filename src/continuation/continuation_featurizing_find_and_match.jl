@@ -1,7 +1,64 @@
-export FeaturizingFindAndMatch
+export FeaturizingFindAndMatch, FFAM
 import ProgressMeter
 using Random: MersenneTwister
 
+"""
+    FeaturizingFindAndMatch <: AttractorsBasinsContinuation
+    FeaturizingFindAndMatch(mapper::AttractorsViaFeaturizing; kwargs...)
+
+A method for [`continuation`](@ref) as in [Datseris2023](@cite) that uses the featurizing algorithm for finding attractors ([`AttractorsViaFeaturizing`](@ref))
+and the "matching attractors" functionality offered by [`match_continuation!`](@ref). Based heavily on the `RecurrencesFindAndMatch`, which uses the recurrences algorithm ([`AttractorsViaRecurrences`](@ref)).
+
+You can use `FFAM` as an alias.
+
+## Keyword arguments
+
+- `distance = Centroid(), threshold = Inf, use_vanished = !isinf(threshold)`:
+  propagated to [`match_continuation!`](@ref).
+- `info_extraction = identity`: A function that takes as an input an attractor (`StateSpaceSet`)
+  and outputs whatever information should be stored. It is used to return the
+  `attractors_info` in [`continuation`](@ref). Note that the same attractors that
+  are stored in `attractors_info` are also used to perform the matching in
+  [`match_continuation!`](@ref), hence this keyword should be altered with care.
+- `seeds_from_attractor`: A function that takes as an input an attractor and the number of
+  initial conditions to sample from the attractor, and returns a vector with the sampled initial
+  conditions. By default, we just select the initial conditions randomly from the attractor.
+
+## Description
+
+At the first parameter slice of the continuation process, attractors and their fractions
+are found as described in the [`AttractorsViaFeaturizing`](@ref) mapper identifying groups
+of features. At each subsequent parameter slice, initial conditions are seeded from the
+ previously found attractors. They are put together with the pre-generated `ics` given to
+ `continuation`. Then, all of them are passed onto [`basins_fractions`](@ref) for
+ [`AttractorsViaFeaturizing`](@ref), which featurizes and groups them to identify the
+ attractors. 
+
+Naturally, during this step new attractors may be found. Once the basins fractions are
+computed, the parameter is incremented again and we perform the steps as before.
+
+This process continues for all parameter values. After all parameters are exhausted,
+the found attractors (and their fractions) are "matched" to the previous ones.
+I.e., their _IDs are changed_, so that attractors that are "similar" to those at a
+previous parameter get assigned the same ID.
+Matching is done by the [`match_continuation!`](@ref) function and is an _orthogonal_
+step. This means, that if you don't like the initial
+outcome of the matching process, you may call [`match_continuation!`](@ref) again
+on the outcome with different matching-related keywords.
+You do not need to compute attractors and basins again!
+
+Matching is a very sophisticated process that can be understood in detail by reading
+the docstrings of [`match_statespacesets!`](@ref) first and then [`match_continuation!`](@ref).
+Here is a short summary: attractors from previous and current parameter are matched
+based on their "distance". By default this is distance in state space, but any measure of
+"distance" may be used, such as the distance between Lyapunov spectra.
+Matching prioritizes new->old pairs with smallest distance: once these are matched
+the next available new->old pair with smallest distance is matched, until all new/old
+attractors have been matched. The `threshold` keyword establishes that attractors with
+distance > `threshold` do not get matched.
+Additionally, use `use_vanished = true` if you want to include as matching candidates
+attractors that have vanished during the continuation process.
+"""
 struct FeaturizingFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
     mapper::A
     distance::M
@@ -10,9 +67,9 @@ struct FeaturizingFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuat
     info_extraction::E
 end
 
-"""
-Very similar to the recurrences version, only difference being that the seeding from attractors is different. 
-"""
+"Alias for [`FeaturizingFindAndMatch`](@ref)."
+const FFAM = FeaturizingFindAndMatch
+
 function FeaturizingFindAndMatch(
         mapper::AttractorsViaFeaturizing; distance = Centroid(),
         threshold = Inf, seeds_from_attractor = _default_seeding_process_featurizing,
@@ -27,12 +84,7 @@ function _default_seeding_process_featurizing(attractor::AbstractStateSpaceSet, 
     return [rand(rng, vec(attractor)) for _ in 1:number_seeded_ics] #might lead to repeated ics, which is intended for the continuation
 end
 
-"""
-Continuation here is very similar to the one done with recurrences. The difference is only
-in how the ics from previous attractors are seeded to new parameters. In this case, we get ics sampled the previous attractors and pass them to 
-basins_fractions, which extracts features from them and pushes them together with the other features. 
-This could be generalized somehow so that one function could deal with both of the mappers, reducing this code duplication.
-"""
+
 function continuation(
         fam::FeaturizingFindAndMatch,
         prange, pidx, ics;
@@ -67,9 +119,9 @@ function continuation(
         set_parameter!(mapper.ds, pidx, p)
         reset!(mapper)
         
-        # Collect ics from previous attractors to pass as additional ics to basins fractions (seeding)
-        # to ensure that the clustering will identify them as clusters, we need to guarantee that there
-        # are at least `min_neighbors` entries
+        # Collect ics from previous attractors to pass as additional ics to basins fractions (seeding).
+        # To ensure that the clustering will identify them as clusters, we need to guarantee that there
+        # are at least `min_neighbors` entries.
         num_additional_ics = typeof(mapper.group_config) <: GroupViaClustering ? 5*mapper.group_config.min_neighbors : 5
         additional_ics = Dataset(vcat(map(att-> 
             fam.seeds_from_attractor(att, num_additional_ics),
