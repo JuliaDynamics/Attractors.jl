@@ -1,3 +1,7 @@
+# v1.18
+- New continuation mode `FeaturizingFindAndMatch` to be used in `continuation` similarly to how recurrences continuation works, but using `AttractorsViaFeaturizing`.
+- Update `basins_fractions` for `AttractorsViaFeaturizing` to deal with additional ics used for seeding in `continuation`.
+
 # v1.17
 
 - New function `convergence_and_basins_fractions`
