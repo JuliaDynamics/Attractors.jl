@@ -95,18 +95,23 @@ ValidICS = Union{AbstractStateSpaceSet, Function}
 #####################################################################################
 # We only extend the general `basins_fractions`, because the clustering method
 # cannot map individual initial conditions to attractors
-function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
-        show_progress = true, N = 1000
-    )
+function basins_fractions(mapper::AttractorsViaFeaturizing, og_ics::ValidICS;
+    show_progress = true, N = 1000, additional_ics::Union{ValidICS, Nothing} = nothing,
+)
+    if typeof(additional_ics) <: ValidICS
+        all_ics = deepcopy(og_ics)
+        append!(all_ics, additional_ics)
+        ics = all_ics
+    else
+        ics = og_ics
+    end
     features = extract_features(mapper, ics; show_progress, N)
     group_labels = group_features(features, mapper.group_config)
     fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
     if typeof(ics) <: AbstractStateSpaceSet
-        # TODO: If we could somehow extract the used initial conditions from `ics` 7
-        # in case `ics` was a function, that would be cool...
         attractors = extract_attractors(mapper, group_labels, ics)
         overwrite_dict!(mapper.attractors, attractors)
-        return fs, group_labels
+        return fs, group_labels #note that changing this would need to change how continuation receives `fs`
     else
         return fs
     end

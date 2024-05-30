@@ -441,8 +441,6 @@ fractions_curves, attractors_info = continuation(
 # Show some characteristic fractions:
 fractions_curves[[1, 50, 101]]
 ```
-
-
 ### Plotting the fractions
 We visualize them using a predefined function that you can find in `docs/basins_plotting.jl`
 
@@ -450,6 +448,49 @@ We visualize them using a predefined function that you can find in `docs/basins_
 # careful; `prange` isn't a vector of reals!
 plot_basins_curves(fractions_curves, γγ)
 ```
+
+## Basin fractions continuation in the magnetic pendulum with featurizing algorithm
+
+The featurizing algorithm can also be used to perform slice-by-slice continuation,
+similarly to the recurrences algorithm shown previously. We can adapt the same example to
+illustrate this. An important difference is that `continuation` in this case must receives
+pre-generated `ics` organized in a `StateSpaceSet`. This tends to make the basin fraction
+curves smoother than the recurrences version, which generates new initial conditions for
+each parameter.
+
+```@example MAIN
+# initialize projected magnetic pendulum
+using Attractors, PredefinedDynamicalSystems
+using Random: Xoshiro
+ds = Systems.magnetic_pendulum(; d = 0.3, α = 0.2, ω = 0.5)
+xg = yg = range(-3, 3; length = 101)
+ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
+function featurizer(X, t)
+    return X[end]
+end
+grouping_config = GroupViaPairwiseComparison(; threshold=0.2)
+mapper = AttractorsViaFeaturizing(psys, featurizer, grouping_config; Ttr = 200, T = 1)
+# What parameter to change, over what range
+γγ = range(1, 0; length = 101)
+prange = [[1, 1, γ] for γ in γγ]
+pidx = :γs
+# important to make a sampler that respects the symmetry of the system
+region = HSphere(3.0, 2)
+sampler, = statespace_sampler(region, 1234)
+samples_per_parameter = 1000
+ics = Dataset([deepcopy(sampler()) for _ in 1:samples_per_parameter])
+
+# continue attractors and basins:
+# `Inf` threshold fits here, as attractors move smoothly in parameter space
+fsc = FeaturizingFindAndMatch(mapper; threshold = Inf)
+fractions_curves, attractors_info = continuation(
+    fsc, prange, pidx, ics;
+    show_progress = false
+)
+# Show some characteristic fractions:
+plot_basins_curves(fractions_curves, γγ)
+```
+
 
 
 ### Fixed point curves
