@@ -24,8 +24,12 @@ The basin fractions and the attractors (or some representation of them) are cont
 across the parameter range `prange`, for the parameter of the system with index `pidx`
 (any index valid in [`set_parameter!`](@ref) can be used).
 
-`ics` is a 0-argument function generating initial conditions for
-the dynamical system (as in [`basins_fractions`](@ref)).
+`ics` is 
+- generally a 0-argument function generating initial conditions for
+the dynamical system (as in [`basins_fractions`](@ref)) or
+- in the case of `FeaturizingFindAndMatch`(@ref), a dataset containing the pre-generated
+  initial conditions for the dynamical system (as in [`basins_fractions`](@ref)) for
+  `AttractorsViaFeaturizing`(@ref).
 
 Possible subtypes of `AttractorsBasinsContinuation` are:
 
