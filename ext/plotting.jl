@@ -200,7 +200,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
         separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 7,
         axislegend_kwargs = (position = :lt,),
-        series_kwargs = (markersize = 5, linewidth = 3),
+        series_kwargs = NamedTuple(),
         markers = markers_from_keys(ukeys),
         style = :band,
     )
@@ -221,8 +221,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
                 l, u = bands[j-1], bands[j]
             end
             band!(ax, prange, l, u;
-                color = colors[k], label = "$(labels[k])", linewidth = 4,
-                series_kwargs...
+                color = colors[k], label = "$(labels[k])", series_kwargs...
             )
             if separatorwidth > 0 && j < length(ukeys)
                 lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth)
@@ -233,7 +232,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
         for (j, k) in enumerate(ukeys)
             scatterlines!(ax, prange, bands[j];
                 color = colors[k], label = "$(labels[k])", marker = markers[k],
-                series_kwargs...
+                markersize = 5, linewidth = 3, series_kwargs...
             )
         end
     else
