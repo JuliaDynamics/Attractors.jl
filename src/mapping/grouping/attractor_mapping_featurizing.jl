@@ -98,7 +98,7 @@ ValidICS = Union{AbstractStateSpaceSet, Function}
 function basins_fractions(mapper::AttractorsViaFeaturizing, og_ics::ValidICS;
     show_progress = true, N = 1000, additional_ics::Union{ValidICS, Nothing} = nothing,
 )
-    if typeof(additional_ics) <: ValidICS
+    if typeof(additional_ics) <: StateSpaceSet
         all_ics = deepcopy(og_ics)
         append!(all_ics, additional_ics)
         ics = all_ics

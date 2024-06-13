@@ -28,8 +28,11 @@ You can use `FFAM` as an alias.
 
 At the first parameter slice of the continuation process, attractors and their fractions
 are found as described in the [`AttractorsViaFeaturizing`](@ref) mapper identifying groups
-of features. At each subsequent parameter slice, initial conditions are seeded from the
- previously found attractors. They are put together with the pre-generated `ics` given to
+of features. From each group of features, an attractor is extracted by sampling one point
+in the group, evolving it forwards in time, and collecting the trajectory. That is why
+`ics` in `continuation` in this method must be a fixed set, and not a sampling function.
+Then, at each subsequent parameter slice, initial conditions are seeded from the
+ previously found attractors. They are put together with the provided `ics` given to
  `continuation`. Then, all of them are passed onto [`basins_fractions`](@ref) for
  [`AttractorsViaFeaturizing`](@ref), which featurizes and groups them to identify the
  attractors. 
@@ -37,27 +40,10 @@ of features. At each subsequent parameter slice, initial conditions are seeded f
 Naturally, during this step new attractors may be found. Once the basins fractions are
 computed, the parameter is incremented again and we perform the steps as before.
 
-This process continues for all parameter values. After all parameters are exhausted,
-the found attractors (and their fractions) are "matched" to the previous ones.
-I.e., their _IDs are changed_, so that attractors that are "similar" to those at a
-previous parameter get assigned the same ID.
-Matching is done by the [`match_continuation!`](@ref) function and is an _orthogonal_
-step. This means, that if you don't like the initial
-outcome of the matching process, you may call [`match_continuation!`](@ref) again
-on the outcome with different matching-related keywords.
-You do not need to compute attractors and basins again!
-
-Matching is a very sophisticated process that can be understood in detail by reading
-the docstrings of [`match_statespacesets!`](@ref) first and then [`match_continuation!`](@ref).
-Here is a short summary: attractors from previous and current parameter are matched
-based on their "distance". By default this is distance in state space, but any measure of
-"distance" may be used, such as the distance between Lyapunov spectra.
-Matching prioritizes new->old pairs with smallest distance: once these are matched
-the next available new->old pair with smallest distance is matched, until all new/old
-attractors have been matched. The `threshold` keyword establishes that attractors with
-distance > `threshold` do not get matched.
-Additionally, use `use_vanished = true` if you want to include as matching candidates
-attractors that have vanished during the continuation process.
+This process continues for all parameter values. After all parameters are exhausted, the
+found attractors (and their fractions) are "matched" to the previous ones. The matching
+works exactly as in [`RecurrencesFindAndMatch`](@ref). See its docstring for the full
+description.
 """
 struct FeaturizingFindAndMatch{A, M, R<:Real, S, E} <: AttractorsBasinsContinuation
     mapper::A
@@ -95,7 +81,7 @@ function continuation(
     )
 
     if ics isa Function
-        error("`ics` needs to be a Dataset.")
+        throw(ArgumentError("`ics` needs to be a StateSpaceSet."))
     end
 
     (; mapper, distance, threshold) = fam
