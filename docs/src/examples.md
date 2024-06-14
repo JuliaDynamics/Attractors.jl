@@ -864,7 +864,7 @@ search_algorithm = MFSBlackBoxOptim(max_steps = 5000, guess = ones(3))
 # actual MFS estimation
 mfss = map(enumerate(prange)) do (i, p)
     set_parameter!(ds, pidx, p)
-    reset_mapper!(mapper)
+    reset_mapper!(mapper) # reset so that we don't have to re-initialize
     # We need a special clause here: if there is only 1 attractor,
     # then there is no MFS. It is undefined. We set it to `NaN`,
     # which conveniently, will result to nothing being plotted by Makie.
