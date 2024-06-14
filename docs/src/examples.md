@@ -835,7 +835,7 @@ plot_basins_attractors_curves!(axs[1], axs[2],
 figcont
 ```
 
-very good! Let's now enrich this by adding the corresponding maximum Lyapunov exponent. **DynamicalSystems.jl** offers the `lyapunovspectrum` function that comes from the `ChaosTools` module. So we just have to make a vector of dictionaries, each now mapping attractor ID to its Lyapunov exponent. As all of these data structures are standard Julia data structures, we don't need any fancy knowledge to write the following simple code:
+very good! Let's now enrich this by adding the corresponding maximum Lyapunov exponent. **DynamicalSystems.jl** offers the `lyapunovspectrum` function that comes from the `ChaosTools` module. So we just have to make a vector of dictionaries, each dictionary mapping attractor ID to its Lyapunov exponent. As all of these data structures are standard Julia data structures, we don't need any fancy knowledge to write the following simple code:
 
 ```@example MAIN
 using ChaosTools: lyapunovspectrum
@@ -847,7 +847,11 @@ lis = map(enumerate(prange)) do (i, p) # loop over parameters
 end
 ```
 
-to add them to the plot we simply do
+On purpose we do not provide an automated function to do the above 4 lines of code block. That is because some measures may require only the attractors, some may require the dynamical system (in correct parameters) as well, and some others may require an attractor mapper (like below) instead of the dynamical system.
+Instead, we want to illustrate how simple it is for a user to write such code themselves, which also allows them to arbitrarily adjust it to the exact measure they want to use.
+
+Now, to add the Lyapunov exponents to the continuation plot we use the provided utility plotting function
+
 ```@example MAIN
 plot_continuation_curves!(axs[3], lis, prange; add_legend = false)
 figcont
