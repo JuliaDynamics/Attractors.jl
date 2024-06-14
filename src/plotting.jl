@@ -103,7 +103,7 @@ See also [`plot_continuation_curves`](@ref).
 """
 function plot_attractors_curves end
 function plot_attractors_curves! end
-export plot_attractors_curves, plot_attractors_curves!, plot_continuation_curves!
+export plot_attractors_curves, plot_attractors_curves!
 
 """
     plot_continuation_curves(continuation_info, prange = 1:length(); kwargs...)
@@ -122,6 +122,8 @@ end
 ```
 """
 function plot_continuation_curves end
+function plot_continuation_curves! end
+export plot_continuation_curves, plot_continuation_curves!
 
 """
     plot_basins_attractors_curves(
