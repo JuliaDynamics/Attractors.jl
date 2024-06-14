@@ -3,6 +3,7 @@ using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.StateSpaceSets
 
+import Documenter
 pages = [
     "index.md",
     "attractors.md",
@@ -11,6 +12,7 @@ pages = [
     "visualization.md",
     "examples.md",
     "references.md",
+    Documenter.hide("recurrences_animation.md"),
 ]
 
 import Downloads
