@@ -10,7 +10,7 @@ using CairoMakie, Attractors
 
 ## Latest news
 
-- New functions [`test_wada_merge`](@ref) and [`convergence_and_basins_fractions`](@ref)!
+- Brand new [tutorial](@ref tutorial) for the whole repo!
 
 ## Outline of Attractors.jl
 
