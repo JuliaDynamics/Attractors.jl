@@ -297,7 +297,8 @@ end
 function Attractors.plot_continuation_curves(args...; kw...)
     fig = Figure()
     ax = Axis(fig[1,1])
-    return plot_continuation_curves!(ax, args...; kw...)
+    plot_continuation_curves!(ax, args...; kw...)
+    return fig
 end
 
 # Mixed: basins and attractors

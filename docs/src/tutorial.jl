@@ -8,16 +8,270 @@
 # attractor, any of which can be used in the continuation to quantify stability.
 
 # Besides this, there are some other stuff, like for example [`edgestate`](@ref),
-# but we won't cover anything else in this introductory tutorial. See the [examples](@ref examples)
-# page instead.
+# but we won't cover anything else in this introductory tutorial.
+# See the [examples](@ref examples) page instead.
 
-# ## Outline
+# Here is a limited outline of part of the functionality of Attractors.jl,
+# some of which will also be highlighted in this tutorial:
 
+# ## Input: a `DynamicalSystem`
 
+# The key input for most functionality of Attractors.jl is an instance of
+# a `DynamicalSystem`. Any instance is valid. If you don't know how to make
+# a `DynamicalSystem`, you need to consult the main tutorial of the
+# [DynamicalSystems.jl library](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/stable/tutorial/).
+# For this tutorial we will use a modified Lorenz-like system with equations
 
-
-using Attractors
-
-# ```@docs; canonical=false
-# Attractors
+# ```math
+# \dot{x} & = y - x \\
+# \dot{y} & = -x*z + b*|z| \\
+# \dot{x} & = x*y - a \\
 # ```
+
+# which we define in code as
+using Attractors
+using OrdinaryDiffEq # for accessing ODE Solvers
+
+function modified_lorenz_rule(u, p, t)
+    x, y, z = u; a, b = p
+    dx = y - x
+    dy = - x*z + b*abs(z)
+    dz = x*y - a
+    return SVector(dx, dy, dz)
+end
+
+p0 = [5.0, 0.1] # parameters
+u0 = [-4.0, 5, 0] # state
+ds = CoupledODEs(modified_lorenz_rule, u0, p0;
+    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01)
+)
+
+# ## Finding attractors
+
+# There are two major methods for finding attractors in dynamical systems.
+# Explanation of how they work is in their respective docs.
+
+# 1. [`AttractorsViaRecurrences`](@ref).
+# 2. [`AttractorsViaFeaturizing`](@ref).
+
+# You can consult [Datseris2023](@cite) for a comparison between the two.
+
+# As far as the user is concerned, both algorithms are part of the same interface,
+# and can be used  the same way. The interface is extendable as well,
+# and works as follows.
+
+# First, we create an instance of such an "attractor finding algorithm",
+# which we call `AttractorMapper`. For example, [`AttractorsViaRecurrences`](@ref)
+# requires a tesselated grid of the state space to search for attractors in.
+# It also allows the user to tune some meta parameters, but in our example
+# they are already tuned for the dynamical system at hand. So we initialize
+
+grid = (
+    range(-10.0, 10.0; length = 100), # x
+    range(-15.0, 15.0; length = 100), # y
+    range(-15.0, 15.0; length = 100), # z
+)
+
+mapper = AttractorsViaRecurrences(ds, grid;
+    consecutive_recurrences = 1000, attractor_locate_steps = 1000,
+    consecutive_lost_steps = 100,
+)
+
+# Then, this `mapper` can be given to several functions for finding attractors
+# and their basins of attraction. The simplest one
+# is [`basins_fractions`](@ref). Using the `mapper`,
+# it finds "all" attractors of the dynamical system and reports the state space fraction
+# each attractors attracts. The search is probabilistic, so "all" attractors means those
+# that at least one initial condition converged to.
+
+# We can provide explicitly initial conditions to [`basins_fraction`](@ref),
+# however it is typically simpler to provide it with with a state space sampler instead:
+# a function that generates random initial conditions in the region of the
+# state space that we are interested in. Here this region coincides with `grid`,
+# so we can simply do:
+
+sampler, = statespace_sampler(grid)
+
+sampler() # random i.c.
+
+#
+
+sampler() # another random i.c.
+
+# and finally call
+
+fs = basins_fractions(mapper, sampler)
+
+# The returned `fs` is a dictionary mapping attractor IDs to their state space fraction.
+# To obtain the attractors themselves we do
+
+attractors = extract_attractors(mapper)
+
+# and we can visualize them
+
+using CairoMakie
+fig = Figure()
+ax = Axis(fig[1,1]; title = "bistable lorenz-like")
+for (k, A) in attractors
+    scatter!(ax, A[:, 1], A[:, 2]; label = "fraction: $(fs[k])")
+end
+axislegend(ax; position = :lt)
+fig
+
+# We see that for the chosen parameters there are two attractors: a limit cycle and a chaotic attractor. We can confirm that both attractors are robust as both have sufficiently large basin fractions.
+
+# You can use alternative algorithms in [`basins_fractions`](@ref), see
+# the documentation of [`AttractorMapper`](@ref) for possible subtypes.
+# [`AttractorMapper`](@ref) defines an extendable interface and can be enriched
+# with other methods in the future!
+
+# ## Continuation
+
+# If you have heard before the word "continuation", then you are likely aware of the **traditional continuation-based bifurcation analysis (CBA)** offered by many software, such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). Here we offer a completely different kind of continuation called **attractors & basins continuation**.
+
+# A direct comparison of the two approaches is not truly possible, because they do different things. The traditional linearized continuation analysis continues the curves of individual fixed points across the joint state-parameter space. The attractor and basins continuation first finds all attractors at all parameter values and then _matches_ appropriately similar attractors across different parameters, giving the illusion of continuing them individually.
+
+# This is fundamental difference. With our approach, one finds "all" attractors
+# (for sufficiently dense sampling). And because all attractors are simultaneously
+# tracked across the parameter axis, the user may arbitrarily estimate _any_
+# property of the attractors and how it varies as the parameter varies.
+# A more detailed comparison can be found in [Datseris2023](@cite).
+
+# To perform the continuation is extremely simple. First, we decide what parameter,
+# and what range, to continue over:
+
+prange = 4.5:0.02:6
+pidx = 1 # index of the parameter
+
+# Then, we may call the [`continuation`](@ref) function.
+# We have to provide a continuation algorithm, see [`RecurrencesFindAndMatch`](@ref).
+# In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
+# This algorithm uses the `mapper` to find all attractors at each parameter value.
+# Then, it performs a "matching" step, ensuring a "continuity" of the attractor
+# label across the parameter axis. You can read the docstring for more details,
+# as this algorithm is quite sophisticated!
+
+# For now we can use all of its default options which are reliable 99% of the time
+
+rafm = RecurrencesFindAndMatch(mapper)
+
+# and call
+
+fractions_curves, attractors_info = continuation(
+	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
+)
+
+attractors_info
+
+# the output is given as two vectors. Each vector is a dictionary
+# mapping attractor IDs to ther fractions, or their state space sets, respectively.
+# Both vectors have the same size as the parameter range.
+
+# We can visualize this with the convenience function:
+
+fig = plot_basins_attractors_curves(
+	fractions_curves, attractors_info, A -> minimum(A[:, 1]), prange,
+)
+
+# In the top panel are the basin fractions, by default plotted as stacked bars.
+# Bottom panel is a visualization of the tracked attractors.
+# The argument ` A -> minimum(A[:, 1])` is simply a function tha maps
+# an attractor into a real number for plotting.
+# We can provide more functions to visualize more aspects of the attractors:
+
+using Statistics: std
+
+a2rs = [
+    A -> minimum(A[:, 1]),
+    A -> log(length(A)), # proxy for "complexity"
+]
+
+fig = plot_basins_attractors_curves(
+	fractions_curves, attractors_info, a2rs, prange; add_legend = false
+)
+
+ax1, ax2 = content.((fig[2,1], fig[3,1]))
+
+ax1.ylabel = "min(A)"
+ax2.ylabel = "log(len(A))"
+
+fig
+
+# ## Enhancing the continuation
+
+# The biggest strength of Attractors.jl is that it is not an isolated software.
+# It is part of **DynamicalSystems.jl**. Here, we will use the full power of
+# **DynamicalSystems.jl** and enrich the above continuation with various other
+# measures of nonlocal stability, in particular Lyapunov exponents and
+# the minimal fatal shock.
+
+# First, let's estimate the maximum Lyapunov exponent (MLE) for all attractors,
+# using the `lyapunovspectrum` function that comes from the ChaosTools.jl submodule.
+
+using ChaosTools: lyapunov
+
+lis = map(enumerate(prange)) do (i, p) # loop over parameters
+    set_parameter!(ds, pidx, p) # important! We use the dynamical system!
+    attractors = attractors_info[i]
+    Dict(k => lyapunov(ds, 2000.0; u0 = A[1]) for (k, A) in attractors)
+end
+
+# The above `map` loop may be intimidating if you are a beginner, but it is
+# really just a shorter way to write a `for` loop for our example.
+# We iterate over all parameters, and for each we first update the dynamical
+# system with the correct parameter, and then extract the MLE
+# for each attractor. `map` just means that we don't have to pre-allocate a
+# new vector before the loop; it creates it for us.
+
+# We can visualize the LE with the other convenience function [`plot_continuation_curves!`](@ref),
+
+ax3 = Axis(fig[4, 1]; ylabel = "MLE")
+plot_continuation_curves!(ax3, lis, prange; add_legend = false)
+
+fig
+
+# This reveals crucial information for tha attractors, whether they are chaotic or not, that we would otherwise obtain only by visualizing the system dynamics at every single parameter.
+# The story we can see now is that the dynamics start with a limit cycle (0 Lyapunov exponent), go into bi-stability of chaos and limit cycle, then there is only one limit cycle again, and then a chaotic attractor appears again, for a second bistable regime.
+
+# The last piece of information to add is yet another measure of nonlocal stability: the minimal fatal shock (MFS), which is provided by [`minimal_fatal_shock`](@ref).
+# The code to estimate this is similar with the `map` block for the MLE.
+# Here however we re-use the created `mapper`, but now we must not forget to reset it inbetween parameter increments:
+
+using LinearAlgebra: norm
+search_area = collect(extrema.(grid ./ 2)) # smaller search = faster results
+search_algorithm = MFSBlackBoxOptim(max_steps = 1000, guess = ones(3))
+
+mfss = map(enumerate(prange)) do (i, p)
+    set_parameter!(ds, pidx, p)
+    reset_mapper!(mapper) # reset so that we don't have to re-initialize
+    ## We need a special clause here: if there is only 1 attractor,
+    ## then there is no MFS. It is undefined. We set it to `NaN`,
+    ## which conveniently, will result to nothing being plotted by Makie.
+    attractors = attractors_info[i]
+    if length(attractors) == 1
+        return Dict(k => NaN for (k, A) in attractors)
+    end
+    ## otherwise, compute the actual MFS from the first point of each attractor
+    Dict(k =>
+        norm(minimal_fatal_shock(mapper, A[1], search_area, search_algorithm))
+        for (k, A) in attractors
+    )
+end
+
+# In a real application we wouldn't use the first point of each attractor,
+# as the first point is completely random on the attractor (at least, for the
+# [`AttractorsViaRecurrences`] mapper we use here).
+# We would do this by examining the whole `A` object in the above block
+# instead of just using `A[1]`. But this is a tutorial so we don't care!
+
+# Right, so now we can visualize the MFS with the rest of the other quantities:
+
+ax4 = Axis(fig[5, 1]; ylabel = "MFS", xlabel = "parameter")
+plot_continuation_curves!(ax4, mfss, prange; add_legend = false)
+
+## make the figure prettier
+for ax in (ax1, ax2, ax3); hidexdecorations!(ax; grid = false); end
+resize!(fig, 600, 800)
+fig
+
+# And that's the end of the tutorial!
