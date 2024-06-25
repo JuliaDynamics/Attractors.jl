@@ -112,18 +112,18 @@ function continuation(
         error("`ics` needs to be a function.")
     end
     progress = ProgressMeter.Progress(length(prange);
-        desc="Continuating basins fractions:", enabled=show_progress
+        desc = "Continuating basins fractions:", enabled=show_progress
     )
 
     mapper = rsc.mapper
     reset_mapper!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
-    set_parameter!(mapper.ds, pidx, prange[1])
+    set_parameter!(referenced_dynamical_system(mapper), pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_curves = [fs]
     # Furthermore some info about the attractors is stored and returned
-    prev_attractors = deepcopy(mapper.bsn_nfo.attractors)
+    prev_attractors = deepcopy(extract_attractors(mapper))
     get_info = attractors -> Dict(
         k => rsc.info_extraction(att) for (k, att) in attractors
     )
@@ -132,7 +132,7 @@ function continuation(
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
     # Continue loop over all remaining parameters
     for p in prange[2:end]
-        set_parameter!(mapper.ds, pidx, p)
+        set_parameter!(referenced_dynamical_system(mapper), pidx, p)
         reset_mapper!(mapper)
         # Seed initial conditions from previous attractors
         # Notice that one of the things that happens here is some attractors have
@@ -167,29 +167,6 @@ function continuation(
     (; use_vanished, distance, threshold) = rsc
     match_continuation!(fractions_curves, attractors_info; distance, threshold, use_vanished)
     return fractions_curves, attractors_info
-end
-
-"""
-    reset_mapper!(mapper::AttractorsViaRecurrences)
-
-Reset all accumulated information of `mapper` so that it is
-as if it has just been initialized. Useful in `for` loops
-that loop over a parameter of the dynamical system stored in `mapper`.
-"""
-function reset_mapper!(mapper::AttractorsViaRecurrences)
-    empty!(mapper.bsn_nfo.attractors)
-    if mapper.bsn_nfo.basins isa Array
-        mapper.bsn_nfo.basins .= 0
-    else
-        empty!(mapper.bsn_nfo.basins)
-    end
-    mapper.bsn_nfo.state = :att_search
-    mapper.bsn_nfo.consecutive_match = 0
-    mapper.bsn_nfo.consecutive_lost = 0
-    mapper.bsn_nfo.prev_label = 0
-    mapper.bsn_nfo.current_att_label = 2
-    mapper.bsn_nfo.visited_cell_label = 4
-    return
 end
 
 function _ics_from_grid(rsc::RecurrencesFindAndMatch)

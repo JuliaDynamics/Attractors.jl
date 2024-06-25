@@ -101,15 +101,3 @@ function continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
     match_continuation!(rmaps, fractions_curves)
     return fractions_curves, attractors_info
 end
-
-function match_continuation!(attractors_info, matcher::SSSetMatcher)
-    # do your thing, store the replacement maps
-    return rmaps::Vector{Dict}
-end
-
-function match_continuation!(continuation_quantity::Vector{Dict}, rmaps::Vector{Dict})
-    for (quantity, rmap) in zip(continuation_quantity, rmaps)
-        swap_dict_keys!(quantity, rmap)
-    end
-    return
-end
