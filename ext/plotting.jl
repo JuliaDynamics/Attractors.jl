@@ -434,6 +434,8 @@ function auto_attractor_lims(attractors_info, access)
             ymax < maxi[2] && (ymax = maxi[2])
         end
     end
-    return (xmin, xmax, ymin, ymax)
+    dx = xmax - xmin
+    dy = ymax - ymin
+    return (xmin - 0.1dx, xmax + 0.1dx, ymin - 0.1dy, ymax + 0.1dy)
 end
 
