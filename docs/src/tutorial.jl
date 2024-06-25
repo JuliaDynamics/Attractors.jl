@@ -1,4 +1,4 @@
-# # Attractors.jl Tutorial
+# # [Attractors.jl Tutorial](@id tutorial)
 
 # [`Attractors`](@ref) is a submodule of the **DynamicalSystems.jl** library.
 # This tutorial will walk you through its main functionality.
