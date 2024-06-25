@@ -1,23 +1,22 @@
 # # Attractors.jl Tutorial
 
-# [`Attractors`](@ref) is a module of the **DynamicalSystems.jl** library.
+# [`Attractors`](@ref) is a submodule of the **DynamicalSystems.jl** library.
 # This tutorial will walk you through its main functionality.
-# That is, given a `DynamicalSystem` instance, find all its attractors and then
+# That is, given a `DynamicalSystem` instance, find all its attractors and their basins
+# of attraction. Then,
 # continue these attractors, and their stability properties, across a parameter value.
 # It also offers various functions that compute nonlocal stability properties for an
 # attractor, any of which can be used in the continuation to quantify stability.
 
-# Besides this, there are some other stuff, like for example [`edgestate`](@ref),
+# Besides this main functionality, there are plenty of other stuff,
+# like for example [`edgestate`](@ref) or [`basins_fractal_dimension`](@ref),
 # but we won't cover anything else in this introductory tutorial.
 # See the [examples](@ref examples) page instead.
-
-# Here is a limited outline of part of the functionality of Attractors.jl,
-# some of which will also be highlighted in this tutorial:
 
 # ## Input: a `DynamicalSystem`
 
 # The key input for most functionality of Attractors.jl is an instance of
-# a `DynamicalSystem`. Any instance is valid. If you don't know how to make
+# a `DynamicalSystem`. If you don't know how to make
 # a `DynamicalSystem`, you need to consult the main tutorial of the
 # [DynamicalSystems.jl library](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/stable/tutorial/).
 # For this tutorial we will use a modified Lorenz-like system with equations
@@ -30,7 +29,7 @@
 
 # which we define in code as
 using Attractors
-using OrdinaryDiffEq # for accessing ODE Solvers
+using OrdinaryDiffEq # for accessing advanced ODE Solvers
 
 function modified_lorenz_rule(u, p, t)
     x, y, z = u; a, b = p
@@ -57,7 +56,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0;
 # You can consult [Datseris2023](@cite) for a comparison between the two.
 
 # As far as the user is concerned, both algorithms are part of the same interface,
-# and can be used  the same way. The interface is extendable as well,
+# and can be used in the same way. The interface is extendable as well,
 # and works as follows.
 
 # First, we create an instance of such an "attractor finding algorithm",
@@ -102,12 +101,16 @@ sampler() # another random i.c.
 
 fs = basins_fractions(mapper, sampler)
 
-# The returned `fs` is a dictionary mapping attractor IDs to their state space fraction.
+# The returned `fs` is a dictionary mapping attractor IDs to
+# the state space fraction their basin of attraction occupies.
+# To obtain the full basin, which is computationally much more expensive,
+# use [`basins_of_attraction`](@ref).
+
 # To obtain the attractors themselves we do
 
 attractors = extract_attractors(mapper)
 
-# and we can visualize them
+# and we can visualize them projected into the first two dimensions
 
 using CairoMakie
 fig = Figure()
@@ -118,7 +121,8 @@ end
 axislegend(ax; position = :lt)
 fig
 
-# We see that for the chosen parameters there are two attractors: a limit cycle and a chaotic attractor. We can confirm that both attractors are robust as both have sufficiently large basin fractions.
+# We see that for the chosen parameters there are two coexisting attractors:
+# a limit cycle and a chaotic attractor. We can confirm that both attractors are robust as both have sufficiently large basin fractions.
 
 # You can use alternative algorithms in [`basins_fractions`](@ref), see
 # the documentation of [`AttractorMapper`](@ref) for possible subtypes.
@@ -129,13 +133,17 @@ fig
 
 # If you have heard before the word "continuation", then you are likely aware of the **traditional continuation-based bifurcation analysis (CBA)** offered by many software, such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). Here we offer a completely different kind of continuation called **attractors & basins continuation**.
 
-# A direct comparison of the two approaches is not truly possible, because they do different things. The traditional linearized continuation analysis continues the curves of individual fixed points across the joint state-parameter space. The attractor and basins continuation first finds all attractors at all parameter values and then _matches_ appropriately similar attractors across different parameters, giving the illusion of continuing them individually.
+# A direct comparison of the two approaches is not truly possible, because they do different things.
+# The traditional linearized continuation analysis continues the curves of individual fixed
+# points across the joint state-parameter space. The attractor and basins continuation first
+# finds all attractors at all parameter values and then _matches_ appropriately similar
+# attractors across different parameters, giving the illusion of continuing them individually.
 
-# This is fundamental difference. With our approach, one finds "all" attractors
-# (for sufficiently dense sampling). And because all attractors are simultaneously
+# This is a fundamental difference. With our approach, one finds all attractors
+# (or almost all, for insufficiently dense sampling). And because all attractors are simultaneously
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
-# A more detailed comparison can be found in [Datseris2023](@cite).
+# A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
 
 # To perform the continuation is extremely simple. First, we decide what parameter,
 # and what range, to continue over:
@@ -144,7 +152,7 @@ prange = 4.5:0.02:6
 pidx = 1 # index of the parameter
 
 # Then, we may call the [`continuation`](@ref) function.
-# We have to provide a continuation algorithm, see [`RecurrencesFindAndMatch`](@ref).
+# We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
 # This algorithm uses the `mapper` to find all attractors at each parameter value.
 # Then, it performs a "matching" step, ensuring a "continuity" of the attractor
@@ -166,8 +174,31 @@ attractors_info
 # the output is given as two vectors. Each vector is a dictionary
 # mapping attractor IDs to ther fractions, or their state space sets, respectively.
 # Both vectors have the same size as the parameter range.
+# For example, the attractors at the 34-th parameter value are:
 
-# We can visualize this with the convenience function:
+attractors_info[34]
+
+# There is a fantastic convenience function for animating
+# the attractors evolution, that utilizes things we have
+# already defined:
+
+animate_attractors_continuation(
+    ds, attractors_info, fractions_curves, prange, pidx;
+);
+
+# ```@raw html
+# <video width="auto" controls autoplay loop>
+# <source src="../attracont.mp4" type="video/mp4">
+# </video>
+# ```
+
+# Hah, how cool is that! The attractors pop in and out of existence like out of nowhere!
+# It would be incredibly difficult to find these attractors in traditional continuation software
+# where a rough estimate of the period is required! (It would also be too hard due to the presence
+# of chaos for most of the parameter values, but that's another issue!)
+
+# Now typically a continuation is visualized in a 2D plot where the x axis is the
+# parameter axis. We can do this with the convenience function:
 
 fig = plot_basins_attractors_curves(
 	fractions_curves, attractors_info, A -> minimum(A[:, 1]), prange,
@@ -175,7 +206,7 @@ fig = plot_basins_attractors_curves(
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
 # Bottom panel is a visualization of the tracked attractors.
-# The argument ` A -> minimum(A[:, 1])` is simply a function tha maps
+# The argument `A -> minimum(A[:, 1])` is simply a function tha maps
 # an attractor into a real number for plotting.
 # We can provide more functions to visualize more aspects of the attractors:
 
@@ -192,7 +223,7 @@ fig = plot_basins_attractors_curves(
 
 ax1, ax2 = content.((fig[2,1], fig[3,1]))
 
-ax1.ylabel = "min(A)"
+ax1.ylabel = "min(A₁)"
 ax2.ylabel = "log(len(A))"
 
 fig
@@ -271,7 +302,8 @@ plot_continuation_curves!(ax4, mfss, prange; add_legend = false)
 
 ## make the figure prettier
 for ax in (ax1, ax2, ax3); hidexdecorations!(ax; grid = false); end
-resize!(fig, 600, 800)
+resize!(fig, 500, 600)
 fig
 
-# And that's the end of the tutorial!
+# And that's the end of the tutorial! See the [examples](@ref examples) for
+# more runnable code, and see the [API](@ref) for a list of all functions and algorithms!

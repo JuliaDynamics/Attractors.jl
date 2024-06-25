@@ -371,7 +371,7 @@ end
 function Attractors.animate_attractors_continuation(
         ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
         savename = "attracont.mp4", access = SVector(1, 2),
-        limits = (0,1,0,1),
+        limits = auto_attractor_lims(attractors_info, access),
         framerate = 4, markersize = 10,
         ukeys = unique_keys(attractors_info),
         colors = colors_from_keys(ukeys),
@@ -421,4 +421,19 @@ function Attractors.animate_attractors_continuation(
     return fig
 end
 
+function auto_attractor_lims(attractors_info, access)
+    xmin = ymin = Inf
+    xmax = ymax = -Inf
+    for atts in attractors_info
+        for (k, A) in atts
+            P = A[:, access]
+            mini, maxi = minmaxima(P)
+            xmin > mini[1] && (xmin = mini[1])
+            ymin > mini[2] && (ymin = mini[2])
+            xmax < maxi[1] && (xmax = maxi[1])
+            ymax < maxi[2] && (ymax = maxi[2])
+        end
+    end
+    return (xmin, xmax, ymin, ymax)
+end
 
