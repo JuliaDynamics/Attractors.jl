@@ -170,7 +170,7 @@ fs = basins_fractions(mapper, sampler)
 # To perform the continuation is extremely simple. First, we decide what parameter,
 # and what range, to continue over:
 
-prange = 4.5:0.02:6
+prange = 4.7:0.02:6
 pidx = 1 # index of the parameter
 
 # Then, we may call the [`continuation`](@ref) function.
@@ -194,7 +194,7 @@ fractions_curves, attractors_info = continuation(
 attractors_info
 
 # the output is given as two vectors. Each vector is a dictionary
-# mapping attractor IDs to ther fractions, or their state space sets, respectively.
+# mapping attractor IDs to their fractions, or their state space sets, respectively.
 # Both vectors have the same size as the parameter range.
 # For example, the attractors at the 34-th parameter value are:
 
@@ -228,9 +228,9 @@ fig = plot_basins_attractors_curves(
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
 # Bottom panel is a visualization of the tracked attractors.
-# The argument `A -> minimum(A[:, 1])` is simply a function tha maps
+# The argument `A -> minimum(A[:, 1])` is simply a function that maps
 # an attractor into a real number for plotting.
-# We can provide more functions to visualize more aspects of the attractors:
+# We can provide more functions to visualize other aspects of the attractors:
 
 using Statistics: std
 

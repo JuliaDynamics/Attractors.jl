@@ -34,8 +34,9 @@ AttractorsViaFeaturizing
 
 Grouping configurations that can be given to [`AttractorsViaFeaturizing`](@ref)
 are part of a generic and extendable interface based on the [`group_features`](@ref)
-function. It can also be used and extended completely independently of finding
-attractors of dynamical systems
+function.
+The grouping configuration sets how the features describing the trajectories will be grouped together.
+Nevertheless, this grouping infrastructure can also be used and extended completely independently of finding attractors of dynamical systems!
 
 ### Grouping types
 ```@docs
