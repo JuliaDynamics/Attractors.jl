@@ -4,9 +4,11 @@
 Supertype of all "matchers" that match IDs between state space sets (typically attractors).
 This is for example useful after performing a [`continuation`](@ref).
 
-Matchers implement the core [`match_statespacesets!`](@ref) function,
-however it is typically the case that you want to use the [`match_continuation!`](@ref)
-function instead.
+Matchers implement an extendable interface. A new mapper type only needs to
+extend the function [`replacement_map`](@ref).
+
+As a user, you typically want to use the higher
+level function [`match_continuation!`](@ref) directly.
 
 Currently available matchers are:
 
@@ -15,19 +17,48 @@ Currently available matchers are:
 """
 abstract type SSSetMatcher end
 
-# TODO: Give [`match_statespacesets!`] the index `i`  that by default is
-# `nothing` and some matchers use it.
-# Some matchers may reference the parameter vector and dynamical system if
-# they need to evolve it.`
-# This means that the low level function to actually extend is `match_statespacesets!`
-# and not the continuation one!
+"""
+    replacement_map(a₊, a₋, matcher; pi = nothing) → rmap
+
+Given dictionaries `a₊, a₋` mapping IDs to `StateSpaceSet` instances,
+create a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
+to IDs (keys) in dictionary `a₋`, so that
+so that sets in `a₊` that are the "closest" to sets in `a₋` get assigned the
+same key as in `a₋`.
+Use [`swap_dict_keys`](@ref) to apply `rmap` to `a₊`.
+
+How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`.
+
+Typically the +,- mean after and before some change of parameter of a system.
+For some matchers, such as [`MatchByBasinEnclosure`](@ref), the value of the parameter
+is important. `pi` in this case can be given as the index of the parameter
+corresponding to the result `a₋`, assuming `a₊, a₋` are two subsequent results
+of a [`continuation`](@ref) output.
+
+Return the replacement map, a dictionary mapping old keys of `a₊` to
+the new ones that they were mapped to. You can obtain this map, without modifying
+the dictionaries, by calling the [`replacement_map`](@ref) function directly.
+"""
+function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
+    throw(ArgumentError("Not implemented for $(typeof(matcher))"))
+end
+
+"""
+    match_statespacesets!(a₊, a₋, matcher; pi = nothing) → rmap
+
+Convenience function that estimates the [`replacement_map`](@ref)
+and then applies it to `a₊` using the [`swap_dict_keys!`](@ref) function.
+"""
+function match_statespacesets!(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
+    rmap = replacement_map(a₊, a₋, matcher; kw...)
+    swap_dict_keys!(a₊, rmap)
+    return rmap
+end
 
 # TODO: is it possible to make the "ghost" argument generic that applies
 # to all matchers? if so it can be a keyword of match continuation.
 # I need to see what it does exactly.
 # The retract keys ca be universal and given exclusively to `match_continuation`.
-
-
 
 """
     match_continuation!(set_dicts::Vector{Dict}, matcher::SSSetMatcher) → rmaps
