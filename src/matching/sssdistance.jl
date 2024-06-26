@@ -20,7 +20,5 @@ Sets are matched on a p
 @kwdef struct MatchBySSDistance{D, T<:Real}
     distance::D
     threshold::T = Inf
-    use_vanished::Bool = !isinf(threshold)
-    retract_keys::Bool = true
 end
 

@@ -66,7 +66,7 @@ end
 # The retract keys ca be universal and given exclusively to `match_continuation`.
 
 """
-    match_sequentially!(dicts::Vector{Dict{Int, Any}}, matcher::SSSetMatcher) → rmaps
+    match_sequentially!(dicts::Vector{Dict{Int, Any}}, matcher::SSSetMatcher; kw...)
 
 Match the `dicts`, a vector of dictionaries mapping IDs (integers) to values,
 according to the given `matcher` by sequentially applying the
@@ -79,6 +79,16 @@ work for any values that `matcher` works with.
 Return `rmaps`, which is a vector of dictionaries.
 `rmaps[i]` contains the [`replacement_map`](@ref) for `attractors[i+1]`,
 i.e., the pairs of `old => new` IDs.
+
+## Keyword arguments
+
+- `use_vanished::Bool = false`: If `use_vanised = true`, then IDs that existed before but have vanished are kept in "memory"
+  when it comes to matching: the current dictionary values are compared to the latest instance
+  of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
+- `retract_keys::Bool = true`: If `true` at the end the function will "retract" keys (i.e., make the
+  integers smaller integers) so that all unique IDs
+  are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become
+  1, 2, 3. The special ID -1 is unaffected by this.
 """
 function match_sequentially!(
         attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher;
