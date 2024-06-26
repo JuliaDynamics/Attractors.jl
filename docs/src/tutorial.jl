@@ -22,9 +22,11 @@
 # For this tutorial we will use a modified Lorenz-like system with equations
 
 # ```math
+# \begin{align}
 # \dot{x} & = y - x \\
-# \dot{y} & = -x*z + b*|z| \\
-# \dot{x} & = x*y - a \\
+# \dot{y}  &= -x*z + b*|z| \\
+# \dot{x}  &= x*y - a \\
+# \end{align}
 # ```
 
 # which we define in code as
