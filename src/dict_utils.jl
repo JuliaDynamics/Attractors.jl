@@ -9,7 +9,7 @@ export unique_keys, swap_dict_keys!
 """
     swap_dict_keys!(d::Dict, replacement_map::Dict)
 
-Swap the keys of a dictionary `d` given the [`replacement_map`](@ref)
+Swap the keys of a dictionary `d` given a `replacement_map`
 which maps old keys to new keys. Also ensure that a swap can happen at most once,
 e.g., if input `d` has a key `4`, and `rmap = Dict(4 => 3, 3 => 2)`,
 then the key `4` will be transformed to `3` and not further to `2`.
@@ -38,6 +38,7 @@ end
 
 """
     overwrite_dict!(old::Dict, new::Dict)
+
 In-place overwrite the `old` dictionary for the key-value pairs of the `new`.
 """
 function overwrite_dict!(old::Dict, new::Dict)
@@ -49,12 +50,14 @@ end
 
 """
     additive_dict_merge!(d1::Dict, d2::Dict)
+
 Merge keys and values of `d2` into `d1` additively: the values of the same keys
 are added together in `d1` and new keys are given to `d1` as-is.
 """
 function additive_dict_merge!(d1::Dict, d2::Dict)
+    z = zero(valtype(d1))
     for (k, v) in d2
-        d1[k] = get(d1, k, 0) + v
+        d1[k] = get(d1, k, z) + v
     end
     return d1
 end

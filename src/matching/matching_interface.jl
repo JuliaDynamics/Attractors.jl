@@ -2,23 +2,25 @@
     SSSetMatcher
 
 Supertype of all "matchers" that match IDs between state space sets (typically attractors).
-This is for example useful after performing a [`continuation`](@ref).
 
 Matchers implement an extendable interface. A new mapper type only needs to
 extend the function [`replacement_map`](@ref).
-
-As a user, you typically want to use the higher
-level function [`match_continuation!`](@ref) directly.
+This function is used by the higher level function [`match_sequentially!`](@ref)
+that is called at the end of [`continuation`](@ref) by some continuation algorithms.
 
 Currently available matchers are:
 
 - [`MatchBySSDistance`](@ref)
 - [`MatchByBasinEnclosure`](@ref)
+
+As you user you typically only care about given an instance of `SSSetMatcher`
+to a continuation algorithm such as [`AttractorsContinueAndMatch`](@ref),
+and you don't have to worry about the matching functions themselves.
 """
 abstract type SSSetMatcher end
 
 """
-    replacement_map(a₊, a₋, matcher; pi = nothing) → rmap
+    replacement_map(a₊, a₋, matcher; i = nothing) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
 return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
@@ -34,21 +36,25 @@ Within Attractors.jl they are typically `StateSpaceSet`s representing attractors
 
 Typically the +,- mean after and before some change of parameter of a dynamical system.
 For some matchers, such as [`MatchByBasinEnclosure`](@ref), the value of the parameter
-is important. `pi` in this case can be given as the index of the parameter range
+is important. `i` in this case can be given as the index of the parameter range
 corresponding to the result `a₋`, assuming `a₊, a₋` are two subsequent results
 of a [`continuation`](@ref) output.
 """
 function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
+    # For developers: a private keyword `next_id` is also given to `replacement_map`
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
 end
 
 """
-    match_statespacesets!(a₊, a₋, matcher; pi = nothing) → rmap
+    replacement_map!(a₊, a₋, matcher; i = nothing) → rmap
 
-Convenience function that estimates the [`replacement_map`](@ref)
-and then applies it to `a₊` using the [`swap_dict_keys!`](@ref) function.
+Convenience, equivalent with:
+```julia
+rmap = replacement_map(a₊, a₋, matcher; kw...)
+swap_dict_keys!(a₊, rmap)
+```
 """
-function match_statespacesets!(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
+function replacement_map!(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
     rmap = replacement_map(a₊, a₋, matcher; kw...)
     swap_dict_keys!(a₊, rmap)
     return rmap
@@ -60,40 +66,83 @@ end
 # The retract keys ca be universal and given exclusively to `match_continuation`.
 
 """
-    match_continuation!(set_dicts::Vector{Dict}, matcher::SSSetMatcher) → rmaps
+    match_sequentially!(dicts::Vector{Dict{Int, Any}}, matcher::SSSetMatcher) → rmaps
 
-Match the `set_dicts`, a vector of dictionaries mapping IDs to
-state space sets (typically the output of [`continuation`](@ref)), according
-to the given `matcher` which is any subtype of [`SSSetMatcher`](@ref).
-`attractors` is a vector of dictionaries. Each dictionary maps attractor ids
-to state space sets representing the attractors.
+Match the `dicts`, a vector of dictionaries mapping IDs (integers) to values,
+according to the given `matcher` by sequentially applying the
+[`replacement_map`](@ref) function to all elements of `dicts` besides the first one.
+
+In the context of Attractors.jl `dicts` are typically dictionaries mapping
+IDs to attractors (`StateSpaceSet`s), however the function is generic and would
+work for any values that `matcher` works with.
 
 Return `rmaps`, which is a vector of dictionaries.
 `rmaps[i]` contains the [`replacement_map`](@ref) for `attractors[i+1]`,
 i.e., the pairs of `old => new` IDs.
 """
-function match_continuation!(attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher)
-    # this generic implementation works for any matcher which only depends on
-    # current and previous attractor state
+function match_sequentially!(
+        attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher;
+        use_vanished = false, retract_keys = true
+    )
+    # this generic implementation works for any matcher!!!
     rmaps = Dict{Int,Int}[]
-    for i in 2:length(attractors)
-        a₊, a₋ = attractors[i], attractors[i - 1]
-        rmap = match_sssets!(a₊, a₋, matcher)
-        push!(rmaps, rmap)
+    if !use_vanished
+        rmaps = _rematch_ignored!(attractors, matcher)
+    else
+        rmaps = _rematch_with_past!(attractors, matcher)
+    end
+    if retract_keys
+        # TODO: Adjust `rmaps` so that keys are retracted
     end
     return rmaps
 end
 
 """
-    match_continuation!(continuation_quantity::Vector{Dict}, rmaps::Vector{Dict})
+    match_sequentially!(continuation_quantity::Vector{Dict}, rmaps::Vector{Dict})
 
-Do the same as in `match_continuation!` above, now given the vector of replacement maps,
+Do the same as in `match_sequentially!` above, now given the vector of replacement maps,
 and for any arbitrary quantity that has been tracked in the continuation.
-`continuation_quantity` is most typically `fractions_curves` from [`continuation`](@ref).
+`continuation_quantity` can for example be `fractions_curves` from [`continuation`](@ref).
 """
-function match_continuation!(continuation_quantity::AbstractVector{<:Dict}, rmaps::Vector{Dict{Int, Int}})
+function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmaps::Vector{Dict{Int, Int}})
     for (quantity, rmap) in zip(continuation_quantity, rmaps)
         swap_dict_keys!(quantity, rmap)
     end
     return continuation_quantity
+end
+
+# Concrete implementation of `match_sequentially!`:
+function _rematch_ignored!(attractors_info, matcher)
+    next_id = 1
+    rmaps = Dict{keytype(attractors_info[1]), keytype(attractors_info[1])}[]
+    for i in 1:length(attractors_info)-1
+        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+        # If there are no attractors, skip the matching
+        (isempty(a₊) || isempty(a₋)) && continue
+        # Here we always compute a next id. In this way, if an attractor disappears
+        # and reappears, it will get a different (incremented) ID as it should!
+        next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
+        next_id = max(next_id, next_id_a) + 1
+        rmap = replacement_map!(a₊, a₋, matcher; next_id, i)
+        push!(rmaps, rmap)
+    end
+    return rmaps
+end
+
+function _rematch_with_past!(attractors_info, matcher)
+    # this dictionary stores all instances of previous attractors and is updated
+    # at every step. It is then given to the matching function as if it was
+    # the current attractors
+    latest_ghosts = deepcopy(attractors_info[1])
+    rmaps = Dict{keytype(attractors_info[1]), keytype(attractors_info[1])}[]
+    for i in 1:length(attractors_info)-1
+        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+        # update ghosts
+        for (k, A) in a₋
+            latest_ghosts[k] = A
+        end
+        rmap = replacement_map!(a₊, latest_ghosts, matcher; i)
+        push!(rmaps, rmap)
+    end
+    return rmaps
 end
