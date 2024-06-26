@@ -647,9 +647,9 @@ using ComplexityMeasures: ValueHistogram, FixedRectangularBinning, probabilities
 # you decide the binning for the histogram, but for a valid estimation of
 # distances, all histograms must have exactly the same bins, and hence be
 # computed with fixed ranges, i.e., using the `FixedRectangularBinning`
-const binning = FixedRectangularBinning(range(-5, 5; length = 11))
 
 function histogram_featurizer(A, t)
+    binning = FixedRectangularBinning(range(-5, 5; length = 11))
     ms = mean.(columns(A)) # vector of mean of each variable
     p = probabilities(ValueHistogram(binning), ms) # this is the histogram
     return vec(p) # because Distances.jl doesn't know `Probabilities`

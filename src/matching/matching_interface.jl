@@ -4,7 +4,10 @@
 Supertype of all "matchers" that match IDs between state space sets (typically attractors).
 This is for example useful after performing a [`continuation`](@ref).
 
-Each matcher implements the function [`match_continuation!`](@ref).
+Matchers implement the core [`match_statespacesets!`](@ref) function,
+however it is typically the case that you want to use the [`match_continuation!`](@ref)
+function instead.
+
 Currently available matchers are:
 
 - [`MatchBySSDistance`](@ref)
@@ -12,16 +15,31 @@ Currently available matchers are:
 """
 abstract type SSSetMatcher end
 
-"""
-    match_continuation!(attractors::Vector{Dict}, matcher::SSSetMatcher) → rmaps
+# TODO: Give [`match_statespacesets!`] the index `i`  that by default is
+# `nothing` and some matchers use it.
+# Some matchers may reference the parameter vector and dynamical system if
+# they need to evolve it.`
+# This means that the low level function to actually extend is `match_statespacesets!`
+# and not the continuation one!
 
-Match the `attractors` (typically the output of [`continuation`](@ref)) according
+# TODO: is it possible to make the "ghost" argument generic that applies
+# to all matchers? if so it can be a keyword of match continuation.
+# I need to see what it does exactly.
+# The retract keys ca be universal and given exclusively to `match_continuation`.
+
+
+
+"""
+    match_continuation!(set_dicts::Vector{Dict}, matcher::SSSetMatcher) → rmaps
+
+Match the `set_dicts`, a vector of dictionaries mapping IDs to
+state space sets (typically the output of [`continuation`](@ref)), according
 to the given `matcher` which is any subtype of [`SSSetMatcher`](@ref).
 `attractors` is a vector of dictionaries. Each dictionary maps attractor ids
 to state space sets representing the attractors.
 
 Return `rmaps`, which is a vector of dictionaries.
-`rmaps[i]` contains the [`replacement_map`](@ref) for `attractors[i]`,
+`rmaps[i]` contains the [`replacement_map`](@ref) for `attractors[i+1]`,
 i.e., the pairs of `old => new` IDs.
 """
 function match_continuation!(attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher)

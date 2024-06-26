@@ -7,7 +7,9 @@ A continuation method for [`continuation`](@ref).
 
 ## Description
 
-This global continuation method has a simple basis.
+This global continuation method has a simple basis: it continues attractors by
+"seeding" initial conditions from previously found attractors.
+
 At the first parameter slice of the continuation process, attractors and their fractions
 are found using the given `mapper`.
 At each subsequent parameter slice,
@@ -33,12 +35,14 @@ the found attractors (and their fractions) are "matched" to the previous ones.
 This means: their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
 Matching is done by the provided `matcher`.
-In fact, matching is a rather trivial call to [`match_continuation!`](@ref)
-at the end of the `continuation` function. This call is almost free.
+In code, matching is a rather trivial call to [`match_continuation!`](@ref)
+at the end of the `continuation` function.
 If you don't like the final matching output,
 you may use arbitrarily different `matcher` in [`match_continuation!`](@ref)
 without having to recompute the whole continuation.
-That is also why how matching works is described in the docstrings of each `matcher`.
+
+The matching algorithms are rather sophisticated,
+so how matching works is described in the docstrings of each `matcher`.
 """
 struct AttractorsContinueAndMatch{A, M, S} <: AttractorsBasinsContinuation
     mapper::A
