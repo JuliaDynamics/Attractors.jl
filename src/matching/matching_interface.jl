@@ -20,24 +20,23 @@ abstract type SSSetMatcher end
 """
     replacement_map(a₊, a₋, matcher; pi = nothing) → rmap
 
-Given dictionaries `a₊, a₋` mapping IDs to `StateSpaceSet` instances,
-create a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
+Given dictionaries `a₊, a₋` mapping IDs to values,
+return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
 to IDs (keys) in dictionary `a₋`, so that
-so that sets in `a₊` that are the "closest" to sets in `a₋` get assigned the
-same key as in `a₋`.
+so that values in `a₊` that are the "closest" to values in `a₋` get assigned the
+same key as in `a₋`. In this way keys of `a₊` are "matched" to keys of `a₋`.
 Use [`swap_dict_keys`](@ref) to apply `rmap` to `a₊`.
 
 How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`.
 
-Typically the +,- mean after and before some change of parameter of a system.
+The values contained in `a₊, a₋` can be anything supported by `matcher`.
+Within Attractors.jl they are typically `StateSpaceSet`s representing attractors.
+
+Typically the +,- mean after and before some change of parameter of a dynamical system.
 For some matchers, such as [`MatchByBasinEnclosure`](@ref), the value of the parameter
-is important. `pi` in this case can be given as the index of the parameter
+is important. `pi` in this case can be given as the index of the parameter range
 corresponding to the result `a₋`, assuming `a₊, a₋` are two subsequent results
 of a [`continuation`](@ref) output.
-
-Return the replacement map, a dictionary mapping old keys of `a₊` to
-the new ones that they were mapped to. You can obtain this map, without modifying
-the dictionaries, by calling the [`replacement_map`](@ref) function directly.
 """
 function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
