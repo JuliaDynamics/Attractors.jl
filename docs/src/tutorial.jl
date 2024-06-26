@@ -78,6 +78,40 @@ mapper = AttractorsViaRecurrences(ds, grid;
     consecutive_lost_steps = 100,
 )
 
+# This `mapper` can map any initial condition `u` to the corresponding
+# attractor ID, for example
+
+mapper([-4.0, 5, 0])
+
+# while
+
+mapper([4.0, 2, 0])
+
+# the fact that these two different conditions got assigned different IDs means
+# that they converged to a different attractor.
+# The attractors are stored in the mapper internally, to obtain them we
+# use the function
+
+attractors = extract_attractors(mapper)
+
+# In Attractors.jl, all information regarding attractors is always a standard Julia
+# `Dict`, which maps attractor IDs (positive integers) to the corresponding quantity.
+# Here the quantity are the attractors themselves, represented as `StateSpaceSet`.
+
+# Let's visualize them
+using CairoMakie
+fig = Figure()
+ax = Axis(fig[1,1]; title = "bistable lorenz-like")
+for (k, A) in attractors
+    scatter!(ax, A[:, 1], A[:, 2]; label = "ID = $(k)")
+end
+axislegend(ax; position = :lt)
+fig
+
+# It can get tedious to manually iterate over initial conditions, which is why
+# this `mapper` is typically given to higher level functions for finding attractors
+# and their basins of attraction.
+
 # Then, this `mapper` can be given to several functions for finding attractors
 # and their basins of attraction. The simplest one
 # is [`basins_fractions`](@ref). Using the `mapper`,
