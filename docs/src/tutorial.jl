@@ -108,11 +108,12 @@ end
 axislegend(ax; position = :lt)
 fig
 
-# It can get tedious to manually iterate over initial conditions, which is why
+# In our example system we see that for the chosen parameters there are two coexisting attractors:
+# a limit cycle and a chaotic attractor.
+# There may be more attractors though! We've only checked two initial conditions,
+# so we could have found at most two attractors!
+# However, it can get tedious to manually iterate over initial conditions, which is why
 # this `mapper` is typically given to higher level functions for finding attractors
-# and their basins of attraction.
-
-# Then, this `mapper` can be given to several functions for finding attractors
 # and their basins of attraction. The simplest one
 # is [`basins_fractions`](@ref). Using the `mapper`,
 # it finds "all" attractors of the dynamical system and reports the state space fraction
@@ -137,28 +138,13 @@ sampler() # another random i.c.
 
 fs = basins_fractions(mapper, sampler)
 
-# The returned `fs` is a dictionary mapping attractor IDs to
-# the state space fraction their basin of attraction occupies.
-# To obtain the full basin, which is computationally much more expensive,
+# The returned `fs` is a dictionary mapping each attractor ID to
+# the fraction of the state space the corresponding basin occupies.
+# With this we can confirm that there are (likely) only two attractors
+# and that both attractors are robust as both have sufficiently large basin fractions.
+
+# To obtain the full basins, which is computationally much more expensive,
 # use [`basins_of_attraction`](@ref).
-
-# To obtain the attractors themselves we do
-
-attractors = extract_attractors(mapper)
-
-# and we can visualize them projected into the first two dimensions
-
-using CairoMakie
-fig = Figure()
-ax = Axis(fig[1,1]; title = "bistable lorenz-like")
-for (k, A) in attractors
-    scatter!(ax, A[:, 1], A[:, 2]; label = "fraction: $(fs[k])")
-end
-axislegend(ax; position = :lt)
-fig
-
-# We see that for the chosen parameters there are two coexisting attractors:
-# a limit cycle and a chaotic attractor. We can confirm that both attractors are robust as both have sufficiently large basin fractions.
 
 # You can use alternative algorithms in [`basins_fractions`](@ref), see
 # the documentation of [`AttractorMapper`](@ref) for possible subtypes.
