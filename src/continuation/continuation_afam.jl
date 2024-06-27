@@ -1,3 +1,7 @@
+export AttractorsContinueAndMatch
+import ProgressMeter
+using Random: MersenneTwister
+
 """
     AttractorsContinueAndMatch(mapper, matcher [, seeding])
 
@@ -7,11 +11,10 @@ A continuation method for [`continuation`](@ref).
 
 ## Description
 
-This global continuation method is a generalization of the "RAFM" continuation
+This global continuation method is a generalization of the [`RAFM`](@ref) continuation
 described in [Datseris2023](@cite). It continues attractors by
 "seeding" initial conditions from previously found attractors.
-The generalization here is that the method works for any `mapper` that finds
-attractors in the formal sense of sets in the full state space.
+The generalization here is that the method works for any valid `mapper`.
 
 At the first parameter slice of the continuation process, attractors and their fractions
 are found using the given `mapper`.
@@ -40,11 +43,11 @@ the found attractors (and their fractions) are "matched" to the previous ones.
 This means: their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
 Matching is done by the provided `matcher`.
-In code, matching is a rather trivial call to [`match_continuation!`](@ref)
-at the end of the `continuation` function.
+In code, matching is a rather trivial call to [`match_sequentially!`](@ref)
+at the end of the `continuation` function using the `use_vanished` provided keyword.
 If you don't like the final matching output,
-you may use a different `matcher` in [`match_continuation!`](@ref)
-without having to recompute the whole continuation again.
+you may use a different `matcher` and call [`match_sequentially!`](@ref) again,
+without having to recompute the whole continuation!
 
 The matching algorithms are rather sophisticated,
 so how matching works is described in the docstrings of each `matcher`.
@@ -53,6 +56,23 @@ struct AttractorsContinueAndMatch{A, M, S} <: AttractorsBasinsContinuation
     mapper::A
     matcher::M
     seeding::S
+end
+
+const ACAM = AttractorsContinueAndMatch
+
+ACAM(mapper, matcher) = ACAM(mapper, matcher, _default_seeding_process)
+
+# TODO: This is currently not used, and not sure if it has to be.
+function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
+    max_possible_seeds = 10
+    seeds = round(Int, log(10, length(attractor)))
+    seeds = clamp(seeds, 1, max_possible_seeds)
+    return (rand(rng, vec(attractor)) for _ in 1:seeds)
+end
+
+# This is the one used
+function _default_seeding_process(attractor::AbstractStateSpaceSet)
+    return (attractor[1],) # must be iterable
 end
 
 function continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;

@@ -9,7 +9,8 @@ A matcher type that matches by distance in the state space.
 - `distance = Centroid()`: distance to match by, given to [`setsofsets_distances`](@ref).
 - `threshold = Inf`: sets with distance larger than the `threshold` are guaranteed
   to not be mapped to each other.
-
+- `use_vanished = !isinf(threshold)`: value of the keyword `use_vanished` when
+  used in [`match_sequentially!`](@ref).
 
 ## Description
 
@@ -39,13 +40,23 @@ remaining distance is matched, and the process repeats until all pairs are exhau
 Additionally, you can provide a `threshold` value. If the distance between two sets
 is larger than this `threshold`, then it is guaranteed that the sets will get assigned
 different ID in the replacement map (the next available integer).
+
+Lastly, you can provide `use_vanished::Bool`: If `use_vanised = true`, then
+IDs (and their corresponding sets) that existed before but have vanished are kept in "memory"
+when it comes to matching: the current dictionary values (the sets) are compared to the latest instance
+of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
 """
 @kwdef struct MatchBySSDistance{M, T<:Real}
     distance::M = Centroid()
     threshold::T = Inf
+    use_vanished::Bool = false
 end
 
-function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; next_id = max(maximum(keys₊), maximum(keys₋)) + 1, pi = nothing)
+use_vanished(m::MatchBySSDistance) = m.use_vanished
+
+function replacement_map(a₊::AbstractDict, a₋, matcher::MatchBySSDistance;
+        next_id = max(maximum(keys₊), maximum(keys₋)) + 1, pi = nothing
+    )
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = keys.((a₊, a₋))
     _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold, nextid)

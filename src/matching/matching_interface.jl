@@ -6,7 +6,8 @@ Supertype of all "matchers" that match IDs between state space sets (typically a
 Matchers implement an extendable interface. A new mapper type only needs to
 extend the function [`replacement_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref)
-that is called at the end of [`continuation`](@ref) by some continuation algorithms.
+that is called at the end of [`continuation`](@ref) by some continuation algorithms
+such as [`AttractorsContinueAndMatch`](@ref).
 
 Currently available matchers are:
 
@@ -60,11 +61,6 @@ function replacement_map!(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...
     return rmap
 end
 
-# TODO: is it possible to make the "ghost" argument generic that applies
-# to all matchers? if so it can be a keyword of match continuation.
-# I need to see what it does exactly.
-# The retract keys ca be universal and given exclusively to `match_continuation`.
-
 """
     match_sequentially!(dicts::Vector{Dict{Int, Any}}, matcher::SSSetMatcher; kw...)
 
@@ -82,21 +78,17 @@ i.e., the pairs of `old => new` IDs.
 
 ## Keyword arguments
 
-- `use_vanished::Bool = false`: If `use_vanised = true`, then IDs that existed before but have vanished are kept in "memory"
-  when it comes to matching: the current dictionary values are compared to the latest instance
-  of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
 - `retract_keys::Bool = true`: If `true` at the end the function will "retract" keys (i.e., make the
   integers smaller integers) so that all unique IDs
   are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become
   1, 2, 3. The special ID -1 is unaffected by this.
 """
 function match_sequentially!(
-        attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher;
-        use_vanished = false, retract_keys = true
+        attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher; retract_keys = true
     )
     # this generic implementation works for any matcher!!!
     rmaps = Dict{Int,Int}[]
-    if !use_vanished
+    if !use_vanished(matcher) # matchers implement this!
         rmaps = _rematch_ignored!(attractors, matcher)
     else
         rmaps = _rematch_with_past!(attractors, matcher)
@@ -156,3 +148,6 @@ function _rematch_with_past!(attractors_info, matcher)
     end
     return rmaps
 end
+
+include("match_basins.jl")
+include("sssdistance.jl")
