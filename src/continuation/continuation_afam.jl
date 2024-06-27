@@ -101,7 +101,7 @@ function continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     # Match attractors (and basins)
-    rmaps = match_continuation!(attractors, matcher)
+    rmaps = match_continuation!(attractors, acam.matcher)
     match_continuation!(rmaps, fractions_curves)
     return fractions_curves, attractors_info
 end
