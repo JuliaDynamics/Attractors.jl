@@ -50,6 +50,7 @@ Possible subtypes of `AttractorsBasinsContinuation` are:
 """
 function continuation end
 
+include("continuation_afam.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
 include("aggregate_attractor_fractions.jl")

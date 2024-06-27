@@ -7,7 +7,7 @@ export aggregate_attractor_fractions
 
 Aggregate the already-estimated curves of fractions of basins of attraction of similar
 attractors using the same pipeline used by [`GroupingConfig`](@ref).
-The most typical application of this function is to transform the output of
+The most typical application of this function is to transform the output of a [`continuation`](@ref) with
 [`RecurrencesFindAndMatch`](@ref) so that similar attractors, even across parameter
 space, are grouped into one "attractor". Thus, the fractions of their basins are aggregated.
 

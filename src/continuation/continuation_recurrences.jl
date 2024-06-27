@@ -28,7 +28,12 @@ instance.
 """
 function RecurrencesFindAndMatch(
         mapper::AttractorsViaRecurrences; distance = Centroid(), threshold = Inf,
+        info_extraction = nothing,
     )
+    if info_extraction !== nothing
+        @warn "`info_extraction` is ignored in `RecurrencesFindAndMatch`.
+        You can extract info after the attractors have been found."
+    end
     matcher = MatchBySSDistance(; distance, threshold)
     return AttractorsContinueAndMatch(mapper, matcher, seeds_from_attractors)
 end
