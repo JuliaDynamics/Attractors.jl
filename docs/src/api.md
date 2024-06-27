@@ -38,21 +38,27 @@ function.
 The grouping configuration sets how the features describing the trajectories will be grouped together.
 Nevertheless, this grouping infrastructure can also be used and extended completely independently of finding attractors of dynamical systems!
 
-### Grouping types
+### Grouping interface
+
 ```@docs
+group_features
 GroupingConfig
+```
+
+### Grouping types
+
+```@docs
 GroupViaClustering
 GroupViaHistogram
 GroupViaNearestFeature
 GroupViaPairwiseComparison
 ```
 
-### Grouping functions
+### Grouping utils
+
 ```@docs
-group_features
 extract_features
 ```
-
 
 
 ## Basins of attraction
