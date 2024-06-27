@@ -1,3 +1,5 @@
+export SSSetMatcher, replacement_map, replacement_map!, match_sequentially!
+
 """
     SSSetMatcher
 
@@ -87,6 +89,7 @@ function match_sequentially!(
         attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher; retract_keys = true
     )
     # this generic implementation works for any matcher!!!
+    # the matcher also provides the `use_vanished` keyword if it makes sense!
     rmaps = Dict{Int,Int}[]
     if !use_vanished(matcher) # matchers implement this!
         rmaps = _rematch_ignored!(attractors, matcher)
@@ -107,7 +110,11 @@ and for any arbitrary quantity that has been tracked in the continuation.
 `continuation_quantity` can for example be `fractions_curves` from [`continuation`](@ref).
 """
 function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmaps::Vector{Dict{Int, Int}})
-    for (quantity, rmap) in zip(continuation_quantity, rmaps)
+    if length(rmaps) ≠ length(continuation_quantity) - 1
+        throw(ArgumentError("the replacement maps should be 1 less than the continuation quantities"))
+    end
+    for (i, rmap) in enumerate(rmaps)
+        quantity = continuation_quantity[i+1]
         swap_dict_keys!(quantity, rmap)
     end
     return continuation_quantity

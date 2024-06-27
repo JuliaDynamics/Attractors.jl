@@ -36,3 +36,8 @@ end
 function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
     error("This function was incorrect. Use `match_continuation!` instead.")
 end
+
+function match_statespacesets!(a_afte, a_befo; kwargs...)
+    @warn "match_statespacesets! is deprecated. Use `replacement_map!` with `MatchBySSDistance`."
+    return replacement_map!(a_afte, a_befo, MatchBySSDistance(kwargs...))
+end

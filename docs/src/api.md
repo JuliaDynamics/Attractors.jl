@@ -150,7 +150,7 @@ The matching process is entirely orthogonal to the continuation, something
 completely novel in continuation software. This means, that if you don't like
 the way the matching worked in the first time you estimated the attractors and their
 basins, you don't have to re-compute them! You can simply relabel them using the
-[`match_continuation!`](@ref) function!
+[`match_sequentially!`](@ref) function!
 
 ```@docs
 match_statespacesets!
@@ -160,7 +160,7 @@ StrictlyMinimumDistance
 replacement_map
 set_distance
 setsofsets_distances
-match_continuation!
+match_sequentially!
 match_basins_ids!
 ```
 

@@ -64,8 +64,8 @@ ACAM(mapper, matcher) = ACAM(mapper, matcher, _default_seeding_process)
 
 # TODO: This is currently not used, and not sure if it has to be.
 function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
-    max_possible_seeds = 10
-    seeds = round(Int, log(10, length(attractor)))
+    max_possible_seeds = 6
+    seeds = round(Int, log(max_possible_seeds, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
     return (rand(rng, vec(attractor)) for _ in 1:seeds)
 end

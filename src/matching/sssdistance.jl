@@ -1,6 +1,8 @@
+export MatchBySSDistance
+
 """
     MatchBySSDistance <: SSSetMatcher
-    MatchBySSDistance(; distance = Centroid(), threshold = Inf)
+    MatchBySSDistance(; distance = Centroid(), threshold = Inf, use_vanished = false)
 
 A matcher type that matches by distance in the state space.
 
@@ -46,7 +48,7 @@ IDs (and their corresponding sets) that existed before but have vanished are kep
 when it comes to matching: the current dictionary values (the sets) are compared to the latest instance
 of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
 """
-@kwdef struct MatchBySSDistance{M, T<:Real}
+@kwdef struct MatchBySSDistance{M, T<:Real} <: SSSetMatcher
     distance::M = Centroid()
     threshold::T = Inf
     use_vanished::Bool = false
@@ -55,11 +57,12 @@ end
 use_vanished(m::MatchBySSDistance) = m.use_vanished
 
 function replacement_map(a₊::AbstractDict, a₋, matcher::MatchBySSDistance;
-        next_id = max(maximum(keys₊), maximum(keys₋)) + 1, pi = nothing
+        next_id = nothing, i = nothing # keyword `i` is not used by this mapper
     )
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = keys.((a₊, a₋))
-    _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold, nextid)
+    nextid = isnothing(next_id) ? max(maximum(keys₊), maximum(keys₋)) + 1 : next_id
+    _replacement_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold, nextid)
 end
 
 function _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold, next_id)
