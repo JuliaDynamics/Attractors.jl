@@ -7,19 +7,24 @@ A continuation method for [`continuation`](@ref).
 
 ## Description
 
-This global continuation method has a simple basis: it continues attractors by
+This global continuation method is a generalization of the "RAFM" continuation
+described in [Datseris2023](@cite). It continues attractors by
 "seeding" initial conditions from previously found attractors.
+The generalization here is that the method works for any `mapper` that finds
+attractors in the formal sense of sets in the full state space.
 
 At the first parameter slice of the continuation process, attractors and their fractions
 are found using the given `mapper`.
 At each subsequent parameter slice,
-new attractors are found by seeding initial conditions from the previously found
+new attractors are found by selecting initial conditions from the previously found
 attractors and then running these initial conditions through the `mapper`.
+This process is called "seeding".
 Seeding initial conditions close to previous attractors increases the probability
 that if an attractor continues to exist in the new parameter, it is found.
 Seeding is controlled by the `seeding` input. It is a function that given
 a state space set (an attractor) it returns an _iterator_ of initial conditions
-sampled from the attractor. This generates the seeds.
+sampled from the attractor. This iterator generates the seeds.
+By default the first point of an attractor is provided as the only seed.
 
 After the special seeded initial conditions are mapped to attractors,
 attractor basin fractions are computed by sampling additional initial conditions
@@ -38,8 +43,8 @@ Matching is done by the provided `matcher`.
 In code, matching is a rather trivial call to [`match_continuation!`](@ref)
 at the end of the `continuation` function.
 If you don't like the final matching output,
-you may use arbitrarily different `matcher` in [`match_continuation!`](@ref)
-without having to recompute the whole continuation.
+you may use a different `matcher` in [`match_continuation!`](@ref)
+without having to recompute the whole continuation again.
 
 The matching algorithms are rather sophisticated,
 so how matching works is described in the docstrings of each `matcher`.
