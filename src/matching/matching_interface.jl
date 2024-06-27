@@ -97,7 +97,22 @@ function match_sequentially!(
         rmaps = _rematch_with_past!(attractors, matcher)
     end
     if retract_keys
-        # TODO: Adjust `rmaps` so that keys are retracted
+        retracted = retract_keys_to_consecutive(attractors) # already matched input
+        for (rmap, attrs) in zip(rmaps, attractors)
+            swap_dict_keys!(attrs, retracted)
+            # for `rmap` the situation is more tricky, because we have to change the
+            # value of the _values_ of the dictionary, not the keys!
+            for (k, v) in rmap
+                if v ∈ keys(retracted)
+                    # so we make that the replacement map points to the
+                    # retracted key instead of whatever it pointed to originally,
+                    # if this key exists in the retracted mapping
+                    rmap[k] = retracted[v]
+                end
+            end
+        end
+        # `attractors` have 1 more element than `rmaps`
+        swap_dict_keys!(attractors[end], retracted)
     end
     return rmaps
 end
@@ -117,7 +132,7 @@ function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmap
         quantity = continuation_quantity[i+1]
         swap_dict_keys!(quantity, rmap)
     end
-    return continuation_quantity
+    return rmaps
 end
 
 # Concrete implementation of `match_sequentially!`:

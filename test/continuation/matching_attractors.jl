@@ -81,7 +81,7 @@ end
     @testset "ignore vanished" begin
         @testset "no retract" begin
             atts = deepcopy(allatts)
-            match_sequentially!(atts, default; retract_keys = false)
+            rmaps = match_sequentially!(atts, default; retract_keys = false)
             # After the first 3 key, all subsequent keys 3 become the next integer,
             # and since we started cutting away keys 3 from `i = 2` we have
             # 4 extra 3 keys to add.
