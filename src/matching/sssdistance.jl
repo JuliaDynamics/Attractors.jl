@@ -46,7 +46,7 @@ different ID in the replacement map (the next available integer).
 end
 
 function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; next_id = max(maximum(keys₊), maximum(keys₋)) + 1, pi = nothing)
-    distances = setsofsets_distances(a₊, a₋, distance)
+    distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = keys.((a₊, a₋))
     _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold, nextid)
 end
