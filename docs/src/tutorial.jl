@@ -151,18 +151,23 @@ fs = basins_fractions(mapper, sampler)
 # [`AttractorMapper`](@ref) defines an extendable interface and can be enriched
 # with other methods in the future!
 
-# ## Continuation
+# ## Global continuation
 
-# If you have heard before the word "continuation", then you are likely aware of the **traditional continuation-based bifurcation analysis (CBA)** offered by many software, such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). Here we offer a completely different kind of continuation called **attractors & basins continuation**.
+# If you have heard before the word "continuation", then you are likely aware of the
+# **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
+# such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
+# Here we offer a completely different kind of continuation called **global continuation**.
 
 # A direct comparison of the two approaches is not truly possible, because they do different things.
-# The traditional linearized continuation analysis continues the curves of individual fixed
-# points across the joint state-parameter space. The attractor and basins continuation first
-# finds all attractors at all parameter values and then _matches_ appropriately similar
-# attractors across different parameters, giving the illusion of continuing them individually.
+# The traditional continuation analysis continues the curves of individual fixed
+# points across the joint state-parameter space and tracks their _local (linear) stability_.
+# The global continuation in Attractors.jl finds all attractors, including chaotic ones,
+# in the whole of the state space (that it searches in), and continues all of these attractors
+# concurrently along a parameter axis.
+# Additionally, this global continuation tracks a _nonlocal_ stability property which by
+# default is the basin fraction.
 
-# This is a fundamental difference. With our approach, one finds all attractors
-# (or almost all, for insufficiently dense sampling). And because all attractors are simultaneously
+# This is a fundamental difference. Because all attractors are simultaneously
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
 # A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
@@ -173,7 +178,7 @@ fs = basins_fractions(mapper, sampler)
 prange = 4.7:0.02:6
 pidx = 1 # index of the parameter
 
-# Then, we may call the [`continuation`](@ref) function.
+# Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
 # This algorithm uses the `mapper` to find all attractors at each parameter value.
@@ -187,7 +192,7 @@ rafm = RecurrencesFindAndMatch(mapper)
 
 # and call
 
-fractions_cont, attractors_cont = continuation(
+fractions_cont, attractors_cont = global_continuation(
 	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 

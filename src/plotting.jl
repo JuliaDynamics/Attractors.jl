@@ -48,12 +48,12 @@ export shaded_basins_heatmap, shaded_basins_heatmap!
 
 Animate how the found system attractors and their corresponding basin fractions
 change as the system parameter is increased. This function combines the input
-and output of the [`continuation`](@ref) function into a video output.
+and output of the [`global_continuation`](@ref) function into a video output.
 
 The input dynamical system `ds` is used to evolve initial conditions sampled from the
 found attractors, so that the attractors are better visualized.
-`attractors_cont, fractions_cont` are the output of [`continuation`](@ref)
-while `ds, prange, pidx` are the input to [`continuation`](@ref).
+`attractors_cont, fractions_cont` are the output of [`global_continuation`](@ref)
+while `ds, prange, pidx` are the input to [`global_continuation`](@ref).
 
 ## Keyword arguments
 
@@ -70,7 +70,7 @@ export animate_attractors_continuation
     plot_basins_curves(fractions_cont, prange = 1:length(); kwargs...)
 
 Plot the fractions of basins of attraction versus a parameter range,
-i.e., visualize the output of [`continuation`](@ref).
+i.e., visualize the output of [`global_continuation`](@ref).
 See also [`plot_basins_attractors_curves`](@ref) and
 [`plot_continuation_curves`](@ref).
 

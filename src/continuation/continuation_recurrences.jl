@@ -4,7 +4,7 @@ export RecurrencesFindAndMatch, RAFM
     RecurrencesFindAndMatch <: GlobalContinuationAlgorithm
     RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
-A method for [`continuation`](@ref) as in [Datseris2023](@cite) that is based on the
+A method for [`global_continuation`](@ref) as in [Datseris2023](@cite) that is based on the
 recurrences algorithm for finding attractors ([`AttractorsViaRecurrences`](@ref))
 and then matching them according to their state space distance.
 

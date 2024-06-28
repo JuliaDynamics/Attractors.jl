@@ -27,6 +27,15 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
     return basins_of_attraction(mapper)
 end
 
+function continuation(args...; kwargs...)
+    @warn("""
+    The function `Attractors.continuation` is deprecated in favor of
+    `global_continuation`, in preparation for future developments where both
+    local/linearized and global continuations will be possible within DynamicalSystems.jl.
+    """)
+    return global_continuation(args...; kwargs...)
+end
+
 @deprecate AttractorsBasinsContinuation GlobalContinuationAlgorithm
 @deprecate RecurrencesSeededContinuation RecurrencesFindAndMatch
 @deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter

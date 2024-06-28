@@ -409,7 +409,7 @@ fig
 
 ## Basin fractions continuation in the magnetic pendulum
 
-Perhaps the simplest application of [`continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
+Perhaps the simplest application of [`global_continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
 
 ### Computing the fractions
 
@@ -434,7 +434,7 @@ sampler, = statespace_sampler(region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_cont, attractors_cont = continuation(
+fractions_cont, attractors_cont = global_continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
 )
@@ -504,11 +504,11 @@ sampler, = statespace_sampler(grid, 1234)
 # initialize mapper
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
-continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_cont, attractors_cont = continuation(
-    continuation, prange, pidx, sampler;
+alg = RecurrencesFindAndMatch(mapper; threshold = Inf)
+fractions_cont, attractors_cont = global_continuation(
+    alg, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
-);
+)
 plot_basins_curves(fractions_cont, prange; separatorwidth = 1)
 ```
 
@@ -620,7 +620,7 @@ featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
 gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
-fractions_cont, clusters_info = continuation(
+fractions_cont, clusters_info = global_continuation(
     gap, rrange, ridx, sampler; show_progress = false
 )
 fractions_cont

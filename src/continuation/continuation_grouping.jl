@@ -12,10 +12,10 @@ end
     FeaturizeGroupAcrossParameter <: GlobalContinuationAlgorithm
     FeaturizeGroupAcrossParameter(mapper::AttractorsViaFeaturizing; kwargs...)
 
-A method for [`continuation`](@ref).
+A method for [`global_continuation`](@ref).
 It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
 and hence requires an instance of that mapper as an input.
-When used in [`continuation`](@ref), features are extracted
+When used in [`global_continuation`](@ref), features are extracted
 and then grouped across a parameter range. Said differently, all features
 of all initial conditions across all parameter values are put into the same "pool"
 and then grouped as dictated by the `group_config` of the mapper.

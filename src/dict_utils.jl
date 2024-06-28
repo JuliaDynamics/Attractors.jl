@@ -72,7 +72,7 @@ then they will transformed to 1, 2, 3.
 Return the replacement map used to replace keys in all dictionaries with
 [`swap_dict_keys!`](@ref).
 
-As this function is used in attractor matching in [`continuation`](@ref)
+As this function is used in attractor matching in [`global_continuation`](@ref)
 it skips the special key `-1`.
 """
 function retract_keys_to_consecutive(v::Vector{<:Dict})

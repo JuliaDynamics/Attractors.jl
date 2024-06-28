@@ -170,7 +170,7 @@ prange = 4.5:0.02:6
 pidx = 1 # index of the parameter
 ````
 
-Then, we may call the [`continuation`](@ref) function.
+Then, we may call the [`global_continuation`](@ref) function.
 We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
 This algorithm uses the `mapper` to find all attractors at each parameter value.

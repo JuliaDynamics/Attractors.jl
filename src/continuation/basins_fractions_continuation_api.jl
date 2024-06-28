@@ -3,12 +3,12 @@ export continuation, GlobalContinuationAlgorithm
 """
     GlobalContinuationAlgorithm
 
-Supertype of all algorithms used in [`continuation`](@ref).
+Supertype of all algorithms used in [`global_continuation`](@ref).
 Each algorithm typically references an [`AttractorMapper`](@ref),
 as well as contains more information for how to continue/track/match attractors
 across a parameter range.
 
-See [`continuation`](@ref) for more.
+See [`global_continuation`](@ref) for more.
 """
 abstract type GlobalContinuationAlgorithm end
 
@@ -17,7 +17,7 @@ abstract type GlobalContinuationAlgorithm end
 
 Find and continue attractors (or representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
-`continuation` is the central function of the framework for global stability analysis
+`global_continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
 The continuation type `gca` is a subtype of `GlobalContinuationAlgorithm`

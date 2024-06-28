@@ -15,7 +15,7 @@ Supertype of all "matchers" that match can IDs labelling attractors.
 Matchers implement an extendable interface. A new matcher type only needs to
 extend the function [`replacement_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref)
-that is called at the end of [`continuation`](@ref) by some continuation algorithms
+that is called at the end of [`global_continuation`](@ref) by some continuation algorithms
 such as [`AttractorsFindAndMatch`](@ref).
 
 As you user you typically only care about given an instance of `IDMatcher`
@@ -119,7 +119,7 @@ end
 
 Do the same as in `match_sequentially!` above, now given the vector of replacement maps,
 and for any arbitrary quantity that has been tracked in the continuation.
-`continuation_quantity` can for example be `fractions_cont` from [`continuation`](@ref).
+`continuation_quantity` can for example be `fractions_cont` from [`global_continuation`](@ref).
 """
 function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmaps::Vector{Dict{Int, Int}})
     if length(rmaps) ≠ length(continuation_quantity) - 1

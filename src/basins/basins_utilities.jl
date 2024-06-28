@@ -10,7 +10,7 @@ the chosen ids (by default `ids = unique(basins)`).
 
 In [Menck2013](@cite) the authors use these fractions to quantify the stability of a basin of
 attraction, and specifically how it changes when a parameter is changed.
-For this, see [`continuation`](@ref).
+For this, see [`global_continuation`](@ref).
 """
 function basins_fractions(basins::AbstractArray, ids = unique(basins))
     fs = Dict{eltype(basins), Float64}()

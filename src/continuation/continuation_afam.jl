@@ -5,7 +5,7 @@ using Random: MersenneTwister
 """
     AttractorsContinueAndMatch(mapper, matcher = MatchBySSSetDistance())
 
-A continuation method for [`continuation`](@ref).
+A continuation method for [`global_continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
 [`extract_attractors`](@ref).
 `matcher` is a configuration of how to match attractor IDs,
@@ -33,7 +33,7 @@ By default the first point of an attractor is provided as the only seed.
 
 After the special seeded initial conditions are mapped to attractors,
 attractor basin fractions are computed by sampling additional initial conditions
-using the provided `ics` in [`continuation`](@ref)).
+using the provided `ics` in [`global_continuation`](@ref)).
 I.e., exactly as in [`basins_fractions`](@ref).
 Naturally, during this step new attractors may be found, besides those found
 using the "seeding from previous attractors".
