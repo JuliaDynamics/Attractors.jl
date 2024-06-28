@@ -41,3 +41,9 @@ function match_statespacesets!(a_afte, a_befo; kwargs...)
     @warn "match_statespacesets! is deprecated. Use `replacement_map!` with `MatchBySSDistance`."
     return replacement_map!(a_afte, a_befo, MatchBySSDistance(kwargs...))
 end
+
+function match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
+    @warn "`match_basins_ids!` is deprecated, use `replacement_map` with `MatchByBasinOverlap`."
+    matcher = MatchByBasinOverlap(threshold)
+    return replacement_map!(b₊, b₋, matcher)
+end
