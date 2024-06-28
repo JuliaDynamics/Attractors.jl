@@ -1,33 +1,40 @@
-export continuation, AttractorsBasinsContinuation
-
-# In the end, it is better to have a continuation type that contains
-# how to match, because there are other keywords that always go into the
-# continuation... Like in the recurrences the keyword of seeds per attractor,
-# or in the clustering some other stuff like the parameter scaling
-abstract type AttractorsBasinsContinuation end
+export continuation, GlobalContinuationAlgorithm
 
 """
-    continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
+    GlobalContinuationAlgorithm
 
-Find and continue attractors (or feature-based representations of attractors)
+Supertype of all algorithms used in [`continuation`](@ref).
+Each algorithm typically references an [`AttractorMapper`](@ref),
+as well as contains more information for how to continue/track/match attractors
+across a parameter range.
+
+See [`continuation`](@ref) for more.
+"""
+abstract type GlobalContinuationAlgorithm end
+
+"""
+    continuation(gca::GlobalContinuationAlgorithm, prange, pidx, ics; kwargs...)
+
+Find and continue attractors (or representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
 `continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
-The continuation type `abc` is a subtype of `AttractorsBasinsContinuation`
-and contains an [`AttractorMapper`](@ref). The mapper contains information
+The continuation type `gca` is a subtype of `GlobalContinuationAlgorithm`
+and references an [`AttractorMapper`](@ref). The mapper contains information
 on how to find the attractors and basins of a dynamical system. Additional
-arguments and keyword arguments given when creating `abc` further tune the continuation
-and how attractors are matched across different parameter values.
+arguments that control how to continue/track/match attractors
+are given when creating `gca`.
 
 The basin fractions and the attractors (or some representation of them) are continued
 across the parameter range `prange`, for the parameter of the system with index `pidx`
-(any index valid in [`set_parameter!`](@ref) can be used).
+(any index valid in `DynamicalSystems.set_parameter!` can be used).
 
-`ics` is a 0-argument function generating initial conditions for
-the dynamical system (as in [`basins_fractions`](@ref)).
+`ics` are the initial conditions to use when globally sampling the state space.
+Like in [`basins_fractions`](@ref) it can be either a set vector of initial conditions,
+or a 0-argument function that generates random initial conditions.
 
-Possible subtypes of `AttractorsBasinsContinuation` are:
+Possible subtypes of `GlobalContinuationAlgorithm` are:
 
 - [`RecurrencesFindAndMatch`](@ref)
 - [`FeaturizeGroupAcrossParameter`](@ref)
@@ -46,7 +53,7 @@ Possible subtypes of `AttractorsBasinsContinuation` are:
 
 - `show_progress = true`: display a progress bar of the computation.
 - `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
-  from `ics`.
+  from `ics` if `ics` is a function instead of set initial conditions.
 """
 function continuation end
 

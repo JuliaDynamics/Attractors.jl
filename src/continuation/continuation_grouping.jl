@@ -2,14 +2,14 @@ export FeaturizeGroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct FeaturizeGroupAcrossParameter{A<:AttractorsViaFeaturizing, E} <: AttractorsBasinsContinuation
+struct FeaturizeGroupAcrossParameter{A<:AttractorsViaFeaturizing, E} <: GlobalContinuationAlgorithm
     mapper::A
     info_extraction::E
     par_weight::Float64
 end
 
 """
-    FeaturizeGroupAcrossParameter <: AttractorsBasinsContinuation
+    FeaturizeGroupAcrossParameter <: GlobalContinuationAlgorithm
     FeaturizeGroupAcrossParameter(mapper::AttractorsViaFeaturizing; kwargs...)
 
 A method for [`continuation`](@ref).

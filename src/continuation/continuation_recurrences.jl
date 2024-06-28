@@ -1,7 +1,7 @@
 export RecurrencesFindAndMatch, RAFM
 
 """
-    RecurrencesFindAndMatch <: AttractorsBasinsContinuation
+    RecurrencesFindAndMatch <: GlobalContinuationAlgorithm
     RecurrencesFindAndMatch(mapper::AttractorsViaRecurrences; kwargs...)
 
 A method for [`continuation`](@ref) as in [Datseris2023](@cite) that is based on the

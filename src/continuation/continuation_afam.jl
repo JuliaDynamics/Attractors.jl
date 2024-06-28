@@ -54,7 +54,7 @@ without having to recompute the whole continuation!
 The matching algorithms are rather sophisticated,
 so how matching works is described in the docstrings of each `matcher`.
 """
-struct AttractorsContinueAndMatch{A, M, S} <: AttractorsBasinsContinuation
+struct AttractorsContinueAndMatch{A, M, S} <: GlobalContinuationAlgorithm
     mapper::A
     matcher::M
     seeding::S

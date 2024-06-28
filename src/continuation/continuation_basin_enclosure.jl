@@ -1,4 +1,4 @@
-struct BasinEnclosure <: AttractorsBasinsContinuation
+struct BasinEnclosure <: GlobalContinuationAlgorithm
     mapper
     coflowing_threshold
 end

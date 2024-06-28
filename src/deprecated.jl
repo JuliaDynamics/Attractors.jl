@@ -27,6 +27,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
     return basins_of_attraction(mapper)
 end
 
+@deprecate AttractorsBasinsContinuation GlobalContinuationAlgorithm
 @deprecate RecurrencesSeededContinuation RecurrencesFindAndMatch
 @deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter
 @deprecate match_attractor_ids! match_statespacesets!
