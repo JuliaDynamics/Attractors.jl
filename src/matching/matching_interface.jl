@@ -51,11 +51,8 @@ end
 """
     replacement_map!(a₊, a₋, matcher; i = nothing) → rmap
 
-Convenience, equivalent with:
-```julia
-rmap = replacement_map(a₊, a₋, matcher; kw...)
-swap_dict_keys!(a₊, rmap)
-```
+Convenience function that first calls [`replacement_map`](@ref) and then
+replaces the IDs in `a₊` with this `rmap`.
 """
 function replacement_map!(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
     rmap = replacement_map(a₊, a₋, matcher; kw...)
