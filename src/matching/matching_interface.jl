@@ -45,6 +45,7 @@ of a [`continuation`](@ref) output.
 """
 function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
     # For developers: a private keyword `next_id` is also given to `replacement_map`
+    # that is utilized in the `match_sequentially!` function.
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
 end
 

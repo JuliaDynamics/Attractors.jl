@@ -60,8 +60,15 @@ function replacement_map(a₊::AbstractDict, a₋, matcher::MatchBySSDistance;
         next_id = nothing, i = nothing # keyword `i` is not used by this mapper
     )
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
-    keys₊, keys₋ = keys.((a₊, a₋))
-    nextid = isnothing(next_id) ? max(maximum(keys₊), maximum(keys₋)) + 1 : next_id
+    keys₊, keys₋ = sort.(collect.(keys.((a₊, a₋))))
+    # the next available integer is the minimum key of the "new" dictionary
+    # that doesn't exist in the "old" dictionary
+    if isnothing(next_id)
+        s = setdiff(keys(a₊), keys(a₋))
+        nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
+    else
+        nextid = next_id
+    end
     _replacement_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold, nextid)
 end
 
@@ -88,9 +95,12 @@ function _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold
         # used keys can't be re-used to match again
         (oldkey ∈ done_keys₊ || newkey ∈ used_keys₋) && continue
         if dist < threshold
+            # If the distance is small enough, we store the "new" key
+            # in the replacement map (see after `if`), and we also
+            # ensure that this new key is marked as "used"
             push!(used_keys₋, newkey)
         else
-            # The distance exceeds threshold, so we will assign a new key
+            # If the distance is too large, we assign a new key
             # (notice that this assumes the sorting by distance we did above,
             # otherwise it wouldn't work!)
             newkey = next_id
@@ -108,6 +118,9 @@ function _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold
             next_id += 1
         end
     end
+
+    # the final step is to filter out equivalent mappings where key and value are the same
+    filter!(p -> p.first ≠ p.second, rmap)
     return rmap
 end
 

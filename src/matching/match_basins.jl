@@ -6,11 +6,12 @@ export MatchByBasinOverlap
 A special matcher that matches IDs given full basins of attraction.
 It matches IDs of attractors whose basins of attraction before and after `b₋, b₊`
 have the most overlap (in pixels). This overlap is normalized in 0-1 (with 1 meaning
-100% overlap of pixels). The `threshold` in this case is compared to the inverse
-of the overlap, and basins whose overlap is less than `1/threshold` are guaranteed
+100% of a basin in `b₋` is overlaping with some other basin in `b₊`).
+The `threshold` can dissallow matching between basins that do not have enough overlap.
+Basins whose overlap is less than `1/threshold` are guaranteed
 to get assined different IDs.
-For example: for `threshold = 2` basins that have less than 50% overlap get
-different IDs guaranteed.
+For example: for `threshold = 2` basins that have ≤ 50% overlap get
+different IDs guaranteed. By default, there is no threshold.
 
 The input for this matcher in [`replacement_map`](@ref)
 should be dictionaries mapping IDs to vectors of cartesian indices,
@@ -26,8 +27,9 @@ To replace the `IDs` in `b₊` given the replacement map just call `replace!(b�
 or use the in-place version [`replacement_map!`](@ref) directly.
 """
 struct MatchByBasinOverlap
-    threshold::Float64 = Inf
+    threshold::Float64
 end
+MatchByBasinOverlap() = MatchByBasinOverlap(Inf)
 
 function replacement_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
     a₊, a₋ = _basin_to_dict.((b₊, b₋))
@@ -43,7 +45,7 @@ end
 # actual implementation
 function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap; i = nothing, next_id = nothing)
     # input checks
-    if !(keytype(a₊) <: Vector{<:CartesianIndex})
+    if !(valtype(a₊) <: Vector{<:CartesianIndex})
         throw(ArgumentError("Incorrect input given. For matcher `MatchByBasinOverlap`,
         the dictionaries values should be vectors of `CartesianIndex`."))
     end
@@ -55,16 +57,24 @@ function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
     # just a "distance" between basins of attraction. Thus, it actually
     # propagates this "distance" to the matching code of `MatchBySSDistance`!
     keys₊, keys₋ = keys.((a₊, a₋))
-    nextid = isnothing(next_id) ? max(maximum(keys₊), maximum(keys₋)) + 1 : next_id
+    # the next available integer is the minimum key of the "new" dictionary
+    # that doesn't exist in the "old" dictionary
+    if isnothing(next_id)
+        s = setdiff(keys(a₊), keys(a₋))
+        nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
+    else
+        nextid = next_id
+    end
 
     distances = Dict{eltype(keys₊), Dict{eltype(keys₋), Float64}}()
     for i in keys₊
         Bi = a₊[i]
         d = valtype(distances)() # d is a dictionary of distances
         # Compute normalized overlaps of each basin with each other basis
-        for j in ids₋
-            Bj = b₋[j]
+        for j in keys₋
+            Bj = a₋[j]
             overlap = length(Bi ∩ Bj)/length(Bj)
+            @show i, j, 1/overlap
             d[j] = 1 / overlap # distance is inverse overlap
         end
         distances[i] = d

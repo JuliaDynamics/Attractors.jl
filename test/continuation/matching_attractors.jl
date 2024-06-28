@@ -90,7 +90,7 @@ end
         @testset "with retract" begin
             # with retraction it becomes nice
             atts = deepcopy(allatts)
-            match_sequentially!(atts, default; retract_keys = true)
+            rmaps = match_sequentially!(atts, default; retract_keys = true)
             @test unique_keys(atts) == 1:7
         end
     end
@@ -131,4 +131,37 @@ end
 end # Matcher by distance tests
 
 
-# TODO: add a basin overlap test here:
+@testset "basin overlap" begin
+    b1 = ones(Int, 10, 10)
+    b1[:, 6:10] .= 2
+    b2 = copy(b1)
+    b2[:, 1:2] .= 2
+    b2[:, 3:10] .= 3 # 3 has more overlap to 2, while 2 has more overlap to 1
+    b3 = copy(b2)
+    b3[:, 1:10] .= 3 # so now this would be teh same as the previous 3, which is will become 2
+
+    m1 = MatchByBasinOverlap()
+
+    rmap = replacement_map(b2, b1, m1)
+    @test rmap[3] == 2
+    @test rmap[2] == 1
+
+    bx = copy(b2)
+    replacement_map!(bx, b1, m1)
+    @test sort(unique(bx)) == [1, 2]
+
+    rmap = replacement_map(b3, bx, m1)
+    @test length(rmap) == 1
+    @test rmap[3] == 2
+
+    # test that there won't be matching with threshold
+    m2 = MatchByBasinOverlap(1.99)
+    rmap = replacement_map(b2, b1, m2)
+    # here 3 should go to 2, as it overlaps all of 2
+    # while 2 cannot go to 1, as it doesn't 50% or more of 1.
+    # The next available ID is not 4 though, it is 3, as this is
+    # the next available integer given the previous keys (1, 2)
+    @test length(rmap) == 2
+    @test rmap[2] == 3
+    @test rmap[3] == 2
+end
