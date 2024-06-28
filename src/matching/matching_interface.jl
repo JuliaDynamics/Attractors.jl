@@ -39,7 +39,7 @@ Within Attractors.jl they are typically `StateSpaceSet`s representing attractors
 Typically the +,- mean after and before some change of parameter of a dynamical system.
 For some matchers, such as [`MatchByBasinEnclosure`](@ref), the value of the parameter
 is important. `i` in this case can be given as the index of the parameter range
-corresponding to the result `a₋`, assuming `a₊, a₋` are two subsequent results
+corresponding to the result `a₊`, assuming `a₊, a₋` are two subsequent results
 of a [`continuation`](@ref) output.
 """
 function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)

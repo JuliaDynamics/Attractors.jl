@@ -108,6 +108,8 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
         overwrite_dict!(mapper.attractors, attractors)
         return fs, group_labels
     else
+        # If we can't extract attractors we should be able to extract / store
+        # the clustered groups themselves
         return fs
     end
 end
