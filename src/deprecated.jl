@@ -5,7 +5,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
     @warn("""
     The function `basins_of_attraction(grid::Tuple, ds::DynamicalSystem; ...)` has
     been replaced by the more generic
-    `basins_of_attraction(mapper::AttractorMapper, grid::Tuple`) which works for
+    `basins_of_attraction(mapper::AttractorMapper, grid::Tuple)` which works for
     any instance of `AttractorMapper`. The `AttractorMapper` itself requires as
     input an kind of dynamical system the user wants, like a `StroboscopicMap` or
     `CoupledODEs` or `DeterministicIteratedMap` etc.
@@ -35,6 +35,14 @@ end
 
 function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
     error("This function was incorrect. Use `match_continuation!` instead.")
+end
+
+export match_continuation!, match_statespacesets!, match_basins_ids!
+
+function match_continuation!(args...; kwargs...)
+    @warn "match_continuation! has been deprecated for `match_sequentially!`,
+    which has a more generic name that better reflects its capabilities."
+    return match_sequentially!(args...; kwargs...)
 end
 
 function match_statespacesets!(a_afte, a_befo; kwargs...)

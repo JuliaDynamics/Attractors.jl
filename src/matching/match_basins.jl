@@ -1,4 +1,4 @@
-# TODO: I don't know how this fits into the new interface...
+export MatchByBasinOverlap
 
 """
     MatchByBasinOverlap(threshold = Inf)
