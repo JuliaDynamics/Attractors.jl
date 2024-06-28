@@ -56,23 +56,18 @@ end
 
 use_vanished(m::MatchBySSDistance) = m.use_vanished
 
-function replacement_map(a₊::AbstractDict, a₋, matcher::MatchBySSDistance;
-        next_id = nothing, i = nothing # keyword `i` is not used by this mapper
+function replacement_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSDistance;
+        i = nothing, # keyword `i` is not used by this mapper
+        kw... # but next_id is propagated
     )
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = sort.(collect.(keys.((a₊, a₋))))
-    # the next available integer is the minimum key of the "new" dictionary
-    # that doesn't exist in the "old" dictionary
-    if isnothing(next_id)
-        s = setdiff(keys(a₊), keys(a₋))
-        nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
-    else
-        nextid = next_id
-    end
-    _replacement_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold, nextid)
+     _replacement_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold; kw...)
 end
 
-function _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold, next_id)
+function _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold;
+        next_id = next_free_id(keys₊, keys₋)
+    )
     # Transform distances to sortable collection. Sorting by distance
     # ensures we prioritize the closest matches
     sorted_keys_with_distances = Tuple{Int, Int, Float64}[]

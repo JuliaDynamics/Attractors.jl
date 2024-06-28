@@ -43,7 +43,9 @@ function replacement_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::Mat
 end
 
 # actual implementation
-function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap; i = nothing, next_id = nothing)
+function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
+        i = nothing, kw...
+    )
     # input checks
     if !(valtype(a₊) <: Vector{<:CartesianIndex})
         throw(ArgumentError("Incorrect input given. For matcher `MatchByBasinOverlap`,
@@ -57,14 +59,6 @@ function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
     # just a "distance" between basins of attraction. Thus, it actually
     # propagates this "distance" to the matching code of `MatchBySSDistance`!
     keys₊, keys₋ = keys.((a₊, a₋))
-    # the next available integer is the minimum key of the "new" dictionary
-    # that doesn't exist in the "old" dictionary
-    if isnothing(next_id)
-        s = setdiff(keys(a₊), keys(a₋))
-        nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
-    else
-        nextid = next_id
-    end
 
     distances = Dict{eltype(keys₊), Dict{eltype(keys₋), Float64}}()
     for i in keys₊
@@ -74,12 +68,11 @@ function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
         for j in keys₋
             Bj = a₋[j]
             overlap = length(Bi ∩ Bj)/length(Bj)
-            @show i, j, 1/overlap
             d[j] = 1 / overlap # distance is inverse overlap
         end
         distances[i] = d
     end
-    _replacement_map_distances(keys₊, keys₋, distances, matcher.threshold, nextid)
+    _replacement_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
 end
 
 function _basin_to_dict(b::AbstractArray{Int})

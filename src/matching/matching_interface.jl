@@ -8,8 +8,7 @@ Supertype of all "matchers" that match IDs between state space sets (typically a
 Matchers implement an extendable interface. A new mapper type only needs to
 extend the function [`replacement_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref)
-that is called at the end of [`continuation`](@ref) by some continuation algorithms
-such as [`AttractorsContinueAndMatch`](@ref).
+that is called at the end of [`continuation`](@ref) by most continuation algorithms.
 
 Currently available matchers are:
 

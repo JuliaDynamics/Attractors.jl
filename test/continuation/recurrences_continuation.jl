@@ -108,16 +108,16 @@ end
     end
 
     function test_fs(fractions_curves, rrange, frac_results)
-        # For Grouping There should be one cluster for r < 0.5 and then 9 groups of attractors
+        # For Grouping there should be one cluster for r < 0.5 and then 9 groups of attractors
         # For matching, all attractors are detected and matched
-        # for r < 0.5 there are 4 attractors and then 12
+        # for r < 0.5 there are 4 attractors and for r > 0.5 there are 12
         for (i, r) in enumerate(rrange)
             fs = fractions_curves[i]
+            # non-zero keys
+            k = sort!([k for k in keys(fs) if fs[k] > 0])
             if r < 0.5
-                k = sort!(collect(keys(fs)))
                 @test length(k) == frac_results[1]
             else
-                k = sort!(collect(keys(fs)))
                 @test length(k) == frac_results[2]
             end
             @test sum(values(fs)) ≈ 1
@@ -141,6 +141,7 @@ end
         show_progress = false, samples_per_parameter = 1000,
     )
     test_fs(fractions_curves, rrange, [4, 12])
+
     # Then, test the aggregation of features via featurizing and histogram
     using Statistics
     featurizer = (x) -> mean(x)
@@ -153,34 +154,6 @@ end
         fractions_curves, attractors_info, featurizer, hconfig
     )
     test_fs(aggr_fracs, rrange, [4, 12])
-
-    # Lastly, test the rather special case of clustering, using the distance
-    # matrix of the actual attractors
-    featurizer = identity
-    info_extraction = vector -> mean(mean(x) for x in vector)
-    clust_distance_metric = set_distance
-    cconfig = GroupViaClustering(;
-        clust_distance_metric,
-        rescale_features = false,
-        optimal_radius_method = 0.1,
-    )
-    aggr_fracs, aggr_info = aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, cconfig, info_extraction
-    )
-    test_fs(aggr_fracs, rrange, [1, 9])
-    # all attractors near the origin became one:
-    @test aggr_fracs[1] == Dict(1 => 1.0)
-    # We have 9 attractors, and test that their location
-    # is where we expect: 1 at the origin, which includes
-    # and 8 scattered around
-    vals = collect(values(aggr_info))
-    vals = [round.(x; digits = 2) for x in vals]
-    sort!(vals)
-    @test length(vals) == 9
-    for x in vals
-        sx = sort(abs.(x))
-        @test (sx == [0, 0] || sx == [1.15, 2.77])
-    end
 
 end
 

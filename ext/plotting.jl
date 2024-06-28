@@ -184,12 +184,12 @@ end
 ##########################################################################################
 # Continuation
 ##########################################################################################
-function Attractors.plot_basins_curves(fractions_curves, prange; kwargs...)
+function Attractors.plot_basins_curves(fractions_curves, args...; kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     ax.xlabel = "parameter"
     ax.ylabel = "basins %"
-    plot_basins_curves!(ax, fractions_curves, prange; kwargs...)
+    plot_basins_curves!(ax, fractions_curves, args...; kwargs...)
     return fig
 end
 

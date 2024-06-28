@@ -96,3 +96,16 @@ function unique_keys(v)
     end
     return sort!(collect(unique_keys))
 end
+
+function next_free_id(a₊::AbstractDict, a₋::AbstractDict)
+    # the next available integer is the minimum key of the "new" dictionary
+    # that doesn't exist in the "old" dictionary
+    s = setdiff(keys(a₊), keys(a₋))
+    nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
+    return nextid
+end
+function next_free_id(keys₊, keys₋)
+    s = setdiff(keys₊, keys₋)
+    nextid = isempty(s) ? maximum(keys₋) + 1 : minimum(s)
+    return nextid
+end
