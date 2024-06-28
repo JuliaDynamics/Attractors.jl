@@ -8,10 +8,11 @@ using Random: MersenneTwister
 A continuation method for [`continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
 [`extract_attractors`](@ref), while `matcher` is any subtype of [`SSSetMatcher`](@ref).
+This generic and compossable continuation method can have many variants depending on its inputs.
 
 ## Description
 
-This global continuation method is a generalization of the [`RAFM`](@ref) continuation
+This global continuation method is a generalization of the "RAFM" continuation
 described in [Datseris2023](@cite). It continues attractors by
 "seeding" initial conditions from previously found attractors.
 The generalization here is that the method works for any valid `mapper`.

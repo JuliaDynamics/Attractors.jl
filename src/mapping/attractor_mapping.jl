@@ -23,7 +23,10 @@ export AttractorMapper,
     AttractorMapper(ds::DynamicalSystem, args...; kwargs...) → mapper
 
 Subtypes of `AttractorMapper` are structures that map initial conditions of `ds` to
-attractors. Currently available mapping methods:
+attractors. The found attractors are stored inside the `mapper`, and can be obtained
+by calling `attractors = extract_attractors(mapper)`.
+
+Currently available mapping methods:
 
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
@@ -46,7 +49,7 @@ The mappers that can do this are:
 
 `AttractorMapper` defines an extendable interface.
 A new type needs to implement [`extract_attractors`](@ref) and `id = mapper(u0)`.
-From these, everything else in the rest of the library "just works".
+From these, everything else in the entire rest of the library just works!
 If it is not possible to implement `id = mapper(u0)`, then instead extend
 `basins_fractions(mapper, ics)`.
 """

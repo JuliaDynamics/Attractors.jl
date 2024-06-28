@@ -173,3 +173,4 @@ end
 
 include("match_basins.jl")
 include("sssdistance.jl")
+include("basin_enclosure.jl")

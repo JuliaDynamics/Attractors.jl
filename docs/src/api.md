@@ -7,8 +7,8 @@ Attractors.jl defines a generic interface for finding attractors of dynamical sy
 
 ```@docs
 AttractorMapper
+extract_attractors
 ```
-
 
 ### Recurrences
 
@@ -62,13 +62,13 @@ extract_features
 
 
 ## Basins of attraction
+
 Calculating basins of attraction, or their state space fractions, can be done with the functions:
 - [`basins_fractions`](@ref)
 - [`basins_of_attraction`](@ref).
 
 ```@docs
 basins_fractions
-extract_attractors
 basins_of_attraction
 statespace_sampler
 ```
@@ -128,6 +128,12 @@ MFSBruteForce
 continuation
 ```
 
+### General seeding-based continuation
+
+```@docs
+AttractorsContinueAndMatch
+```
+
 ### Recurrences continuation
 
 ```@docs
@@ -148,27 +154,45 @@ FeaturizeGroupAcrossParameter
 
 ## Matching continuation output
 
-One of the most novel, and most powerful features of Attractors.jl is its
+One of the most novel features of Attractors.jl is its
 ability to "match" the continuation result: i.e., functionality that decides
 which attractor gets which label at each parameter value, so that there is a
 "continuity" across the parameter axis.
 
 The matching process is entirely orthogonal to the continuation, something
 completely novel in continuation software. This means, that if you don't like
-the way the matching worked in the first time you estimated the attractors and their
-basins, you don't have to re-compute them! You can simply relabel them using the
-[`match_continuation!`](@ref) function!
+the way the matching worked in the first time you called [`continuation`](@ref),
+then you don't have to call [`continuation`](@ref) again!
+You can simply call the [`match_sequentially!`](@ref) function with
+a new instance of [`SSSetMatcher`](@ref)!
 
 ```@docs
-match_statespacesets!
+SSSetMatcher
+replacement_map
+replacement_map!
+match_sequentially!
+```
+
+### State space distance matcher
+
+```@docs
+MatchBySSDistance
+```
+
+### Basin enclosure matcher
+
+```@docs
+MatchByBasinEnclosure
+```
+
+### Low-level matching functions
+
+```@docs
 Centroid
 Hausdorff
 StrictlyMinimumDistance
-replacement_map
 set_distance
 setsofsets_distances
-match_continuation!
-match_basins_ids!
 ```
 
 ## Visualization utilities
@@ -185,6 +209,7 @@ heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
 ```
 
 ### [Common plotting keywords](@id common_plot_kwargs)
+
 Common keywords for plotting functions in Attractors.jl are:
 
 - `ukeys`: the basin ids (unique keys, vector of integers) to use. By default all existing keys are used.
