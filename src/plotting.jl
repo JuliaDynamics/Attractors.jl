@@ -71,7 +71,8 @@ export animate_attractors_continuation
 
 Plot the fractions of basins of attraction versus a parameter range,
 i.e., visualize the output of [`continuation`](@ref).
-See also [`plot_basins_attractors_curves`](@ref).
+See also [`plot_basins_attractors_curves`](@ref) and
+[`plot_continuation_curves`](@ref).
 
 ## Keyword arguments
 
@@ -98,10 +99,31 @@ and returns a real number so that it can be plotted versus the parameter axis.
 See also [`plot_basins_attractors_curves`](@ref).
 
 Same keywords as [`plot_basins_curves`](@ref common_plot_kwargs).
+See also [`plot_continuation_curves`](@ref).
 """
 function plot_attractors_curves end
 function plot_attractors_curves! end
 export plot_attractors_curves, plot_attractors_curves!
+
+"""
+    plot_continuation_curves(continuation_info, prange = 1:length(); kwargs...)
+
+Same as in [`plot_basins_curves`](@ref) but visualizes any arbitrary quantity characterizing
+the continuation. Hence, the `continuation_info` is of exactly the same format as
+`fractions_curves`: a vector of dictionaries, each dictionary mapping attractor IDs to real numbers.
+`continuation_info` is meant to accompany `attractor_info` in [`plot_attractors_curves`](@ref).
+To produce `continuation_info` from `attractor_info` you can do something like:
+
+```julia
+continuation_info = map(attractors_info) do attractors
+    Dict(k => f(A) for (k, A) in attractors)
+end
+```
+with `f` your function of interest that returns a real number.
+"""
+function plot_continuation_curves end
+function plot_continuation_curves! end
+export plot_continuation_curves, plot_continuation_curves!
 
 """
     plot_basins_attractors_curves(

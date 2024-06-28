@@ -1,3 +1,9 @@
+# v1.18
+
+- New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.
+- New example in the docs for enriching a continuation output with other examples of nonlocal stability.
+- New exported function `reset_mapper!` to clear all stored information in an `AttractorsViaRecurrences` instance. Used in the aforementioned new example.
+
 # v1.17
 
 - New function `convergence_and_basins_fractions`

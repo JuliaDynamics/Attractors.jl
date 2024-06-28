@@ -121,7 +121,8 @@ here but can be found in comments in the source code.
 (E.g., a special timer exists for the "lost" state which does not interrupt the main
 timer of the FSM.)
 
-A video illustrating how the algorithm works can be found in the online Examples page.
+A video illustrating how the algorithm works can be found in the online documentation,
+under the [recurrences animation](@ref recurrences_animation) page.
 """
 struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS

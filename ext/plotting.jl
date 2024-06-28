@@ -236,7 +236,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
             )
         end
     else
-        error()
+        error("Incorrect style specification for basins fractions curves")
     end
 
     xlims!(ax, minimum(prange), maximum(prange))
@@ -264,17 +264,26 @@ function Attractors.plot_attractors_curves(attractors_info, attractor_to_real, p
 end
 
 function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
-        ukeys = unique_keys(attractors_info), # internal argument
+        kwargs...
+    )
+    # make the continuation info values and just propagate to the main function
+    continuation_info = map(attractors_info) do dict
+        Dict(k => attractor_to_real(A) for (k, A) in dict)
+    end
+    plot_continuation_curves!(ax, continuation_info, prange; kwargs...)
+end
+
+function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:length(continuation_info);
+        ukeys = unique_keys(continuation_info), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
         markers = markers_from_keys(ukeys),
         axislegend_kwargs = (position = :lt,)
     )
-    for i in eachindex(attractors_info)
-        attractors = attractors_info[i]
-        for (k, A) in attractors
-            val = attractor_to_real(A)
+    for i in eachindex(continuation_info)
+        info = continuation_info[i]
+        for (k, val) in info
             scatter!(ax, prange[i], val;
                 color = colors[k], marker = markers[k], label = string(labels[k]),
             )
@@ -283,6 +292,13 @@ function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_re
     xlims!(ax, minimum(prange), maximum(prange))
     add_legend && axislegend(ax; axislegend_kwargs..., unique = true)
     return
+end
+
+function Attractors.plot_continuation_curves(args...; kw...)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    plot_continuation_curves!(ax, args...; kw...)
+    return fig
 end
 
 # Mixed: basins and attractors
@@ -355,7 +371,7 @@ end
 function Attractors.animate_attractors_continuation(
         ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
         savename = "attracont.mp4", access = SVector(1, 2),
-        limits = (0,1,0,1),
+        limits = auto_attractor_lims(attractors_info, access),
         framerate = 4, markersize = 10,
         ukeys = unique_keys(attractors_info),
         colors = colors_from_keys(ukeys),
@@ -405,4 +421,21 @@ function Attractors.animate_attractors_continuation(
     return fig
 end
 
+function auto_attractor_lims(attractors_info, access)
+    xmin = ymin = Inf
+    xmax = ymax = -Inf
+    for atts in attractors_info
+        for (k, A) in atts
+            P = A[:, access]
+            mini, maxi = minmaxima(P)
+            xmin > mini[1] && (xmin = mini[1])
+            ymin > mini[2] && (ymin = mini[2])
+            xmax < maxi[1] && (xmax = maxi[1])
+            ymax < maxi[2] && (ymax = maxi[2])
+        end
+    end
+    dx = xmax - xmin
+    dy = ymax - ymin
+    return (xmin - 0.1dx, xmax + 0.1dx, ymin - 0.1dy, ymax + 0.1dy)
+end
 

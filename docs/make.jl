@@ -3,14 +3,21 @@ using Attractors
 using Attractors.DynamicalSystemsBase
 using Attractors.StateSpaceSets
 
+import Documenter
+using Literate
+
+Literate.markdown(
+    joinpath(@__DIR__, "src", "tutorial.jl"), joinpath(@__DIR__, "src");
+    credit = false
+)
+
 pages = [
     "index.md",
-    "attractors.md",
-    "basins.md",
-    "continuation.md",
-    "visualization.md",
+    "tutorial.md",
+    "api.md",
     "examples.md",
     "references.md",
+    Documenter.hide("recurrences_animation.md"),
 ]
 
 import Downloads
@@ -27,6 +34,6 @@ bib = CitationBibliography(
     style=:authoryear
 )
 
-build_docs_with_style(pages, Attractors, DynamicalSystemsBase, StateSpaceSets;
+build_docs_with_style(pages, Attractors, StateSpaceSets;
     expandfirst = ["index.md"], bib, warnonly = [:doctest, :missing_docs, :cross_references],
 )

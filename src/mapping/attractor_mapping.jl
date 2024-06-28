@@ -41,6 +41,14 @@ The mappers that can do this are:
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref) configuration.
+
+## For developers
+
+`AttractorMapper` defines an extendable interface.
+A new type needs to implement [`extract_attractors`](@ref) and `id = mapper(u0)`.
+From these, everything else in the rest of the library "just works".
+If it is not possible to implement `id = mapper(u0)`, then instead extend
+`basins_fractions(mapper, ics)`.
 """
 abstract type AttractorMapper end
 

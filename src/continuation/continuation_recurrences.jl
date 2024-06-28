@@ -1,4 +1,4 @@
-export RecurrencesFindAndMatch, RAFM
+export RecurrencesFindAndMatch, RAFM, reset_mapper!
 import ProgressMeter
 using Random: MersenneTwister
 
@@ -116,7 +116,7 @@ function continuation(
     )
 
     mapper = rsc.mapper
-    reset!(mapper)
+    reset_mapper!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(mapper.ds, pidx, prange[1])
     fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
@@ -133,7 +133,7 @@ function continuation(
     # Continue loop over all remaining parameters
     for p in prange[2:end]
         set_parameter!(mapper.ds, pidx, p)
-        reset!(mapper)
+        reset_mapper!(mapper)
         # Seed initial conditions from previous attractors
         # Notice that one of the things that happens here is some attractors have
         # really small basins. We find them with the seeding process here, but the
@@ -169,7 +169,14 @@ function continuation(
     return fractions_curves, attractors_info
 end
 
-function reset!(mapper::AttractorsViaRecurrences)
+"""
+    reset_mapper!(mapper::AttractorsViaRecurrences)
+
+Reset all accumulated information of `mapper` so that it is
+as if it has just been initialized. Useful in `for` loops
+that loop over a parameter of the dynamical system stored in `mapper`.
+"""
+function reset_mapper!(mapper::AttractorsViaRecurrences)
     empty!(mapper.bsn_nfo.attractors)
     if mapper.bsn_nfo.basins isa Array
         mapper.bsn_nfo.basins .= 0
@@ -180,11 +187,8 @@ function reset!(mapper::AttractorsViaRecurrences)
     mapper.bsn_nfo.consecutive_match = 0
     mapper.bsn_nfo.consecutive_lost = 0
     mapper.bsn_nfo.prev_label = 0
-    # notice that we do not reset the following:
-    # mapper.bsn_nfo.current_att_label = 2
-    # mapper.bsn_nfo.visited_cell_label = 4
-    # because we want the next attractor to be labelled differently in case
-    # it doesn't actually match to any of the new ones
+    mapper.bsn_nfo.current_att_label = 2
+    mapper.bsn_nfo.visited_cell_label = 4
     return
 end
 
