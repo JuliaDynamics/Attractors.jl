@@ -1,7 +1,7 @@
 export MatchBySSDistance
 
 """
-    MatchBySSDistance <: SSSetMatcher
+    MatchBySSDistance <: IDMatcher
     MatchBySSDistance(; distance = Centroid(), threshold = Inf, use_vanished = false)
 
 A matcher type that matches by distance in the state space.
@@ -23,7 +23,7 @@ represent any other set such as a group features.
 When used in [`replacement_map`](@ref) this is what the matcher does:
 (recall in this conversation that sets/attractors are stored in dictionaries,
 mapping keys/IDs to the sets, and we want to match keys in the "new" dictionary (`a₊`)
-to those in the "old" dictionary (`a₋`)
+to those in the "old" dictionary (`a₋`).
 
 The distance between all possible pairs of sets between the "old" sets and "new" sets
 is computed as a formal distance between sets.
@@ -48,7 +48,7 @@ IDs (and their corresponding sets) that existed before but have vanished are kep
 when it comes to matching: the current dictionary values (the sets) are compared to the latest instance
 of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
 """
-@kwdef struct MatchBySSDistance{M, T<:Real} <: SSSetMatcher
+@kwdef struct MatchBySSDistance{M, T<:Real} <: IDMatcher
     distance::M = Centroid()
     threshold::T = Inf
     use_vanished::Bool = false

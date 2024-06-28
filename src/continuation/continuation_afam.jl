@@ -7,7 +7,7 @@ using Random: MersenneTwister
 
 A continuation method for [`continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
-[`extract_attractors`](@ref), while `matcher` is any subtype of [`SSSetMatcher`](@ref).
+[`extract_attractors`](@ref), while `matcher` is any subtype of [`IDMatcher`](@ref).
 This generic and compossable continuation method can have many variants depending on its inputs.
 
 ## Description

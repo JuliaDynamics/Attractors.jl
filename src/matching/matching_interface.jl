@@ -1,28 +1,31 @@
-export SSSetMatcher, replacement_map, replacement_map!, match_sequentially!
+# Matching is part of an extendable interface. However, as we have not been able to
+# create more matchers than just the `MatchBySSDistance`, we do not expose this
+# interface to the users. Perhaps in the future we will expose this!
+
+# For now, the only parts exposed are these functions:
+export replacement_map, replacement_map!, match_sequentially!
+# all of which take as input the treshold and distance of the
+# `MatchBySSDistance` matcher.
 
 """
-    SSSetMatcher
+    IDMatcher
 
-Supertype of all "matchers" that match IDs between state space sets (typically attractors).
+Supertype of all "matchers" that match can IDs labelling attractors.
 
-Matchers implement an extendable interface. A new mapper type only needs to
+Matchers implement an extendable interface. A new matcher type only needs to
 extend the function [`replacement_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref)
-that is called at the end of [`continuation`](@ref) by most continuation algorithms.
+that is called at the end of [`continuation`](@ref) by some continuation algorithms
+such as [`AttractorsFindAndMatch`](@ref).
 
-Currently available matchers are:
-
-- [`MatchBySSDistance`](@ref)
-- [`MatchByBasinEnclosure`](@ref)
-
-As you user you typically only care about given an instance of `SSSetMatcher`
+As you user you typically only care about given an instance of `IDMatcher`
 to a continuation algorithm such as [`AttractorsContinueAndMatch`](@ref),
 and you don't have to worry about the matching functions themselves.
 """
-abstract type SSSetMatcher end
+abstract type IDMatcher end
 
 """
-    replacement_map(a₊, a₋, matcher; i = nothing) → rmap
+    replacement_map(a₊, a₋, matcher) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
 return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
@@ -37,31 +40,27 @@ The values contained in `a₊, a₋` can be anything supported by `matcher`.
 Within Attractors.jl they are typically `StateSpaceSet`s representing attractors.
 
 Typically the +,- mean after and before some change of parameter of a dynamical system.
-For some matchers, such as [`MatchByBasinEnclosure`](@ref), the value of the parameter
-is important. `i` in this case can be given as the index of the parameter range
-corresponding to the result `a₊`, assuming `a₊, a₋` are two subsequent results
-of a [`continuation`](@ref) output.
 """
-function replacement_map(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
+function replacement_map(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
     # For developers: a private keyword `next_id` is also given to `replacement_map`
     # that is utilized in the `match_sequentially!` function.
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
 end
 
 """
-    replacement_map!(a₊, a₋, matcher; i = nothing) → rmap
+    replacement_map!(a₊, a₋, matcher) → rmap
 
 Convenience function that first calls [`replacement_map`](@ref) and then
 replaces the IDs in `a₊` with this `rmap`.
 """
-function replacement_map!(a₊::AbstractDict, a₋, matcher::SSSetMatcher; kw...)
+function replacement_map!(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
     rmap = replacement_map(a₊, a₋, matcher; kw...)
     swap_dict_keys!(a₊, rmap)
     return rmap
 end
 
 """
-    match_sequentially!(dicts::Vector{Dict{Int, Any}}, matcher::SSSetMatcher; kw...)
+    match_sequentially!(dicts::Vector{Dict{Int, Any}}, matcher::IDMatcher; kw...)
 
 Match the `dicts`, a vector of dictionaries mapping IDs (integers) to values,
 according to the given `matcher` by sequentially applying the
@@ -83,7 +82,7 @@ i.e., the pairs of `old => new` IDs.
   1, 2, 3. The special ID -1 is unaffected by this.
 """
 function match_sequentially!(
-        attractors::AbstractVector{<:Dict}, matcher::SSSetMatcher; retract_keys = true
+        attractors::AbstractVector{<:Dict}, matcher::IDMatcher; retract_keys = true
     )
     # this generic implementation works for any matcher!!!
     # the matcher also provides the `use_vanished` keyword if it makes sense!

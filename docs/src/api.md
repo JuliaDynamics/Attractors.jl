@@ -164,10 +164,10 @@ completely novel in continuation software. This means, that if you don't like
 the way the matching worked in the first time you called [`continuation`](@ref),
 then you don't have to call [`continuation`](@ref) again!
 You can simply call the [`match_sequentially!`](@ref) function with
-a new instance of [`SSSetMatcher`](@ref)!
+a new instance of [`IDMatcher`](@ref)!
 
 ```@docs
-SSSetMatcher
+IDMatcher
 replacement_map
 replacement_map!
 match_sequentially!
