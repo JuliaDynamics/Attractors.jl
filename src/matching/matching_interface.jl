@@ -119,7 +119,7 @@ end
 
 Do the same as in `match_sequentially!` above, now given the vector of replacement maps,
 and for any arbitrary quantity that has been tracked in the continuation.
-`continuation_quantity` can for example be `fractions_curves` from [`continuation`](@ref).
+`continuation_quantity` can for example be `fractions_cont` from [`continuation`](@ref).
 """
 function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmaps::Vector{Dict{Int, Int}})
     if length(rmaps) ≠ length(continuation_quantity) - 1

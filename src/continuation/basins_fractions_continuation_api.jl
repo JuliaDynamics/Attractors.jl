@@ -34,8 +34,8 @@ Possible subtypes of `AttractorsBasinsContinuation` are:
 
 ## Return
 
-1. `fractions_curves::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
-   `fractions_curves[i]` is a dictionary mapping attractor IDs to their basin fraction
+1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
+   `fractions_cont[i]` is a dictionary mapping attractor IDs to their basin fraction
    at the `i`-th parameter.
 2. `attractors_info::Vector{Dict{Int, <:Any}}`. Information about the attractors.
    `attractors_info[i]` is a dictionary mapping attractor ID to information about the

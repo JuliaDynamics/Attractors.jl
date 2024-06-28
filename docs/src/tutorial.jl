@@ -187,7 +187,7 @@ rafm = RecurrencesFindAndMatch(mapper)
 
 # and call
 
-fractions_curves, attractors_info = continuation(
+fractions_cont, attractors_info = continuation(
 	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
@@ -205,7 +205,7 @@ attractors_info[34]
 # already defined:
 
 animate_attractors_continuation(
-    ds, attractors_info, fractions_curves, prange, pidx;
+    ds, attractors_info, fractions_cont, prange, pidx;
 );
 
 # ```@raw html
@@ -223,7 +223,7 @@ animate_attractors_continuation(
 # parameter axis. We can do this with the convenience function:
 
 fig = plot_basins_attractors_curves(
-	fractions_curves, attractors_info, A -> minimum(A[:, 1]), prange,
+	fractions_cont, attractors_info, A -> minimum(A[:, 1]), prange,
 )
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
@@ -238,7 +238,7 @@ a2rs = [
 ]
 
 fig = plot_basins_attractors_curves(
-	fractions_curves, attractors_info, a2rs, prange; add_legend = false
+	fractions_cont, attractors_info, a2rs, prange; add_legend = false
 )
 
 ax1, ax2 = content.((fig[2,1], fig[3,1]))

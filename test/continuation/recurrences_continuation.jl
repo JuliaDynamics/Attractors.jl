@@ -37,14 +37,14 @@ using Random
     rrange = range(0, 2; length = 20)
     ridx = 1
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.3)
-    fractions_curves, a = continuation(
+    fractions_cont, a = continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000
     )
 
     for (i, r) in enumerate(rrange)
 
-        fs = fractions_curves[i]
+        fs = fractions_cont[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
             @test length(k) == 1
@@ -107,12 +107,12 @@ end
         return
     end
 
-    function test_fs(fractions_curves, rrange, frac_results)
+    function test_fs(fractions_cont, rrange, frac_results)
         # For Grouping there should be one cluster for r < 0.5 and then 9 groups of attractors
         # For matching, all attractors are detected and matched
         # for r < 0.5 there are 4 attractors and for r > 0.5 there are 12
         for (i, r) in enumerate(rrange)
-            fs = fractions_curves[i]
+            fs = fractions_cont[i]
             # non-zero keys
             k = sort!([k for k in keys(fs) if fs[k] > 0])
             if r < 0.5
@@ -136,11 +136,11 @@ end
     # First, test the normal function of finding attractors
     mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.1)
-    fractions_curves, attractors_info = continuation(
+    fractions_cont, attractors_info = continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
     )
-    test_fs(fractions_curves, rrange, [4, 12])
+    test_fs(fractions_cont, rrange, [4, 12])
 
     # Then, test the aggregation of features via featurizing and histogram
     using Statistics
@@ -151,7 +151,7 @@ end
     )
 
     aggr_fracs, aggr_info = aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, hconfig
+        fractions_cont, attractors_info, featurizer, hconfig
     )
     test_fs(aggr_fracs, rrange, [4, 12])
 
@@ -190,13 +190,13 @@ if DO_EXTENSIVE_TESTS
     rsc = RecurrencesFindAndMatch(mapper;
         threshold = 0.99, distance = distance_function
     )
-    fractions_curves, attractors_info = continuation(
+    fractions_cont, attractors_info = continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
 
     for (i, p) in enumerate(ps)
-        fs = fractions_curves[i]
+        fs = fractions_cont[i]
         attractors = attractors_info[i]
         @test sum(values(fs)) ≈ 1
         # Test that keys are the same (-1 doesn't have attractor)
@@ -216,7 +216,7 @@ if DO_EXTENSIVE_TESTS
     @test ukeys == 1:3
 
     # # Animation of henon attractors
-    # animate_attractors_continuation(ds, attractors_info, fractions_curves, ps, pidx)
+    # animate_attractors_continuation(ds, attractors_info, fractions_cont, ps, pidx)
 end
 
 @testset "non-found attractors" begin
@@ -231,7 +231,7 @@ end
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     rsc = RecurrencesFindAndMatch(mapper)
 
-    fractions_curves, attractors_info = continuation(
+    fractions_cont, attractors_info = continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )

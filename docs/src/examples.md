@@ -434,12 +434,12 @@ sampler, = statespace_sampler(region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_curves, attractors_info = continuation(
+fractions_cont, attractors_info = continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
 )
 # Show some characteristic fractions:
-fractions_curves[[1, 50, 101]]
+fractions_cont[[1, 50, 101]]
 ```
 
 
@@ -448,7 +448,7 @@ We visualize them using a predefined function that you can find in `docs/basins_
 
 ```@example MAIN
 # careful; `prange` isn't a vector of reals!
-plot_basins_curves(fractions_curves, γγ)
+plot_basins_curves(fractions_cont, γγ)
 ```
 
 
@@ -505,11 +505,11 @@ sampler, = statespace_sampler(grid, 1234)
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
 continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_curves, attractors_info = continuation(
+fractions_cont, attractors_info = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );
-plot_basins_curves(fractions_curves, prange; separatorwidth = 1)
+plot_basins_curves(fractions_cont, prange; separatorwidth = 1)
 ```
 
 ![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
@@ -537,7 +537,7 @@ isextinct(A, idx = unitidxs) = all(a -> a <= 1e-2, A[:, idx])
 groupingconfig = GroupViaClustering(; min_neighbors=1, optimal_radius_method=0.5)
 
 aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
-    fractions_curves, attractors_info, featurizer, groupingconfig
+    fractions_cont, attractors_info, featurizer, groupingconfig
 )
 
 plot_basins_curves(aggregated_fractions, prange;
@@ -620,10 +620,10 @@ featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
 gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
-fractions_curves, clusters_info = continuation(
+fractions_cont, clusters_info = continuation(
     gap, rrange, ridx, sampler; show_progress = false
 )
-fractions_curves
+fractions_cont
 ```
 
 Looking at the information of the "attractors" (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:

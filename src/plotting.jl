@@ -42,7 +42,7 @@ export shaded_basins_heatmap, shaded_basins_heatmap!
 ##########################################################################################
 """
     animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
+        ds::DynamicalSystem, attractors_info, fractions_cont, prange, pidx;
         kwargs...
     )
 
@@ -52,7 +52,7 @@ and output of the [`continuation`](@ref) function into a video output.
 
 The input dynamical system `ds` is used to evolve initial conditions sampled from the
 found attractors, so that the attractors are better visualized.
-`attractors_info, fractions_curves` are the output of [`continuation`](@ref)
+`attractors_info, fractions_cont` are the output of [`continuation`](@ref)
 while `ds, prange, pidx` are the input to [`continuation`](@ref).
 
 ## Keyword arguments
@@ -67,7 +67,7 @@ function animate_attractors_continuation end
 export animate_attractors_continuation
 
 """
-    plot_basins_curves(fractions_curves, prange = 1:length(); kwargs...)
+    plot_basins_curves(fractions_cont, prange = 1:length(); kwargs...)
 
 Plot the fractions of basins of attraction versus a parameter range,
 i.e., visualize the output of [`continuation`](@ref).
@@ -110,7 +110,7 @@ export plot_attractors_curves, plot_attractors_curves!
 
 Same as in [`plot_basins_curves`](@ref) but visualizes any arbitrary quantity characterizing
 the continuation. Hence, the `continuation_info` is of exactly the same format as
-`fractions_curves`: a vector of dictionaries, each dictionary mapping attractor IDs to real numbers.
+`fractions_cont`: a vector of dictionaries, each dictionary mapping attractor IDs to real numbers.
 `continuation_info` is meant to accompany `attractor_info` in [`plot_attractors_curves`](@ref).
 To produce `continuation_info` from `attractor_info` you can do something like:
 
@@ -127,7 +127,7 @@ export plot_continuation_curves, plot_continuation_curves!
 
 """
     plot_basins_attractors_curves(
-        fractions_curves, attractors_info, a2rs [, prange]
+        fractions_cont, attractors_info, a2rs [, prange]
         kwargs...
     )
 

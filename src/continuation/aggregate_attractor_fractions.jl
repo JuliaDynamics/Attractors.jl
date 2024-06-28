@@ -2,7 +2,7 @@ export aggregate_attractor_fractions
 
 """
     aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, group_config [, info_extraction]
+        fractions_cont, attractors_info, featurizer, group_config [, info_extraction]
     )
 
 Aggregate the already-estimated curves of fractions of basins of attraction of similar
@@ -25,7 +25,7 @@ in [Extinction of a species in a multistable competition model](@ref).
 
 ## Input
 
-1. `fractions_curves`: a vector of dictionaries mapping labels to basin fractions.
+1. `fractions_cont`: a vector of dictionaries mapping labels to basin fractions.
 2. `attractors_info`: a vector of dictionaries mapping labels to attractors.
    1st and 2nd argument are exactly like the return values of
    [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)
@@ -39,7 +39,7 @@ in [Extinction of a species in a multistable competition model](@ref).
 
 ## Return
 
-1. `aggregated_fractions`: same as `fractions_curves` but now contains the fractions of the
+1. `aggregated_fractions`: same as `fractions_cont` but now contains the fractions of the
    aggregated attractors.
 2. `aggregated_info`: dictionary mapping the new labels of `aggregated_fractions` to the
    extracted information using `info_extraction`.
@@ -59,17 +59,17 @@ expects a _vector of `StateSpaceSet`s_ and outputs a descriptor.
 E.g., `info_extraction = vector -> mean(mean(x) for x in vector)`.
 """
 function aggregate_attractor_fractions(
-        fractions_curves::Vector, attractors_info::Vector, featurizer, group_config,
+        fractions_cont::Vector, attractors_info::Vector, featurizer, group_config,
         info_extraction = mean_across_features # function from grouping continuation
     )
 
     original_labels, unlabeled_fractions, parameter_idxs, features =
-    refactor_into_sequential_features(fractions_curves, attractors_info, featurizer)
+    refactor_into_sequential_features(fractions_cont, attractors_info, featurizer)
 
     grouped_labels = group_features(features, group_config)
 
     aggregated_fractions = reconstruct_joint_fractions(
-        fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
+        fractions_cont, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
     remove_minus_1_if_possible!(aggregated_fractions)
     aggregated_info = info_of_grouped_features(features, grouped_labels, info_extraction)
@@ -84,17 +84,17 @@ function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args..
 end
 
 
-function refactor_into_sequential_features(fractions_curves, attractors_info, featurizer)
+function refactor_into_sequential_features(fractions_cont, attractors_info, featurizer)
     # Set up containers
-    P = length(fractions_curves)
+    P = length(fractions_cont)
     example_feature = featurizer(first(values(attractors_info[1])))
     features = typeof(example_feature)[]
-    original_labels = keytype(first(fractions_curves))[]
+    original_labels = keytype(first(fractions_cont))[]
     parameter_idxs = Int[]
     unlabeled_fractions = zeros(P)
     # Transform original data into sequential vectors
-    for i in eachindex(fractions_curves)
-        fs = fractions_curves[i]
+    for i in eachindex(fractions_cont)
+        fs = fractions_cont[i]
         ai = attractors_info[i]
         A = length(ai)
         append!(parameter_idxs, (i for _ in 1:A))
@@ -111,9 +111,9 @@ function refactor_into_sequential_features(fractions_curves, attractors_info, fe
 end
 
 function reconstruct_joint_fractions(
-        fractions_curves, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
+        fractions_cont, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
-    aggregated_fractions = [Dict{Int,Float64}() for _ in 1:length(fractions_curves)]
+    aggregated_fractions = [Dict{Int,Float64}() for _ in 1:length(fractions_cont)]
     current_p_idx = 0
     for j in eachindex(grouped_labels)
         new_label = grouped_labels[j]
@@ -123,7 +123,7 @@ function reconstruct_joint_fractions(
             aggregated_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
         end
         d = aggregated_fractions[current_p_idx]
-        orig_frac = get(fractions_curves[current_p_idx], original_labels[j], 0)
+        orig_frac = get(fractions_cont[current_p_idx], original_labels[j], 0)
         d[new_label] = get(d, new_label, 0) + orig_frac
     end
     return aggregated_fractions
