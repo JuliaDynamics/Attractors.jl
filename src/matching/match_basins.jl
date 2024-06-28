@@ -3,7 +3,7 @@ export MatchByBasinOverlap
 """
     MatchByBasinOverlap(threshold = Inf)
 
-A special matcher that matches IDs given full basins of attraction.
+A matcher that matches IDs given full basins of attraction.
 It matches IDs of attractors whose basins of attraction before and after `b₋, b₊`
 have the most overlap (in pixels). This overlap is normalized in 0-1 (with 1 meaning
 100% of a basin in `b₋` is overlaping with some other basin in `b₊`).
@@ -13,11 +13,7 @@ to get assined different IDs.
 For example: for `threshold = 2` basins that have ≤ 50% overlap get
 different IDs guaranteed. By default, there is no threshold.
 
-The input for this matcher in [`replacement_map`](@ref)
-should be dictionaries mapping IDs to vectors of cartesian indices,
-where the indices mean which parts of the state space belong to which ID
-
-This information can be derived from the basins of attraction (`Array`),
+This information of the basins of attraction is typically an `Array`,
 i.e., the direct output of [`basins_of_attraction`](@ref).
 For convenience, as well as backwards compatibility, when using
 [`replacement_map`](@ref) with this mapper you may provide two `Array`s `b₊, b₋`
@@ -25,12 +21,26 @@ representing basins of attraction after and before, and the conversion to dictio
 will happen internally as it is supposed to.
 To replace the `IDs` in `b₊` given the replacement map just call `replace!(b₊, rmap...)`,
 or use the in-place version [`replacement_map!`](@ref) directly.
+
+A lower-level input for this matcher in [`replacement_map`](@ref)
+can be dictionaries mapping IDs to vectors of cartesian indices,
+where the indices mean which parts of the state space belong to which ID
 """
 struct MatchByBasinOverlap
     threshold::Float64
 end
 MatchByBasinOverlap() = MatchByBasinOverlap(Inf)
 
+
+"""
+    replacement_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap)
+
+Special case of `replacement_map` where instead of having as input dictionaries
+mapping IDs to values, we have `Array`s which represent basins of
+attraction and whose elements are the IDs.
+
+See [`MatchByBasinOverlap`](@ref) for how matching works.
+"""
 function replacement_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
     a₊, a₋ = _basin_to_dict.((b₊, b₋))
     replacement_map(a₊, a₋, matcher; i)
@@ -57,7 +67,7 @@ function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
     # The source code of this matcher is beautiful. It computes a "dissimilarity"
     # metric, which is the inverse of the basin overlaps. This "dissimilarity" is
     # just a "distance" between basins of attraction. Thus, it actually
-    # propagates this "distance" to the matching code of `MatchBySSDistance`!
+    # propagates this "distance" to the matching code of `MatchBySSSetDistance`!
     keys₊, keys₋ = keys.((a₊, a₋))
 
     distances = Dict{eltype(keys₊), Dict{eltype(keys₋), Float64}}()

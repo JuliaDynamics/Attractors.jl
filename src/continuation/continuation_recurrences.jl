@@ -10,7 +10,7 @@ and then matching them according to their state space distance.
 
 ## Keyword arguments
 
-- `distance = Centroid(), threshold = Inf`: passed to [`MatchBySSDistance`](@ref).
+- `distance = Centroid(), threshold = Inf`: passed to [`MatchBySSSetDistance`](@ref).
 - `seeds_from_attractor`: A function that takes as an input an attractor and returns
   an iterator of initial conditions to be seeded from the attractor for the next
   parameter slice. By default, we sample only the first stored point on the attractor.
@@ -22,11 +22,11 @@ and then matching them according to their state space distance.
 and to have a clear reference to the original algorithm developed in [Datseris2023](@cite).
 
 The source code of `RecurrencesFindAndMatch` is trival:
-it takes the given mapper, it initializes a [`MatchBySSDistance`](@ref),
+it takes the given mapper, it initializes a [`MatchBySSSetDistance`](@ref),
 and along with `seeds_from_attractor` it makes the [`AttractorsContinueAndMatch`](@ref)
 instance. This is the process described in [Datseris2023](@cite),
 whereby attractors are found using the recurrences algorithm [`AttractorsViaRecurrences`](@ref)
-and they are then matched by their distance in state space [`MatchBySSDistance`](@ref).
+and they are then matched by their distance in state space [`MatchBySSSetDistance`](@ref).
 """
 function RecurrencesFindAndMatch(
         mapper::AttractorsViaRecurrences; distance = Centroid(), threshold = Inf,
@@ -36,7 +36,7 @@ function RecurrencesFindAndMatch(
         @warn "`info_extraction` is ignored in `RecurrencesFindAndMatch`.
         You can extract info after the attractors have been found."
     end
-    matcher = MatchBySSDistance(; distance, threshold)
+    matcher = MatchBySSSetDistance(; distance, threshold)
     return AttractorsContinueAndMatch(mapper, matcher, seeds_from_attractor)
 end
 

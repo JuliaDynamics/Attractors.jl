@@ -1,10 +1,9 @@
-export MatchBySSDistance
+export MatchBySSSetDistance
 
 """
-    MatchBySSDistance <: IDMatcher
-    MatchBySSDistance(; distance = Centroid(), threshold = Inf, use_vanished = false)
+    MatchBySSSetDistance(; distance = Centroid(), threshold = Inf, use_vanished = false)
 
-A matcher type that matches by distance in the state space.
+A matcher type that matches IDs by the distance of their corresponding state space sets.
 
 ## Keyword arguments
 
@@ -43,20 +42,22 @@ Additionally, you can provide a `threshold` value. If the distance between two s
 is larger than this `threshold`, then it is guaranteed that the sets will get assigned
 different ID in the replacement map (the next available integer).
 
-Lastly, you can provide `use_vanished::Bool`: If `use_vanised = true`, then
+When matching during a continuation, there is an entire sequence of "old"-"new" collections
+of sets for each setp of the continuation. The keyword `use_vanished::Bool` comes
+into play here. If `use_vanised = true`, then
 IDs (and their corresponding sets) that existed before but have vanished are kept in "memory"
 when it comes to matching: the current dictionary values (the sets) are compared to the latest instance
 of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
 """
-@kwdef struct MatchBySSDistance{M, T<:Real} <: IDMatcher
+@kwdef struct MatchBySSSetDistance{M, T<:Real} <: IDMatcher
     distance::M = Centroid()
     threshold::T = Inf
     use_vanished::Bool = false
 end
 
-use_vanished(m::MatchBySSDistance) = m.use_vanished
+use_vanished(m::MatchBySSSetDistance) = m.use_vanished
 
-function replacement_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSDistance;
+function replacement_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
         i = nothing, # keyword `i` is not used by this mapper
         kw... # but next_id is propagated
     )

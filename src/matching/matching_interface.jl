@@ -1,11 +1,11 @@
 # Matching is part of an extendable interface. However, as we have not been able to
-# create more matchers than just the `MatchBySSDistance`, we do not expose this
+# create more matchers than just the `MatchBySSSetDistance`, we do not expose this
 # interface to the users. Perhaps in the future we will expose this!
 
 # For now, the only parts exposed are these functions:
 export replacement_map, replacement_map!, match_sequentially!
 # all of which take as input the treshold and distance of the
-# `MatchBySSDistance` matcher.
+# `MatchBySSSetDistance` matcher.
 
 """
     IDMatcher
@@ -25,7 +25,7 @@ and you don't have to worry about the matching functions themselves.
 abstract type IDMatcher end
 
 """
-    replacement_map(a₊, a₋, matcher) → rmap
+    replacement_map(a₊::Dict, a₋::Dict, matcher) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
 return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
@@ -34,7 +34,8 @@ so that values in `a₊` that are the "closest" to values in `a₋` get assigned
 same key as in `a₋`. In this way keys of `a₊` are "matched" to keys of `a₋`.
 Use [`swap_dict_keys`](@ref) to apply `rmap` to `a₊`.
 
-How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`.
+How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`,
+but in the majority of cases `matcher` is just an instance of [`MatchBySSSetDistance`](@ref).
 
 The values contained in `a₊, a₋` can be anything supported by `matcher`.
 Within Attractors.jl they are typically `StateSpaceSet`s representing attractors.

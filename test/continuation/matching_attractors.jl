@@ -12,8 +12,8 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     end
 end
 
-@testset "MatchBySSDistance" begin
-    default = MatchBySSDistance()
+@testset "MatchBySSSetDistance" begin
+    default = MatchBySSSetDistance()
 
 @testset "analytic" begin
     a_befo = Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)])
@@ -30,7 +30,7 @@ end
     @testset "separating threshold" begin
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        matcher = MatchBySSDistance(threshold = 0.1)
+        matcher = MatchBySSSetDistance(threshold = 0.1)
         rmap = replacement_map!(a_afte, a_befo, matcher)
         @test rmap == Dict(1 => 3, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
@@ -53,12 +53,12 @@ end
         end
     end
     # Test with distance not enough to increment
-    match_sequentially!(allatts, MatchBySSDistance(threshold = 100.0)) # all odd keys become 1
+    match_sequentially!(allatts, MatchBySSSetDistance(threshold = 100.0)) # all odd keys become 1
     @test all(haskey(d, 1) for d in allatts)
     @test all(haskey(d, 2) for d in allatts)
     # Test with distance enough to increment
     allatts2 = deepcopy(allatts)
-    match_sequentially!(allatts2, MatchBySSDistance(threshold = 0.1)) # all keys there were `2` get incremented
+    match_sequentially!(allatts2, MatchBySSSetDistance(threshold = 0.1)) # all keys there were `2` get incremented
     @test all(haskey(d, 1) for d in allatts2)
     for i in 2:length(jrange)
         @test haskey(allatts2[i], i+1)
@@ -98,7 +98,7 @@ end
     @testset "use vanished" begin
         @testset "Inf thresh" begin
             atts = deepcopy(allatts)
-            match_sequentially!(atts, MatchBySSDistance(use_vanished = true))
+            match_sequentially!(atts, MatchBySSSetDistance(use_vanished = true))
             @test unique_keys(atts) == 1:3
             for i in eachindex(jrange)
                 if iseven(i)
@@ -112,7 +112,7 @@ end
             # okay here we test the case that the threshold becomes too large
             threshold = 10.0 # at the 5th index, we cannot match anymore
             atts = deepcopy(allatts)
-            match_sequentially!(atts, MatchBySSDistance(; use_vanished = true, threshold))
+            match_sequentially!(atts, MatchBySSSetDistance(; use_vanished = true, threshold))
             @testset "i=$(i)" for i in eachindex(jrange)
                 if iseven(i)
                     @test sort!(collect(keys(atts[i]))) == 1:2

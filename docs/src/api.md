@@ -140,6 +140,27 @@ AttractorsContinueAndMatch
 RecurrencesFindAndMatch
 ```
 
+### Matching via state space distance
+
+```@docs
+replacement_map
+replacement_map!
+match_sequentially!
+MatchBySSSetDistance
+MatchByBasinOverlap
+```
+
+
+#### Low-level distance functions
+
+```@docs
+Centroid
+Hausdorff
+StrictlyMinimumDistance
+set_distance
+setsofsets_distances
+```
+
 ### Aggregating attractors and fractions
 
 ```@docs
@@ -150,49 +171,6 @@ aggregate_attractor_fractions
 
 ```@docs
 FeaturizeGroupAcrossParameter
-```
-
-## Matching continuation output
-
-One of the most novel features of Attractors.jl is its
-ability to "match" the continuation result: i.e., functionality that decides
-which attractor gets which label at each parameter value, so that there is a
-"continuity" across the parameter axis.
-
-The matching process is entirely orthogonal to the continuation, something
-completely novel in continuation software. This means, that if you don't like
-the way the matching worked in the first time you called [`continuation`](@ref),
-then you don't have to call [`continuation`](@ref) again!
-You can simply call the [`match_sequentially!`](@ref) function with
-a new instance of [`IDMatcher`](@ref)!
-
-```@docs
-IDMatcher
-replacement_map
-replacement_map!
-match_sequentially!
-```
-
-### State space distance matcher
-
-```@docs
-MatchBySSDistance
-```
-
-### Basin enclosure matcher
-
-```@docs
-MatchByBasinEnclosure
-```
-
-### Low-level matching functions
-
-```@docs
-Centroid
-Hausdorff
-StrictlyMinimumDistance
-set_distance
-setsofsets_distances
 ```
 
 ## Visualization utilities

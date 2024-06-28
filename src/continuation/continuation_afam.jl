@@ -3,16 +3,17 @@ import ProgressMeter
 using Random: MersenneTwister
 
 """
-    AttractorsContinueAndMatch(mapper, matcher [, seeding])
+    AttractorsContinueAndMatch(mapper, matcher = MatchBySSSetDistance())
 
 A continuation method for [`continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
-[`extract_attractors`](@ref), while `matcher` is any subtype of [`IDMatcher`](@ref).
-This generic and compossable continuation method can have many variants depending on its inputs.
+[`extract_attractors`](@ref).
+`matcher` is a configuration of how to match attractor IDs,
+and at the moment can only be an instance of [`MatchBySSSetDistance`](@ref).
 
 ## Description
 
-This global continuation method is a generalization of the "RAFM" continuation
+This continuation method is a generalization of the "RAFM" continuation
 described in [Datseris2023](@cite). It continues attractors by
 "seeding" initial conditions from previously found attractors.
 The generalization here is that the method works for any valid `mapper`.
