@@ -90,7 +90,7 @@ function continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
     fractions_curves = [fs]
     # The attractors are also stored (and are the primary output)
     prev_attractors = deepcopy(extract_attractors(mapper))
-    attractors_info = [prev_attractors]
+    attractors_cont = [prev_attractors]
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
     # Continue loop over all remaining parameters
     for p in prange[2:end]
@@ -121,12 +121,12 @@ function continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
         # We do not match attractors here; the matching is independent step done at the end
         current_attractors = deepcopy(extract_attractors(mapper))
         push!(fractions_curves, fs)
-        push!(attractors_info, current_attractors)
+        push!(attractors_cont, current_attractors)
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     # Match attractors (and basins)
-    rmaps = match_sequentially!(attractors, acam.matcher)
-    match_sequentially!(rmaps, fractions_curves)
-    return fractions_curves, attractors_info
+    rmaps = match_sequentially!(attractors_cont, acam.matcher)
+    match_sequentially!(fractions_curves, rmaps)
+    return fractions_curves, attractors_cont
 end

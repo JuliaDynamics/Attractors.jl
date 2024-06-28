@@ -30,7 +30,7 @@
 # ```
 
 # which we define in code as
-using Attractors
+using Attractors # part of `DynamicalSystems`, so it re-exports functionality for making them!
 using OrdinaryDiffEq # for accessing advanced ODE Solvers
 
 function modified_lorenz_rule(u, p, t)
@@ -78,7 +78,7 @@ mapper = AttractorsViaRecurrences(ds, grid;
     consecutive_lost_steps = 100,
 )
 
-# This `mapper` can map any initial condition `u` to the corresponding
+# This `mapper` can map any initial condition to the corresponding
 # attractor ID, for example
 
 mapper([-4.0, 5, 0])
@@ -87,7 +87,7 @@ mapper([-4.0, 5, 0])
 
 mapper([4.0, 2, 0])
 
-# the fact that these two different conditions got assigned different IDs means
+# the fact that these two different initial conditions got assigned different IDs means
 # that they converged to a different attractor.
 # The attractors are stored in the mapper internally, to obtain them we
 # use the function
@@ -231,8 +231,6 @@ fig = plot_basins_attractors_curves(
 # The argument `A -> minimum(A[:, 1])` is simply a function that maps
 # an attractor into a real number for plotting.
 # We can provide more functions to visualize other aspects of the attractors:
-
-using Statistics: std
 
 a2rs = [
     A -> minimum(A[:, 1]),

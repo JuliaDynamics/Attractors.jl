@@ -35,7 +35,7 @@ function RecurrencesFindAndMatch(
         You can extract info after the attractors have been found."
     end
     matcher = MatchBySSDistance(; distance, threshold)
-    return AttractorsContinueAndMatch(mapper, matcher, seeds_from_attractors)
+    return AttractorsContinueAndMatch(mapper, matcher)
 end
 
 "Alias for [`RecurrencesFindAndMatch`](@ref)."
