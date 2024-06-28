@@ -22,9 +22,11 @@
 # For this tutorial we will use a modified Lorenz-like system with equations
 
 # ```math
+# \begin{align*}
 # \dot{x} & = y - x \\
-# \dot{y} & = -x*z + b*|z| \\
-# \dot{x} & = x*y - a \\
+# \dot{y}  &= -x*z + b*|z| \\
+# \dot{z}  &= x*y - a \\
+# \end{align*}
 # ```
 
 # which we define in code as
@@ -76,7 +78,42 @@ mapper = AttractorsViaRecurrences(ds, grid;
     consecutive_lost_steps = 100,
 )
 
-# Then, this `mapper` can be given to several functions for finding attractors
+# This `mapper` can map any initial condition `u` to the corresponding
+# attractor ID, for example
+
+mapper([-4.0, 5, 0])
+
+# while
+
+mapper([4.0, 2, 0])
+
+# the fact that these two different conditions got assigned different IDs means
+# that they converged to a different attractor.
+# The attractors are stored in the mapper internally, to obtain them we
+# use the function
+
+attractors = extract_attractors(mapper)
+
+# In Attractors.jl, all information regarding attractors is always a standard Julia
+# `Dict`, which maps attractor IDs (positive integers) to the corresponding quantity.
+# Here the quantity are the attractors themselves, represented as `StateSpaceSet`.
+
+# Let's visualize them
+using CairoMakie
+fig = Figure()
+ax = Axis(fig[1,1]; title = "bistable lorenz-like")
+for (k, A) in attractors
+    scatter!(ax, A[:, 1], A[:, 2]; label = "ID = $(k)")
+end
+axislegend(ax; position = :lt)
+fig
+
+# In our example system we see that for the chosen parameters there are two coexisting attractors:
+# a limit cycle and a chaotic attractor.
+# There may be more attractors though! We've only checked two initial conditions,
+# so we could have found at most two attractors!
+# However, it can get tedious to manually iterate over initial conditions, which is why
+# this `mapper` is typically given to higher level functions for finding attractors
 # and their basins of attraction. The simplest one
 # is [`basins_fractions`](@ref). Using the `mapper`,
 # it finds "all" attractors of the dynamical system and reports the state space fraction
@@ -101,28 +138,13 @@ sampler() # another random i.c.
 
 fs = basins_fractions(mapper, sampler)
 
-# The returned `fs` is a dictionary mapping attractor IDs to
-# the state space fraction their basin of attraction occupies.
-# To obtain the full basin, which is computationally much more expensive,
+# The returned `fs` is a dictionary mapping each attractor ID to
+# the fraction of the state space the corresponding basin occupies.
+# With this we can confirm that there are (likely) only two attractors
+# and that both attractors are robust as both have sufficiently large basin fractions.
+
+# To obtain the full basins, which is computationally much more expensive,
 # use [`basins_of_attraction`](@ref).
-
-# To obtain the attractors themselves we do
-
-attractors = extract_attractors(mapper)
-
-# and we can visualize them projected into the first two dimensions
-
-using CairoMakie
-fig = Figure()
-ax = Axis(fig[1,1]; title = "bistable lorenz-like")
-for (k, A) in attractors
-    scatter!(ax, A[:, 1], A[:, 2]; label = "fraction: $(fs[k])")
-end
-axislegend(ax; position = :lt)
-fig
-
-# We see that for the chosen parameters there are two coexisting attractors:
-# a limit cycle and a chaotic attractor. We can confirm that both attractors are robust as both have sufficiently large basin fractions.
 
 # You can use alternative algorithms in [`basins_fractions`](@ref), see
 # the documentation of [`AttractorMapper`](@ref) for possible subtypes.
@@ -148,7 +170,7 @@ fig
 # To perform the continuation is extremely simple. First, we decide what parameter,
 # and what range, to continue over:
 
-prange = 4.5:0.02:6
+prange = 4.7:0.02:6
 pidx = 1 # index of the parameter
 
 # Then, we may call the [`continuation`](@ref) function.
@@ -172,7 +194,7 @@ fractions_curves, attractors_info = continuation(
 attractors_info
 
 # the output is given as two vectors. Each vector is a dictionary
-# mapping attractor IDs to ther fractions, or their state space sets, respectively.
+# mapping attractor IDs to their fractions, or their state space sets, respectively.
 # Both vectors have the same size as the parameter range.
 # For example, the attractors at the 34-th parameter value are:
 
@@ -206,9 +228,9 @@ fig = plot_basins_attractors_curves(
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
 # Bottom panel is a visualization of the tracked attractors.
-# The argument `A -> minimum(A[:, 1])` is simply a function tha maps
+# The argument `A -> minimum(A[:, 1])` is simply a function that maps
 # an attractor into a real number for plotting.
-# We can provide more functions to visualize more aspects of the attractors:
+# We can provide more functions to visualize other aspects of the attractors:
 
 using Statistics: std
 

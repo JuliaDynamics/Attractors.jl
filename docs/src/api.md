@@ -34,24 +34,31 @@ AttractorsViaFeaturizing
 
 Grouping configurations that can be given to [`AttractorsViaFeaturizing`](@ref)
 are part of a generic and extendable interface based on the [`group_features`](@ref)
-function. It can also be used and extended completely independently of finding
-attractors of dynamical systems
+function.
+The grouping configuration sets how the features describing the trajectories will be grouped together.
+Nevertheless, this grouping infrastructure can also be used and extended completely independently of finding attractors of dynamical systems!
+
+### Grouping interface
+
+```@docs
+group_features
+GroupingConfig
+```
 
 ### Grouping types
+
 ```@docs
-GroupingConfig
 GroupViaClustering
 GroupViaHistogram
 GroupViaNearestFeature
 GroupViaPairwiseComparison
 ```
 
-### Grouping functions
+### Grouping utils
+
 ```@docs
-group_features
 extract_features
 ```
-
 
 
 ## Basins of attraction
@@ -150,7 +157,7 @@ The matching process is entirely orthogonal to the continuation, something
 completely novel in continuation software. This means, that if you don't like
 the way the matching worked in the first time you estimated the attractors and their
 basins, you don't have to re-compute them! You can simply relabel them using the
-[`match_sequentially!`](@ref) function!
+[`match_continuation!`](@ref) function!
 
 ```@docs
 match_statespacesets!
@@ -160,7 +167,7 @@ StrictlyMinimumDistance
 replacement_map
 set_distance
 setsofsets_distances
-match_sequentially!
+match_continuation!
 match_basins_ids!
 ```
 

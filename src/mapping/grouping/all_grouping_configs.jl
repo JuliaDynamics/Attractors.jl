@@ -32,9 +32,9 @@ abstract type GroupingConfig end
 """
     group_features(features, group_config::GroupingConfig) → labels
 
-Group the given vector of feature vectors according to the configuration and return
-the labels (vector of equal length as `features`).
-See [`AttractorsViaFeaturizing`](@ref) for possible configurations.
+Group the given iterable of "features" (anything that can be grouped, typically vectors of real numbers)
+according to the configuration and return the labels (vector of equal length as `features`).
+See [`GroupingConfig`](@ref) for possible grouping configuration configurations.
 """
 function group_features(features, group_config::GroupingConfig)
     return map(f -> feature_to_group(f, group_config), features)
