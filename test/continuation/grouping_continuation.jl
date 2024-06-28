@@ -36,7 +36,7 @@ using Random
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
     gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 0.0)
-    fractions_cont, attractors_cont = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         gap, rrange, ridx, sampler; show_progress = false
     )
 
@@ -105,7 +105,7 @@ if DO_EXTENSIVE_TESTS
             T = 10, Ttr = 2000, threaded = true
         )
         gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 0.0)
-        fractions_cont, attractors_cont = continuation(
+        fractions_cont, attractors_cont = global_continuation(
             gap, ps, pidx, sampler;
             samples_per_parameter = 100, show_progress = false
         )

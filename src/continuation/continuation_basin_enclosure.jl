@@ -3,7 +3,7 @@ struct BasinEnclosure <: GlobalContinuationAlgorithm
     coflowing_threshold
 end
 
-function continuation(basen::BasinEnclosure, prange, pidx, ics;
+function global_continuation(basen::BasinEnclosure, prange, pidx, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     progress = ProgressMeter.Progress(length(prange);

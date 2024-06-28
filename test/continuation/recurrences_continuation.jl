@@ -37,7 +37,7 @@ using Random
     rrange = range(0, 2; length = 20)
     ridx = 1
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.3)
-    fractions_cont, a = continuation(
+    fractions_cont, a = global_continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000
     )
@@ -136,7 +136,7 @@ end
     # First, test the normal function of finding attractors
     mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.1)
-    fractions_cont, attractors_cont = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
     )
@@ -190,7 +190,7 @@ if DO_EXTENSIVE_TESTS
     rsc = RecurrencesFindAndMatch(mapper;
         threshold = 0.99, distance = distance_function
     )
-    fractions_cont, attractors_cont = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
@@ -231,7 +231,7 @@ end
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     rsc = RecurrencesFindAndMatch(mapper)
 
-    fractions_cont, attractors_cont = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )

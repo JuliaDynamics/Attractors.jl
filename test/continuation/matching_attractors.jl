@@ -39,7 +39,7 @@ end
     end
 end
 
-@testset "continuation matching" begin
+@testset "global_continuation matching" begin
     # Make fake attractors with points that become more "separated" as "parameter"
     # is increased
     jrange = 0.1:0.1:1
@@ -67,7 +67,7 @@ end
     @test haskey(allatts2[1], 2)
 end
 
-@testset "continuation matching advanced" begin
+@testset "global_continuation matching advanced" begin
     jrange = 0.1:0.1:1
     allatts = [Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)], 3 => [SVector((10j)^2, 0)]) for j in jrange]
     allatts = [Dict(keys(d) .=> StateSpaceSet.(values(d))) for d in allatts]

@@ -1,4 +1,4 @@
-export continuation, GlobalContinuationAlgorithm
+export global_continuation, GlobalContinuationAlgorithm
 
 """
     GlobalContinuationAlgorithm
@@ -13,14 +13,14 @@ See [`global_continuation`](@ref) for more.
 abstract type GlobalContinuationAlgorithm end
 
 """
-    continuation(gca::GlobalContinuationAlgorithm, prange, pidx, ics; kwargs...)
+    global_continuation(gca::GlobalContinuationAlgorithm, prange, pidx, ics; kwargs...)
 
 Find and continue attractors (or representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
 `global_continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
-The continuation type `gca` is a subtype of `GlobalContinuationAlgorithm`
+The global_continuation type `gca` is a subtype of `GlobalContinuationAlgorithm`
 and references an [`AttractorMapper`](@ref). The mapper contains information
 on how to find the attractors and basins of a dynamical system. Additional
 arguments that control how to continue/track/match attractors
@@ -47,7 +47,7 @@ Possible subtypes of `GlobalContinuationAlgorithm` are:
 2. `attractors_cont::Vector{Dict{Int, <:Any}}`. Information about the attractors.
    `attractors_cont[i]` is a dictionary mapping attractor ID to information about the
    attractor at the `i`-th parameter.
-   The type of information stored depends on the chosen continuation type.
+   The type of information stored depends on the chosen global_continuation type.
 
 ## Keyword arguments
 
@@ -55,7 +55,7 @@ Possible subtypes of `GlobalContinuationAlgorithm` are:
 - `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
   from `ics` if `ics` is a function instead of set initial conditions.
 """
-function continuation end
+function global_continuation end
 
 include("continuation_afam.jl")
 include("continuation_recurrences.jl")

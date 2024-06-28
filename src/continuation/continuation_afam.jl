@@ -5,7 +5,7 @@ using Random: MersenneTwister
 """
     AttractorsContinueAndMatch(mapper, matcher = MatchBySSSetDistance())
 
-A continuation method for [`global_continuation`](@ref).
+A global_continuation method for [`global_continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
 [`extract_attractors`](@ref).
 `matcher` is a configuration of how to match attractor IDs,
@@ -13,12 +13,12 @@ and at the moment can only be an instance of [`MatchBySSSetDistance`](@ref).
 
 ## Description
 
-This continuation method is a generalization of the "RAFM" continuation
+This global_continuation method is a generalization of the "RAFM" global_continuation
 described in [Datseris2023](@cite). It continues attractors by
 "seeding" initial conditions from previously found attractors.
 The generalization here is that the method works for any valid `mapper`.
 
-At the first parameter slice of the continuation process, attractors and their fractions
+At the first parameter slice of the global_continuation process, attractors and their fractions
 are found using the given `mapper`.
 At each subsequent parameter slice,
 new attractors are found by selecting initial conditions from the previously found
@@ -47,7 +47,7 @@ previous parameter get assigned the same ID.
 Matching is done by using the provided `matcher` in [`match_sequentially!`](@ref).
 If you don't like the final matching output,
 you may use a different `matcher` and call [`match_sequentially!`](@ref) again,
-without having to recompute the whole continuation!
+without having to recompute the whole global_continuation!
 
 The matching algorithm is a bit involved, so it is best to read the documentation
 of `matcher` for how it works in detail.
@@ -75,7 +75,7 @@ function _default_seeding_process(attractor::AbstractStateSpaceSet)
     return (attractor[1],) # must be iterable
 end
 
-function continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
+function global_continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     progress = ProgressMeter.Progress(length(prange);

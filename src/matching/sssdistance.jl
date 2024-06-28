@@ -42,8 +42,8 @@ Additionally, you can provide a `threshold` value. If the distance between two s
 is larger than this `threshold`, then it is guaranteed that the sets will get assigned
 different ID in the replacement map (the next available integer).
 
-When matching during a continuation, there is an entire sequence of "old"-"new" collections
-of sets for each setp of the continuation. The keyword `use_vanished::Bool` comes
+When matching during a global_continuation, there is an entire sequence of "old"-"new" collections
+of sets for each setp of the global_continuation. The keyword `use_vanished::Bool` comes
 into play here. If `use_vanised = true`, then
 IDs (and their corresponding sets) that existed before but have vanished are kept in "memory"
 when it comes to matching: the current dictionary values (the sets) are compared to the latest instance
