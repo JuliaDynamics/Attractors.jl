@@ -44,15 +44,13 @@ This process continues for all parameter values. After all parameters are exhaus
 the found attractors (and their fractions) are "matched" to the previous ones.
 This means: their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
-Matching is done by the provided `matcher`.
-In code, matching is a rather trivial call to [`match_sequentially!`](@ref)
-at the end of the `continuation` function using the `use_vanished` provided keyword.
+Matching is done by using the provided `matcher` in [`match_sequentially!`](@ref).
 If you don't like the final matching output,
 you may use a different `matcher` and call [`match_sequentially!`](@ref) again,
 without having to recompute the whole continuation!
 
-The matching algorithms are rather sophisticated,
-so how matching works is described in the docstrings of each `matcher`.
+The matching algorithm is a bit involved, so it is best to read the documentation
+of `matcher` for how it works in detail.
 """
 struct AttractorsContinueAndMatch{A, M, S} <: GlobalContinuationAlgorithm
     mapper::A
