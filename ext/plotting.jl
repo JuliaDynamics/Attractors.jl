@@ -254,20 +254,20 @@ function fractions_series(fractions_cont, ukeys = unique_keys(fractions_cont))
     return bands
 end
 
-function Attractors.plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+function Attractors.plot_attractors_curves(attractors_cont, attractor_to_real, prange = 1:length(attractors_cont); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     ax.xlabel = "parameter"
     ax.ylabel = "attractors"
-    plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)
+    plot_attractors_curves!(ax, attractors_cont, attractor_to_real, prange; kwargs...)
     return fig
 end
 
-function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+function Attractors.plot_attractors_curves!(ax, attractors_cont, attractor_to_real, prange = 1:length(attractors_cont);
         kwargs...
     )
     # make the continuation info values and just propagate to the main function
-    continuation_info = map(attractors_info) do dict
+    continuation_info = map(attractors_cont) do dict
         Dict(k => attractor_to_real(A) for (k, A) in dict)
     end
     plot_continuation_curves!(ax, continuation_info, prange; kwargs...)
@@ -302,16 +302,16 @@ function Attractors.plot_continuation_curves(args...; kw...)
 end
 
 # Mixed: basins and attractors
-function Attractors.plot_basins_attractors_curves(fractions_cont, attractors_info, a2r::Function, prange = 1:length(attractors_info);
+function Attractors.plot_basins_attractors_curves(fractions_cont, attractors_cont, a2r::Function, prange = 1:length(attractors_cont);
         kwargs...
     )
-    return Attractors.plot_basins_attractors_curves(fractions_cont, attractors_info, [a2r], prange; kwargs...)
+    return Attractors.plot_basins_attractors_curves(fractions_cont, attractors_cont, [a2r], prange; kwargs...)
 end
 
 # Special case with multiple attractor projections:
 function Attractors.plot_basins_attractors_curves(
-        fractions_cont, attractors_info,
-        a2rs::Vector, prange = 1:length(attractors_info);
+        fractions_cont, attractors_cont,
+        a2rs::Vector, prange = 1:length(attractors_cont);
         ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
@@ -336,7 +336,7 @@ function Attractors.plot_basins_attractors_curves(
     # plot basins and attractors
     plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, kwargs...)
     for (axa, a2r) in zip(axs, a2rs)
-        plot_attractors_curves!(axa, attractors_info, a2r, prange;
+        plot_attractors_curves!(axa, attractors_cont, a2r, prange;
             ukeys, colors, markers, add_legend = false, # coz its true for fractions
         )
     end
@@ -344,21 +344,21 @@ function Attractors.plot_basins_attractors_curves(
 end
 
 # This function is kept for backwards compatibility only, really.
-function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, attractors_info,
-        attractor_to_real, prange = 1:length(attractors_info);
+function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, attractors_cont,
+        attractor_to_real, prange = 1:length(attractors_cont);
         ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         kwargs...
     )
 
-    if length(fractions_cont) ≠ length(attractors_info)
+    if length(fractions_cont) ≠ length(attractors_cont)
         error("fractions and attractors don't have the same amount of entries")
     end
 
     plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, kwargs...)
 
-    plot_attractors_curves!(axa, attractors_info, attractor_to_real, prange;
+    plot_attractors_curves!(axa, attractors_cont, attractor_to_real, prange;
         ukeys, colors, add_legend = false, # coz its true for fractions
     )
     return
@@ -369,11 +369,11 @@ end
 # Videos
 ##########################################################################################
 function Attractors.animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_info, fractions_cont, prange, pidx;
+        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx;
         savename = "attracont.mp4", access = SVector(1, 2),
-        limits = auto_attractor_lims(attractors_info, access),
+        limits = auto_attractor_lims(attractors_cont, access),
         framerate = 4, markersize = 10,
-        ukeys = unique_keys(attractors_info),
+        ukeys = unique_keys(attractors_cont),
         colors = colors_from_keys(ukeys),
         markers = markers_from_keys(ukeys),
         Δt = isdiscretetime(ds) ? 1 : 0.05,
@@ -403,7 +403,7 @@ function Attractors.animate_attractors_continuation(
     record(fig, savename, eachindex(prange); framerate) do i
         p = prange[i]
         ax.title = "p = $p"
-        attractors = attractors_info[i]
+        attractors = attractors_cont[i]
         fractions = fractions_cont[i]
         set_parameter!(ds, pidx, p)
         heights[] = [get(fractions, k, 0) for k in ukeys]
@@ -421,10 +421,10 @@ function Attractors.animate_attractors_continuation(
     return fig
 end
 
-function auto_attractor_lims(attractors_info, access)
+function auto_attractor_lims(attractors_cont, access)
     xmin = ymin = Inf
     xmax = ymax = -Inf
-    for atts in attractors_info
+    for atts in attractors_cont
         for (k, A) in atts
             P = A[:, access]
             mini, maxi = minmaxima(P)

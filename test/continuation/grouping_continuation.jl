@@ -36,14 +36,14 @@ using Random
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
     gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 0.0)
-    fractions_cont, attractors_info = continuation(
+    fractions_cont, attractors_cont = continuation(
         gap, rrange, ridx, sampler; show_progress = false
     )
 
     for (i, r) in enumerate(rrange)
 
         fs = fractions_cont[i]
-        infos = attractors_info[i]
+        infos = attractors_cont[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
             @test sort!(collect(keys(infos))) == k
@@ -105,7 +105,7 @@ if DO_EXTENSIVE_TESTS
             T = 10, Ttr = 2000, threaded = true
         )
         gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 0.0)
-        fractions_cont, attractors_info = continuation(
+        fractions_cont, attractors_cont = continuation(
             gap, ps, pidx, sampler;
             samples_per_parameter = 100, show_progress = false
         )
@@ -120,7 +120,7 @@ if DO_EXTENSIVE_TESTS
                 @test length(k) == 3
             end
             @test sum(values(fs)) ≈ 1
-            infos = attractors_info[i]
+            infos = attractors_cont[i]
             @test all(v -> v ∈ ([1.0], [3.0], [100.0]), values(infos))
         end
 

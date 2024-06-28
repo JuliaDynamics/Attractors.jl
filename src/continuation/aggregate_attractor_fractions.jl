@@ -2,7 +2,7 @@ export aggregate_attractor_fractions
 
 """
     aggregate_attractor_fractions(
-        fractions_cont, attractors_info, featurizer, group_config [, info_extraction]
+        fractions_cont, attractors_cont, featurizer, group_config [, info_extraction]
     )
 
 Aggregate the already-estimated curves of fractions of basins of attraction of similar
@@ -26,7 +26,7 @@ in [Extinction of a species in a multistable competition model](@ref).
 ## Input
 
 1. `fractions_cont`: a vector of dictionaries mapping labels to basin fractions.
-2. `attractors_info`: a vector of dictionaries mapping labels to attractors.
+2. `attractors_cont`: a vector of dictionaries mapping labels to attractors.
    1st and 2nd argument are exactly like the return values of
    [`continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)
    (or, they can be the return of [`basins_fractions`](@ref)).
@@ -59,12 +59,12 @@ expects a _vector of `StateSpaceSet`s_ and outputs a descriptor.
 E.g., `info_extraction = vector -> mean(mean(x) for x in vector)`.
 """
 function aggregate_attractor_fractions(
-        fractions_cont::Vector, attractors_info::Vector, featurizer, group_config,
+        fractions_cont::Vector, attractors_cont::Vector, featurizer, group_config,
         info_extraction = mean_across_features # function from grouping continuation
     )
 
     original_labels, unlabeled_fractions, parameter_idxs, features =
-    refactor_into_sequential_features(fractions_cont, attractors_info, featurizer)
+    refactor_into_sequential_features(fractions_cont, attractors_cont, featurizer)
 
     grouped_labels = group_features(features, group_config)
 
@@ -84,10 +84,10 @@ function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args..
 end
 
 
-function refactor_into_sequential_features(fractions_cont, attractors_info, featurizer)
+function refactor_into_sequential_features(fractions_cont, attractors_cont, featurizer)
     # Set up containers
     P = length(fractions_cont)
-    example_feature = featurizer(first(values(attractors_info[1])))
+    example_feature = featurizer(first(values(attractors_cont[1])))
     features = typeof(example_feature)[]
     original_labels = keytype(first(fractions_cont))[]
     parameter_idxs = Int[]
@@ -95,7 +95,7 @@ function refactor_into_sequential_features(fractions_cont, attractors_info, feat
     # Transform original data into sequential vectors
     for i in eachindex(fractions_cont)
         fs = fractions_cont[i]
-        ai = attractors_info[i]
+        ai = attractors_cont[i]
         A = length(ai)
         append!(parameter_idxs, (i for _ in 1:A))
         unlabeled_fractions[i] = get(fs, -1, 0.0)

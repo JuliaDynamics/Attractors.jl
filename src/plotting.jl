@@ -42,7 +42,7 @@ export shaded_basins_heatmap, shaded_basins_heatmap!
 ##########################################################################################
 """
     animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_info, fractions_cont, prange, pidx;
+        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx;
         kwargs...
     )
 
@@ -52,7 +52,7 @@ and output of the [`continuation`](@ref) function into a video output.
 
 The input dynamical system `ds` is used to evolve initial conditions sampled from the
 found attractors, so that the attractors are better visualized.
-`attractors_info, fractions_cont` are the output of [`continuation`](@ref)
+`attractors_cont, fractions_cont` are the output of [`continuation`](@ref)
 while `ds, prange, pidx` are the input to [`continuation`](@ref).
 
 ## Keyword arguments
@@ -90,7 +90,7 @@ function plot_basins_curves! end
 export plot_basins_curves, plot_basins_curves!
 
 """
-    plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(); kwargs...)
+    plot_attractors_curves(attractors_cont, attractor_to_real, prange = 1:length(); kwargs...)
 
 Same as in [`plot_basins_curves`](@ref) but visualizes the attractor dependence on
 the parameter instead of their fraction.
@@ -115,7 +115,7 @@ the continuation. Hence, the `continuation_info` is of exactly the same format a
 To produce `continuation_info` from `attractor_info` you can do something like:
 
 ```julia
-continuation_info = map(attractors_info) do attractors
+continuation_info = map(attractors_cont) do attractors
     Dict(k => f(A) for (k, A) in attractors)
 end
 ```
@@ -127,7 +127,7 @@ export plot_continuation_curves, plot_continuation_curves!
 
 """
     plot_basins_attractors_curves(
-        fractions_cont, attractors_info, a2rs [, prange]
+        fractions_cont, attractors_cont, a2rs [, prange]
         kwargs...
     )
 

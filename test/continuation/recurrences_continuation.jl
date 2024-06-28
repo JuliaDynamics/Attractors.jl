@@ -136,7 +136,7 @@ end
     # First, test the normal function of finding attractors
     mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.1)
-    fractions_cont, attractors_info = continuation(
+    fractions_cont, attractors_cont = continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
     )
@@ -151,7 +151,7 @@ end
     )
 
     aggr_fracs, aggr_info = aggregate_attractor_fractions(
-        fractions_cont, attractors_info, featurizer, hconfig
+        fractions_cont, attractors_cont, featurizer, hconfig
     )
     test_fs(aggr_fracs, rrange, [4, 12])
 
@@ -190,14 +190,14 @@ if DO_EXTENSIVE_TESTS
     rsc = RecurrencesFindAndMatch(mapper;
         threshold = 0.99, distance = distance_function
     )
-    fractions_cont, attractors_info = continuation(
+    fractions_cont, attractors_cont = continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
 
     for (i, p) in enumerate(ps)
         fs = fractions_cont[i]
-        attractors = attractors_info[i]
+        attractors = attractors_cont[i]
         @test sum(values(fs)) ≈ 1
         # Test that keys are the same (-1 doesn't have attractor)
         k = sort!(collect(keys(fs)))
@@ -207,7 +207,7 @@ if DO_EXTENSIVE_TESTS
     end
 
     # unique keys
-    ukeys = Attractors.unique_keys(attractors_info)
+    ukeys = Attractors.unique_keys(attractors_cont)
 
     # We must have 3 attractors: initial chaotic, period 14 in the middle,
     # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
@@ -216,7 +216,7 @@ if DO_EXTENSIVE_TESTS
     @test ukeys == 1:3
 
     # # Animation of henon attractors
-    # animate_attractors_continuation(ds, attractors_info, fractions_cont, ps, pidx)
+    # animate_attractors_continuation(ds, attractors_cont, fractions_cont, ps, pidx)
 end
 
 @testset "non-found attractors" begin
@@ -231,11 +231,11 @@ end
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     rsc = RecurrencesFindAndMatch(mapper)
 
-    fractions_cont, attractors_info = continuation(
+    fractions_cont, attractors_cont = continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
-    @test all(i -> isempty(i), attractors_info)
+    @test all(i -> isempty(i), attractors_cont)
 end
 
 end

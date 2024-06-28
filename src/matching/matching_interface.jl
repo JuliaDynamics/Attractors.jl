@@ -133,11 +133,11 @@ function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmap
 end
 
 # Concrete implementation of `match_sequentially!`:
-function _rematch_ignored!(attractors_info, matcher)
+function _rematch_ignored!(attractors_cont, matcher)
     next_id = 1
-    rmaps = Dict{keytype(attractors_info[1]), keytype(attractors_info[1])}[]
-    for i in 1:length(attractors_info)-1
-        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+    rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
+    for i in 1:length(attractors_cont)-1
+        a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
         # If there are no attractors, skip the matching
         (isempty(a₊) || isempty(a₋)) && continue
         # Here we always compute a next id. In this way, if an attractor disappears
@@ -150,14 +150,14 @@ function _rematch_ignored!(attractors_info, matcher)
     return rmaps
 end
 
-function _rematch_with_past!(attractors_info, matcher)
+function _rematch_with_past!(attractors_cont, matcher)
     # this dictionary stores all instances of previous attractors and is updated
     # at every step. It is then given to the matching function as if it was
     # the current attractors
-    latest_ghosts = deepcopy(attractors_info[1])
-    rmaps = Dict{keytype(attractors_info[1]), keytype(attractors_info[1])}[]
-    for i in 1:length(attractors_info)-1
-        a₊, a₋ = attractors_info[i+1], attractors_info[i]
+    latest_ghosts = deepcopy(attractors_cont[1])
+    rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
+    for i in 1:length(attractors_cont)-1
+        a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
         # update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A

@@ -187,25 +187,25 @@ rafm = RecurrencesFindAndMatch(mapper)
 
 # and call
 
-fractions_cont, attractors_info = continuation(
+fractions_cont, attractors_cont = continuation(
 	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
-attractors_info
+attractors_cont
 
 # the output is given as two vectors. Each vector is a dictionary
 # mapping attractor IDs to their fractions, or their state space sets, respectively.
 # Both vectors have the same size as the parameter range.
 # For example, the attractors at the 34-th parameter value are:
 
-attractors_info[34]
+attractors_cont[34]
 
 # There is a fantastic convenience function for animating
 # the attractors evolution, that utilizes things we have
 # already defined:
 
 animate_attractors_continuation(
-    ds, attractors_info, fractions_cont, prange, pidx;
+    ds, attractors_cont, fractions_cont, prange, pidx;
 );
 
 # ```@raw html
@@ -223,7 +223,7 @@ animate_attractors_continuation(
 # parameter axis. We can do this with the convenience function:
 
 fig = plot_basins_attractors_curves(
-	fractions_cont, attractors_info, A -> minimum(A[:, 1]), prange,
+	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange,
 )
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
@@ -238,7 +238,7 @@ a2rs = [
 ]
 
 fig = plot_basins_attractors_curves(
-	fractions_cont, attractors_info, a2rs, prange; add_legend = false
+	fractions_cont, attractors_cont, a2rs, prange; add_legend = false
 )
 
 ax1, ax2 = content.((fig[2,1], fig[3,1]))
@@ -263,7 +263,7 @@ using ChaosTools: lyapunov
 
 lis = map(enumerate(prange)) do (i, p) # loop over parameters
     set_parameter!(ds, pidx, p) # important! We use the dynamical system!
-    attractors = attractors_info[i]
+    attractors = attractors_cont[i]
     Dict(k => lyapunov(ds, 2000.0; u0 = A[1]) for (k, A) in attractors)
 end
 
@@ -298,7 +298,7 @@ mfss = map(enumerate(prange)) do (i, p)
     ## We need a special clause here: if there is only 1 attractor,
     ## then there is no MFS. It is undefined. We set it to `NaN`,
     ## which conveniently, will result to nothing being plotted by Makie.
-    attractors = attractors_info[i]
+    attractors = attractors_cont[i]
     if length(attractors) == 1
         return Dict(k => NaN for (k, A) in attractors)
     end

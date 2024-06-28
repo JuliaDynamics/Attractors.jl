@@ -81,9 +81,9 @@ function continuation(
     else
         labels = group_features(features, mapper.group_config)
     end
-    fractions_cont, attractors_info =
+    fractions_cont, attractors_cont =
     label_fractions_across_parameter(labels, 1features, n, spp, info_extraction)
-    return fractions_cont, attractors_info
+    return fractions_cont, attractors_cont
 end
 
 function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
@@ -107,7 +107,7 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
     # finally we collect/group stuff into their dictionaries
     fractions_cont = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction([first(features)])
-    attractors_info = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
+    attractors_cont = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
     for i in 1:n
         # Here we know which indices correspond to which parameter value
         # because they are sequentially increased every `spp`
@@ -117,11 +117,11 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
         current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_cont[i] = basins_fractions(current_labels, current_ids)
-        attractors_info[i] = Dict(
+        attractors_cont[i] = Dict(
             id => info_extraction(
                 view(current_features, findall(isequal(id), current_labels))
             ) for id in current_ids
         )
     end
-    return fractions_cont, attractors_info
+    return fractions_cont, attractors_cont
 end

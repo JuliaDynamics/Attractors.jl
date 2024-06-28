@@ -434,7 +434,7 @@ sampler, = statespace_sampler(region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_cont, attractors_info = continuation(
+fractions_cont, attractors_cont = continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
 )
@@ -467,7 +467,7 @@ function real_number_repr(attractor)
 end
 
 for (i, γ) in enumerate(γγ)
-    for (k, attractor) in attractors_info[i]
+    for (k, attractor) in attractors_cont[i]
         scatter!(ax, γ, real_number_repr(attractor); color = Cycled(k))
     end
 end
@@ -505,7 +505,7 @@ sampler, = statespace_sampler(grid, 1234)
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
 continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_cont, attractors_info = continuation(
+fractions_cont, attractors_cont = continuation(
     continuation, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
 );
@@ -537,7 +537,7 @@ isextinct(A, idx = unitidxs) = all(a -> a <= 1e-2, A[:, idx])
 groupingconfig = GroupViaClustering(; min_neighbors=1, optimal_radius_method=0.5)
 
 aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
-    fractions_cont, attractors_info, featurizer, groupingconfig
+    fractions_cont, attractors_cont, featurizer, groupingconfig
 )
 
 plot_basins_curves(aggregated_fractions, prange;
