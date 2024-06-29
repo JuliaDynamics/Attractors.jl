@@ -18,12 +18,12 @@ and then matching them according to their state space distance.
 ## Description
 
 `RecurrencesFindAndMatch` is a wrapper type. It is has been generalized by
-[`AttractorsContinueAndMatch`](@ref). It is still exported for backwards compatibility
+[`AttractorSeedContinueMatch`](@ref). It is still exported for backwards compatibility
 and to have a clear reference to the original algorithm developed in [Datseris2023](@cite).
 
 The source code of `RecurrencesFindAndMatch` is trival:
 it takes the given mapper, it initializes a [`MatchBySSSetDistance`](@ref),
-and along with `seeds_from_attractor` it makes the [`AttractorsContinueAndMatch`](@ref)
+and along with `seeds_from_attractor` it makes the [`AttractorSeedContinueMatch`](@ref)
 instance. This is the process described in [Datseris2023](@cite),
 whereby attractors are found using the recurrences algorithm [`AttractorsViaRecurrences`](@ref)
 and they are then matched by their distance in state space [`MatchBySSSetDistance`](@ref).
@@ -37,7 +37,7 @@ function RecurrencesFindAndMatch(
         You can extract info after the attractors have been found."
     end
     matcher = MatchBySSSetDistance(; distance, threshold)
-    return AttractorsContinueAndMatch(mapper, matcher, seeds_from_attractor)
+    return AttractorSeedContinueMatch(mapper, matcher, seeds_from_attractor)
 end
 
 "Alias for [`RecurrencesFindAndMatch`](@ref)."

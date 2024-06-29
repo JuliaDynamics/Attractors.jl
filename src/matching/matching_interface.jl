@@ -19,7 +19,7 @@ that is called at the end of [`global_continuation`](@ref) by some global_contin
 such as [`AttractorsFindAndMatch`](@ref).
 
 As you user you typically only care about given an instance of `IDMatcher`
-to a global_continuation algorithm such as [`AttractorsContinueAndMatch`](@ref),
+to a global_continuation algorithm such as [`AttractorSeedContinueMatch`](@ref),
 and you don't have to worry about the matching functions themselves.
 """
 abstract type IDMatcher end

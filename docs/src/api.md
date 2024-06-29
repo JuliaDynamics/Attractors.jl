@@ -131,7 +131,7 @@ continuation
 ### General seeding-based continuation
 
 ```@docs
-AttractorsContinueAndMatch
+AttractorSeedContinueMatch
 ```
 
 ### Recurrences continuation

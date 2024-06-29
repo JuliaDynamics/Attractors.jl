@@ -1,24 +1,24 @@
-export AttractorsContinueAndMatch
+export AttractorSeedContinueMatch
 import ProgressMeter
 using Random: MersenneTwister
 
 """
-    AttractorsContinueAndMatch(mapper, matcher = MatchBySSSetDistance())
+    AttractorSeedContinueMatch(mapper, matcher = MatchBySSSetDistance())
 
-A global_continuation method for [`global_continuation`](@ref).
+A global continuation method for [`global_continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
-[`extract_attractors`](@ref).
+[`extract_attractors`](@ref), i.e., it finds the actual attractors.
 `matcher` is a configuration of how to match attractor IDs,
 and at the moment can only be an instance of [`MatchBySSSetDistance`](@ref).
 
 ## Description
 
-This global_continuation method is a generalization of the "RAFM" global_continuation
+This global continuation method is a generalization of the "RAFM" continuation
 described in [Datseris2023](@cite). It continues attractors by
 "seeding" initial conditions from previously found attractors.
 The generalization here is that the method works for any valid `mapper`.
 
-At the first parameter slice of the global_continuation process, attractors and their fractions
+At the first parameter slice of the global continuation process, attractors and their fractions
 are found using the given `mapper`.
 At each subsequent parameter slice,
 new attractors are found by selecting initial conditions from the previously found
@@ -41,26 +41,27 @@ Once the basins fractions are computed,
 the parameter is incremented again and we perform the steps as before.
 
 This process continues for all parameter values. After all parameters are exhausted,
-the found attractors (and their fractions) are "matched" to the previous ones.
+the found attractors (and their fractions) are "matched" to the previous ones
+starting from the second parameter slice onwards.
 This means: their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
 Matching is done by using the provided `matcher` in [`match_sequentially!`](@ref).
 If you don't like the final matching output,
 you may use a different `matcher` and call [`match_sequentially!`](@ref) again,
-without having to recompute the whole global_continuation!
+without having to recompute the whole global continuation!
 
 The matching algorithm is a bit involved, so it is best to read the documentation
 of `matcher` for how it works in detail.
 """
-struct AttractorsContinueAndMatch{A, M, S} <: GlobalContinuationAlgorithm
+struct AttractorSeedContinueMatch{A, M, S} <: GlobalContinuationAlgorithm
     mapper::A
     matcher::M
     seeding::S
 end
 
-const ACAM = AttractorsContinueAndMatch
+const ASCM = AttractorSeedContinueMatch
 
-ACAM(mapper, matcher) = ACAM(mapper, matcher, _default_seeding_process)
+ASCM(mapper, matcher) = ASCM(mapper, matcher, _default_seeding_process)
 
 # TODO: This is currently not used, and not sure if it has to be.
 function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
@@ -75,7 +76,7 @@ function _default_seeding_process(attractor::AbstractStateSpaceSet)
     return (attractor[1],) # must be iterable
 end
 
-function global_continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics;
+function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     progress = ProgressMeter.Progress(length(prange);
@@ -88,7 +89,7 @@ function global_continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics
     if ics isa Function
         fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
     else # we ignore labels in this continuation algorithm
-        fs, = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+        fs, = basins_fractions(mapper, ics; show_progress = false)
     end
 
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
@@ -126,7 +127,7 @@ function global_continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics
             )
         else
             fs, = basins_fractions(mapper, ics;
-                additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
+                additional_fs = seeded_fs, show_progress = false
             )
         end
         # We do not match attractors here; the matching is independent step done at the end
