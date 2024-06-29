@@ -196,10 +196,8 @@ fractions_cont, attractors_cont = global_continuation(
 	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
-attractors_cont
-
 # the output is given as two vectors. Each vector is a dictionary
-# mapping attractor IDs to their fractions, or their state space sets, respectively.
+# mapping attractor IDs to their basin fractions, or their state space sets, respectively.
 # Both vectors have the same size as the parameter range.
 # For example, the attractors at the 34-th parameter value are:
 
