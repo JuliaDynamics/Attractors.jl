@@ -22,25 +22,15 @@ and then grouped as dictated by the `group_config` of the mapper.
 After the grouping is finished the feature label fractions are distributed
 to each parameter value they came from.
 
+This continuation method is based on, but strongly generalizes, the approaches
+in the papers [Gelbrecht2020](@cite) and [Stender2021](@cite).
+
 ## Keyword arguments
+
 - `info_extraction::Function` a function that takes as an input a vector of feature-vectors
   (corresponding to a cluster) and returns a description of the cluster.
   By default, the centroid of the cluster is used.
-- `par_weight = 0`: See below the section on MCBB.
-
-## MCBB special version
-
-If the chosen grouping method is [`GroupViaClustering`](@ref), the additional keyword
-`par_weight::Real` can be used. If it is ≠ 0, the distance matrix between features
-obtains an extra weight that is proportional to the distance `par_weight*|p[i] - p[j]|`
-between the parameters used when extracting features.
-The range of parameters is normalized to 0-1
-such that the largest distance in the parameter space is 1. The normalization is done
-because the feature space is also (by default) normalized to 0-1.
-
-This version of the algorithm is the original "MCBB" continuation method described
-in [Gelbrecht2020](@cite), besides the improvements of clustering accuracy and performance
-done by the developer team of Attractors.jl.
+  This is what the `attractors_cont` contains in the return of `global_continuation`.
 """
 function FeaturizeGroupAcrossParameter(
         mapper::AttractorsViaFeaturizing;
@@ -63,7 +53,7 @@ function mean_across_features(fs)
     return means ./ N
 end
 
-function continuation(
+function global_continuation(
         continuation::FeaturizeGroupAcrossParameter, prange, pidx, ics;
         show_progress = true, samples_per_parameter = 100
     )

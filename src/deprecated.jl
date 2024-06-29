@@ -36,6 +36,8 @@ function continuation(args...; kwargs...)
     return global_continuation(args...; kwargs...)
 end
 
+export continuation
+
 @deprecate AttractorsBasinsContinuation GlobalContinuationAlgorithm
 @deprecate RecurrencesSeededContinuation RecurrencesFindAndMatch
 @deprecate GroupAcrossParameterContinuation FeaturizeGroupAcrossParameter

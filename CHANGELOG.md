@@ -1,3 +1,12 @@
+# v1.19
+
+- New central Tutorial for Attractors.jl.
+- Function `continuation` has been renamed to `global_continuation` in preparation for a future where both local/linear/tradiational continuation as well as our "attractors and basins continuation" are both provided by DynamicalSystems.jl.
+- New global continuation algorithm that generalizes RAFM: `AttractorSeedContinueMatch`.
+- `match_continuation!` has been renamed to `match_sequentially!`.
+- There is now an internal extendable API for "matchers", ways to match state spaces sets across a continuation.
+- Option `par_weight` is deprecated in `FeaturizeGroupAcrossParameter`. Part of the developer team (`@Datseris`, `@KalelR`) discussed this an concluded that `par_weight` doesn't make much scientific sense to include. Since it obfuscates the code and the documentation, it is no longer documented but still exported. It will be unavailable in the next breaking release.
+
 # v1.18
 
 - New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.

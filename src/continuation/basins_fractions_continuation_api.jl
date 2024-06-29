@@ -46,7 +46,8 @@ Possible subtypes of `GlobalContinuationAlgorithm` are:
 2. `attractors_cont::Vector{Dict{Int, <:Any}}`. Information about the attractors.
    `attractors_cont[i]` is a dictionary mapping attractor ID to information about the
    attractor at the `i`-th parameter.
-   The type of information stored depends on the chosen global_continuation type.
+   The type of information stored depends on the chosen global continuation type,
+   but typically it is the attractors themselves as `StateSpaceSet`s.
 
 ## Keyword arguments
 
