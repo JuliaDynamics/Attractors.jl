@@ -125,7 +125,7 @@ MFSBruteForce
 ## Continuation API
 
 ```@docs
-continuation
+global_continuation
 ```
 
 ### General seeding-based continuation

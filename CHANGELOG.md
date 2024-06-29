@@ -1,4 +1,4 @@
-# v1.19
+# v1.18
 
 - New central Tutorial for Attractors.jl. It also highlights how to enrich a continuation output with other measures of nonlocal stability.
 - Function `continuation` has been renamed to `global_continuation` in preparation for a future where both local/linear/tradiational continuation as well as our "attractors and basins continuation" are both provided by DynamicalSystems.jl.
@@ -7,7 +7,7 @@
 - There is now an internal extendable API for "matchers", ways to match state spaces sets across a continuation.
 - Option `par_weight` is deprecated in `FeaturizeGroupAcrossParameter`. Part of the developer team (`@Datseris`, `@KalelR`) discussed this an concluded that `par_weight` doesn't make much scientific sense to include. Since it obfuscates the code and the documentation, it is no longer documented but still exported. It will be unavailable in the next breaking release.
 - New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.
-- New exported function `reset_mapper!` to clear all stored information in an `AttractorsViaRecurrences` instance. Used in the aforementioned new example.
+- New exported function `reset_mapper!` to clear all stored information in an `AttractorsViaRecurrences` instance.
 
 # v1.17
 
