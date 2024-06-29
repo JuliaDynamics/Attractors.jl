@@ -85,7 +85,12 @@ function global_continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics
     reset_mapper!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameter!(referenced_dynamical_system(mapper), pidx, prange[1])
-    fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+    if ics isa Function
+        fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+    else # we ignore labels in this continuation algorithm
+        fs, = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+    end
+
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_cont = [fs]
     # The attractors are also stored (and are the primary output)
@@ -115,9 +120,15 @@ function global_continuation(acam::AttractorsContinueAndMatch, prange, pidx, ics
         end
         # Now perform basin fractions estimation as normal, utilizing found attractors
         # (the function comes from attractor_mapping.jl)
-        fs = basins_fractions(mapper, ics;
-            additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
-        )
+        if ics isa Function
+            fs = basins_fractions(mapper, ics;
+                additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
+            )
+        else
+            fs, = basins_fractions(mapper, ics;
+                additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
+            )
+        end
         # We do not match attractors here; the matching is independent step done at the end
         current_attractors = deepcopy(extract_attractors(mapper))
         push!(fractions_cont, fs)

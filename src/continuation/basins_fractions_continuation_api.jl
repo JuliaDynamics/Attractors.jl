@@ -20,10 +20,9 @@ and the fractions of their basins of attraction across a parameter range.
 `global_continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
-The global_continuation type `gca` is a subtype of `GlobalContinuationAlgorithm`
-and references an [`AttractorMapper`](@ref). The mapper contains information
-on how to find the attractors and basins of a dynamical system. Additional
-arguments that control how to continue/track/match attractors
+The global continuation algorithm typically references an [`AttractorMapper`](@ref)
+which is used to find the attractors and basins of a dynamical system. Additional
+arguments that control how to continue/track/match attractors across a parameter range
 are given when creating `gca`.
 
 The basin fractions and the attractors (or some representation of them) are continued
