@@ -57,7 +57,7 @@ Possible subtypes of `GlobalContinuationAlgorithm` are:
 """
 function global_continuation end
 
-include("continuation_afam.jl")
+include("continuation_ascm_generic.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
 include("aggregate_attractor_fractions.jl")

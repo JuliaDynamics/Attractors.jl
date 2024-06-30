@@ -13,45 +13,73 @@ and at the moment can only be an instance of [`MatchBySSSetDistance`](@ref).
 
 ## Description
 
-This global continuation method is a generalization of the "RAFM" continuation
-described in [Datseris2023](@cite). It continues attractors by
-"seeding" initial conditions from previously found attractors.
-The generalization here is that the method works for any valid `mapper`.
+This is a general global continuation method is based on a 4-step process:
+
+1. Seed initial conditions from previously found attractors
+2. Propagate those forwards to "continue" previous attractors
+3. Estimate basin fractions and potentially find new attractors
+4. Match attractors
+
+### Step 0 - Finding attractors
 
 At the first parameter slice of the global continuation process, attractors and their fractions
-are found using the given `mapper`.
-At each subsequent parameter slice,
-new attractors are found by selecting initial conditions from the previously found
-attractors and then running these initial conditions through the `mapper`.
-This process is called "seeding".
+are found using the given `mapper` and [`basins_fractions`](@ref).
+See the `mapper` documentation and [`AttractorMapper`](@ref)
+for details on how this works. Then, from the second parameter onwards the continuation occurs.
+
+### Step 1 - Seeding initial conditions
+
+Initial conditions can be seeded from previously found attractors.
+This is controlled by the `seeding` keyword, which must be a function that given
+a `StateSpaceSet` (an attractor), it returns an iterator of initial conditions.
+By default the first point of an attractor is provided as the only seed.
+
+Seeding can be turned off by providing the dummy function `seeding = A -> []`,
+i.e., it always returns an empty iterator and hence no seeds.
+
+### Step 2 - Continuing the seeds
+
+The seeds are run through the `mapper` to converge to attractors at the new parameter value.
 Seeding initial conditions close to previous attractors increases the probability
 that if an attractor continues to exist in the new parameter, it is found.
-Seeding is controlled by the `seeding` keyword. It is a function that given
-a state space set (an attractor) it returns an _iterator_ of initial conditions
-sampled from the attractor. This iterator generates the seeds.
-By default the first point of an attractor is provided as the only seed.
+Additionally, for some `mappers` this seeding process improves the accuracy as well as
+performance of finding attractors, see e.g., discussion in [Datseris2023](@cite).
+
+This seeding works for any `mapper`, regardless of if they can map individual initial conditions
+with the `mapper(u0)` syntax! If this syntax isn't supported, steps 2 and 3 are done together.
+
+### Step 3 - Estimate basins fractions
 
 After the special seeded initial conditions are mapped to attractors,
 attractor basin fractions are computed by sampling additional initial conditions
-using the provided `ics` in [`global_continuation`](@ref)).
+using the provided `ics` in [`global_continuation`](@ref).
 I.e., exactly as in [`basins_fractions`](@ref).
 Naturally, during this step new attractors may be found, besides those found
 using the "seeding from previous attractors".
 Once the basins fractions are computed,
-the parameter is incremented again and we perform the steps as before.
+the parameter is incremented again and we perform steps 1-3 as before.
 
-This process continues for all parameter values. After all parameters are exhausted,
+### Step 4 - Matching
+
+Steps 1-3 continue for all parameter values. After all parameters are exhausted,
 the found attractors (and their fractions) are "matched" to the previous ones
 starting from the second parameter slice onwards.
 This means: their _IDs are changed_, so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
-Matching is done by using the provided `matcher` in [`match_sequentially!`](@ref).
+
+At the moment matching is done by distance of state space sets, as described
+in [`MatchBySSSetDistance`](@ref).
+The matching itself happes via a trivial call to [`match_sequentially!`](@ref)
+at the end of the `global_continuation` call.
+
 If you don't like the final matching output,
 you may use a different `matcher` and call [`match_sequentially!`](@ref) again,
 without having to recompute the whole global continuation!
 
-The matching algorithm is a bit involved, so it is best to read the documentation
-of `matcher` for how it works in detail.
+### Further notes
+
+This global continuation method is a generalization of the "RAFM" continuation
+described in [Datseris2023](@cite).
 """
 struct AttractorSeedContinueMatch{A, M, S} <: GlobalContinuationAlgorithm
     mapper::A
