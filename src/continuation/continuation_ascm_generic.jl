@@ -13,7 +13,7 @@ and at the moment can only be an instance of [`MatchBySSSetDistance`](@ref).
 
 ## Description
 
-This is a general global continuation method is based on a 4-step process:
+This is a general/composable global continuation method based on a 4-step process:
 
 1. Seed initial conditions from previously found attractors
 2. Propagate those forwards to "continue" previous attractors
