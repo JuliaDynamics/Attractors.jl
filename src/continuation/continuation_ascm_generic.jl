@@ -20,7 +20,7 @@ This is a general global continuation method is based on a 4-step process:
 3. Estimate basin fractions and potentially find new attractors
 4. Match attractors
 
-### Step 0 - Finding attractors
+### Step 0 - Finding initial attractors
 
 At the first parameter slice of the global continuation process, attractors and their fractions
 are found using the given `mapper` and [`basins_fractions`](@ref).
@@ -39,11 +39,12 @@ i.e., it always returns an empty iterator and hence no seeds.
 
 ### Step 2 - Continuing the seeds
 
+The dynamical system referenced by the `mapper` is now set to the new parameter value.
 The seeds are run through the `mapper` to converge to attractors at the new parameter value.
 Seeding initial conditions close to previous attractors increases the probability
 that if an attractor continues to exist in the new parameter, it is found.
 Additionally, for some `mappers` this seeding process improves the accuracy as well as
-performance of finding attractors, see e.g., discussion in [Datseris2023](@cite).
+performance of finding attractors, see e.g. discussion in [Datseris2023](@cite).
 
 This seeding works for any `mapper`, regardless of if they can map individual initial conditions
 with the `mapper(u0)` syntax! If this syntax isn't supported, steps 2 and 3 are done together.
@@ -85,10 +86,11 @@ without having to recompute the whole global continuation!
 After matching the parameter is incremented.
 Steps 1-4 repeat until all parameter values are exhausted.
 
-### Further notes
+### Further note
 
 This global continuation method is a generalization of the "RAFM" continuation
-described in [Datseris2023](@cite).
+described in [Datseris2023](@cite). This continuation method is still exported
+as [`RecurrencesFindAndMatch`](@ref).
 """
 struct AttractorSeedContinueMatch{A, M, S} <: GlobalContinuationAlgorithm
     mapper::A
