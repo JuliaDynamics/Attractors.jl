@@ -375,8 +375,6 @@ function reset_mapper!(mapper::AttractorsViaRecurrences)
     return
 end
 
-referenced_dynamical_system(mapper::AttractorsViaRecurrences) = mapper.ds
-
 include("sparse_arrays.jl")
 include("finite_state_machine.jl")
 include("grids.jl")

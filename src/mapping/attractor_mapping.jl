@@ -56,6 +56,8 @@ If it is not possible to implement `id = mapper(u0)`, then instead extend
 """
 abstract type AttractorMapper end
 
+referenced_dynamical_system(mapper::AttractorMapper) = mapper.ds
+
 # Generic pretty printing
 function generic_mapper_print(io, mapper)
     ps = 14

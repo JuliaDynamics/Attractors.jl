@@ -62,7 +62,7 @@ using Random
 end
 
 
-@testset "Multistable grouping map" begin
+@testset "Multistable aggregating map" begin
     # This is a fake multistable map helps at testing the grouping
     # capabilities. We know what it does analytically!
     function dumb_map(dz, z, p, n)

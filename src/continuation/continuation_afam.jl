@@ -3,7 +3,7 @@ import ProgressMeter
 using Random: MersenneTwister
 
 """
-    AttractorSeedContinueMatch(mapper, matcher = MatchBySSSetDistance())
+    AttractorSeedContinueMatch(mapper; matcher = MatchBySSSetDistance(), seeding)
 
 A global continuation method for [`global_continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
@@ -26,7 +26,7 @@ attractors and then running these initial conditions through the `mapper`.
 This process is called "seeding".
 Seeding initial conditions close to previous attractors increases the probability
 that if an attractor continues to exist in the new parameter, it is found.
-Seeding is controlled by the `seeding` input. It is a function that given
+Seeding is controlled by the `seeding` keyword. It is a function that given
 a state space set (an attractor) it returns an _iterator_ of initial conditions
 sampled from the attractor. This iterator generates the seeds.
 By default the first point of an attractor is provided as the only seed.
@@ -61,7 +61,8 @@ end
 
 const ASCM = AttractorSeedContinueMatch
 
-ASCM(mapper, matcher) = ASCM(mapper, matcher, _default_seeding_process)
+ASCM(mapper; matcher = MatchBySSSetDistance(), seeding = _default_seeding_process) =
+ASCM(mapper, matcher, seeding)
 
 # TODO: This is currently not used, and not sure if it has to be.
 function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
@@ -79,6 +80,7 @@ end
 function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics;
         samples_per_parameter = 100, show_progress = true,
     )
+    N = samples_per_parameter
     progress = ProgressMeter.Progress(length(prange);
         desc = "Continuing attractors and basins:", enabled=show_progress
     )
@@ -109,26 +111,10 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
         # having keys in `mapper.bsn_nfo.attractors` that do not exist in the computed
         # fractions. The fix is easy: we add the initial conditions mapped from
         # seeding to the fractions using an internal argument.
-        seeded_fs = Dict{Int, Int}()
-        for att in values(prev_attractors)
-            for u0 in acam.seeding(att)
-                # We map the initial condition to an attractor, but we don't care
-                # about which attractor we go to. This is just so that the internal
-                # array of `AttractorsViaRecurrences` registers the attractors
-                label = mapper(u0; show_progress = false)
-                seeded_fs[label] = get(seeded_fs, label, 0) + 1
-            end
-        end
-        # Now perform basin fractions estimation as normal, utilizing found attractors
-        # (the function comes from attractor_mapping.jl)
-        if ics isa Function
-            fs = basins_fractions(mapper, ics;
-                additional_fs = seeded_fs, show_progress = false, N = samples_per_parameter
-            )
+        fs = if allows_mapper_u0(mapper)
+            seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, acam.seeding)
         else
-            fs, = basins_fractions(mapper, ics;
-                additional_fs = seeded_fs, show_progress = false
-            )
+            seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding)
         end
         # We do not match attractors here; the matching is independent step done at the end
         current_attractors = deepcopy(extract_attractors(mapper))
@@ -141,4 +127,64 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
     rmaps = match_sequentially!(attractors_cont, acam.matcher)
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont
+end
+
+function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, seeding)
+    # actual seeding
+    for att in values(prev_attractors)
+        for u0 in seeding(att)
+            # We map the initial condition to an attractor, but we don't care
+            # about which attractor we go to. This is just so that the internal
+            # array of `AttractorsViaRecurrences` registers the attractors
+            label = mapper(u0; show_progress = false)
+            seeded_fs[label] = get(seeded_fs, label, 0) + 1
+        end
+    end
+    # Now perform basin fractions estimation as normal, utilizing found attractors
+    # (the function comes from attractor_mapping.jl)
+    if ics isa Function
+        fs = basins_fractions(mapper, ics;
+            additional_fs = seeded_fs, show_progress = false, N
+        )
+    else
+        fs, = basins_fractions(mapper, ics;
+            additional_fs = seeded_fs, show_progress = false
+        )
+    end
+    return seeded_fs
+end
+
+function seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, seeding)
+    # what makes this version different is that we can't just use `mapper(u0)`,
+    # so we need to store the seeded initial conditions and then combine them with
+    # the the ones generated from `ics`.
+    u0s = typeof(current_state(referenced_dynamical_system(mapper)))[]
+    # collect seeds
+    for att in values(prev_attractors)
+        for u0 in seeding(att)
+            push!(u0s, u0)
+        end
+    end
+    # now combine these with the rest of the initial conditions
+    if ics isa Function
+        for _ in 1:N
+            push!(u0s, copy(ics()))
+        end
+    else
+        append!(u0s, vec(ics))
+    end
+    # with these extra u0s we now perform fractions estimation as normal
+    fs, = basins_fractions(mapper, StateSpaceSet(u0s); show_progress = false)
+    return fs
+end
+
+allows_mapper_u0(::AttractorMapper) = true
+function allows_mapper_u0(mapper::AttractorsViaFeaturizing)
+    if mapper.group_config isa GroupViaClustering
+        return false
+    elseif mapper.group_config isa GroupViaPairwiseComparison
+        return false
+    else
+        return true
+    end
 end
