@@ -30,7 +30,7 @@ and they are then matched by their distance in state space [`MatchBySSSetDistanc
 """
 function RecurrencesFindAndMatch(
         mapper::AttractorsViaRecurrences; distance = Centroid(), threshold = Inf,
-        info_extraction = nothing, seeds_from_attractor = _default_seeding_process,
+        info_extraction = nothing, seeds_from_attractor = _default_seeding,
     )
     if info_extraction !== nothing
         @warn "`info_extraction` is ignored in `RecurrencesFindAndMatch`.

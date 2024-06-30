@@ -3,7 +3,7 @@ import ProgressMeter
 using Random: MersenneTwister
 
 """
-    AttractorSeedContinueMatch(mapper; matcher = MatchBySSSetDistance(), seeding)
+    AttractorSeedContinueMatch(mapper, matcher = MatchBySSSetDistance(); seeding)
 
 A global continuation method for [`global_continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
@@ -56,25 +56,34 @@ using the provided `ics` in [`global_continuation`](@ref).
 I.e., exactly as in [`basins_fractions`](@ref).
 Naturally, during this step new attractors may be found, besides those found
 using the "seeding from previous attractors".
-Once the basins fractions are computed,
-the parameter is incremented again and we perform steps 1-3 as before.
 
 ### Step 4 - Matching
 
-Steps 1-3 continue for all parameter values. After all parameters are exhausted,
-the found attractors (and their fractions) are "matched" to the previous ones
-starting from the second parameter slice onwards.
-This means: their _IDs are changed_, so that attractors that are "similar" to those at a
+Normally the ID an attractor gets assigned is somewhat a random integer.
+Therefore, to ensure a logical output of the global continuation process,
+attractors need to be "matched".
+This means: attractor and fractions must have their _IDs are changed_,
+so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
 
-At the moment matching is done by distance of state space sets, as described
-in [`MatchBySSSetDistance`](@ref).
-The matching itself happes via a trivial call to [`match_sequentially!`](@ref)
-at the end of the `global_continuation` call.
+What is "similar enough" is controlled by the `matcher` input.
+The default `matcher` [`MatchBySSSetDistance`](@ref) matches
+sets which have small distance in state space.
+The matching algorithm itself can be quite involved,
+so read the documentation of the `matcher` for how matching works.
 
-If you don't like the final matching output,
-you may use a different `matcher` and call [`match_sequentially!`](@ref) again,
+A note on matching: the [`MatchBySSSetDistance`](@ref) can also be used
+after the continuation is completed, as it only requires as input
+the state space sets (attractors), without caring at which parameter each attractor
+exists at. If you don't like the final matching output,
+you may use a different instance of [`MatchBySSSetDistance`](@ref)
+and call [`match_sequentially!`](@ref) again on the output,
 without having to recompute the whole global continuation!
+
+### Step 5 - Finish
+
+After matching the parameter is incremented.
+Steps 1-4 repeat until all parameter values are exhausted.
 
 ### Further notes
 
@@ -89,11 +98,11 @@ end
 
 const ASCM = AttractorSeedContinueMatch
 
-ASCM(mapper; matcher = MatchBySSSetDistance(), seeding = _default_seeding_process) =
+ASCM(mapper, matcher = MatchBySSSetDistance(); seeding = _default_seeding) =
 ASCM(mapper, matcher, seeding)
 
 # TODO: This is currently not used, and not sure if it has to be.
-function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
+function _scaled_seeding(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
     max_possible_seeds = 6
     seeds = round(Int, log(max_possible_seeds, length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
@@ -101,7 +110,7 @@ function _default_seeding_process_10(attractor::AbstractStateSpaceSet; rng = Mer
 end
 
 # This is the one used
-function _default_seeding_process(attractor::AbstractStateSpaceSet)
+function _default_seeding(attractor::AbstractStateSpaceSet)
     return (attractor[1],) # must be iterable
 end
 
