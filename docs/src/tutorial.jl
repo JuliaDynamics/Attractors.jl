@@ -186,7 +186,7 @@ pidx = 1 # index of the parameter
 # label across the parameter axis. You can read the docstring for more details,
 # as this algorithm is quite sophisticated!
 
-# For now we can use all of its default options which are reliable 99% of the time
+# For now we can use all of its default options which are reliable most of the time
 
 rafm = RecurrencesFindAndMatch(mapper)
 
