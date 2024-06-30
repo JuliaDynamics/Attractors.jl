@@ -142,6 +142,7 @@ end
 
 _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractStateSpaceSet, i) = ics[i]
+_get_ic(ics::AbstractVector, i) = ics[i]
 
 """
     extract_attractors(mapper::AttractorsMapper) → attractors
