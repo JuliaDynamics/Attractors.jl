@@ -37,3 +37,8 @@ fs, = basins_fractions(mapper, ics; show_progress = false)
 @test fs[1] ≈ 0.45 rtol = 1e-1
 # the divergent points go to last bin, which is 25 = 5x5
 @test fs[25] ≈ 0.55 rtol = 1e-1
+
+# Test that attractors have been stored.
+# the second "attractor" is infinity
+atts = extract_attractors(mapper)
+@test atts[25][end] == [-Inf, -Inf]

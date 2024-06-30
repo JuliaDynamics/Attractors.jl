@@ -60,8 +60,4 @@ using Statistics, Random, Test
 
 end
 
-@testset "Histogram" begin
-
-end
-
 end
