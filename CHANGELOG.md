@@ -1,13 +1,22 @@
 # v1.18
 
+This is a big release, with (hopefully) nothing breaking, but lots of deprecations!
+
+## New stuff
+
 - New central Tutorial for Attractors.jl. It also highlights how to enrich a continuation output with other measures of nonlocal stability.
-- Function `continuation` has been renamed to `global_continuation` in preparation for a future where both local/linear/tradiational continuation as well as our "attractors and basins continuation" are both provided by DynamicalSystems.jl.
 - New global continuation algorithm that generalizes RAFM: `AttractorSeedContinueMatch`.
-- `match_continuation!` has been renamed to `match_sequentially!`.
-- There is now an internal extendable API for "matchers", ways to match state spaces sets across a continuation.
-- Option `par_weight` is deprecated in `FeaturizeGroupAcrossParameter`. Part of the developer team (`@Datseris`, `@KalelR`) discussed this an concluded that `par_weight` doesn't make much scientific sense to include. Since it obfuscates the code and the documentation, it is no longer documented but still exported. It will be unavailable in the next breaking release.
+- There is now an internal extendable API for "matchers", ways to match state spaces sets across a continuation. At the moment this is not exposed to the user, as there aren't many matchers, but see `IDMatcher` for the API.
 - New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.
 - New exported function `reset_mapper!` to clear all stored information in an `AttractorsViaRecurrences` instance.
+- `AttractorsViaFeaturizing` now always stores the attractors and implements `extract_attractors`.
+
+
+## Deprecations and renaming
+
+- Function `continuation` has been deprecated for `global_continuation` in preparation for a future where both local/linear/tradiational continuation as well as our "attractors and basins continuation" are both provided by DynamicalSystems.jl.
+- `match_continuation!` has been deprecated for `match_sequentially!`.
+- Option `par_weight` is deprecated in `FeaturizeGroupAcrossParameter`. Part of the developer team (`@Datseris`, `@KalelR`) discussed this an concluded that `par_weight` doesn't make much scientific sense to include. Since it obfuscates the code and the documentation, it is no longer documented but still exported. It will be unavailable in the next breaking release.
 
 # v1.17
 
