@@ -122,7 +122,7 @@ MFSBlackBoxOptim
 MFSBruteForce
 ```
 
-## Continuation API
+## Global continuation
 
 ```@docs
 global_continuation
@@ -140,27 +140,6 @@ AttractorSeedContinueMatch
 RecurrencesFindAndMatch
 ```
 
-### Matching via state space distance
-
-```@docs
-replacement_map
-replacement_map!
-match_sequentially!
-MatchBySSSetDistance
-MatchByBasinOverlap
-```
-
-
-#### Low-level distance functions
-
-```@docs
-Centroid
-Hausdorff
-StrictlyMinimumDistance
-set_distance
-setsofsets_distances
-```
-
 ### Aggregating attractors and fractions
 
 ```@docs
@@ -171,6 +150,36 @@ aggregate_attractor_fractions
 
 ```@docs
 FeaturizeGroupAcrossParameter
+```
+
+## Matching attractors
+
+Matching attractors follow an extendable interface based on [`IDMatcher`](@ref).
+The available matchers are:
+
+```@docs
+MatchBySSSetDistance
+MatchByBasinOverlap
+```
+
+### Matching interface
+
+```@docs
+IDMatcher
+replacement_map
+replacement_map!
+match_sequentially!
+Attractors._match_attractors
+```
+
+### Low-level distance functions
+
+```@docs
+Centroid
+Hausdorff
+StrictlyMinimumDistance
+set_distance
+setsofsets_distances
 ```
 
 ## Visualization utilities

@@ -15,14 +15,14 @@ A matcher type that matches IDs by the distance of their corresponding state spa
 
 ## Description
 
-In this matcher the values compared are always [`StateSpaceSet`](@ref)s
+In this matcher the values compared are [`StateSpaceSet`](@ref)s
 which in most cases represent attractors in the state space, but may also
-represent any other set such as a group features.
+represent any other set such as a group of features.
 
-When used in [`replacement_map`](@ref) this is what the matcher does:
+Here is how this matcher works:
 (recall in this conversation that sets/attractors are stored in dictionaries,
 mapping keys/IDs to the sets, and we want to match keys in the "new" dictionary (`a₊`)
-to those in the "old" dictionary (`a₋`).
+to those in the "old" dictionary (`a₋`)).
 
 The distance between all possible pairs of sets between the "old" sets and "new" sets
 is computed as a formal distance between sets.

@@ -12,17 +12,38 @@ export replacement_map, replacement_map!, match_sequentially!
 
 Supertype of all "matchers" that match can IDs labelling attractors.
 
-Matchers implement an extendable interface. A new matcher type only needs to
-extend the function [`replacement_map`](@ref).
-This function is used by the higher level function [`match_sequentially!`](@ref)
-that is called at the end of [`global_continuation`](@ref) by some global_continuation algorithms
-such as [`AttractorsFindAndMatch`](@ref).
+Matchers implement an extendable interface.
+For simple matcher, one only needs to extend the function [`replacement_map`](@ref).
+This function is used by the higher level function [`match_sequentially!`](@ref).
+Matchers that may have more involved behavior requiring the dynamical system and
+current and previous parameter need to extend the internal function
+[`_match_attractors`](@ref). This function is utilized by [`AttractorSeedContinueMatch`](@ref).
 
 As you user you typically only care about given an instance of `IDMatcher`
 to a global_continuation algorithm such as [`AttractorSeedContinueMatch`](@ref),
 and you don't have to worry about the matching functions themselves.
 """
 abstract type IDMatcher end
+
+# lowest level function API that falls back to `replacement_map`
+"""
+    _match_attractors(
+        current_attractors, prev_attractors, matcher,
+        ds, p, pprev
+    )
+
+Return the replacement map, mapping IDs of current attractors to the ones
+they match to in previous attractors, according to `matcher`, and also given
+then dynamical system, current and previous parameter values.
+"""
+function _match_attractors(
+            current_attractors, prev_attractors, matcher,
+            ds, p, pprev
+        )
+    rmap = replacement_map(current_attractors, prev_attractors, matcher)
+    return rmap
+end
+
 
 """
     replacement_map(a₊::Dict, a₋::Dict, matcher) → rmap
