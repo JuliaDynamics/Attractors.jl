@@ -1,13 +1,8 @@
 """
-    MatchByBasinEnclosure(; ε = nothing, distance = Centroid())
+    MatchByBasinEnclosure(; kw...) <: IDMatcher
 
 A matcher that matches attractors by whether they are enclosed in
 the basin of a new attractor or not.
-
-
-that is, whether the location of an attractor at the previous parameter
-would be in the basin of the continued attractor in .
-a concept related to "basin instability".
 
 ## Keyword arguments
 
