@@ -176,6 +176,7 @@ end
 
 function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, seeding)
     # actual seeding
+    seeded_fs = Dict{Int, Int}()
     for att in values(prev_attractors)
         for u0 in seeding(att)
             # We map the initial condition to an attractor, but we don't care
@@ -196,7 +197,7 @@ function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N
             additional_fs = seeded_fs, show_progress = false
         )
     end
-    return seeded_fs
+    return fs
 end
 
 function seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, seeding)
