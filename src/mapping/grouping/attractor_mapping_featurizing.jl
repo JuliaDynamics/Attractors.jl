@@ -45,7 +45,8 @@ which can be utilized when wanting to work directly with features.
 
 ## Keyword arguments
 
-* `T=100, Ttr=100, Δt=1`: Propagated to [`trajectory`](@ref).
+* `T=100, Ttr=100, Δt=1`: Propagated to `DynamicalSystems.trajectory` for integrating
+  an initial condition to yield `A, t`.
 * `threaded = true`: Whether to run the generation of features over threads by integrating
   trajectories in parallel.
 
@@ -53,16 +54,23 @@ which can be utilized when wanting to work directly with features.
 
 The trajectory `X` of an initial condition is transformed into features. Each
 feature is a number useful in _characterizing the attractor_ the initial condition ends up
-at, and distinguishing it from other attractors. Example features are the mean or standard
+at, and **distinguishing it from other attractors**. Example features are the mean or standard
 deviation of some the dimensions of the trajectory, the entropy of some of the
 dimensions, the fractal dimension of `X`, or anything else you may fancy.
 
-All feature vectors (each initial condition = 1 vector) are then grouped using one of the
+All feature vectors (each initial condition = 1 feature vector) are then grouped using one of the
 sevaral available grouping configurations. Each group is assumed to be a unique attractor,
 and hence each initial condition is labelled according to the group it is part of.
 The method thus relies on the user having at least some basic idea about what attractors
 to expect in order to pick the right features, and the right way to group them,
 in contrast to [`AttractorsViaRecurrences`](@ref).
+
+Attractors are stored and can be accessed with [`extract_attractors`](@ref),
+however it should be clear that this mapper never actually finds attractors.
+They way we store attractors is by picking the first initial condition that belongs
+to the corresponding "attractor group", and then recording its trajectory
+with the same arguments `T, Ttr, Δt`. This is stored as the attractor,
+but of course there is no guarantee that this is actually an attractor.
 """
 function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
         group_config::GroupingConfig = GroupViaClustering();
@@ -74,6 +82,11 @@ function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
     return AttractorsViaFeaturizing(
         ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,V}}(),
     )
+end
+
+function reset_mapper!(mapper::AttractorsViaFeaturizing)
+    empty!(mapper.attractors)
+    return
 end
 
 DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsBase.rulestring(m.ds)
@@ -98,14 +111,19 @@ ValidICS = Union{AbstractStateSpaceSet, Function}
 function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
         show_progress = true, N = 1000
     )
-    features = extract_features(mapper, ics; show_progress, N)
+    # we always collect the initial conditions because we need their reference
+    # to extract the attractors
+    icscol = if ics isa Function
+        StateSpaceSet([copy(ics()) for _ in 1:N])
+    else
+        ics
+    end
+    features = extract_features(mapper, icscol; show_progress, N)
     group_labels = group_features(features, mapper.group_config)
     fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
+    # we can always extract attractors because we store all initial conditions
+    extract_attractors!(mapper, group_labels, icscol)
     if typeof(ics) <: AbstractStateSpaceSet
-        # TODO: If we could somehow extract the used initial conditions from `ics` 7
-        # in case `ics` was a function, that would be cool...
-        attractors = extract_attractors(mapper, group_labels, ics)
-        overwrite_dict!(mapper.attractors, attractors)
         return fs, group_labels
     else
         return fs
@@ -172,10 +190,12 @@ function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper
     return mapper.featurizer(A, t)
 end
 
-function extract_attractors(mapper::AttractorsViaFeaturizing, labels, ics)
+function extract_attractors!(mapper::AttractorsViaFeaturizing, labels, ics)
     uidxs = unique(i -> labels[i], eachindex(labels))
-    return Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
-    Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in uidxs if i ≠ -1)
+    attractors = Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
+    Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in uidxs if i > 0)
+    overwrite_dict!(mapper.attractors, attractors)
+    return
 end
 
 extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors

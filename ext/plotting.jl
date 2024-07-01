@@ -184,17 +184,17 @@ end
 ##########################################################################################
 # Continuation
 ##########################################################################################
-function Attractors.plot_basins_curves(fractions_curves, prange; kwargs...)
+function Attractors.plot_basins_curves(fractions_cont, args...; kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     ax.xlabel = "parameter"
     ax.ylabel = "basins %"
-    plot_basins_curves!(ax, fractions_curves, prange; kwargs...)
+    plot_basins_curves!(ax, fractions_cont, args...; kwargs...)
     return fig
 end
 
-function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(fractions_curves);
-        ukeys = unique_keys(fractions_curves), # internal argument
+function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fractions_cont);
+        ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         separatorwidth = 1, separatorcolor = "white",
@@ -207,7 +207,7 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = fractions_series(fractions_curves, ukeys)
+    bands = fractions_series(fractions_cont, ukeys)
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
@@ -244,30 +244,30 @@ function Attractors.plot_basins_curves!(ax, fractions_curves, prange = 1:length(
     return
 end
 
-function fractions_series(fractions_curves, ukeys = unique_keys(fractions_curves))
-    bands = [zeros(length(fractions_curves)) for _ in ukeys]
-    for i in eachindex(fractions_curves)
+function fractions_series(fractions_cont, ukeys = unique_keys(fractions_cont))
+    bands = [zeros(length(fractions_cont)) for _ in ukeys]
+    for i in eachindex(fractions_cont)
         for (j, k) in enumerate(ukeys)
-            bands[j][i] = get(fractions_curves[i], k, 0)
+            bands[j][i] = get(fractions_cont[i], k, 0)
         end
     end
     return bands
 end
 
-function Attractors.plot_attractors_curves(attractors_info, attractor_to_real, prange = 1:length(attractors_info); kwargs...)
+function Attractors.plot_attractors_curves(attractors_cont, attractor_to_real, prange = 1:length(attractors_cont); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
     ax.xlabel = "parameter"
     ax.ylabel = "attractors"
-    plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange; kwargs...)
+    plot_attractors_curves!(ax, attractors_cont, attractor_to_real, prange; kwargs...)
     return fig
 end
 
-function Attractors.plot_attractors_curves!(ax, attractors_info, attractor_to_real, prange = 1:length(attractors_info);
+function Attractors.plot_attractors_curves!(ax, attractors_cont, attractor_to_real, prange = 1:length(attractors_cont);
         kwargs...
     )
     # make the continuation info values and just propagate to the main function
-    continuation_info = map(attractors_info) do dict
+    continuation_info = map(attractors_cont) do dict
         Dict(k => attractor_to_real(A) for (k, A) in dict)
     end
     plot_continuation_curves!(ax, continuation_info, prange; kwargs...)
@@ -302,17 +302,17 @@ function Attractors.plot_continuation_curves(args...; kw...)
 end
 
 # Mixed: basins and attractors
-function Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, a2r::Function, prange = 1:length(attractors_info);
+function Attractors.plot_basins_attractors_curves(fractions_cont, attractors_cont, a2r::Function, prange = 1:length(attractors_cont);
         kwargs...
     )
-    return Attractors.plot_basins_attractors_curves(fractions_curves, attractors_info, [a2r], prange; kwargs...)
+    return Attractors.plot_basins_attractors_curves(fractions_cont, attractors_cont, [a2r], prange; kwargs...)
 end
 
 # Special case with multiple attractor projections:
 function Attractors.plot_basins_attractors_curves(
-        fractions_curves, attractors_info,
-        a2rs::Vector, prange = 1:length(attractors_info);
-        ukeys = unique_keys(fractions_curves), # internal argument
+        fractions_cont, attractors_cont,
+        a2rs::Vector, prange = 1:length(attractors_cont);
+        ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         markers = markers_from_keys(ukeys),
@@ -334,9 +334,9 @@ function Attractors.plot_basins_attractors_curves(
         hidexdecorations!(axs[i]; grid = false)
     end
     # plot basins and attractors
-    plot_basins_curves!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
+    plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, kwargs...)
     for (axa, a2r) in zip(axs, a2rs)
-        plot_attractors_curves!(axa, attractors_info, a2r, prange;
+        plot_attractors_curves!(axa, attractors_cont, a2r, prange;
             ukeys, colors, markers, add_legend = false, # coz its true for fractions
         )
     end
@@ -344,21 +344,21 @@ function Attractors.plot_basins_attractors_curves(
 end
 
 # This function is kept for backwards compatibility only, really.
-function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_curves, attractors_info,
-        attractor_to_real, prange = 1:length(attractors_info);
-        ukeys = unique_keys(fractions_curves), # internal argument
+function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, attractors_cont,
+        attractor_to_real, prange = 1:length(attractors_cont);
+        ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         kwargs...
     )
 
-    if length(fractions_curves) ≠ length(attractors_info)
+    if length(fractions_cont) ≠ length(attractors_cont)
         error("fractions and attractors don't have the same amount of entries")
     end
 
-    plot_basins_curves!(axb, fractions_curves, prange; ukeys, colors, labels, kwargs...)
+    plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, kwargs...)
 
-    plot_attractors_curves!(axa, attractors_info, attractor_to_real, prange;
+    plot_attractors_curves!(axa, attractors_cont, attractor_to_real, prange;
         ukeys, colors, add_legend = false, # coz its true for fractions
     )
     return
@@ -369,11 +369,11 @@ end
 # Videos
 ##########################################################################################
 function Attractors.animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_info, fractions_curves, prange, pidx;
+        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx;
         savename = "attracont.mp4", access = SVector(1, 2),
-        limits = auto_attractor_lims(attractors_info, access),
+        limits = auto_attractor_lims(attractors_cont, access),
         framerate = 4, markersize = 10,
-        ukeys = unique_keys(attractors_info),
+        ukeys = unique_keys(attractors_cont),
         colors = colors_from_keys(ukeys),
         markers = markers_from_keys(ukeys),
         Δt = isdiscretetime(ds) ? 1 : 0.05,
@@ -403,8 +403,8 @@ function Attractors.animate_attractors_continuation(
     record(fig, savename, eachindex(prange); framerate) do i
         p = prange[i]
         ax.title = "p = $p"
-        attractors = attractors_info[i]
-        fractions = fractions_curves[i]
+        attractors = attractors_cont[i]
+        fractions = fractions_cont[i]
         set_parameter!(ds, pidx, p)
         heights[] = [get(fractions, k, 0) for k in ukeys]
 
@@ -421,10 +421,10 @@ function Attractors.animate_attractors_continuation(
     return fig
 end
 
-function auto_attractor_lims(attractors_info, access)
+function auto_attractor_lims(attractors_cont, access)
     xmin = ymin = Inf
     xmax = ymax = -Inf
-    for atts in attractors_info
+    for atts in attractors_cont
         for (k, A) in atts
             P = A[:, access]
             mini, maxi = minmaxima(P)

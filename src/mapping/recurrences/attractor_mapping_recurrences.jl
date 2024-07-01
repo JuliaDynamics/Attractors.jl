@@ -352,6 +352,29 @@ function automatic_Δt_basins(ds, grid_nfo::Grid; N = 5000)
     return Δt
 end
 
+"""
+    reset_mapper!(mapper::AttractorsMapper)
+
+Reset all accumulated information of `mapper` so that it is
+as if it has just been initialized. Useful in `for` loops
+that loop over a parameter of the dynamical system stored in `mapper`.
+"""
+function reset_mapper!(mapper::AttractorsViaRecurrences)
+    empty!(mapper.bsn_nfo.attractors)
+    if mapper.bsn_nfo.basins isa Array
+        mapper.bsn_nfo.basins .= 0
+    else
+        empty!(mapper.bsn_nfo.basins)
+    end
+    mapper.bsn_nfo.state = :att_search
+    mapper.bsn_nfo.consecutive_match = 0
+    mapper.bsn_nfo.consecutive_lost = 0
+    mapper.bsn_nfo.prev_label = 0
+    mapper.bsn_nfo.current_att_label = 2
+    mapper.bsn_nfo.visited_cell_label = 4
+    return
+end
+
 include("sparse_arrays.jl")
 include("finite_state_machine.jl")
 include("grids.jl")

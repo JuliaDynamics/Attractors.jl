@@ -9,7 +9,7 @@ export unique_keys, swap_dict_keys!
 """
     swap_dict_keys!(d::Dict, replacement_map::Dict)
 
-Swap the keys of a dictionary `d` given the [`replacement_map`](@ref)
+Swap the keys of a dictionary `d` given a `replacement_map`
 which maps old keys to new keys. Also ensure that a swap can happen at most once,
 e.g., if input `d` has a key `4`, and `rmap = Dict(4 => 3, 3 => 2)`,
 then the key `4` will be transformed to `3` and not further to `2`.
@@ -38,6 +38,7 @@ end
 
 """
     overwrite_dict!(old::Dict, new::Dict)
+
 In-place overwrite the `old` dictionary for the key-value pairs of the `new`.
 """
 function overwrite_dict!(old::Dict, new::Dict)
@@ -49,12 +50,14 @@ end
 
 """
     additive_dict_merge!(d1::Dict, d2::Dict)
+
 Merge keys and values of `d2` into `d1` additively: the values of the same keys
 are added together in `d1` and new keys are given to `d1` as-is.
 """
 function additive_dict_merge!(d1::Dict, d2::Dict)
+    z = zero(valtype(d1))
     for (k, v) in d2
-        d1[k] = get(d1, k, 0) + v
+        d1[k] = get(d1, k, z) + v
     end
     return d1
 end
@@ -69,7 +72,7 @@ then they will transformed to 1, 2, 3.
 Return the replacement map used to replace keys in all dictionaries with
 [`swap_dict_keys!`](@ref).
 
-As this function is used in attractor matching in [`continuation`](@ref)
+As this function is used in attractor matching in [`global_continuation`](@ref)
 it skips the special key `-1`.
 """
 function retract_keys_to_consecutive(v::Vector{<:Dict})
@@ -92,4 +95,17 @@ function unique_keys(v)
         end
     end
     return sort!(collect(unique_keys))
+end
+
+function next_free_id(a₊::AbstractDict, a₋::AbstractDict)
+    # the next available integer is the minimum key of the "new" dictionary
+    # that doesn't exist in the "old" dictionary
+    s = setdiff(keys(a₊), keys(a₋))
+    nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
+    return nextid
+end
+function next_free_id(keys₊, keys₋)
+    s = setdiff(keys₊, keys₋)
+    nextid = isempty(s) ? maximum(keys₋) + 1 : minimum(s)
+    return nextid
 end

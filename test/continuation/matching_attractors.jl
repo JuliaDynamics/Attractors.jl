@@ -2,27 +2,7 @@ using Test, Attractors
 
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
-@testset "analytic" begin
-    a_befo = Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)])
-    a_befo = Dict(keys(a_befo) .=> StateSpaceSet.(values(a_befo)))
-    @testset "infinite threshold" begin
-        a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
-        a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = match_statespacesets!(a_afte, a_befo)
-        @test rmap == Dict(1 => 2, 2 => 1)
-        @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
-        @test haskey(a_afte, 2)
-        @test a_afte[2] == StateSpaceSet([SVector(2.0, 2.0)])
-    end
-    @testset "separating threshold" begin
-        a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
-        a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = match_statespacesets!(a_afte, a_befo; threshold = 0.1)
-        @test rmap == Dict(1 => 3, 2 => 1)
-        @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
-        @test !haskey(a_afte, 2)
-        @test a_afte[3] == StateSpaceSet([SVector(2.0, 2.0)])
-    end
+@testset "matching utils" begin
     @testset "No double duplication" begin
         rmap = Dict(4 => 3, 3 => 2)
         a = Dict(4 => 1)
@@ -32,7 +12,34 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     end
 end
 
-@testset "continuation matching" begin
+@testset "MatchBySSSetDistance" begin
+    default = MatchBySSSetDistance()
+
+@testset "analytic" begin
+    a_befo = Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)])
+    a_befo = Dict(keys(a_befo) .=> StateSpaceSet.(values(a_befo)))
+    @testset "infinite threshold" begin
+        a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
+        a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
+        rmap = replacement_map!(a_afte, a_befo, default)
+        @test rmap == Dict(1 => 2, 2 => 1)
+        @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
+        @test haskey(a_afte, 2)
+        @test a_afte[2] == StateSpaceSet([SVector(2.0, 2.0)])
+    end
+    @testset "separating threshold" begin
+        a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
+        a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
+        matcher = MatchBySSSetDistance(threshold = 0.1)
+        rmap = replacement_map!(a_afte, a_befo, matcher)
+        @test rmap == Dict(1 => 3, 2 => 1)
+        @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
+        @test !haskey(a_afte, 2)
+        @test a_afte[3] == StateSpaceSet([SVector(2.0, 2.0)])
+    end
+end
+
+@testset "global_continuation matching" begin
     # Make fake attractors with points that become more "separated" as "parameter"
     # is increased
     jrange = 0.1:0.1:1
@@ -46,12 +53,12 @@ end
         end
     end
     # Test with distance not enough to increment
-    match_continuation!(allatts; threshold = 100.0) # all odd keys become 1
+    match_sequentially!(allatts, MatchBySSSetDistance(threshold = 100.0)) # all odd keys become 1
     @test all(haskey(d, 1) for d in allatts)
     @test all(haskey(d, 2) for d in allatts)
     # Test with distance enough to increment
     allatts2 = deepcopy(allatts)
-    match_continuation!(allatts2; threshold = 0.1) # all keys there were `2` get incremented
+    match_sequentially!(allatts2, MatchBySSSetDistance(threshold = 0.1)) # all keys there were `2` get incremented
     @test all(haskey(d, 1) for d in allatts2)
     for i in 2:length(jrange)
         @test haskey(allatts2[i], i+1)
@@ -60,7 +67,7 @@ end
     @test haskey(allatts2[1], 2)
 end
 
-@testset "continuation matching advanced" begin
+@testset "global_continuation matching advanced" begin
     jrange = 0.1:0.1:1
     allatts = [Dict(1 => [SVector(0.0, 0.0)], 2 => [SVector(1.0, 1.0)], 3 => [SVector((10j)^2, 0)]) for j in jrange]
     allatts = [Dict(keys(d) .=> StateSpaceSet.(values(d))) for d in allatts]
@@ -72,18 +79,26 @@ end
     end
 
     @testset "ignore vanished" begin
-        atts = deepcopy(allatts)
-        match_continuation!(atts; use_vanished = false)
-        # After the first 3 key, all subsequent keys 3 become the next integer,
-        # and since we started cutting away keys 3 from `i = 2` we have
-        # 4 extra 3 keys to add
-        @test unique_keys(atts) == 1:7
+        @testset "no retract" begin
+            atts = deepcopy(allatts)
+            rmaps = match_sequentially!(atts, default; retract_keys = false)
+            # After the first 3 key, all subsequent keys 3 become the next integer,
+            # and since we started cutting away keys 3 from `i = 2` we have
+            # 4 extra 3 keys to add.
+            @test unique_keys(atts) == [1, 2, 3, 5, 7, 9, 11]
+        end
+        @testset "with retract" begin
+            # with retraction it becomes nice
+            atts = deepcopy(allatts)
+            rmaps = match_sequentially!(atts, default; retract_keys = true)
+            @test unique_keys(atts) == 1:7
+        end
     end
 
     @testset "use vanished" begin
         @testset "Inf thresh" begin
             atts = deepcopy(allatts)
-            match_continuation!(atts; use_vanished = true)
+            match_sequentially!(atts, MatchBySSSetDistance(use_vanished = true))
             @test unique_keys(atts) == 1:3
             for i in eachindex(jrange)
                 if iseven(i)
@@ -97,7 +112,7 @@ end
             # okay here we test the case that the threshold becomes too large
             threshold = 10.0 # at the 5th index, we cannot match anymore
             atts = deepcopy(allatts)
-            match_continuation!(atts; use_vanished = true, threshold)
+            match_sequentially!(atts, MatchBySSSetDistance(; use_vanished = true, threshold))
             @testset "i=$(i)" for i in eachindex(jrange)
                 if iseven(i)
                     @test sort!(collect(keys(atts[i]))) == 1:2
@@ -113,64 +128,40 @@ end
     end
 end
 
+end # Matcher by distance tests
 
-if DO_EXTENSIVE_TESTS
-    @testset "magnetic pendulum" begin
-        using OrdinaryDiffEq: Vern9
-        using LinearAlgebra: norm
-        mutable struct MagneticPendulumParams
-            γs::Vector{Float64}
-            d::Float64
-            α::Float64
-            ω::Float64
-            magnets::Vector{SVector{2, Float64}}
-        end
-        function magnetic_pendulum_rule(u, p, t)
-            x, y, vx, vy = u
-            γs, d, α, ω = p.γs, p.d, p.α, p.ω
-            dx, dy = vx, vy
-            dvx, dvy = @. -ω^2*(x, y) - α*(vx, vy)
-            for (i, ma) in enumerate(p.magnets)
-                δx, δy = (x - ma[1]), (y - ma[2])
-                D = sqrt(δx^2 + δy^2 + d^2)
-                dvx -= γs[i]*(x - ma[1])/D^3
-                dvy -= γs[i]*(y - ma[2])/D^3
-            end
-            return SVector(dx, dy, dvx, dvy)
-        end
-        function magnetic_pendulum(u = [sincos(0.12553*2π)..., 0, 0];
-            γ = 1.0, d = 0.3, α = 0.2, ω = 0.5, N = 3, γs = fill(γ, N), diffeq)
-            m = [SVector(cos(2π*i/N), sin(2π*i/N)) for i in 1:N]
-            p = MagneticPendulumParams(γs, d, α, ω, m)
-            return CoupledODEs(magnetic_pendulum_rule, u, p; diffeq)
-        end
 
-        diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9)
-        d, α, ω = 0.3, 0.2, 0.5
-        ds = magnetic_pendulum(; d, α, ω, diffeq)
-        xg = yg = range(-3, 3, length = 100)
-        ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
-        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)
-        b₋, a₋ = basins_of_attraction(mapper; show_progress = false)
-        # still 3 attractors at γ3 = 0.2, but only 2 at 0.1
-        @testset "γ3 $γ3" for γ3 ∈ [0.2, 0.1]
-            set_parameter!(ds, :γs, [1, 1, γ3])
-            mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false, Δt = 1.0)
-            b₊, a₊ = basins_of_attraction(mapper; show_progress = false)
-            @testset "distances match" begin
-                rmap = match_statespacesets!(a₊, a₋)
-                for k in keys(a₊)
-                    dist = minimum(norm(x .- y) for x ∈ a₊[k] for y ∈ a₋[k])
-                    @test dist < 0.2
-                end
-            end
-            @testset "overlap match" begin
-                fs0 = basins_fractions(b₊)
-                rmap = match_basins_ids!(b₊, b₋)
-                @test !isempty(rmap)
-                fs1 = basins_fractions(b₊)
-                @test sort!(collect(values(fs0))) == sort!(collect(values(fs1)))
-            end
-        end
-    end
+@testset "basin overlap" begin
+    b1 = ones(Int, 10, 10)
+    b1[:, 6:10] .= 2
+    b2 = copy(b1)
+    b2[:, 1:2] .= 2
+    b2[:, 3:10] .= 3 # 3 has more overlap to 2, while 2 has more overlap to 1
+    b3 = copy(b2)
+    b3[:, 1:10] .= 3 # so now this would be teh same as the previous 3, which is will become 2
+
+    m1 = MatchByBasinOverlap()
+
+    rmap = replacement_map(b2, b1, m1)
+    @test rmap[3] == 2
+    @test rmap[2] == 1
+
+    bx = copy(b2)
+    replacement_map!(bx, b1, m1)
+    @test sort(unique(bx)) == [1, 2]
+
+    rmap = replacement_map(b3, bx, m1)
+    @test length(rmap) == 1
+    @test rmap[3] == 2
+
+    # test that there won't be matching with threshold
+    m2 = MatchByBasinOverlap(1.99)
+    rmap = replacement_map(b2, b1, m2)
+    # here 3 should go to 2, as it overlaps all of 2
+    # while 2 cannot go to 1, as it doesn't 50% or more of 1.
+    # The next available ID is not 4 though, it is 3, as this is
+    # the next available integer given the previous keys (1, 2)
+    @test length(rmap) == 2
+    @test rmap[2] == 3
+    @test rmap[3] == 2
 end

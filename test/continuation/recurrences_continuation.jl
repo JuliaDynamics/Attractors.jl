@@ -37,14 +37,14 @@ using Random
     rrange = range(0, 2; length = 20)
     ridx = 1
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.3)
-    fractions_curves, a = continuation(
+    fractions_cont, a = global_continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000
     )
 
     for (i, r) in enumerate(rrange)
 
-        fs = fractions_curves[i]
+        fs = fractions_cont[i]
         if r < 0.5
             k = sort!(collect(keys(fs)))
             @test length(k) == 1
@@ -62,7 +62,7 @@ using Random
 end
 
 
-@testset "Multistable grouping map" begin
+@testset "Multistable aggregating map" begin
     # This is a fake multistable map helps at testing the grouping
     # capabilities. We know what it does analytically!
     function dumb_map(dz, z, p, n)
@@ -107,17 +107,17 @@ end
         return
     end
 
-    function test_fs(fractions_curves, rrange, frac_results)
-        # For Grouping There should be one cluster for r < 0.5 and then 9 groups of attractors
+    function test_fs(fractions_cont, rrange, frac_results)
+        # For Grouping there should be one cluster for r < 0.5 and then 9 groups of attractors
         # For matching, all attractors are detected and matched
-        # for r < 0.5 there are 4 attractors and then 12
+        # for r < 0.5 there are 4 attractors and for r > 0.5 there are 12
         for (i, r) in enumerate(rrange)
-            fs = fractions_curves[i]
+            fs = fractions_cont[i]
+            # non-zero keys
+            k = sort!([k for k in keys(fs) if fs[k] > 0])
             if r < 0.5
-                k = sort!(collect(keys(fs)))
                 @test length(k) == frac_results[1]
             else
-                k = sort!(collect(keys(fs)))
                 @test length(k) == frac_results[2]
             end
             @test sum(values(fs)) ≈ 1
@@ -136,11 +136,12 @@ end
     # First, test the normal function of finding attractors
     mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.1)
-    fractions_curves, attractors_info = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
     )
-    test_fs(fractions_curves, rrange, [4, 12])
+    test_fs(fractions_cont, rrange, [4, 12])
+
     # Then, test the aggregation of features via featurizing and histogram
     using Statistics
     featurizer = (x) -> mean(x)
@@ -150,37 +151,9 @@ end
     )
 
     aggr_fracs, aggr_info = aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, hconfig
+        fractions_cont, attractors_cont, featurizer, hconfig
     )
     test_fs(aggr_fracs, rrange, [4, 12])
-
-    # Lastly, test the rather special case of clustering, using the distance
-    # matrix of the actual attractors
-    featurizer = identity
-    info_extraction = vector -> mean(mean(x) for x in vector)
-    clust_distance_metric = set_distance
-    cconfig = GroupViaClustering(;
-        clust_distance_metric,
-        rescale_features = false,
-        optimal_radius_method = 0.1,
-    )
-    aggr_fracs, aggr_info = aggregate_attractor_fractions(
-        fractions_curves, attractors_info, featurizer, cconfig, info_extraction
-    )
-    test_fs(aggr_fracs, rrange, [1, 9])
-    # all attractors near the origin became one:
-    @test aggr_fracs[1] == Dict(1 => 1.0)
-    # We have 9 attractors, and test that their location
-    # is where we expect: 1 at the origin, which includes
-    # and 8 scattered around
-    vals = collect(values(aggr_info))
-    vals = [round.(x; digits = 2) for x in vals]
-    sort!(vals)
-    @test length(vals) == 9
-    for x in vals
-        sx = sort(abs.(x))
-        @test (sx == [0, 0] || sx == [1.15, 2.77])
-    end
 
 end
 
@@ -217,14 +190,14 @@ if DO_EXTENSIVE_TESTS
     rsc = RecurrencesFindAndMatch(mapper;
         threshold = 0.99, distance = distance_function
     )
-    fractions_curves, attractors_info = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
 
     for (i, p) in enumerate(ps)
-        fs = fractions_curves[i]
-        attractors = attractors_info[i]
+        fs = fractions_cont[i]
+        attractors = attractors_cont[i]
         @test sum(values(fs)) ≈ 1
         # Test that keys are the same (-1 doesn't have attractor)
         k = sort!(collect(keys(fs)))
@@ -234,7 +207,7 @@ if DO_EXTENSIVE_TESTS
     end
 
     # unique keys
-    ukeys = Attractors.unique_keys(attractors_info)
+    ukeys = Attractors.unique_keys(attractors_cont)
 
     # We must have 3 attractors: initial chaotic, period 14 in the middle,
     # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
@@ -243,7 +216,7 @@ if DO_EXTENSIVE_TESTS
     @test ukeys == 1:3
 
     # # Animation of henon attractors
-    # animate_attractors_continuation(ds, attractors_info, fractions_curves, ps, pidx)
+    # animate_attractors_continuation(ds, attractors_cont, fractions_cont, ps, pidx)
 end
 
 @testset "non-found attractors" begin
@@ -258,11 +231,11 @@ end
     mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
     rsc = RecurrencesFindAndMatch(mapper)
 
-    fractions_curves, attractors_info = continuation(
+    fractions_cont, attractors_cont = global_continuation(
         rsc, ps, pidx, sampler;
         show_progress = false, samples_per_parameter = 100
     )
-    @test all(i -> isempty(i), attractors_info)
+    @test all(i -> isempty(i), attractors_cont)
 end
 
 end

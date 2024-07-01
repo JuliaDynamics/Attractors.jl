@@ -30,6 +30,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("continuation/matching_attractors.jl")
         testfile("continuation/recurrences_continuation.jl")
         testfile("continuation/grouping_continuation.jl")
+        testfile("continuation/seed_continue_generic.jl")
     end
 
     @testset "mfs" begin

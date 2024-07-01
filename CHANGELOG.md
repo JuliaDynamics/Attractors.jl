@@ -1,8 +1,22 @@
 # v1.18
 
+This is a big release, with (hopefully) nothing breaking, but lots of deprecations!
+
+## New stuff
+
+- New central Tutorial for Attractors.jl. It also highlights how to enrich a continuation output with other measures of nonlocal stability.
+- New global continuation algorithm that generalizes RAFM: `AttractorSeedContinueMatch`.
+- There is now an extendable API for "matchers", ways to match state spaces sets across a continuation. See `IDMatcher` for the API.
 - New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.
-- New example in the docs for enriching a continuation output with other examples of nonlocal stability.
-- New exported function `reset_mapper!` to clear all stored information in an `AttractorsViaRecurrences` instance. Used in the aforementioned new example.
+- New exported function `reset_mapper!` to clear all stored information in an `AttractorMapper`.
+- `AttractorsViaFeaturizing` now always stores the attractors and implements `extract_attractors`.
+
+
+## Deprecations and renaming
+
+- Function `continuation` has been deprecated for `global_continuation` in preparation for a future where both local/linear/tradiational continuation as well as our "attractors and basins continuation" are both provided by DynamicalSystems.jl.
+- `match_continuation!` has been deprecated for `match_sequentially!`.
+- Option `par_weight` is deprecated in `FeaturizeGroupAcrossParameter`. Part of the developer team (`@Datseris`, `@KalelR`) discussed this an concluded that `par_weight` doesn't make much scientific sense to include. Since it obfuscates the code and the documentation, it is no longer documented but still exported. It will be unavailable in the next breaking release.
 
 # v1.17
 

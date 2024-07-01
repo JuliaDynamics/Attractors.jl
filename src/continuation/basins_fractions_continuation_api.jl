@@ -1,56 +1,63 @@
-export continuation, AttractorsBasinsContinuation
-
-# In the end, it is better to have a continuation type that contains
-# how to match, because there are other keywords that always go into the
-# continuation... Like in the recurrences the keyword of seeds per attractor,
-# or in the clustering some other stuff like the parameter scaling
-abstract type AttractorsBasinsContinuation end
+export global_continuation, GlobalContinuationAlgorithm
 
 """
-    continuation(abc::AttractorsBasinsContinuation, prange, pidx, ics; kwargs...)
+    GlobalContinuationAlgorithm
 
-Find and continue attractors (or feature-based representations of attractors)
+Supertype of all algorithms used in [`global_continuation`](@ref).
+Each algorithm typically references an [`AttractorMapper`](@ref),
+as well as contains more information for how to continue/track/match attractors
+across a parameter range.
+
+See [`global_continuation`](@ref) for more.
+"""
+abstract type GlobalContinuationAlgorithm end
+
+"""
+    global_continuation(gca::GlobalContinuationAlgorithm, prange, pidx, ics; kwargs...)
+
+Find and continue attractors (or representations of attractors)
 and the fractions of their basins of attraction across a parameter range.
-`continuation` is the central function of the framework for global stability analysis
+`global_continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
-The continuation type `abc` is a subtype of `AttractorsBasinsContinuation`
-and contains an [`AttractorMapper`](@ref). The mapper contains information
-on how to find the attractors and basins of a dynamical system. Additional
-arguments and keyword arguments given when creating `abc` further tune the continuation
-and how attractors are matched across different parameter values.
+The global continuation algorithm typically references an [`AttractorMapper`](@ref)
+which is used to find the attractors and basins of a dynamical system. Additional
+arguments that control how to continue/track/match attractors across a parameter range
+are given when creating `gca`.
 
 The basin fractions and the attractors (or some representation of them) are continued
 across the parameter range `prange`, for the parameter of the system with index `pidx`
-(any index valid in [`set_parameter!`](@ref) can be used).
+(any index valid in `DynamicalSystems.set_parameter!` can be used).
 
-`ics` is a 0-argument function generating initial conditions for
-the dynamical system (as in [`basins_fractions`](@ref)).
+`ics` are the initial conditions to use when globally sampling the state space.
+Like in [`basins_fractions`](@ref) it can be either a set vector of initial conditions,
+or a 0-argument function that generates random initial conditions.
 
-Possible subtypes of `AttractorsBasinsContinuation` are:
+Possible subtypes of `GlobalContinuationAlgorithm` are:
 
 - [`RecurrencesFindAndMatch`](@ref)
 - [`FeaturizeGroupAcrossParameter`](@ref)
 
 ## Return
 
-1. `fractions_curves::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
-   `fractions_curves[i]` is a dictionary mapping attractor IDs to their basin fraction
+1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
+   `fractions_cont[i]` is a dictionary mapping attractor IDs to their basin fraction
    at the `i`-th parameter.
-2. `attractors_info::Vector{Dict{Int, <:Any}}`. Information about the attractors.
-   `attractors_info[i]` is a dictionary mapping attractor ID to information about the
+2. `attractors_cont::Vector{Dict{Int, <:Any}}`. Information about the attractors.
+   `attractors_cont[i]` is a dictionary mapping attractor ID to information about the
    attractor at the `i`-th parameter.
-   The type of information stored depends on the chosen continuation type.
+   The type of information stored depends on the chosen global continuation type,
+   but typically it is the attractors themselves as `StateSpaceSet`s.
 
 ## Keyword arguments
 
 - `show_progress = true`: display a progress bar of the computation.
 - `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
-  from `ics`.
+  from `ics` if `ics` is a function instead of set initial conditions.
 """
-function continuation end
+function global_continuation end
 
-include("match_attractor_ids.jl")
+include("continuation_ascm_generic.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
 include("aggregate_attractor_fractions.jl")

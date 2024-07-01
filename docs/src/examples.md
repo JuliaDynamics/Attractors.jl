@@ -409,7 +409,7 @@ fig
 
 ## Basin fractions continuation in the magnetic pendulum
 
-Perhaps the simplest application of [`continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
+Perhaps the simplest application of [`global_continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
 
 ### Computing the fractions
 
@@ -434,12 +434,12 @@ sampler, = statespace_sampler(region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_curves, attractors_info = continuation(
+fractions_cont, attractors_cont = global_continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
 )
 # Show some characteristic fractions:
-fractions_curves[[1, 50, 101]]
+fractions_cont[[1, 50, 101]]
 ```
 
 
@@ -448,7 +448,7 @@ We visualize them using a predefined function that you can find in `docs/basins_
 
 ```@example MAIN
 # careful; `prange` isn't a vector of reals!
-plot_basins_curves(fractions_curves, γγ)
+plot_basins_curves(fractions_cont, γγ)
 ```
 
 
@@ -467,7 +467,7 @@ function real_number_repr(attractor)
 end
 
 for (i, γ) in enumerate(γγ)
-    for (k, attractor) in attractors_info[i]
+    for (k, attractor) in attractors_cont[i]
         scatter!(ax, γ, real_number_repr(attractor); color = Cycled(k))
     end
 end
@@ -504,12 +504,12 @@ sampler, = statespace_sampler(grid, 1234)
 # initialize mapper
 mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
 # perform continuation of attractors and their basins
-continuation = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_curves, attractors_info = continuation(
-    continuation, prange, pidx, sampler;
+alg = RecurrencesFindAndMatch(mapper; threshold = Inf)
+fractions_cont, attractors_cont = global_continuation(
+    alg, prange, pidx, sampler;
     show_progress = true, samples_per_parameter
-);
-plot_basins_curves(fractions_curves, prange; separatorwidth = 1)
+)
+plot_basins_curves(fractions_cont, prange; separatorwidth = 1)
 ```
 
 ![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
@@ -537,7 +537,7 @@ isextinct(A, idx = unitidxs) = all(a -> a <= 1e-2, A[:, idx])
 groupingconfig = GroupViaClustering(; min_neighbors=1, optimal_radius_method=0.5)
 
 aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
-    fractions_curves, attractors_info, featurizer, groupingconfig
+    fractions_cont, attractors_cont, featurizer, groupingconfig
 )
 
 plot_basins_curves(aggregated_fractions, prange;
@@ -620,10 +620,10 @@ featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
 gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
-fractions_curves, clusters_info = continuation(
+fractions_cont, clusters_info = global_continuation(
     gap, rrange, ridx, sampler; show_progress = false
 )
-fractions_curves
+fractions_cont
 ```
 
 Looking at the information of the "attractors" (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:
@@ -647,9 +647,9 @@ using ComplexityMeasures: ValueHistogram, FixedRectangularBinning, probabilities
 # you decide the binning for the histogram, but for a valid estimation of
 # distances, all histograms must have exactly the same bins, and hence be
 # computed with fixed ranges, i.e., using the `FixedRectangularBinning`
-const binning = FixedRectangularBinning(range(-5, 5; length = 11))
 
 function histogram_featurizer(A, t)
+    binning = FixedRectangularBinning(range(-5, 5; length = 11))
     ms = mean.(columns(A)) # vector of mean of each variable
     p = probabilities(ValueHistogram(binning), ms) # this is the histogram
     return vec(p) # because Distances.jl doesn't know `Probabilities`
