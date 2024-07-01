@@ -39,8 +39,9 @@ matching pool to ensure a unique mapping. Then, the next pair with least
 remaining distance is matched, and the process repeats until all pairs are exhausted.
 
 Additionally, you can provide a `threshold` value. If the distance between two sets
-is larger than this `threshold`, then it is guaranteed that the sets will get assigned
-different ID in the replacement map (the next available integer).
+is larger than this `threshold`, then it is guaranteed that the two sets will get assigned
+different ID in the replacement map, and hence, the set in `a₊` gets the next available
+integer as its ID.
 
 When matching during a global continuation, there is an entire sequence of "old"-"new" collections
 of sets for each step of the global continuation. The keyword `use_vanished::Bool` comes

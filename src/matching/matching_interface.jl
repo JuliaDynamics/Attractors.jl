@@ -45,8 +45,7 @@ function _match_attractors(
             current_attractors, prev_attractors, matcher,
             mapper, p, pprev
         )
-    rmap = replacement_map(current_attractors, prev_attractors, matcher)
-    return rmap
+    return replacement_map(current_attractors, prev_attractors, matcher)
 end
 
 
@@ -194,5 +193,5 @@ function _rematch_with_past!(attractors_cont, matcher)
     return rmaps
 end
 
-include("match_basins.jl")
+include("basin_overlap.jl")
 include("sssdistance.jl")
