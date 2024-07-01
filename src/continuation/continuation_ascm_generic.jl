@@ -161,7 +161,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
         # directly for advanced matchers.
         rmap = _match_attractors(
             current_attractors, prev_attractors, acam.matcher,
-            referenced_dynamical_system(mapper), p, prange[j]
+            mapper, p, prange[j]
         )
         swap_dict_keys!(current_attractors, rmap)
         swap_dict_keys!(fs, rmap)

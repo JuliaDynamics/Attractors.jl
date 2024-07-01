@@ -19,7 +19,7 @@ Matchers that may have more involved behavior requiring the dynamical system and
 current and previous parameter need to extend the internal function
 [`_match_attractors`](@ref). This function is utilized by [`AttractorSeedContinueMatch`](@ref).
 
-As you user you typically only care about given an instance of `IDMatcher`
+As a user you typically only care about given an instance of `IDMatcher`
 to a global_continuation algorithm such as [`AttractorSeedContinueMatch`](@ref),
 and you don't have to worry about the matching functions themselves.
 """
@@ -28,17 +28,22 @@ abstract type IDMatcher end
 # lowest level function API that falls back to `replacement_map`
 """
     _match_attractors(
-        current_attractors, prev_attractors, matcher,
-        ds, p, pprev
+        current_attractors, prev_attractors, matcher::IDMatcher,
+        mapper::AttractorMapper, p, pprev
     )
 
 Return the replacement map, mapping IDs of current attractors to the ones
 they match to in previous attractors, according to `matcher`, and also given
-then dynamical system, current and previous parameter values.
+the mapper used in a continuation process, current and previous parameter values.
+
+The dynamical system referenced by `mapper `can be obtained by
+```
+Attractors.referenced_dynamical_system(mapper)
+```
 """
 function _match_attractors(
             current_attractors, prev_attractors, matcher,
-            ds, p, pprev
+            mapper, p, pprev
         )
     rmap = replacement_map(current_attractors, prev_attractors, matcher)
     return rmap
