@@ -35,7 +35,7 @@ a `StateSpaceSet` (an attractor), it returns an iterator of initial conditions.
 By default the first point of an attractor is provided as the only seed.
 
 Seeding can be turned off by providing the dummy function `seeding = A -> []`,
-i.e., it always returns an empty iterator and hence no seeds.
+i.e., it always returns an empty iterator and hence no seeds and we skip to step 2.
 
 ### Step 2 - Continuing the seeds
 
@@ -63,7 +63,7 @@ using the "seeding from previous attractors".
 Normally the ID an attractor gets assigned is somewhat a random integer.
 Therefore, to ensure a logical output of the global continuation process,
 attractors need to be "matched".
-This means: attractor and fractions must have their _IDs are changed_,
+This means: attractor and fractions must have their _IDs changed_,
 so that attractors that are "similar" to those at a
 previous parameter get assigned the same ID.
 
