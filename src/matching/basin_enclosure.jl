@@ -10,7 +10,7 @@ the basin of a new attractor or not.
   If `nothing`, it is estimated as half the minimum distance of centroids
   (in contrast to the default more accurate estimation in [`AttractorsViaProximity`](@ref)).
 - `Δt = 1, consecutive_lost_steps = 1000`: also given to [`AttractorsViaProximity`](@ref).
-  Note that attractors that did not convergen anywhere within this number of steps
+  Note that attractors that did not converge anywhere within this number of steps
   do not get assigned ID -1 as in [`AttractorsViaProximity`](@ref). Rather, they
   get assigned the next available free ID.
 - `distance = Centroid()`: metric to estimate distances between state space sets
@@ -62,20 +62,26 @@ function _match_attractors(
     else
         e = matcher.ε
     end
-    proximity = AttractorsViaProximity(ds, current_attractors, e; horizon_limit = Inf)
+    proximity = AttractorsViaProximity(ds, current_attractors, e;
+        horizon_limit = Inf, Ttr = 0, consecutive_lost_steps = matcher.consecutive_lost_steps
+    )
     rmap = Dict(k => proximity(matcher.seeding(A)) for (k, A) in prev_attractors)
     # we now process the replacement map `rmap` for co-flowing or diverged attractors.
     next_id = next_free_id(current_attractors, prev_attractors)
     # take care of diverged attractors
-    for (old_k, new_k) in rmap
-        if new_k < 0
-            rmap[old_k] = next_id
+    for (old_ID, new_ID) in rmap
+        if new_ID < 0 # diverged attractors get -1 ID.
+            rmap[old_ID] = next_id
             next_id += 1
         end
     end
     # next, take care of co-flowing attractors
     if unique(values(rmap)) != length(rmap) # a value is repeated
         # Do coflowing and assign `next_id` to the least distant coflowing
+        error("Logic for co-flowing attractors is not implemented yet.")
+        # First, find all old_IDs that are mapped to the same new_ID
+        # For these estimate the distance of corresponding attractors.
+        # All attractors beyond the first get assigned new ID.
     end
     return rmap
 end
