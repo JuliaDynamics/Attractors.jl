@@ -10,7 +10,8 @@ the basin of a new attractor or not.
   If `nothing`, it is estimated as half the minimum distance of centroids
   (in contrast to the default more accurate estimation in [`AttractorsViaProximity`](@ref)).
 - `Δt = 1, consecutive_lost_steps = 1000`: also given to [`AttractorsViaProximity`](@ref).
-  Note that attractors that did not converge anywhere within this number of steps
+  Note that attractors that did not converge to one of the current attractors
+  within this number of steps
   do not get assigned ID -1 as in [`AttractorsViaProximity`](@ref). Rather, they
   get assigned the next available free ID.
 - `distance = Centroid()`: metric to estimate distances between state space sets
@@ -32,14 +33,13 @@ To see if `A₋` is in the basin of `A₊`, we first pick a point from `A₊` us
 keyword argument. By default this is the last point on the attractor, but it could be anything
 else, including the centroid of the attractor (`mean(A)`).
 This point is given as an initial condition to an [`AttractorsViaProximity`](@ref) mapper
-that maps initial conditions to the `₊` attractors with threshold `ε`
-(by default estimated automatically, see [`AttractorsViaProximity`](@ref)).
+that maps initial conditions to the `₊` attractors when they are `ε`-close to them.
 
 There can be the situation where multiple `₋` attractors get matched to the same `₊`
 attractor, which we call "coflowing attractors". In this scenario matching is prioritized
 for the `₋` attractor that is closest to the `₊` in terms of state space set distance,
 which is estimated with the `distance` keyword, which can be anything
-[`setsofsets_distances`](@ref) accepts. The closes `₋` coflowing attractor
+[`setsofsets_distances`](@ref) accepts. The closest `₋` coflowing attractor
 gets assigned the same ID as the `₊` one, while the rest get different unique IDs.
 
 Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@cite).

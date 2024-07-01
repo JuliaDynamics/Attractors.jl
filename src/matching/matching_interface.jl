@@ -3,7 +3,7 @@
 # interface to the users. Perhaps in the future we will expose this!
 
 # For now, the only parts exposed are these functions:
-export replacement_map, replacement_map!, match_sequentially!
+export replacement_map, replacement_map!, match_sequentially!, IDMatcher
 # all of which take as input the treshold and distance of the
 # `MatchBySSSetDistance` matcher.
 
