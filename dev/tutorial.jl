@@ -30,7 +30,7 @@
 # ```
 
 # which we define in code as
-using Attractors
+using Attractors # part of `DynamicalSystems`, so it re-exports functionality for making them!
 using OrdinaryDiffEq # for accessing advanced ODE Solvers
 
 function modified_lorenz_rule(u, p, t)
@@ -78,7 +78,7 @@ mapper = AttractorsViaRecurrences(ds, grid;
     consecutive_lost_steps = 100,
 )
 
-# This `mapper` can map any initial condition `u` to the corresponding
+# This `mapper` can map any initial condition to the corresponding
 # attractor ID, for example
 
 mapper([-4.0, 5, 0])
@@ -87,7 +87,7 @@ mapper([-4.0, 5, 0])
 
 mapper([4.0, 2, 0])
 
-# the fact that these two different conditions got assigned different IDs means
+# the fact that these two different initial conditions got assigned different IDs means
 # that they converged to a different attractor.
 # The attractors are stored in the mapper internally, to obtain them we
 # use the function
@@ -151,18 +151,23 @@ fs = basins_fractions(mapper, sampler)
 # [`AttractorMapper`](@ref) defines an extendable interface and can be enriched
 # with other methods in the future!
 
-# ## Continuation
+# ## Global continuation
 
-# If you have heard before the word "continuation", then you are likely aware of the **traditional continuation-based bifurcation analysis (CBA)** offered by many software, such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl). Here we offer a completely different kind of continuation called **attractors & basins continuation**.
+# If you have heard before the word "continuation", then you are likely aware of the
+# **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
+# such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
+# Here we offer a completely different kind of continuation called **global continuation**.
 
 # A direct comparison of the two approaches is not truly possible, because they do different things.
-# The traditional linearized continuation analysis continues the curves of individual fixed
-# points across the joint state-parameter space. The attractor and basins continuation first
-# finds all attractors at all parameter values and then _matches_ appropriately similar
-# attractors across different parameters, giving the illusion of continuing them individually.
+# The traditional continuation analysis continues the curves of individual fixed
+# points across the joint state-parameter space and tracks their _local (linear) stability_.
+# The global continuation in Attractors.jl finds all attractors, including chaotic ones,
+# in the whole of the state space (that it searches in), and continues all of these attractors
+# concurrently along a parameter axis.
+# Additionally, this global continuation tracks a _nonlocal_ stability property which by
+# default is the basin fraction.
 
-# This is a fundamental difference. With our approach, one finds all attractors
-# (or almost all, for insufficiently dense sampling). And because all attractors are simultaneously
+# This is a fundamental difference. Because all attractors are simultaneously
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
 # A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
@@ -173,7 +178,7 @@ fs = basins_fractions(mapper, sampler)
 prange = 4.7:0.02:6
 pidx = 1 # index of the parameter
 
-# Then, we may call the [`continuation`](@ref) function.
+# Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
 # This algorithm uses the `mapper` to find all attractors at each parameter value.
@@ -181,31 +186,29 @@ pidx = 1 # index of the parameter
 # label across the parameter axis. You can read the docstring for more details,
 # as this algorithm is quite sophisticated!
 
-# For now we can use all of its default options which are reliable 99% of the time
+# For now we can use all of its default options which are reliable most of the time
 
 rafm = RecurrencesFindAndMatch(mapper)
 
 # and call
 
-fractions_curves, attractors_info = continuation(
+fractions_cont, attractors_cont = global_continuation(
 	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
-attractors_info
-
 # the output is given as two vectors. Each vector is a dictionary
-# mapping attractor IDs to their fractions, or their state space sets, respectively.
+# mapping attractor IDs to their basin fractions, or their state space sets, respectively.
 # Both vectors have the same size as the parameter range.
 # For example, the attractors at the 34-th parameter value are:
 
-attractors_info[34]
+attractors_cont[34]
 
 # There is a fantastic convenience function for animating
 # the attractors evolution, that utilizes things we have
 # already defined:
 
 animate_attractors_continuation(
-    ds, attractors_info, fractions_curves, prange, pidx;
+    ds, attractors_cont, fractions_cont, prange, pidx;
 );
 
 # ```@raw html
@@ -223,7 +226,7 @@ animate_attractors_continuation(
 # parameter axis. We can do this with the convenience function:
 
 fig = plot_basins_attractors_curves(
-	fractions_curves, attractors_info, A -> minimum(A[:, 1]), prange,
+	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange,
 )
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
@@ -232,15 +235,13 @@ fig = plot_basins_attractors_curves(
 # an attractor into a real number for plotting.
 # We can provide more functions to visualize other aspects of the attractors:
 
-using Statistics: std
-
 a2rs = [
     A -> minimum(A[:, 1]),
     A -> log(length(A)), # proxy for "complexity"
 ]
 
 fig = plot_basins_attractors_curves(
-	fractions_curves, attractors_info, a2rs, prange; add_legend = false
+	fractions_cont, attractors_cont, a2rs, prange; add_legend = false
 )
 
 ax1, ax2 = content.((fig[2,1], fig[3,1]))
@@ -265,7 +266,7 @@ using ChaosTools: lyapunov
 
 lis = map(enumerate(prange)) do (i, p) # loop over parameters
     set_parameter!(ds, pidx, p) # important! We use the dynamical system!
-    attractors = attractors_info[i]
+    attractors = attractors_cont[i]
     Dict(k => lyapunov(ds, 2000.0; u0 = A[1]) for (k, A) in attractors)
 end
 
@@ -300,7 +301,7 @@ mfss = map(enumerate(prange)) do (i, p)
     ## We need a special clause here: if there is only 1 attractor,
     ## then there is no MFS. It is undefined. We set it to `NaN`,
     ## which conveniently, will result to nothing being plotted by Makie.
-    attractors = attractors_info[i]
+    attractors = attractors_cont[i]
     if length(attractors) == 1
         return Dict(k => NaN for (k, A) in attractors)
     end
