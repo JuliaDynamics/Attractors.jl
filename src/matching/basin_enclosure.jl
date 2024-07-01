@@ -83,6 +83,8 @@ function _match_attractors(
         # For these estimate the distance of corresponding attractors.
         # All attractors beyond the first get assigned new ID.
     end
+    # Lastly, we need to invert stuff. The replacement map is supposed to map
+    # keys from CURRENT ATTRACTORS into OLD ones! so we need to change this!
     return rmap
 end
 
