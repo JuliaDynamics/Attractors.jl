@@ -12,10 +12,9 @@ the basin of a new attractor or not.
   If `nothing`, it is estimated as half the minimum distance of centroids
   (in contrast to the default more accurate estimation in [`AttractorsViaProximity`](@ref)).
 - `Δt = 1, consecutive_lost_steps = 1000`: also given to [`AttractorsViaProximity`](@ref).
-  Note that attractors that did not converge to one of the current attractors
-  within this number of steps
-  do not get assigned ID -1 as in [`AttractorsViaProximity`](@ref). Rather, they
-  get assigned the next available free ID.
+  We have not yet decided what should happen to attractors that did not converge to one of the current attractors
+  within this number of steps. At the moment they
+  get assigned the next available free ID but this may change in future releases.
 - `distance = Centroid()`: metric to estimate distances between state space sets
   in case there are co-flowing attractors, see below.
 - `seeding = A -> A[end]`: how to select a point from the attractor to see if
