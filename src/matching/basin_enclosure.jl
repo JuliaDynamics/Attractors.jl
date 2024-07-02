@@ -24,45 +24,46 @@ the basin of a new attractor or not.
 
 An attractor `A₋` is a set in a state space that occupies a particular region
 (or, a single point, if it is a fixed point).
-This region is always within the basin of said attractor.
+This region is always within the basin of attraction of said attractor.
 When the parameter of the dynamical system is incremented,
 the attractors `A₊` in the new parameter have basins that may have changed in shape and size.
 
-The previous attractor `A₋` is "matched" (i.e., has its ID changed)
-to a new attractor `A₊` attractor if `A₋` is located inside the basin of attraction of `A₊`.
-To see if `A₋` is in the basin of `A₊`, we first pick a point from `A₊` using the `seeding`
+The new attractor `A₊` is "matched" (i.e., has its ID changed)
+to the old attractor `A₋` attractor if `A₋` is located inside the basin of attraction of `A₊`.
+To see if `A₋` is in the basin of `A₊`, we first pick a point from `A₋` using the `seeding`
 keyword argument. By default this is the last point on the attractor, but it could be anything
 else, including the centroid of the attractor (`mean(A)`).
 This point is given as an initial condition to an [`AttractorsViaProximity`](@ref) mapper
-that maps initial conditions to the `₊` attractors when they are `ε`-close to them.
+that maps initial conditions to the `₊` attractors when
+the trajectories from the initial conditions are `ε`-close to the `₊` attractors.
 
-There can be the situation where multiple `₋` attractors get matched to the same `₊`
+There can be the situation where multiple `₋` attractors converge to the same `₊`
 attractor, which we call "coflowing attractors". In this scenario matching is prioritized
 for the `₋` attractor that is closest to the `₊` in terms of state space set distance,
 which is estimated with the `distance` keyword, which can be anything
-[`setsofsets_distances`](@ref) accepts. The closest `₋` coflowing attractor
-gets assigned the same ID as the `₊` one, while the rest get different unique IDs.
+[`MatchBySSSetDistance`](@ref) accepts. The closest `₊` attractor gets the
+ID of the `₋` closest attractor that converge to it.
 
 Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@cite).
 """
-@kwdef struct BasinEnclosure{E, D, S} <: IDMatcher
+@kwdef struct MatchByBasinEnclosure{E, D, S, T} <: IDMatcher
     ε::E = nothing
     distance::D = Centroid()
     seeding::S = A -> A[end]
-    Δt::Float64 = 1
+    Δt::T = 1
     consecutive_lost_steps::Int = 1000
 end
 
 function matching_map(
-        current_attractors, prev_attractors, matcher::MatchByBasinEnclosure,
+        current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
         ds, pidx, p, pprev, next_id = next_free_id(current_attractors, prev_attractors)
     )
     if matcher.ε === nothing
-        e = ε_from_centroids(attractors)
+        e = ε_from_centroids(current_attractors)
     else
         e = matcher.ε
     end
-    set_parameter!(ds, p, pidx)
+    set_parameter!(ds, pidx, p)
     proximity = AttractorsViaProximity(ds, current_attractors, e;
         horizon_limit = Inf, Ttr = 0, consecutive_lost_steps = matcher.consecutive_lost_steps
     )
@@ -83,15 +84,18 @@ function matching_map(
         end
     end
     # next up are the co-flowing attractors
-    grouped_flows = _grouped_flows(flows)
+    grouped_flows = _grouped_flows(flow)
     # notice the keys of `grouped_flows` are new IDs, same as with `rmap`.
     for (new_ID, old_flowed_to_same) in grouped_flows
-        if length(old_flowed_to_same) == 1
-            rmap[new_ID] = only(old_flowed_to_new)
+        if length(old_flowed_to_same) == 0
+            continue # none of the old IDs converged to the current `new_ID`
+        elseif length(old_flowed_to_same) == 1
+            rmap[new_ID] = only(old_flowed_to_same)
         else # need to resolve coflowing using distances
             a₊ = Dict(new_ID => current_attractors[new_ID])
             a₋ = Dict(old_ID => prev_attractors[old_ID] for old_ID in old_flowed_to_same)
             ssmatcher = MatchBySSSetDistance(; distance = matcher.distance)
+            @show length(a₊), length(a₋)
             matched_rmap = matching_map(a₊, a₋, ssmatcher)
             # this matcher has only one entry, so we use it to match
             # (we don't care what happens to the rest of the old_IDs, as the `rmap`
@@ -103,7 +107,20 @@ function matching_map(
     return rmap
 end
 
-function ε_from_centroids(attractors)
+function ε_from_centroids(attractors::AbstractDict)
+    if length(attractors) == 1 # `attractors` has only 1 attractor
+        attractor = first(attractors)[2] # get the single attractor
+        mini, maxi = minmaxima(attractor)
+        ε = sqrt(sum(abs, maxi .- mini))/10
+        if ε == 0
+            throw(ArgumentError("""
+            Computed `ε = 0` in automatic estimation for `AttractorsViaFeaturizing`, probably because there is
+            only a single attractor that also is a single point. Please provide `ε` manually.
+            """))
+        end
+        return ε
+    end
+    # otherwise compute cross-distances
     distances = setsofsets_distances(attractors, attractors, Centroid())
     alldists = sort!(vcat([collect(values(d)) for (k,d) in distances]...))
     filter!(!iszero, alldists)

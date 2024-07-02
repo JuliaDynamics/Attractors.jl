@@ -57,7 +57,7 @@ while other matchers like [`MatchByBasinEnclosure`](@ref) do, and those require
 expliticly giving values to `ds, p, pprev, pidx` as their default values
 is just `nothing`.
 """
-function matching_map(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
+function matching_map(a₊, a₋, matcher::IDMatcher; kw...)
     # For developers: a private keyword `next_id` is also given to `matching_map`
     # that is utilized in the `match_sequentially!` function.
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
