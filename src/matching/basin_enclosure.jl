@@ -1,3 +1,5 @@
+export MatchByBasinEnclosure
+
 """
     MatchByBasinEnclosure(; kw...) <: IDMatcher
 

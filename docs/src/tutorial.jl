@@ -230,15 +230,14 @@ pidx = 1 # index of the parameter
 
 # Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
-# In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
+# In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
+# which is the generic [`AttractorSeedContinueMatch`](@ref).
 # This algorithm uses the `mapper` to find all attractors at each parameter value.
 # Then, it performs a "matching" step, ensuring a "continuity" of the attractor
-# label across the parameter axis. You can read the docstring for more details,
-# as this algorithm is quite sophisticated!
+# label across the parameter axis. For now we ignore the matching step, leaving it to the
+# default value. We'll use the `mapper` we created above and define
 
-# For now we can use all of its default options which are reliable most of the time
-
-rafm = RecurrencesFindAndMatch(mapper)
+ascm = AttractorSeedContinueMatch(mapper)
 
 # and call
 
@@ -262,7 +261,7 @@ animate_attractors_continuation(
 );
 
 # ```@raw html
-# <video width="auto" controls autoplay loop>
+# <video width="auto" controls loop>
 # <source src="../attracont.mp4" type="video/mp4">
 # </video>
 # ```
@@ -283,23 +282,53 @@ fig = plot_basins_attractors_curves(
 # Bottom panel is a visualization of the tracked attractors.
 # The argument `A -> minimum(A[:, 1])` is simply a function that maps
 # an attractor into a real number for plotting.
-# We can provide more functions to visualize other aspects of the attractors:
 
-a2rs = [
-    A -> minimum(A[:, 1]),
-    A -> log(length(A)), # proxy for "complexity"
-]
+# ## Different matching procedures
 
-fig = plot_basins_attractors_curves(
-	fractions_cont, attractors_cont, a2rs, prange; add_legend = false
+# By default attractors are matched by their distance in state space.
+# The default matcher is [`MatchBySSSetDistance`](@ref), and is given implicitly
+# as a default 2nd argument when creating [`AttractorSeedContinueMatch`](@ref).
+# But like anything else in Attractors.jl, "matchers" also follow a well-defined
+# and extendable interface, see [`IDMatchers`](@ref) for that.
+
+# Let's say that the default matching that we chose above isn't desirable.
+# For example, one may argue that the attractor that pops up
+# at the end of the continuation should have been assigned the same ID
+# as attractor 1, because they are both to the left (see the video above).
+# In reality one wouldn't really request that, because looking
+# the video of attractors above shows that the attractors labelled "1", "2", and "3"
+# are all completely different. But we argue here for example that "3" should have been
+# the same as "1".
+
+# Thankfully during a global continuation the "matching" step is completely
+# separated from the "finding and continuing" step. If we don't like the
+# initial matching, we can call [`match_sequentially!`](@ref) with a new
+# instance of a matcher, and match again, without having to recompute
+# the attractors and their basin fractions.
+# For example, using this matcher:
+
+matcher = MatchBySSSetDistance(use_vanished = true)
+
+# will compare a new attractor with the latest instance of attractors
+# with a given ID that have ever existed, irrespectively if they exist in the
+# current parameter or not. This means, that the attractor "3" would in fact be compared
+# with both attractor "2" and "1", even if "1" doesn't exist in the parameter "3"
+# started existing at. And because "3" is closer to "1" than to "2", it will get
+# matched to attractor "1" and get the same ID.
+
+# Let's see this in action:
+
+attractors_cont2 = deepcopy(attractors_cont)
+
+match_sequentially!(attractors_cont2, matcher)
+
+fig = plot_attractors_curves(
+	attractors_cont2, A -> minimum(A[:, 1]), prange,
 )
 
-ax1, ax2 = content.((fig[2,1], fig[3,1]))
-
-ax1.ylabel = "min(A₁)"
-ax2.ylabel = "log(len(A))"
-
-fig
+# and as we can see, the new attractor at the end of the parameter range got
+# assigned the same ID as the original attractor "1".
+# For more ways of matching attractors see [`IDMatcher`](@ref).
 
 # %% #src
 # ## Enhancing the continuation
@@ -308,7 +337,19 @@ fig
 # It is part of **DynamicalSystems.jl**. Here, we will use the full power of
 # **DynamicalSystems.jl** and enrich the above continuation with various other
 # measures of nonlocal stability, in particular Lyapunov exponents and
-# the minimal fatal shock.
+# the minimal fatal shock. First, let's plot again the continuation
+# and label some things or clarity
+
+
+fig = plot_basins_attractors_curves(
+	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange; add_legend = false
+)
+
+ax1 = content(fig[2,1])
+
+ax1.ylabel = "min(A₁)"
+
+fig
 
 # First, let's estimate the maximum Lyapunov exponent (MLE) for all attractors,
 # using the `lyapunovspectrum` function that comes from the ChaosTools.jl submodule.

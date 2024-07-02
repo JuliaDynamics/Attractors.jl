@@ -11,6 +11,11 @@ export matching_map, matching_map!, match_sequentially!, IDMatcher
     IDMatcher
 
 Supertype of all "matchers" that match can IDs labelling attractors.
+Currently available matchers:
+
+- [`MatchBySSSetDistance`](@ref)
+- [`MatchByBasinEnclosure`](@ref)
+- [`MatchByBasinOverlap`](@ref)
 
 Matchers implement an extendable interface based on the function [`matching_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref),
