@@ -132,7 +132,6 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
     else # we ignore labels in this continuation algorithm
         fs, = basins_fractions(mapper, ics; show_progress = false)
     end
-
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_cont = [fs]
     # The attractors are also stored (and are the primary output)

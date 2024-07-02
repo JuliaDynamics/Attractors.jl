@@ -42,33 +42,25 @@ Additionally, you can provide a `threshold` value. If the distance between two s
 is larger than this `threshold`, then it is guaranteed that the two sets will get assigned
 different ID in the replacement map, and hence, the set in `a₊` gets the next available
 integer as its ID.
-
-When matching during a global continuation, there is an entire sequence of "old"-"new" collections
-of sets for each step of the global continuation. The keyword `use_vanished::Bool` comes
-into play here. If `use_vanised = true`, then
-IDs (and their corresponding sets) that existed before but have vanished are kept in "memory"
-when it comes to matching: the current dictionary values (the sets) are compared to the latest instance
-of all values that have ever existed, each with a unique ID, and get matched to their closest ones.
 """
 @kwdef struct MatchBySSSetDistance{M, T<:Real} <: IDMatcher
     distance::M = Centroid()
     threshold::T = Inf
-    use_vanished::Bool = false
+    use_vanished::Bool = !isinf(threshold)
 end
 
 use_vanished(m::MatchBySSSetDistance) = m.use_vanished
 
 function matching_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
-        i = nothing, # keyword `i` is not used by this mapper
-        kw... # but next_id is propagated
+        kw...
     )
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = sort.(collect.(keys.((a₊, a₋))))
-     _replacement_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold; kw...)
+    _matching_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold; kw...)
 end
 
-function _replacement_map_distances(keys₊, keys₋, distances::Dict, threshold;
-        next_id = next_free_id(keys₊, keys₋)
+function _matching_map_distances(keys₊, keys₋, distances::Dict, threshold;
+        next_id = next_free_id(keys₊, keys₋), kw... # rest of keywords aren't used.
     )
     # Transform distances to sortable collection. Sorting by distance
     # ensures we prioritize the closest matches

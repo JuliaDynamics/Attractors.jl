@@ -94,6 +94,11 @@ i.e., the pairs of `old => new` IDs.
   integers smaller integers) so that all unique IDs
   are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become
   1, 2, 3. The special ID -1 is unaffected by this.
+- `use_vanished`: If `use_vanised = true`, then
+  IDs (and their corresponding sets) that existed before but have vanished are kept in "memory"
+  when it comes to matching: the current dictionary values (the attractor sets) are compared
+  to the latest instance of all values that have ever existed, each with a unique ID,
+  and get matched to their closest ones. The value of this keyword is obtained from the `matcher`.
 """
 function match_sequentially!(
         attractors::AbstractVector{<:Dict}, matcher::IDMatcher;

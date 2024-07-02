@@ -91,7 +91,7 @@ function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
         end
         distances[i] = d
     end
-    _replacement_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
+    _matching_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
 end
 
 function _basin_to_dict(b::AbstractArray{Int})
