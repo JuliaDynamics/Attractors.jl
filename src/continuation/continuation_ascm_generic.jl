@@ -156,22 +156,17 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
             seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding)
         end
         current_attractors = deepcopy(extract_attractors(mapper))
-        # match attractors and basins. This internal function dispatches to
-        # just the `matching_map!` for simple matchers, or is implemented
-        # directly for advanced matchers.
-        rmap = _match_attractors(
-            current_attractors, prev_attractors, acam.matcher,
-            mapper, p, prange[j]
-        )
-        swap_dict_keys!(current_attractors, rmap)
-        swap_dict_keys!(fs, rmap)
-        # and store the result
+        # we don't match attractors here, this happens directly at the end.
+        # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, current_attractors)
+        # This is safe due to the deepcopies
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
-    rmaps =
+    rmaps = match_sequentially!(
+        attractors_cont, matcher; prange, referenced_dynamical_system(mapper), pidx
+    )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont
 end
