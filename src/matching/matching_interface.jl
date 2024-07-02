@@ -198,4 +198,4 @@ _use_vanished(matcher) = false
 
 include("basin_overlap.jl")
 include("sssdistance.jl")
-# include("basin_enclosure.jl")
+include("basin_enclosure.jl")

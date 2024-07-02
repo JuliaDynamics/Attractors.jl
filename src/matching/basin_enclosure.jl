@@ -44,7 +44,7 @@ gets assigned the same ID as the `₊` one, while the rest get different unique 
 
 Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@cite).
 """
-@kwdef struct BasinEnclosure{E, D} <: IDMatcher
+@kwdef struct BasinEnclosure{E, D, S} <: IDMatcher
     ε::E = nothing
     distance::D = Centroid()
     seeding::S = A -> A[end]
