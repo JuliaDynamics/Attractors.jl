@@ -10,6 +10,7 @@ This is a big release, with (hopefully) nothing breaking, but lots of deprecatio
 - New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.
 - New exported function `reset_mapper!` to clear all stored information in an `AttractorMapper`.
 - `AttractorsViaFeaturizing` now always stores the attractors and implements `extract_attractors`.
+- New plotting function `plot_attractors`.
 
 
 ## Deprecations and renaming

@@ -43,9 +43,8 @@ end
 
 p0 = [5.0, 0.1] # parameters
 u0 = [-4.0, 5, 0] # state
-ds = CoupledODEs(modified_lorenz_rule, u0, p0;
-    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01)
-)
+diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
+ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
 # ## Finding attractors
 
@@ -202,7 +201,7 @@ plot_attractors(attractors3)
 # On the other hand, the downside of [`AttractorsViaRecurrences`](@ref) is that
 # it can take quite a while to converge for chaotic high dimensional systems.
 
-# ## Global continuation
+# ## [Global continuation](@id global_cont_tutorial)
 
 # If you have heard before the word "continuation", then you are likely aware of the
 # **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
@@ -302,6 +301,7 @@ ax2.ylabel = "log(len(A))"
 
 fig
 
+# %% #src
 # ## Enhancing the continuation
 
 # The biggest strength of Attractors.jl is that it is not an isolated software.
