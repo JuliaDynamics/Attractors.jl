@@ -159,6 +159,7 @@ The available matchers are:
 
 ```@docs
 MatchBySSSetDistance
+MatchByBasinEnclosure
 MatchByBasinOverlap
 ```
 
@@ -169,7 +170,6 @@ IDMatcher
 matching_map
 matching_map!
 match_sequentially!
-Attractors._match_attractors
 ```
 
 ### Low-level distance functions
@@ -180,6 +180,14 @@ Hausdorff
 StrictlyMinimumDistance
 set_distance
 setsofsets_distances
+```
+
+### Dict utils
+
+```@docs
+unique_keys
+swap_dict_keys!
+next_free_id
 ```
 
 ## Visualization utilities
