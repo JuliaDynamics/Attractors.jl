@@ -157,7 +157,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
         end
         current_attractors = deepcopy(extract_attractors(mapper))
         # match attractors and basins. This internal function dispatches to
-        # just the `replacement_map!` for simple matchers, or is implemented
+        # just the `matching_map!` for simple matchers, or is implemented
         # directly for advanced matchers.
         rmap = _match_attractors(
             current_attractors, prev_attractors, acam.matcher,
@@ -171,6 +171,8 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
+    rmaps =
+    match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont
 end
 

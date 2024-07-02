@@ -58,7 +58,7 @@ end
 
 use_vanished(m::MatchBySSSetDistance) = m.use_vanished
 
-function replacement_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
+function matching_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
         i = nothing, # keyword `i` is not used by this mapper
         kw... # but next_id is propagated
     )

@@ -58,12 +58,12 @@ function match_continuation!(args...; kwargs...)
 end
 
 function match_statespacesets!(a_afte, a_befo; kwargs...)
-    @warn "match_statespacesets! is deprecated. Use `replacement_map!` with `MatchBySSSetDistance`."
-    return replacement_map!(a_afte, a_befo, MatchBySSSetDistance(kwargs...))
+    @warn "match_statespacesets! is deprecated. Use `matching_map!` with `MatchBySSSetDistance`."
+    return matching_map!(a_afte, a_befo, MatchBySSSetDistance(kwargs...))
 end
 
 function match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
-    @warn "`match_basins_ids!` is deprecated, use `replacement_map` with `MatchByBasinOverlap`."
+    @warn "`match_basins_ids!` is deprecated, use `matching_map` with `MatchByBasinOverlap`."
     matcher = MatchByBasinOverlap(threshold)
-    return replacement_map!(b₊, b₋, matcher)
+    return matching_map!(b₊, b₋, matcher)
 end

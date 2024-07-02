@@ -166,8 +166,8 @@ MatchByBasinOverlap
 
 ```@docs
 IDMatcher
-replacement_map
-replacement_map!
+matching_map
+matching_map!
 match_sequentially!
 Attractors._match_attractors
 ```

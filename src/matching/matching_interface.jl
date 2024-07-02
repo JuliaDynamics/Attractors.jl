@@ -3,7 +3,7 @@
 # interface to the users. Perhaps in the future we will expose this!
 
 # For now, the only parts exposed are these functions:
-export replacement_map, replacement_map!, match_sequentially!, IDMatcher
+export matching_map, matching_map!, match_sequentially!, IDMatcher
 # all of which take as input the treshold and distance of the
 # `MatchBySSSetDistance` matcher.
 
@@ -13,7 +13,7 @@ export replacement_map, replacement_map!, match_sequentially!, IDMatcher
 Supertype of all "matchers" that match can IDs labelling attractors.
 
 Matchers implement an extendable interface.
-For simple matcher, one only needs to extend the function [`replacement_map`](@ref).
+For simple matcher, one only needs to extend the function [`matching_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref).
 Matchers that may have more involved behavior requiring the dynamical system and
 current and previous parameter need to extend the internal function
@@ -25,7 +25,7 @@ and you don't have to worry about the matching functions themselves.
 """
 abstract type IDMatcher end
 
-# lowest level function API that falls back to `replacement_map`
+# lowest level function API that falls back to `matching_map`
 """
     _match_attractors(
         current_attractors, prev_attractors, matcher::IDMatcher,
@@ -45,12 +45,12 @@ function _match_attractors(
             current_attractors, prev_attractors, matcher,
             mapper, p, pprev
         )
-    return replacement_map(current_attractors, prev_attractors, matcher)
+    return matching_map(current_attractors, prev_attractors, matcher)
 end
 
 
 """
-    replacement_map(a₊::Dict, a₋::Dict, matcher) → rmap
+    matching_map(a₊::Dict, a₋::Dict, matcher) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
 return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
@@ -67,8 +67,8 @@ Within Attractors.jl they are typically `StateSpaceSet`s representing attractors
 
 Typically the +,- mean after and before some change of parameter of a dynamical system.
 """
-function replacement_map(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
-    # For developers: a private keyword `next_id` is also given to `replacement_map`
+function matching_map(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
+    # For developers: a private keyword `next_id` is also given to `matching_map`
     # that is utilized in the `match_sequentially!` function.
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
 end
@@ -76,13 +76,13 @@ end
 
 
 """
-    replacement_map!(a₊, a₋, matcher) → rmap
+    matching_map!(a₊, a₋, matcher) → rmap
 
-Convenience function that first calls [`replacement_map`](@ref) and then
+Convenience function that first calls [`matching_map`](@ref) and then
 replaces the IDs in `a₊` with this `rmap`.
 """
-function replacement_map!(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
-    rmap = replacement_map(a₊, a₋, matcher; kw...)
+function matching_map!(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
+    rmap = matching_map(a₊, a₋, matcher; kw...)
     swap_dict_keys!(a₊, rmap)
     return rmap
 end
@@ -92,14 +92,14 @@ end
 
 Match the `dicts`, a vector of dictionaries mapping IDs (integers) to values,
 according to the given `matcher` by sequentially applying the
-[`replacement_map`](@ref) function to all elements of `dicts` besides the first one.
+[`matching_map`](@ref) function to all elements of `dicts` besides the first one.
 
 In the context of Attractors.jl `dicts` are typically dictionaries mapping
 IDs to attractors (`StateSpaceSet`s), however the function is generic and would
 work for any values that `matcher` works with.
 
 Return `rmaps`, which is a vector of dictionaries.
-`rmaps[i]` contains the [`replacement_map`](@ref) for `attractors[i+1]`,
+`rmaps[i]` contains the [`matching_map`](@ref) for `attractors[i+1]`,
 i.e., the pairs of `old => new` IDs.
 
 ## Keyword arguments
@@ -171,7 +171,7 @@ function _rematch_ignored!(attractors_cont, matcher)
         # and reappears, it will get a different (incremented) ID as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
         next_id = max(next_id, next_id_a) + 1
-        rmap = replacement_map!(a₊, a₋, matcher; next_id, i)
+        rmap = matching_map!(a₊, a₋, matcher; next_id, i)
         push!(rmaps, rmap)
     end
     return rmaps
@@ -189,7 +189,7 @@ function _rematch_with_past!(attractors_cont, matcher)
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
-        rmap = replacement_map!(a₊, latest_ghosts, matcher; i)
+        rmap = matching_map!(a₊, latest_ghosts, matcher; i)
         push!(rmaps, rmap)
     end
     return rmaps
