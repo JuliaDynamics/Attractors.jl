@@ -191,7 +191,7 @@ Note that all functions have an out-of-place and an in-place form, the in-place 
 E.g.,
 
 ```julia
-heatmap_basins_attractors(grid, basins, attractors; kwargs...)
+fig = heatmap_basins_attractors(grid, basins, attractors; kwargs...)
 heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
 ```
 
@@ -209,6 +209,7 @@ Common keywords for plotting functions in Attractors.jl are:
 ### Basins related
 
 ```@docs
+plot_attractors
 heatmap_basins_attractors
 shaded_basins_heatmap
 ```
