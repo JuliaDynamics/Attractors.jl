@@ -59,7 +59,7 @@ function matching_map(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
 end
 
 """
-    matching_map!(a₊, a₋, matcher) → rmap
+    matching_map!(a₊, a₋, matcher; kw...) → rmap
 
 Convenience function that first calls [`matching_map`](@ref) and then
 replaces the IDs in `a₊` with this `rmap`.
@@ -194,6 +194,8 @@ function _rematch_with_past!(attractors_cont, matcher;
     return rmaps
 end
 
+_use_vanished(matcher) = false
+
 include("basin_overlap.jl")
 include("sssdistance.jl")
-include("basin_enclosure.jl")
+# include("basin_enclosure.jl")

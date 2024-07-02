@@ -164,7 +164,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
     rmaps = match_sequentially!(
-        attractors_cont, matcher; prange, referenced_dynamical_system(mapper), pidx
+        attractors_cont, acam.matcher; prange, ds = referenced_dynamical_system(mapper), pidx
     )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont

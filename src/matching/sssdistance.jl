@@ -49,7 +49,7 @@ integer as its ID.
     use_vanished::Bool = !isinf(threshold)
 end
 
-use_vanished(m::MatchBySSSetDistance) = m.use_vanished
+_use_vanished(m::MatchBySSSetDistance) = m.use_vanished
 
 function matching_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
         kw...
