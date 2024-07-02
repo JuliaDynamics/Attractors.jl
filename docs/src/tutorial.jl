@@ -232,7 +232,9 @@ pidx = 1 # index of the parameter
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
 # which is the generic [`AttractorSeedContinueMatch`](@ref).
-# This algorithm uses the `mapper` to find all attractors at each parameter value.
+# This algorithm uses the `mapper` to find all attractors at each parameter value
+# and from the found attractors it continues them along a parameter axis
+# using a seeding process (see its documentation string).
 # Then, it performs a "matching" step, ensuring a "continuity" of the attractor
 # label across the parameter axis. For now we ignore the matching step, leaving it to the
 # default value. We'll use the `mapper` we created above and define
@@ -242,7 +244,7 @@ ascm = AttractorSeedContinueMatch(mapper)
 # and call
 
 fractions_cont, attractors_cont = global_continuation(
-	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
+	ascm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
 # the output is given as two vectors. Each vector is a dictionary
