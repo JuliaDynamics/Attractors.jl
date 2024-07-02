@@ -21,7 +21,7 @@ end
     @testset "infinite threshold" begin
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
-        rmap = replacement_map!(a_afte, a_befo, default)
+        rmap = matching_map!(a_afte, a_befo, default)
         @test rmap == Dict(1 => 2, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
         @test haskey(a_afte, 2)
@@ -31,7 +31,7 @@ end
         a_afte = Dict(2 => [SVector(0.0, 0.0)], 1 => [SVector(2.0, 2.0)])
         a_afte = Dict(keys(a_afte) .=> StateSpaceSet.(values(a_afte)))
         matcher = MatchBySSSetDistance(threshold = 0.1)
-        rmap = replacement_map!(a_afte, a_befo, matcher)
+        rmap = matching_map!(a_afte, a_befo, matcher)
         @test rmap == Dict(1 => 3, 2 => 1)
         @test a_afte[1] == a_befo[1] == StateSpaceSet([SVector(0.0, 0.0)])
         @test !haskey(a_afte, 2)
@@ -142,21 +142,21 @@ end # Matcher by distance tests
 
     m1 = MatchByBasinOverlap()
 
-    rmap = replacement_map(b2, b1, m1)
+    rmap = matching_map(b2, b1, m1)
     @test rmap[3] == 2
     @test rmap[2] == 1
 
     bx = copy(b2)
-    replacement_map!(bx, b1, m1)
+    matching_map!(bx, b1, m1)
     @test sort(unique(bx)) == [1, 2]
 
-    rmap = replacement_map(b3, bx, m1)
+    rmap = matching_map(b3, bx, m1)
     @test length(rmap) == 1
     @test rmap[3] == 2
 
     # test that there won't be matching with threshold
     m2 = MatchByBasinOverlap(1.99)
-    rmap = replacement_map(b2, b1, m2)
+    rmap = matching_map(b2, b1, m2)
     # here 3 should go to 2, as it overlaps all of 2
     # while 2 cannot go to 1, as it doesn't 50% or more of 1.
     # The next available ID is not 4 though, it is 3, as this is

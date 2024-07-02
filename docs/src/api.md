@@ -159,6 +159,7 @@ The available matchers are:
 
 ```@docs
 MatchBySSSetDistance
+MatchByBasinEnclosure
 MatchByBasinOverlap
 ```
 
@@ -166,10 +167,9 @@ MatchByBasinOverlap
 
 ```@docs
 IDMatcher
-replacement_map
-replacement_map!
+matching_map
+matching_map!
 match_sequentially!
-Attractors._match_attractors
 ```
 
 ### Low-level distance functions
@@ -182,6 +182,14 @@ set_distance
 setsofsets_distances
 ```
 
+### Dict utils
+
+```@docs
+unique_keys
+swap_dict_keys!
+next_free_id
+```
+
 ## Visualization utilities
 
 Several plotting utility functions have been created to make the visualization of the output of Attractors.jl seamless. See the examples page for usage of all these plotting functions.
@@ -191,7 +199,7 @@ Note that all functions have an out-of-place and an in-place form, the in-place 
 E.g.,
 
 ```julia
-heatmap_basins_attractors(grid, basins, attractors; kwargs...)
+fig = heatmap_basins_attractors(grid, basins, attractors; kwargs...)
 heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
 ```
 
@@ -209,6 +217,7 @@ Common keywords for plotting functions in Attractors.jl are:
 ### Basins related
 
 ```@docs
+plot_attractors
 heatmap_basins_attractors
 shaded_basins_heatmap
 ```

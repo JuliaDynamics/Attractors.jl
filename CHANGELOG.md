@@ -7,9 +7,13 @@ This is a big release, with (hopefully) nothing breaking, but lots of deprecatio
 - New central Tutorial for Attractors.jl. It also highlights how to enrich a continuation output with other measures of nonlocal stability.
 - New global continuation algorithm that generalizes RAFM: `AttractorSeedContinueMatch`.
 - There is now an extendable API for "matchers", ways to match state spaces sets across a continuation. See `IDMatcher` for the API.
+- New matcher `MatchBySSSetDistance` that does matching used to do in previous versions.
+- New matcher `MatchByBasinOverlap` that does what `match_basins!` used to do.
+- New matcher `MatchByBasinEnclosure` that is truly brand new.
 - New plotting function `plot_continuation_curves!` to add additional information to the `plot_basins_attractors_curves` type plots.
 - New exported function `reset_mapper!` to clear all stored information in an `AttractorMapper`.
 - `AttractorsViaFeaturizing` now always stores the attractors and implements `extract_attractors`.
+- New plotting function `plot_attractors`.
 
 
 ## Deprecations and renaming

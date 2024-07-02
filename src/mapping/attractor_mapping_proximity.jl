@@ -40,6 +40,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorM
     idx::Vector{Int}
     maxdist::Float64
 end
+
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
         Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false
     )

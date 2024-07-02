@@ -78,6 +78,7 @@ function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
     )
     D = dimension(ds)
     V = eltype(current_state(ds))
+    T, Ttr, Δt = promote(T, Ttr, Δt)
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
         ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,V}}(),
