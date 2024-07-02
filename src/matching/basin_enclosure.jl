@@ -67,25 +67,40 @@ function matching_map(
     proximity = AttractorsViaProximity(ds, current_attractors, e;
         horizon_limit = Inf, Ttr = 0, consecutive_lost_steps = matcher.consecutive_lost_steps
     )
-    rmap = Dict(k => proximity(matcher.seeding(A)) for (k, A) in prev_attractors)
-    # we now process the replacement map `rmap` for co-flowing or diverged attractors.
-    # take care of diverged attractors
-    for (old_ID, new_ID) in rmap
-        if new_ID < 0 # diverged attractors get -1 ID.
-            rmap[old_ID] = next_id
+    # we start building the "flow" map mapping previous attractors
+    # to where they flowed to in current attractors
+    # (notice that `proximity(u)` returns IDs of current attractors)
+    flow = Dict(k => proximity(matcher.seeding(A)) for (k, A) in prev_attractors)
+    # of course, the matching map is the inverse of `flow`
+    rmap = Dict{Int, Int}()
+    # but we need to take care of diverging and co-flowing attractors.
+    # Let's start with diverging ones
+    for (old_ID, new_ID) in flow
+        if new_ID < 0 # diverged attractors get -1 ID
+            # but here we assign them just to the next available integer
+            rmap[new_ID] = next_id
             next_id += 1
+            delete!(flow, old_ID) # and remove from flow map
         end
     end
-    # next, take care of co-flowing attractors
-    if unique(values(rmap)) != length(rmap) # a value is repeated
-        # Do coflowing and assign `next_id` to the least distant coflowing
-        error("Logic for co-flowing attractors is not implemented yet.")
-        # First, find all old_IDs that are mapped to the same new_ID
-        # For these estimate the distance of corresponding attractors.
-        # All attractors beyond the first get assigned new ID.
+    # next up are the co-flowing attractors
+    grouped_flows = _grouped_flows(flows)
+    # notice the keys of `grouped_flows` are new IDs, same as with `rmap`.
+    for (new_ID, old_flowed_to_same) in grouped_flows
+        if length(old_flowed_to_same) == 1
+            rmap[new_ID] = only(old_flowed_to_new)
+        else # need to resolve coflowing using distances
+            a₊ = Dict(new_ID => current_attractors[new_ID])
+            a₋ = Dict(old_ID => prev_attractors[old_ID] for old_ID in old_flowed_to_same)
+            ssmatcher = MatchBySSSetDistance(; distance = matcher.distance)
+            matched_rmap = matching_map(a₊, a₋, ssmatcher)
+            # this matcher has only one entry, so we use it to match
+            # (we don't care what happens to the rest of the old_IDs, as the `rmap`
+            # only cares about what adjustments need to happen to the new_IDs)
+            new_ID, old_ID = only(matched_rmap)# our main `rmap`
+            rmap[new_ID] = old_ID
+        end
     end
-    # Lastly, we need to invert stuff. The replacement map is supposed to map
-    # keys from CURRENT ATTRACTORS into OLD ones! so we need to change this!
     return rmap
 end
 
@@ -94,4 +109,15 @@ function ε_from_centroids(attractors)
     alldists = sort!(vcat([collect(values(d)) for (k,d) in distances]...))
     filter!(!iszero, alldists)
     return minimum(alldists)/2
+end
+
+# group flows so that all old IDs that go to same new ID are in one vector
+function _grouped_flows(flows) # separated into
+    grouped = Dict{Int, Vector{Int}}()
+    oldids = collect(keys(flows))
+    for k in values(flows)
+        grouped[k] = findall(isequal(k), oldids)
+    end
+    return grouped
+    # return Dict(k => findall(isequal(k), flows) for k in values(flows))
 end
