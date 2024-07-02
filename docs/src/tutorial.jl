@@ -98,15 +98,12 @@ attractors = extract_attractors(mapper)
 # `Dict`, which maps attractor IDs (positive integers) to the corresponding quantity.
 # Here the quantity are the attractors themselves, represented as `StateSpaceSet`.
 
-# Let's visualize them
+# We can visualize them with the convenience plotting function
 using CairoMakie
-fig = Figure()
-ax = Axis(fig[1,1]; title = "bistable lorenz-like")
-for (k, A) in attractors
-    scatter!(ax, A[:, 1], A[:, 2]; label = "ID = $(k)")
-end
-axislegend(ax; position = :lt)
-fig
+plot_attractors(attractors)
+
+# (this convenience function is a simple loop over scattering the values of
+# the `attractors` dictionary)
 
 # In our example system we see that for the chosen parameters there are two coexisting attractors:
 # a limit cycle and a chaotic attractor.
@@ -150,6 +147,60 @@ fs = basins_fractions(mapper, sampler)
 # the documentation of [`AttractorMapper`](@ref) for possible subtypes.
 # [`AttractorMapper`](@ref) defines an extendable interface and can be enriched
 # with other methods in the future!
+
+# ## Different Attractor Mapper
+
+# Attractors.jl utilizes composable interfaces throughout its functionality.
+# In the above example we used one particular method to find attractors,
+# via recurrences in the state space. An alternative is [`AttractorsViaFeaturizing`](@ref).
+
+# For this method, we need to provide a "featurizing" function that given an
+# trajectory (which is likely an attractor), it returns some features that will
+# hopefully distinguish different attractors in a subsequent grouping step.
+# Finding good features is typically a trial-and-error process, but for our system
+# we already have some good features:
+
+using Statistics: mean
+
+function featurizer(A, t) # t is the time vector associated with trajectory A
+    xmin = minimum(A[:, 1])
+    ycen = mean(A[:, 2])
+    return SVector(xmin, ycen)
+end
+
+# from which we initialize
+
+mapper2 = AttractorsViaFeaturizing(ds, featurizer; Δt = 0.1)
+
+# [`AttractorsViaFeaturizing`](@ref) allows for a third input, which is a
+# "grouping configuration", that dictates how features will be grouped into
+# attractors, as features are extracted from (randomly) sampled state space trajectories.
+# In this tutorial we leave it at its default value, which is clustering using the DBSCAN
+# algorithm. The keyword arguments are meta parameters which control how long
+# to integrate each initial condition for, and what sampling time, to produce
+# a trajectory `A` given to the `featurizer` function. Because one of the two attractors
+# is chaotic, we need denser sampling time than the default.
+
+# We can use `mapper2` exactly as `mapper`:
+
+fs2 = basins_fractions(mapper2, sampler)
+
+attractors2 = extract_attractors(mapper2)
+
+plot_attractors(attractors2)
+
+# This mapper also found the attractors, but we should warn you: this mapper is less
+# robust than [`AttractorsViaRecurrences`](@ref). One of the reasons for this is
+# that [`AttractorsViaFeaturizing`](@ref) is not auto-terminating. For example, if we do not
+# have enough transient integration time, the two attractors will get confused into one:
+
+mapper3 = AttractorsViaFeaturizing(ds, featurizer; Ttr = 10, Δt = 0.1)
+fs3 = basins_fractions(mapper3, sampler)
+attractors3 = extract_attractors(mapper3)
+plot_attractors(attractors3)
+
+# On the other hand, the downside of [`AttractorsViaRecurrences`](@ref) is that
+# it can take quite a while to converge for chaotic high dimensional systems.
 
 # ## Global continuation
 
