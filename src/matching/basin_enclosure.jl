@@ -52,22 +52,21 @@ Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@ci
     consecutive_lost_steps::Int = 1000
 end
 
-function _match_attractors(
+function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure,
-        mapper, p, pprev
+        ds, pidx, p, pprev, next_id = next_free_id(current_attractors, prev_attractors)
     )
-    ds = referenced_dynamical_system(mapper)
     if matcher.ε === nothing
         e = ε_from_centroids(attractors)
     else
         e = matcher.ε
     end
+    set_parameter!(ds, p, pidx)
     proximity = AttractorsViaProximity(ds, current_attractors, e;
         horizon_limit = Inf, Ttr = 0, consecutive_lost_steps = matcher.consecutive_lost_steps
     )
     rmap = Dict(k => proximity(matcher.seeding(A)) for (k, A) in prev_attractors)
     # we now process the replacement map `rmap` for co-flowing or diverged attractors.
-    next_id = next_free_id(current_attractors, prev_attractors)
     # take care of diverged attractors
     for (old_ID, new_ID) in rmap
         if new_ID < 0 # diverged attractors get -1 ID.

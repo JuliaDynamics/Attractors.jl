@@ -12,68 +12,50 @@ export matching_map, matching_map!, match_sequentially!, IDMatcher
 
 Supertype of all "matchers" that match can IDs labelling attractors.
 
-Matchers implement an extendable interface.
-For simple matcher, one only needs to extend the function [`matching_map`](@ref).
-This function is used by the higher level function [`match_sequentially!`](@ref).
-Matchers that may have more involved behavior requiring the dynamical system and
-current and previous parameter need to extend the internal function
-[`_match_attractors`](@ref). This function is utilized by [`AttractorSeedContinueMatch`](@ref).
-
-As a user you typically only care about given an instance of `IDMatcher`
-to a global_continuation algorithm such as [`AttractorSeedContinueMatch`](@ref),
-and you don't have to worry about the matching functions themselves.
+Matchers implement an extendable interface based on the function [`matching_map`](@ref).
+This function is used by the higher level function [`match_sequentially!`](@ref),
+which can be called after any call to a global continuation to match attractors
+differently, if the matching used originally during the continuation was not the best.
 """
 abstract type IDMatcher end
 
-# lowest level function API that falls back to `matching_map`
 """
-    _match_attractors(
-        current_attractors, prev_attractors, matcher::IDMatcher,
-        mapper::AttractorMapper, p, pprev
-    )
-
-Return the replacement map, mapping IDs of current attractors to the ones
-they match to in previous attractors, according to `matcher`, and also given
-the mapper used in a continuation process, current and previous parameter values.
-
-The dynamical system referenced by `mapper `can be obtained by
-```
-Attractors.referenced_dynamical_system(mapper)
-```
-"""
-function _match_attractors(
-            current_attractors, prev_attractors, matcher,
-            mapper, p, pprev
-        )
-    return matching_map(current_attractors, prev_attractors, matcher)
-end
-
-
-"""
-    matching_map(a₊::Dict, a₋::Dict, matcher) → rmap
+    matching_map(
+        a₊::Dict, a₋::Dict, matcher;
+        ds::DynamicalSystem, p, pprev, pidx, next_id
+    ) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
 return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
 to IDs (keys) in dictionary `a₋`, so that
 so that values in `a₊` that are the "closest" to values in `a₋` get assigned the
 same key as in `a₋`. In this way keys of `a₊` are "matched" to keys of `a₋`.
-Use [`swap_dict_keys`](@ref) to apply `rmap` to `a₊`.
+Use [`swap_dict_keys`](@ref) to apply `rmap` to `a₊`
+or to other dictionaries with same keys as `a₊`.
 
-How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`,
-but in the majority of cases `matcher` is just an instance of [`MatchBySSSetDistance`](@ref).
+How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`.
 
 The values contained in `a₊, a₋` can be anything supported by `matcher`.
 Within Attractors.jl they are typically `StateSpaceSet`s representing attractors.
-
 Typically the +,- mean after and before some change of parameter of a dynamical system.
+
+## Keyword arguments
+
+- `ds`: the dynamical system that generated `a₊, a₋`.
+- `p, pprev, pidx`: the parameter values corresponding to `a₊, a₋` and the index the
+  parameter has in `ds`.
+- `next_id = next_free_id(a₊, a₋)`: the ID to give to values of  `a₊` that cannot be
+  matched to `a₋` and hence must obtain a new unique ID.
+
+Some matchers like [`MatchBySSSetDistance`](@ref) do not utilize `ds, p, pprev, pidx` in any way
+while other matchers like [`MatchByBasinEnclosure`](@ref) do, and those require
+expliticly giving values to `ds, p, pprev, pidx`.
 """
 function matching_map(a₊::AbstractDict, a₋, matcher::IDMatcher; kw...)
     # For developers: a private keyword `next_id` is also given to `matching_map`
     # that is utilized in the `match_sequentially!` function.
     throw(ArgumentError("Not implemented for $(typeof(matcher))"))
 end
-
-
 
 """
     matching_map!(a₊, a₋, matcher) → rmap
