@@ -137,7 +137,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
     fractions_cont = [fs]
     # The attractors are also stored (and are the primary output)
     prev_attractors = deepcopy(extract_attractors(mapper))
-    attractors_cont = [prev_attractors]
+    attractors_cont = [deepcopy(prev_attractors)] # we need the copy
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
     # Continue loop over all remaining parameters
     for (j, p) in enumerate(prange[2:end])

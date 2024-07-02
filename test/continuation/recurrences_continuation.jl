@@ -45,6 +45,8 @@ using Random
     for (i, r) in enumerate(rrange)
 
         fs = fractions_cont[i]
+        k = sort!(collect(keys(fs)))
+        @test k == sort!(collect(keys(a[i]))) # no -1 ID, so keys must match
         if r < 0.5
             k = sort!(collect(keys(fs)))
             @test length(k) == 1
