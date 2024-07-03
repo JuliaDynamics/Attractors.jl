@@ -1,4 +1,4 @@
-# # Comparison with traditional continuation software
+# # [Comparison with traditional continuation & bifurcation software](@id bfkit_comparison)
 
 # !!! note "Continues from tutorial"
 #     This page continues after the end of the main [Tutorial](@ref)!
@@ -6,7 +6,7 @@
 
 # As we discussed in the subsection on [global continuation](@ref global_cont_tutorial),
 # the approach of Attractors.jl is fundamentally different from traditional continuation
-# software like AUTO, MatCont, BifurcationKit.jl.
+# and bifurcation software like AUTO, MatCont, BifurcationKit.jl.
 # Nevertheless in this page we will compare using BifurcationKit.jl
 # to attempt to find and continue the limit cycle of the tutorial modified Lorenz-like system.
 # We forfeit looking for the chaotic attractors, as to our knowledge there exists no
@@ -22,16 +22,13 @@
 # To use BifurcationKit.jl (BK) for periodic orbits (POs) we need to choose one of its
 # several Newton-based algorithms for POs, and in addition supply it with
 # both an initial guess for the location of the periodic orbit, as well as
-# a guess for the period. Finding a periodic orbit this way is already considered
+# a guess for the period.
+# # In this example we translate almost verbatim the example of the [Periodic predator prey model](https://bifurcationkit.github.io/BifurcationKitDocs.jl/v0.3/tutorials/ode/tutorialsCodim2PO/#Periodic-predator-prey-model)).
+# from the BK docs. Finding a periodic orbit this way is already considered
 # an advanced use case in BK documentation,
-# requiring "high level of knowledge of (numerical) bifurcation theory"
-# (following the example of the [Periodic predator prey model](https://bifurcationkit.github.io/BifurcationKitDocs.jl/v0.3/tutorials/ode/tutorialsCodim2PO/#Periodic-predator-prey-model)).
+# requiring "high level of knowledge of (numerical) bifurcation theory".
 # For Attractors.jl on the other hand, this is as basic of a use-case as it can get,
 # which highlights the simplicity of our computational approach.
-# Notice also that, at least from the public interface,
-# it is not possible to use BK outside of a continuation context, to e.g.,
-# just find a limit cycle at a particular parameter. We have to do the full continuation
-# or limit it to an infinitesimally small parameter range.
 
 # To use BK we need to import it and initialize
 # various continuation-related structures.
@@ -215,9 +212,6 @@ fractions_cont, attractors_cont = global_continuation(
 # Not only only that, but some of the found attractors are _chaotic_!
 # The code did not find any unstable sets, such as the unstable branch of the limit
 # cycle, which the traditional continuation would have found (if it worked).
-# Although, in chaotic dynamical systems this unstable component would not be of
-# much use as a chaotic attractor already "hides" an infinite number of
-# unstable periodic orbits.
 
 # The code is relatively agnostic to the dynamical system
 # as well, meaning, the algorithms are robust: the recurrences mapper would work for

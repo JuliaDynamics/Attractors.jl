@@ -424,3 +424,6 @@ fig
 
 # And that's the end of the tutorial! See the [examples](@ref examples) for
 # more runnable code, and see the [API](@ref) for a list of all functions and algorithms!
+# See also the [comparison](@ref bfkit_comparison) with traditional continuation software
+# like AUTO, MatCont, or BifurcationKit.jl, to get an explicit idea of a scenario
+# where using Attractors.jl is clearly beneficial over the alternatives.
