@@ -17,7 +17,7 @@
 # when using Attractors.jl or traditional continuation tools to study
 # **complex** dynamical systems.
 
-## BifurcationKit.jl version
+# ## BifurcationKit.jl version
 
 # To use BifurcationKit.jl (BK) for periodic orbits (POs) we need to choose one of its
 # several Newton-based algorithms for POs, and in addition supply it with
@@ -208,10 +208,8 @@ fractions_cont, attractors_cont = global_continuation(
 # This code takes about 15 seconds to run.
 # Of course, the above code didn't find and continue just a single limit cycle.
 # It found all system attractors, and it didn't require a specific initial condition
-# as a guess, but rather a box that may contain attractors.
+# as a guess, or a period, but rather an arbitrarily large box that may contain attractors.
 # Not only only that, but some of the found attractors are _chaotic_!
-# The code did not find any unstable sets, such as the unstable branch of the limit
-# cycle, which the traditional continuation would have found (if it worked).
 
 # The code is relatively agnostic to the dynamical system
 # as well, meaning, the algorithms are robust: the recurrences mapper would work for
@@ -221,4 +219,8 @@ fractions_cont, attractors_cont = global_continuation(
 # in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable,
 # however the other way around isn't guaranteed.
 
-plot_basins_attractors_curves(fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange)
+# Now, this example is one that definitely we Attractors.jl is much more suitable for.
+# BK can do some things not possible (yet) with Attractors.jl, such find
+# the unstable branches of fixed points and limit cycles (in simpler example systems than the one here).
+# Now, whether the unstable branches are useful or not, depends on the research question.
+# BK however is also optimised for PDE systems, while Attractors.jl isn't.

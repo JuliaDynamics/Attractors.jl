@@ -13,7 +13,7 @@ Literate.markdown(
 )
 # and the comparison with BFKIT
 Literate.markdown(
-    joinpath(@__DIR__, "src", "tutorial.jl"), joinpath(@__DIR__, "src");
+    joinpath(@__DIR__, "src", "bfkit_comparison.jl"), joinpath(@__DIR__, "src");
     credit = false,
     flavor = Literate.CommonMarkFlavor()
 )
