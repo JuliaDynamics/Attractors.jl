@@ -112,11 +112,13 @@ argspo = (record_from_solution = (x, p) -> begin
 	end,
 )
 
-# and _finally_ call the continuation from BK, while providing a predictor
-# for the continuation (PALC)
+# we also define the predictor
+predictor = BK.PALC(tangent = BK.Bordered())
+
+# and _finally_ call the continuation from BK
 
 try
-    br_fold_sh = BK.continuation(probsh, cish, BK.PALC(tangent = BK.Bordered()), opts_br;
+    br_fold_sh = BK.continuation(probsh, cish, predictor, opts_br;
         verbosity = 3, plot = false,
         argspo...
     )
@@ -133,26 +135,29 @@ end
 # continuation or traditional bifurcation-based continuation), the Attractors.jl
 # full code is:
 
-# ```julia
-# grid = (
-#     range(-10.0, 10.0; length = 100), # x
-#     range(-15.0, 15.0; length = 100), # y
-#     range(-15.0, 15.0; length = 100), # z
-# )
+ds = CoupledODEs(modified_lorenz_rule!, u0, p0)
 
-# mapper = AttractorsViaRecurrences(ds, grid;
-#     consecutive_recurrences = 1000, attractor_locate_steps = 1000,
-#     consecutive_lost_steps = 100,
-# )
+grid = (
+    range(-10.0, 10.0; length = 100), # x
+    range(-15.0, 15.0; length = 100), # y
+    range(-15.0, 15.0; length = 100), # z
+)
 
-# sampler, = statespace_sampler(grid)
+mapper = AttractorsViaRecurrences(ds, grid;
+    consecutive_recurrences = 1000,
+    attractor_locate_steps = 1000,
+    consecutive_lost_steps = 100,
+)
 
-# rafm = RecurrencesFindAndMatch(mapper)
+sampler, = statespace_sampler(grid)
 
-# fractions_cont, attractors_cont = global_continuation(
-# 	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
-# )
-# ```
+matcher = MatchBySSSetDistance()
+
+algo = AttractorSeedContinueMatch(mapper, matcher)
+
+fractions_cont, attractors_cont = global_continuation(
+	algo, prange, pidx, sampler; samples_per_parameter = 1_000
+)
 
 # Of course, the above code didn't find and continue just a single limit cycle.
 # It found all system attractors, and it didn't require a specific initial condition
