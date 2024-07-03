@@ -92,8 +92,8 @@ point_on_lc = [
     -5.178825669659272,
 ]
 
-ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 100.0), p0, saveat = 0.01)
-sol = OrdinaryDiffEq.solve(ode_prob; alg = Vern9())
+ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 100.0), p0)
+sol = OrdinaryDiffEq.solve(ode_prob; alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
 lines(sol.t, sol[1, :])
 
 # We need an estimate of the period besides providing the full DifferentialEquations.jl
@@ -165,7 +165,7 @@ br_fold_sh = BK.continuation(probsh, cish, predictor, opts_br;
 
 # ## Attractors.jl version
 
-# We have already seen the code for this version in the main [Tutorial](@ref),
+# We have already seen the code for this version in the main [Tutorial](@ref tutorial),
 # but here we copy it again using exactly the same input as that given to BK.
 # To make the comparison explicit, let's also make an enumerated list for
 # the Attractors.jl info:
