@@ -220,7 +220,10 @@ fractions_cont, attractors_cont = global_continuation(
 # however the other way around isn't guaranteed.
 
 # Now, this example is one that definitely we Attractors.jl is much more suitable for.
+# But to be transparent and discuss the silver linings,
 # BK can do some things not possible (yet) with Attractors.jl, such find
 # the unstable branches of fixed points and limit cycles (in simpler example systems than the one here).
 # Now, whether the unstable branches are useful or not, depends on the research question.
-# BK however is also optimised for PDE systems, while Attractors.jl isn't.
+# Beyond this however, BK is also optimised for PDE systems, while Attractors.jl isn't.
+# A more thorough comparison of the two approaches (that was based on and older and
+# less powerful version of Attractors.jl) is discussed in [Datseris2023](@cite).
