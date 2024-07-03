@@ -102,7 +102,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     )
     # Scatter attractors
     plot_attractors!(ax, attractors;
-        ukeys, colors, access, markers, axislegend = false,
+        ukeys, colors, access, markers,
         labels, add_legend,
         sckwargs = (strokewidth = 1.5, strokecolor = :white,)
     )

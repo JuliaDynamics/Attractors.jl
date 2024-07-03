@@ -9,7 +9,7 @@ the basin of a new attractor or not.
 ## Keyword arguments
 
 - `ε = nothing`: distance threshold given to [`AttractorsViaProximity`](@ref).
-  If `nothing`, it is estimated as half the minimum distance of centroids
+  If `nothing`, it is estimated as a quarter of the minimum distance of centroids
   (in contrast to the default more accurate estimation in [`AttractorsViaProximity`](@ref)).
 - `Δt = 1, consecutive_lost_steps = 1000`: also given to [`AttractorsViaProximity`](@ref).
   We have not yet decided what should happen to attractors that did not converge to one of the current attractors
@@ -124,7 +124,7 @@ function ε_from_centroids(attractors::AbstractDict)
     distances = setsofsets_distances(attractors, attractors, Centroid())
     alldists = sort!(vcat([collect(values(d)) for (k,d) in distances]...))
     filter!(!iszero, alldists)
-    return minimum(alldists)/2
+    return minimum(alldists)/4
 end
 
 # group flows so that all old IDs that go to same new ID are in one vector
