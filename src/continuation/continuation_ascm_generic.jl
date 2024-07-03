@@ -132,12 +132,11 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
     else # we ignore labels in this continuation algorithm
         fs, = basins_fractions(mapper, ics; show_progress = false)
     end
-
     # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
     fractions_cont = [fs]
     # The attractors are also stored (and are the primary output)
     prev_attractors = deepcopy(extract_attractors(mapper))
-    attractors_cont = [prev_attractors]
+    attractors_cont = [deepcopy(prev_attractors)] # we need the copy
     ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
     # Continue loop over all remaining parameters
     for (j, p) in enumerate(prange[2:end])
@@ -156,21 +155,18 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
             seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding)
         end
         current_attractors = deepcopy(extract_attractors(mapper))
-        # match attractors and basins. This internal function dispatches to
-        # just the `replacement_map!` for simple matchers, or is implemented
-        # directly for advanced matchers.
-        rmap = _match_attractors(
-            current_attractors, prev_attractors, acam.matcher,
-            mapper, p, prange[j]
-        )
-        swap_dict_keys!(current_attractors, rmap)
-        swap_dict_keys!(fs, rmap)
-        # and store the result
+        # we don't match attractors here, this happens directly at the end.
+        # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, current_attractors)
+        # This is safe due to the deepcopies
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
     end
+    rmaps = match_sequentially!(
+        attractors_cont, acam.matcher; prange, ds = referenced_dynamical_system(mapper), pidx
+    )
+    match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont
 end
 

@@ -31,6 +31,41 @@ function markers_from_keys(ukeys)
 end
 
 ##########################################################################################
+# Attractors
+##########################################################################################
+function Attractors.plot_attractors(a; kw...)
+    fig = Figure()
+    ax = Axis(fig[1,1])
+    plot_attractors!(ax, a; kw...)
+    return fig
+end
+
+function Attractors.plot_attractors!(ax, attractors;
+        ukeys = sort(collect(keys(attractors))), # internal argument just for other keywords
+        colors = colors_from_keys(ukeys),
+        markers = markers_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        add_legend = length(ukeys) < 7,
+        access = SVector(1, 2),
+        sckwargs = (strokewidth = 0.5, strokecolor = :black,)
+    )
+    for (i, k) ∈ enumerate(ukeys)
+        k ≤ 0 && continue
+        A = attractors[k]
+        x, y = columns(A[:, access])
+        scatter!(ax, x, y;
+            color = (colors[k], 0.9), markersize = 20,
+            marker = markers[k],
+            label = "$(labels[k])",
+            sckwargs...
+        )
+    end
+    add_legend && axislegend(ax)
+    return
+end
+
+
+##########################################################################################
 # Basins
 ##########################################################################################
 function Attractors.heatmap_basins_attractors(grid, basins::AbstractArray, attractors; kwargs...)
@@ -61,25 +96,16 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     ids = 1:length(ukeys)
     replace_dict = Dict(k => i for (i, k) in enumerate(ukeys))
     basins_to_plot = replace(basins, replace_dict...)
-
     heatmap!(ax, grid..., basins_to_plot;
         colormap = cmap,
         colorrange = (ids[1]-0.5, ids[end]+0.5),
     )
     # Scatter attractors
-    for (i, k) ∈ enumerate(ukeys)
-        k ≤ 0 && continue
-        A = attractors[k]
-        x, y = columns(A[:, access])
-        scatter!(ax, x, y;
-            color = colors[k], markersize = 20,
-            marker = markers[k],
-            strokewidth = 1.5, strokecolor = :white,
-            label = "$(labels[k])",
-        )
-    end
-    # Add legend using colors only
-    add_legend && axislegend(ax)
+    plot_attractors!(ax, attractors;
+        ukeys, colors, access, markers,
+        labels, add_legend,
+        sckwargs = (strokewidth = 1.5, strokecolor = :white,)
+    )
     return ax
 end
 

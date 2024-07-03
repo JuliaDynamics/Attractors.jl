@@ -6,16 +6,25 @@ using Attractors.StateSpaceSets
 import Documenter
 using Literate
 
+# literate the tutorial
 Literate.markdown(
     joinpath(@__DIR__, "src", "tutorial.jl"), joinpath(@__DIR__, "src");
     credit = false
 )
+# and the comparison with BFKIT
+Literate.markdown(
+    joinpath(@__DIR__, "src", "bfkit_comparison.jl"), joinpath(@__DIR__, "src");
+    credit = false,
+    flavor = Literate.CommonMarkFlavor()
+)
+
 
 pages = [
     "index.md",
     "tutorial.md",
     "api.md",
     "examples.md",
+    Documenter.hide("bfkit_comparison.md"),
     "references.md",
     Documenter.hide("recurrences_animation.md"),
 ]

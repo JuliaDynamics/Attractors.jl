@@ -14,7 +14,7 @@ have the most overlap (in pixels). This overlap is normalized in 0-1 (with 1 mea
 100% of a basin in `b₋` is overlaping with some other basin in `b₊`).
 Therefore, the values this matcher compares are _full basins of attraction_,
 not attractors themselves (hence why it can't be given to [`AttractorSeedContinueMatch`](@ref)).
-Rather, you may use this matcher with [`replacement_map`](@ref).
+Rather, you may use this matcher with [`matching_map`](@ref).
 
 The `threshold` can dissallow matching between basins that do not have enough overlap.
 Basins whose overlap is less than `1/threshold` are guaranteed
@@ -25,13 +25,13 @@ different IDs guaranteed. By default, there is no threshold.
 The information of the basins of attraction is typically an `Array`,
 i.e., the direct output of [`basins_of_attraction`](@ref).
 For convenience, as well as backwards compatibility, when using
-[`replacement_map`](@ref) with this mapper you may provide two `Array`s `b₊, b₋`
+[`matching_map`](@ref) with this mapper you may provide two `Array`s `b₊, b₋`
 representing basins of attraction after and before, and the conversion to dictionaries
 will happen internally as it is supposed to.
 To replace the `IDs` in `b₊` given the replacement map just call `replace!(b₊, rmap...)`,
-or use the in-place version [`replacement_map!`](@ref) directly.
+or use the in-place version [`matching_map!`](@ref) directly.
 
-A lower-level input for this matcher in [`replacement_map`](@ref)
+A lower-level input for this matcher in [`matching_map`](@ref)
 can be dictionaries mapping IDs to vectors of cartesian indices,
 where the indices mean which parts of the state space belong to which ID
 """
@@ -42,27 +42,27 @@ MatchByBasinOverlap() = MatchByBasinOverlap(Inf)
 
 
 """
-    replacement_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap)
+    matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap)
 
-Special case of `replacement_map` where instead of having as input dictionaries
+Special case of `matching_map` where instead of having as input dictionaries
 mapping IDs to values, we have `Array`s which represent basins of
 attraction and whose elements are the IDs.
 
 See [`MatchByBasinOverlap`](@ref) for how matching works.
 """
-function replacement_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
+function matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
     a₊, a₋ = _basin_to_dict.((b₊, b₋))
-    replacement_map(a₊, a₋, matcher; i)
+    matching_map(a₊, a₋, matcher; i)
 end
 
-function replacement_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
-    rmap = replacement_map(b₊, b₋, matcher; i)
+function matching_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
+    rmap = matching_map(b₊, b₋, matcher; i)
     replace!(b₊, rmap...)
     return rmap
 end
 
 # actual implementation
-function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
+function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
         i = nothing, kw...
     )
     # input checks
@@ -91,7 +91,7 @@ function replacement_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
         end
         distances[i] = d
     end
-    _replacement_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
+    _matching_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
 end
 
 function _basin_to_dict(b::AbstractArray{Int})

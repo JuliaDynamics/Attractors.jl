@@ -5,15 +5,15 @@
 [![Paper](https://img.shields.io/badge/Cite-DOI:10.1063/5.0159675-purple)](https://arxiv.org/abs/2304.12786)
 [![CI](https://github.com/JuliaDynamics/Attractors.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/Attractors.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/JuliaDynamics/Attractors.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/Attractors.jl)
-[![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/Attractors)](https://pkgs.genieframework.com?packages=Attractors)
+[![Package Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Ftotal_downloads%2FAttractors&query=total_requests&label=Downloads)](http://juliapkgstats.com/pkg/Attractors)
 
 A Julia module for
 
-- finding attractors of arbitrary dynamical systems
+- finding all attractors, and all types of attractors, of arbitrary dynamical systems
 - finding their basins of attraction or the state space fractions of the basins
 - analyzing global stability of attractors (also called non-local stability or  resilience)
-- "continuing" the attractors and their basins over a parameter range
-- finding the basin boundaries and analyzing their fractal properties
+- "continuing" the attractors and their basins, or other measures of stability, over a parameter range
+- finding the basin boundaries and edges states and analyzing their fractal properties
 - tipping points related functionality for systems with known dynamic rule
 - and more!
 

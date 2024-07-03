@@ -1,4 +1,4 @@
-export unique_keys, swap_dict_keys!
+export unique_keys, swap_dict_keys!, next_free_id
 
 # Utility functions for managing dictionary keys that are useful
 # in continuation and attractor matching business
@@ -7,9 +7,9 @@ export unique_keys, swap_dict_keys!
 # surprising, one of the hardest things to code in Attractors.jl.
 
 """
-    swap_dict_keys!(d::Dict, replacement_map::Dict)
+    swap_dict_keys!(d::Dict, matching_map::Dict)
 
-Swap the keys of a dictionary `d` given a `replacement_map`
+Swap the keys of a dictionary `d` given a `matching_map`
 which maps old keys to new keys. Also ensure that a swap can happen at most once,
 e.g., if input `d` has a key `4`, and `rmap = Dict(4 => 3, 3 => 2)`,
 then the key `4` will be transformed to `3` and not further to `2`.
@@ -97,9 +97,14 @@ function unique_keys(v)
     return sort!(collect(unique_keys))
 end
 
+
+"""
+    next_free_id(new::Dict, old::Dict)
+
+Return the minimum key of the "new" dictionary
+that doesn't exist in the "old" dictionary.
+"""
 function next_free_id(a₊::AbstractDict, a₋::AbstractDict)
-    # the next available integer is the minimum key of the "new" dictionary
-    # that doesn't exist in the "old" dictionary
     s = setdiff(keys(a₊), keys(a₋))
     nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
     return nextid

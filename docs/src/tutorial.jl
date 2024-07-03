@@ -43,9 +43,8 @@ end
 
 p0 = [5.0, 0.1] # parameters
 u0 = [-4.0, 5, 0] # state
-ds = CoupledODEs(modified_lorenz_rule, u0, p0;
-    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01)
-)
+diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
+ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
 # ## Finding attractors
 
@@ -98,15 +97,12 @@ attractors = extract_attractors(mapper)
 # `Dict`, which maps attractor IDs (positive integers) to the corresponding quantity.
 # Here the quantity are the attractors themselves, represented as `StateSpaceSet`.
 
-# Let's visualize them
+# We can visualize them with the convenience plotting function
 using CairoMakie
-fig = Figure()
-ax = Axis(fig[1,1]; title = "bistable lorenz-like")
-for (k, A) in attractors
-    scatter!(ax, A[:, 1], A[:, 2]; label = "ID = $(k)")
-end
-axislegend(ax; position = :lt)
-fig
+plot_attractors(attractors)
+
+# (this convenience function is a simple loop over scattering the values of
+# the `attractors` dictionary)
 
 # In our example system we see that for the chosen parameters there are two coexisting attractors:
 # a limit cycle and a chaotic attractor.
@@ -151,7 +147,61 @@ fs = basins_fractions(mapper, sampler)
 # [`AttractorMapper`](@ref) defines an extendable interface and can be enriched
 # with other methods in the future!
 
-# ## Global continuation
+# ## Different Attractor Mapper
+
+# Attractors.jl utilizes composable interfaces throughout its functionality.
+# In the above example we used one particular method to find attractors,
+# via recurrences in the state space. An alternative is [`AttractorsViaFeaturizing`](@ref).
+
+# For this method, we need to provide a "featurizing" function that given an
+# trajectory (which is likely an attractor), it returns some features that will
+# hopefully distinguish different attractors in a subsequent grouping step.
+# Finding good features is typically a trial-and-error process, but for our system
+# we already have some good features:
+
+using Statistics: mean
+
+function featurizer(A, t) # t is the time vector associated with trajectory A
+    xmin = minimum(A[:, 1])
+    ycen = mean(A[:, 2])
+    return SVector(xmin, ycen)
+end
+
+# from which we initialize
+
+mapper2 = AttractorsViaFeaturizing(ds, featurizer; Δt = 0.1)
+
+# [`AttractorsViaFeaturizing`](@ref) allows for a third input, which is a
+# "grouping configuration", that dictates how features will be grouped into
+# attractors, as features are extracted from (randomly) sampled state space trajectories.
+# In this tutorial we leave it at its default value, which is clustering using the DBSCAN
+# algorithm. The keyword arguments are meta parameters which control how long
+# to integrate each initial condition for, and what sampling time, to produce
+# a trajectory `A` given to the `featurizer` function. Because one of the two attractors
+# is chaotic, we need denser sampling time than the default.
+
+# We can use `mapper2` exactly as `mapper`:
+
+fs2 = basins_fractions(mapper2, sampler)
+
+attractors2 = extract_attractors(mapper2)
+
+plot_attractors(attractors2)
+
+# This mapper also found the attractors, but we should warn you: this mapper is less
+# robust than [`AttractorsViaRecurrences`](@ref). One of the reasons for this is
+# that [`AttractorsViaFeaturizing`](@ref) is not auto-terminating. For example, if we do not
+# have enough transient integration time, the two attractors will get confused into one:
+
+mapper3 = AttractorsViaFeaturizing(ds, featurizer; Ttr = 10, Δt = 0.1)
+fs3 = basins_fractions(mapper3, sampler)
+attractors3 = extract_attractors(mapper3)
+plot_attractors(attractors3)
+
+# On the other hand, the downside of [`AttractorsViaRecurrences`](@ref) is that
+# it can take quite a while to converge for chaotic high dimensional systems.
+
+# ## [Global continuation](@id global_cont_tutorial)
 
 # If you have heard before the word "continuation", then you are likely aware of the
 # **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
@@ -171,6 +221,8 @@ fs = basins_fractions(mapper, sampler)
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
 # A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
+# See also the [comparison page](@ref bfkit_comparison) in our docs
+# that attempts to do the same analysis of our Tutorial with traditional continuation software.
 
 # To perform the continuation is extremely simple. First, we decide what parameter,
 # and what range, to continue over:
@@ -180,20 +232,21 @@ pidx = 1 # index of the parameter
 
 # Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
-# In this example we will re-use the `mapper` to create a [`RecurrencesFindAndMatch`](@ref) continuation algorithm.
-# This algorithm uses the `mapper` to find all attractors at each parameter value.
+# In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
+# which is the generic [`AttractorSeedContinueMatch`](@ref).
+# This algorithm uses the `mapper` to find all attractors at each parameter value
+# and from the found attractors it continues them along a parameter axis
+# using a seeding process (see its documentation string).
 # Then, it performs a "matching" step, ensuring a "continuity" of the attractor
-# label across the parameter axis. You can read the docstring for more details,
-# as this algorithm is quite sophisticated!
+# label across the parameter axis. For now we ignore the matching step, leaving it to the
+# default value. We'll use the `mapper` we created above and define
 
-# For now we can use all of its default options which are reliable most of the time
-
-rafm = RecurrencesFindAndMatch(mapper)
+ascm = AttractorSeedContinueMatch(mapper)
 
 # and call
 
 fractions_cont, attractors_cont = global_continuation(
-	rafm, prange, pidx, sampler; samples_per_parameter = 1_000
+	ascm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
 # the output is given as two vectors. Each vector is a dictionary
@@ -212,7 +265,7 @@ animate_attractors_continuation(
 );
 
 # ```@raw html
-# <video width="auto" controls autoplay loop>
+# <video width="auto" controls loop>
 # <source src="../attracont.mp4" type="video/mp4">
 # </video>
 # ```
@@ -233,31 +286,74 @@ fig = plot_basins_attractors_curves(
 # Bottom panel is a visualization of the tracked attractors.
 # The argument `A -> minimum(A[:, 1])` is simply a function that maps
 # an attractor into a real number for plotting.
-# We can provide more functions to visualize other aspects of the attractors:
 
-a2rs = [
-    A -> minimum(A[:, 1]),
-    A -> log(length(A)), # proxy for "complexity"
-]
+# ## Different matching procedures
 
-fig = plot_basins_attractors_curves(
-	fractions_cont, attractors_cont, a2rs, prange; add_legend = false
+# By default attractors are matched by their distance in state space.
+# The default matcher is [`MatchBySSSetDistance`](@ref), and is given implicitly
+# as a default 2nd argument when creating [`AttractorSeedContinueMatch`](@ref).
+# But like anything else in Attractors.jl, "matchers" also follow a well-defined
+# and extendable interface, see [`IDMatchers`](@ref) for that.
+
+# Let's say that the default matching that we chose above isn't desirable.
+# For example, one may argue that the attractor that pops up
+# at the end of the continuation should have been assigned the same ID
+# as attractor 1, because they are both to the left (see the video above).
+# In reality one wouldn't really request that, because looking
+# the video of attractors above shows that the attractors labelled "1", "2", and "3"
+# are all completely different. But we argue here for example that "3" should have been
+# the same as "1".
+
+# Thankfully during a global continuation the "matching" step is completely
+# separated from the "finding and continuing" step. If we don't like the
+# initial matching, we can call [`match_sequentially!`](@ref) with a new
+# instance of a matcher, and match again, without having to recompute
+# the attractors and their basin fractions.
+# For example, using this matcher:
+
+matcher = MatchBySSSetDistance(use_vanished = true)
+
+# will compare a new attractor with the latest instance of attractors
+# with a given ID that have ever existed, irrespectively if they exist in the
+# current parameter or not. This means, that the attractor "3" would in fact be compared
+# with both attractor "2" and "1", even if "1" doesn't exist in the parameter "3"
+# started existing at. And because "3" is closer to "1" than to "2", it will get
+# matched to attractor "1" and get the same ID.
+
+# Let's see this in action:
+
+attractors_cont2 = deepcopy(attractors_cont)
+
+match_sequentially!(attractors_cont2, matcher)
+
+fig = plot_attractors_curves(
+	attractors_cont2, A -> minimum(A[:, 1]), prange,
 )
 
-ax1, ax2 = content.((fig[2,1], fig[3,1]))
+# and as we can see, the new attractor at the end of the parameter range got
+# assigned the same ID as the original attractor "1".
+# For more ways of matching attractors see [`IDMatcher`](@ref).
 
-ax1.ylabel = "min(A₁)"
-ax2.ylabel = "log(len(A))"
-
-fig
-
+# %% #src
 # ## Enhancing the continuation
 
 # The biggest strength of Attractors.jl is that it is not an isolated software.
 # It is part of **DynamicalSystems.jl**. Here, we will use the full power of
 # **DynamicalSystems.jl** and enrich the above continuation with various other
 # measures of nonlocal stability, in particular Lyapunov exponents and
-# the minimal fatal shock.
+# the minimal fatal shock. First, let's plot again the continuation
+# and label some things or clarity
+
+
+fig = plot_basins_attractors_curves(
+	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange; add_legend = false
+)
+
+ax1 = content(fig[2,1])
+
+ax1.ylabel = "min(A₁)"
+
+fig
 
 # First, let's estimate the maximum Lyapunov exponent (MLE) for all attractors,
 # using the `lyapunovspectrum` function that comes from the ChaosTools.jl submodule.
@@ -279,8 +375,8 @@ end
 
 # We can visualize the LE with the other convenience function [`plot_continuation_curves!`](@ref),
 
-ax3 = Axis(fig[4, 1]; ylabel = "MLE")
-plot_continuation_curves!(ax3, lis, prange; add_legend = false)
+ax2 = Axis(fig[4, 1]; ylabel = "MLE")
+plot_continuation_curves!(ax2, lis, prange; add_legend = false)
 
 fig
 
@@ -320,13 +416,17 @@ end
 
 # Right, so now we can visualize the MFS with the rest of the other quantities:
 
-ax4 = Axis(fig[5, 1]; ylabel = "MFS", xlabel = "parameter")
-plot_continuation_curves!(ax4, mfss, prange; add_legend = false)
+ax3 = Axis(fig[5, 1]; ylabel = "MFS", xlabel = "parameter")
+plot_continuation_curves!(ax3, mfss, prange; add_legend = false)
 
 ## make the figure prettier
-for ax in (ax1, ax2, ax3); hidexdecorations!(ax; grid = false); end
-resize!(fig, 500, 600)
+for ax in (ax1, ax2,); hidexdecorations!(ax; grid = false); end
+resize!(fig, 500, 500)
 fig
 
 # And that's the end of the tutorial! See the [examples](@ref examples) for
 # more runnable code, and see the [API](@ref) for a list of all functions and algorithms!
+# See also the [comparison page](@ref bfkit_comparison) in our docs
+# that attempts to do the same analysis of our Tutorial with traditional continuation software
+# showing that (at least for this example) using Attractors.jl is clearly beneficial
+# over the alternatives.
