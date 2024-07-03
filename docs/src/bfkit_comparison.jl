@@ -23,7 +23,7 @@
 # several Newton-based algorithms for POs, and in addition supply it with
 # both an initial guess for the location of the periodic orbit, as well as
 # a guess for the period.
-# # In this example we translate almost verbatim the example of the [Periodic predator prey model](https://bifurcationkit.github.io/BifurcationKitDocs.jl/v0.3/tutorials/ode/tutorialsCodim2PO/#Periodic-predator-prey-model)).
+# In this example we translate almost verbatim the example of the [Periodic predator prey model](https://bifurcationkit.github.io/BifurcationKitDocs.jl/v0.3/tutorials/ode/tutorialsCodim2PO/#Periodic-predator-prey-model)).
 # from the BK docs. Finding a periodic orbit this way is already considered
 # an advanced use case in BK documentation,
 # requiring "high level of knowledge of (numerical) bifurcation theory".
