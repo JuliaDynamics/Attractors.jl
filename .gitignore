@@ -5,3 +5,5 @@ Manifest.toml
 .vscode
 *style.jl
 .DS_Store
+tutorial.md
+bfkit_comparison.md
