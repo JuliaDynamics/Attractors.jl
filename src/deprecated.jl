@@ -44,6 +44,7 @@ export continuation
 @deprecate match_attractor_ids! match_statespacesets!
 @deprecate GroupAcrossParameter FeaturizeGroupAcrossParameter
 @deprecate rematch! match_continuation!
+@deprecate replacement_map  matching_map
 
 function match_statespacesets!(as::Vector{<:Dict}; kwargs...)
     error("This function was incorrect. Use `match_sequentially!` instead.")
