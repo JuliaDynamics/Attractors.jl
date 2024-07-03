@@ -81,7 +81,7 @@ bf_prob = BK.BifurcationProblem(
 periodic_orbit_algo = BK.ShootingProblem(M = 5)
 
 # and then a full solution structure from DifferentialEquations.jl, that
-# **must** start exactly on the periodic orbit. Requiring that the solution
+# **must** start on the periodic orbit. Requiring that the solution
 # starts on the periodic orbit defeats the purpose of "wanting to find it",
 # but oh well, we do as we must.
 
@@ -92,9 +92,9 @@ point_on_lc = [
     -5.178825669659272,
 ]
 
-ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 40.0), p0)
+ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 100.0), p0, saveat = 0.01)
 sol = OrdinaryDiffEq.solve(ode_prob; alg = Vern9())
-sol[end]
+lines(sol.t, sol[1, :])
 
 # We need an estimate of the period besides providing the full DifferentialEquations.jl
 # solution. From the figure this appears to be around 20.0 (note: the periodic
