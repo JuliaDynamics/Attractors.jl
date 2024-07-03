@@ -24,7 +24,7 @@ pages = [
     "tutorial.md",
     "api.md",
     "examples.md",
-    "bfkit_comparison.md",
+    Documenter.hide("bfkit_comparison.md"),
     "references.md",
     Documenter.hide("recurrences_animation.md"),
 ]

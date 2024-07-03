@@ -221,6 +221,8 @@ plot_attractors(attractors3)
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
 # A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
+# See also the [comparison page](@ref bfkit_comparison) in our docs
+# that attempts to do the same analysis of our Tutorial with traditional continuation software.
 
 # To perform the continuation is extremely simple. First, we decide what parameter,
 # and what range, to continue over:
@@ -424,6 +426,7 @@ fig
 
 # And that's the end of the tutorial! See the [examples](@ref examples) for
 # more runnable code, and see the [API](@ref) for a list of all functions and algorithms!
-# See also the [comparison](@ref bfkit_comparison) with traditional continuation software
-# like AUTO, MatCont, or BifurcationKit.jl, to get an explicit idea of a scenario
-# where using Attractors.jl is clearly beneficial over the alternatives.
+# See also the [comparison page](@ref bfkit_comparison) in our docs
+# that attempts to do the same analysis of our Tutorial with traditional continuation software
+# showing that (at least for this example) using Attractors.jl is clearly beneficial
+# over the alternatives.
