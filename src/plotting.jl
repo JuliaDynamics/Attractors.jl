@@ -81,6 +81,8 @@ while `ds, prange, pidx` are the input to [`global_continuation`](@ref).
 - `Δt, T`: propagated to `trajectory` for evolving an initial condition sampled
   from an attractor.
 - Also all [common plotting keywords](@ref common_plot_kwargs).
+- `figure, axis, fracaxis`: named tuples propagated as keyword arguments to the
+  creation of the `Figure`, the `Axis` and the "bar-like" axis containing the fractions.
 """
 function animate_attractors_continuation end
 export animate_attractors_continuation

@@ -404,12 +404,16 @@ function Attractors.animate_attractors_continuation(
         markers = markers_from_keys(ukeys),
         Δt = isdiscretetime(ds) ? 1 : 0.05,
         T = 100,
+        figure = NamedTuple(), axis = NamedTuple(), fracaxis = NamedTuple(),
+        legend = NamedTuple(),
     )
     length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
     K = length(ukeys)
-    fig = Figure()
-    ax = Axis(fig[1,1]; limits)
-    fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions", yaxisposition = :right)
+    fig = Figure(figure...)
+    ax = Axis(fig[1,1]; limits, axis...)
+    fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions",
+        yaxisposition = :right, fracaxis...
+    )
     hidedecorations!(fracax)
     fracax.ylabelvisible = true
 
@@ -419,7 +423,7 @@ function Attractors.animate_attractors_continuation(
     for k in ukeys
         plotf!(ax, att_obs[k]; color = (colors[k], 0.75), label = "$k", markersize, marker = markers[k])
     end
-    axislegend(ax)
+    axislegend(ax; legend...)
 
     # setup fractions axis
     heights = Observable(fill(0.1, K))
