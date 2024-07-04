@@ -378,7 +378,7 @@ end
 
 # We can visualize the LE with the other convenience function [`plot_continuation_curves!`](@ref),
 
-ax2 = Axis(fig[4, 1]; ylabel = "MLE")
+ax2 = Axis(fig[3, 1]; ylabel = "MLE")
 plot_continuation_curves!(ax2, lis, prange; add_legend = false)
 
 fig
@@ -419,7 +419,7 @@ end
 
 # Right, so now we can visualize the MFS with the rest of the other quantities:
 
-ax3 = Axis(fig[5, 1]; ylabel = "MFS", xlabel = "parameter")
+ax3 = Axis(fig[4, 1]; ylabel = "MFS", xlabel = "parameter")
 plot_continuation_curves!(ax3, mfss, prange; add_legend = false)
 
 ## make the figure prettier
