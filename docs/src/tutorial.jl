@@ -359,14 +359,15 @@ ax1.ylabel = "min(A₁)"
 fig
 
 # First, let's estimate the maximum Lyapunov exponent (MLE) for all attractors,
-# using the `lyapunovspectrum` function that comes from the ChaosTools.jl submodule.
+# using the `lyapunov` function that comes from the ChaosTools.jl submodule.
 
 using ChaosTools: lyapunov
 
 lis = map(enumerate(prange)) do (i, p) # loop over parameters
     set_parameter!(ds, pidx, p) # important! We use the dynamical system!
     attractors = attractors_cont[i]
-    Dict(k => lyapunov(ds, 2000.0; u0 = A[1]) for (k, A) in attractors)
+    ## Return a dictionary mapping attractor IDs to their MLE
+    Dict(k => lyapunov(ds, 10000.0; u0 = A[1]) for (k, A) in attractors)
 end
 
 # The above `map` loop may be intimidating if you are a beginner, but it is

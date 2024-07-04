@@ -137,7 +137,7 @@ br_fold_sh = BK.continuation(probsh, cish, predictor, opts_br;
     argspo...
 )
 
-# The above code takes a good 30 seconds to run, but unfortunately it fails.
+# The above code takes a good 30 seconds to run, but unfortunately **it fails**.
 # During the evaluation we get lots of warnings of the type
 # ```julia-repl
 # ┌ Warning: Interrupted. Larger maxiters is needed.
@@ -150,18 +150,20 @@ br_fold_sh = BK.continuation(probsh, cish, predictor, opts_br;
 # This is almost surely because these Newton-based periodic orbit algorithms
 # fail to converge in the presence of chaos, and the periodic orbit we try to find
 # here starts without chaos, but continues to exist while chaos exists,
-# hence the continuation fails.
+# hence the continuation fails. One could try to fine-tune the parameters in `BK.ContinuationPar`
+# or in `BK.ShootingProblem`, but some small changes we've tried while
+# composing this page didn't work. (Also Attractors.jl just works without fine tuning
+# so we gave up quite quickly). If you know some bifurcation software that can actually
+# find this limit cycle, sends us a message. We are happy to cite it!
 
-# Since BifurcationKit.jl doesn't offer a (public) interface to find
+# We could stop searching _before_ chaos starts, to make the convergence easier.
+# But, since BifurcationKit.jl doesn't offer a (public) interface to find
 # "just the limit cycle at a single parameter" like Attractors.jl does, we can't
 # use it to detect when chaos starts by utilizing a `for` loop and stopping at the first
 # parameter where the Newton algorithm fails to converge. We have to manually
 # scan the parameter axis and evolve various initial conditions with random sampling
 # and then "look" at the trajectories to see if they are chaotic or not
-# (or, use a tool from DynamicalSystems.jl like `lyapunov`). Then, we could
-# limit the continuation at the parameter that chaos starts.
-# Alternatively one could try to fine-tune the parameters in `BK.ContinuationPar`
-# or in `BK.ShootingProblem`, but this is unlikely to work.
+# (or, use a tool from DynamicalSystems.jl like `lyapunov`).
 
 # ## Attractors.jl version
 
