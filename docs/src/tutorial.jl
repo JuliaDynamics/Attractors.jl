@@ -208,13 +208,16 @@ plot_attractors(attractors3)
 # such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
 # Here we offer a completely different kind of continuation called **global continuation**.
 
-# A direct comparison of the two approaches is not truly possible, because they do different things.
-# The traditional continuation analysis continues the curves of individual fixed
-# points across the joint state-parameter space and tracks their _local (linear) stability_.
-# The global continuation in Attractors.jl finds all attractors, including chaotic ones,
-# in the whole of the state space (that it searches in), and continues all of these attractors
-# concurrently along a parameter axis.
-# Additionally, this global continuation tracks a _nonlocal_ stability property which by
+# The traditional continuation analysis continues the curves of individual _fixed
+# points (and under some conditions limit cycles)_ across the joint state-parameter space and
+# tracks their _local (linear) stability_.
+# This approach needs to manually be "re-run" for every individual branch of fixed points
+# or limit cycles.
+# The global continuation in Attractors.jl finds _all_ attractors, _including chaotic
+# or quasiperiodic ones_,
+# in the whole of the state space (that it searches in), without manual intervention.
+# It then continues all of these attractors concurrently along a parameter axis.
+# Additionally, the global continuation tracks a _nonlocal_ stability property which by
 # default is the basin fraction.
 
 # This is a fundamental difference. Because all attractors are simultaneously
