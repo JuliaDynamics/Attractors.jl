@@ -230,7 +230,7 @@ plot_attractors(attractors3)
 # To perform the continuation is extremely simple. First, we decide what parameter,
 # and what range, to continue over:
 
-prange = 4.7:0.02:6
+prange = 4.5:0.01:6
 pidx = 1 # index of the parameter
 
 # Then, we may call the [`global_continuation`](@ref) function.

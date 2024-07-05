@@ -9,13 +9,14 @@
 
 A Julia package for
 
-- finding all attractors, and all types of attractors, of arbitrary dynamical systems. An extendable interface allows for new algorithms for finding attractors.
-- finding their basins of attraction or the state space fractions of the basins.
-- analyzing global stability of attractors (also called non-local stability or  resilience).
-- performing **global continuation** of attractors and their basins (or other measures of stability), over a parameter range. Global continuation is a new, cutting-edge type of continuation that offers several advantages over traditional local continuation (AUTO, MatCont, BifurcationKit.jl, etc.), see the comparison in our docs.
-- finding the basin boundaries and edges states and analyzing their fractal properties.
-- tipping points related functionality for systems with known dynamic rule
-- and more!
+- Finding all attractors, and all types of attractors, of arbitrary dynamical systems. An extendable interface allows for new algorithms for finding attractors.
+- Finding their basins of attraction or the state space fractions of the basins.
+  This includes finding exit basins (divergence to infinity).
+- Analyzing nonlocal stability of attractors (also called global stability or  resilience).
+- Performing **global continuation** of attractors and their basins (or other measures of stability), over a parameter range. Global continuation is a new, cutting-edge type of continuation that offers several advantages over traditional local continuation (AUTO, MatCont, BifurcationKit.jl, etc.), see the comparison in our docs.
+- Finding the basin boundaries and edges states and analyzing their fractal properties.
+- Tipping points related functionality for systems with known dynamic rule.
+- And more!
 
 It can be used as a standalone package, or as part of
 [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/stable/).
