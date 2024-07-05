@@ -1,16 +1,16 @@
-# # [Comparison with traditional continuation & bifurcation software](@id bfkit_comparison)
+# # [Comparison with traditional local continuation and bifurcation analysis software](@id bfkit_comparison)
 
 # !!! note "Continues from tutorial"
 #     This page continues after the end of the main [Tutorial](@ref)!
 #     Ensure you have gon through it first!
 
 # As we discussed in the subsection on [global continuation](@ref global_cont_tutorial),
-# the approach of Attractors.jl is fundamentally different from traditional continuation
-# and bifurcation software like AUTO, MatCont, BifurcationKit.jl.
+# the approach of Attractors.jl is fundamentally different from traditional local continuation
+# and bifurcation analysis software like AUTO, MatCont, or BifurcationKit.jl.
 # Nevertheless in this page we will compare using BifurcationKit.jl
 # to attempt to find and continue the limit cycle of the tutorial modified Lorenz-like system.
 # We forfeit looking for the chaotic attractors, as to our knowledge there exists no
-# software on dynamical systems# beyond Attractors.jl can find chaotic attractors.
+# software on dynamical systems beyond Attractors.jl can find chaotic attractors.
 
 # The goal of this comparison is to highlight
 # the differences in usage complexity and overall capability
@@ -32,9 +32,7 @@
 
 # To use BK we need to import it and initialize
 # various continuation-related structures.
-# The key structure is the `ShootingProblem`, which is a "problem type"
-# that utilizes a multiple shooting method to find periodic orbits
-# (see BK docs). The entire input BK requires to find a periodic orbit is:
+# The entire input BK requires to find a periodic orbit is:
 # 1. a periodic orbit problem like `BK.ShootingProblem` or `BK.PeriodicOrbitTrapProblem`
 #    (and its meta parameters)
 # 1. a `BK.BifurcationProblem`
@@ -72,20 +70,18 @@ u0 = [-4.0, 5, 0] # state
 
 import BifurcationKit as BK
 using OrdinaryDiffEq
+using CairoMakie
 
 bf_prob = BK.BifurcationProblem(
     modified_lorenz_rule!, u0, p0, (BK.@lens _[pidx])
 )
-
-# Then the algorithm particularly for periodic orbits
-periodic_orbit_algo = BK.ShootingProblem(M = 5)
 
 # and then a full solution structure from DifferentialEquations.jl, that
 # **must** start on the periodic orbit. Requiring that the solution
 # starts on the periodic orbit defeats the purpose of "wanting to find it",
 # but oh well, we do as we must.
 
-## point_on_lc = Vector(attractors_cont[1][1][end]) # we copy paste the guess below
+## This guess comes from the Attractors.jl main tutorial
 point_on_lc = [
     -1.622956992666447,
     -4.527917984019188,
@@ -94,7 +90,11 @@ point_on_lc = [
 
 ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 100.0), p0)
 sol = OrdinaryDiffEq.solve(ode_prob; alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
-lines(sol.t, sol[1, :])
+j = length(sol)÷2
+fig, ax = lines(sol.t[j:end], sol[1, j:end])
+lines!(ax, sol.t[j:end], sol[2, j:end])
+lines!(ax, sol.t[j:end], sol[3, j:end])
+fig
 
 # We need an estimate of the period besides providing the full DifferentialEquations.jl
 # solution. From the figure this appears to be around 20.0 (note: the periodic
@@ -107,23 +107,29 @@ opts_br = BK.ContinuationPar(
     p_min = prange[1], p_max = prange[end],
     ds = 0.002, dsmax = 0.01, n_inversion = 6,
     detect_bifurcation = 3, max_bisection_steps = 25, nev = 4,
-    max_steps = 2000, tol_stability = 1e-3
+    max_steps = 2000, tol_stability = 1e-3,
 )
 
-# Now we put everything together in
+# We now create a periodic orbit problem type, by choosing a periodic
+# orbit finding algorithm
 
-probsh, cish = BK.generate_ci_problem(
-    periodic_orbit_algo, bf_prob, ode_prob, sol, 20.0; alg = Vern9(), maxiters = Int(1e6),
+periodic_orbit_algo = BK.PeriodicOrbitOCollProblem(40, 4)
+
+# and creating the problem type giving the period guess 19.0
+
+probpo, cish = BK.generate_ci_problem(
+    periodic_orbit_algo, bf_prob, sol, 19.0
 )
 
 # To call the continuation we need to also tell it what aspects of the
 # periodic orbit to record, so we define
 
 argspo = (record_from_solution = (x, p) -> begin
-		xtt = get_periodic_orbit(p.prob, x, p.p)
+		xtt = BK.get_periodic_orbit(p.prob, x, p.p)
 		return (max = maximum(xtt[1,:]),
 				min = minimum(xtt[1,:]),
-				period = getperiod(p.prob, x, p.p))
+				period = BK.getperiod(p.prob, x, p.p),
+                p = p.p,)
 	end,
 )
 
@@ -132,38 +138,25 @@ predictor = BK.PALC(tangent = BK.Bordered())
 
 # and _finally_ call the continuation from BK
 
-br_fold_sh = BK.continuation(probsh, cish, predictor, opts_br;
-    verbosity = 3, plot = false,
-    argspo...
+@time branch = BK.continuation(probpo, cish, predictor, opts_br;
+    verbosity = 0, plot = false, argspo...
 )
 
-# The above code takes a good 30 seconds to run, but unfortunately **it fails**.
-# During the evaluation we get lots of warnings of the type
-# ```julia-repl
-# ┌ Warning: Interrupted. Larger maxiters is needed.
-# If you are using an integrator for non-stiff ODEs or an automatic switching
-# algorithm (the default), you may want to consider using a method for stiff equations.
-# See the solver pages for more details (e.g. https://docs.sciml.ai/DiffEqDocs/stable/solvers/ode_solve/#Stiff-Problems).
-# ```
-# which actually, have nothing to do with our solver not being stiff. What happens here
-# is that the Newton algorithm used to find periodic orbits never converges.
-# This is almost surely because these Newton-based periodic orbit algorithms
-# fail to converge in the presence of chaos, and the periodic orbit we try to find
-# here starts without chaos, but continues to exist while chaos exists,
-# hence the continuation fails. One could try to fine-tune the parameters in `BK.ContinuationPar`
-# or in `BK.ShootingProblem`, but some small changes we've tried while
-# composing this page didn't work. (Also Attractors.jl just works without fine tuning
-# so we gave up quite quickly). If you know some bifurcation software that can actually
-# find this limit cycle, sends us a message. We are happy to cite it!
+stability = branch.stable
+color = [s ? "black" : "red" for s in stability]
+marker = [s ? :circle : :x for s in stability]
+scatter(branch.branch.p, branch.branch.min; color, marker)
 
-# We could stop searching _before_ chaos starts, to make the convergence easier.
-# But, since BifurcationKit.jl doesn't offer a (public) interface to find
-# "just the limit cycle at a single parameter" like Attractors.jl does, we can't
-# use it to detect when chaos starts by utilizing a `for` loop and stopping at the first
-# parameter where the Newton algorithm fails to converge. We have to manually
-# scan the parameter axis and evolve various initial conditions with random sampling
-# and then "look" at the trajectories to see if they are chaotic or not
-# (or, use a tool from DynamicalSystems.jl like `lyapunov`).
+# The above code takes about 5 seconds to run.
+# Thankfully it works. Or rather, almost.
+# The code finds no stable limit cycle for parameter less than 5.0,
+# even though we know (see Tutorial final plot) that there is one.
+# Or maybe, it is an extremely weakly chaotic attractor with MLE almost 0.
+# Or maybe it is a quasiperiodic attractor. One needs to analyze further,
+# but Attractors.jl finds everything without much difficulty.
+# Altering the above code to start the continuation at 4.7 finds a limit cycle
+# there, but only manages to continue it only up to parameter 4.74,
+# instead of well into parameter 5.5 or more that Attractors.jl shows.
 
 # ## Attractors.jl version
 
@@ -207,25 +200,56 @@ fractions_cont, attractors_cont = global_continuation(
 	algo, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
-# This code takes about 15 seconds to run.
-# Of course, the above code didn't find and continue just a single limit cycle.
-# It found all system attractors, and it didn't require a specific initial condition
-# as a guess, or a period, but rather an arbitrarily large box that may contain attractors.
-# Not only only that, but some of the found attractors are _chaotic_!
+plot_attractors_curves(
+    attractors_cont,  A -> minimum(A[:, 1]), prange,
+)
 
-# The code is relatively agnostic to the dynamical system
-# as well, meaning, the algorithms are robust: the recurrences mapper would work for
-# most systems with these parameters; it doesn't need as much tuning
-# (see [Datseris2022](@cite) for a proof of that).
-# And furthermore, it estimates a more general nonlocal measure of stability,
+# This code takes about 15 seconds to run.
+# This number however is for 1000 initial conditions, not one (i.e., the one
+# branch generated during the traditional continuation).
+
+# ## Discussion and comparison
+
+# On the one hand, Attractors.jl found not only a single limit cycle,
+# but also all system attractors, including chaotic ones.
+# It didn't require any initial guess regarding the limit cycle or its period,
+# but only a state space box that may contain attractors.
+# Attractors.jl is extremely robust w.r.t. to its input parameters:
+# the state space box can be arbitrarily large, as long as it is large enough.
+# Similarly, all meta parameters of `AttractorsViaRecurrences` only need to be
+# large enough; the larger, the more accurate the result.
+# These algorithms are also robust in the sense of working well for
+# many different types of dynamical systems, including discrete ones,
+# see [Datseris2022](@cite) for a demonstration.
+# And finally, Attractors.jl estimates a more general nonlocal measure of stability,
 # in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable,
 # however the other way around isn't guaranteed.
 
-# Now, this example is one that definitely we Attractors.jl is much more suitable for.
-# But to be transparent and discuss the silver linings,
-# BK can do some things not possible (yet) with Attractors.jl, such find
-# the unstable branches of fixed points and limit cycles (in simpler example systems than the one here).
-# Now, whether the unstable branches are useful or not, depends on the research question.
-# Beyond this however, BK is also optimised for PDE systems, while Attractors.jl isn't.
-# A more thorough comparison of the two approaches (that was based on and older and
-# less powerful version of Attractors.jl) is discussed in [Datseris2023](@cite).
+# On the other hand, traditional local continuation can track the unstable
+# branches, and automatically detect and label local bifurcations
+# (note we didn't bother to plot any of the detected bifurcations - if any are found).
+# In our experience having the local bifurcations is always useful.
+# Now, whether the unstable branches are of a limit cycle are useful or not,
+# depends on the research question and whether the analysis is done for some
+# sort of real world understanding (unstable limit cycles / fixed points don't
+# actually exist in the real world).
+# Beyond this however, BifurcationKit.jl is also optimised for PDE systems,
+# while Attractors.jl isn't.
+
+# Now, we have to be a bit more transparent here.
+# Besides this absence of stable orbits for parameter less than 5.0
+# that we discussed in the end of the BifurcationKit.jl version,
+# we need to say that it took **a lot of effort** to make the
+# BifurcationKit.jl code work. At least, a lot of effort compared with the effort
+# it took to make the Attractors.jl version work, which was simply "increase the recurrences
+# threshold", which is standard practice when dealing with chaotic systems
+# [Datseris2022](@cite). For example, any other of the
+# periodic orbit algorithms of BifurcationKit.jl (such as shooting or trapezoid) fails.
+# Using a slightly incorrect initial period guess of 20.0 instead of 19.0 also fails.
+# We imagine that this sensitivity would apply also to some other of the
+# several meta-parameters that enter a traditional continuation routine,
+# but we didn't check further. This is exactly what we were alluding to
+# in the comparison we did in [Datseris2023](@cite), that traditional
+# local continuation "requires expertise and constant interventions".
+# See [Datseris2023](@cite) for a more thorough comparison
+# (that was based on and older and less powerful version of Attractors.jl).

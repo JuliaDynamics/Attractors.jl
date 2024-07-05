@@ -15,7 +15,6 @@ Literate.markdown(
 Literate.markdown(
     joinpath(@__DIR__, "src", "bfkit_comparison.jl"), joinpath(@__DIR__, "src");
     credit = false,
-    flavor = Literate.CommonMarkFlavor()
 )
 
 
