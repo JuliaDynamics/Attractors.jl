@@ -1,4 +1,5 @@
 [deps]
+BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 ChaosTools = "608a59af-f2a3-5ad4-90b4-758bdf3122a7"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
