@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/JuliaDynamics/Attractors.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/Attractors.jl)
 [![Package Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Ftotal_downloads%2FAttractors&query=total_requests&label=Downloads)](http://juliapkgstats.com/pkg/Attractors)
 
-A Julia package for
+Attractors.jl is a Julia package for
 
 - Finding all attractors, and all types of attractors, of arbitrary dynamical systems. An extendable interface allows for new algorithms for finding attractors.
 - Finding their basins of attraction or the state space fractions of the basins.
