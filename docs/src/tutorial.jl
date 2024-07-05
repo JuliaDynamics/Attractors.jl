@@ -428,9 +428,14 @@ for ax in (ax1, ax2,); hidexdecorations!(ax; grid = false); end
 resize!(fig, 500, 500)
 fig
 
-# And that's the end of the tutorial! See the [examples](@ref examples) for
-# more runnable code, and see the [API](@ref) for a list of all functions and algorithms!
-# See also the [comparison page](@ref bfkit_comparison) in our docs
-# that attempts to do the same analysis of our Tutorial with traditional continuation software
+# ## Conclusion and comparison with traditional local continuation
+
+# We've reached the end of the tutorial! Some aspects we haven't highlighted is
+# how most of the infrastructure of Attractors.jl is fully extendable.
+# You will see this when reading the documentation strings of key structures
+# like [`AttractorMapper`](@ref). All documentation strings are in the [API](@ref) page.
+# See the [examples](@ref examples) page for more varied applications.
+# And lastly, see the [comparison page](@ref bfkit_comparison) in our docs
+# that attempts to do the same analysis of our Tutorial with traditional local continuation software
 # showing that (at least for this example) using Attractors.jl is clearly beneficial
 # over the alternatives.
