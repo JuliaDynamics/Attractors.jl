@@ -227,7 +227,7 @@ plot_attractors_curves(
 
 # On the other hand, traditional local continuation can track the unstable
 # branches, and automatically detect and label local bifurcations
-# (note we turned this option off above to speedup the computation).
+# (note we didn't bother to plot any of the detected bifurcations - if any are found).
 # In our experience having the local bifurcations is always useful.
 # Now, whether the unstable branches are of a limit cycle are useful or not,
 # depends on the research question and whether the analysis is done for some
@@ -252,4 +252,4 @@ plot_attractors_curves(
 # in the comparison we did in [Datseris2023](@cite), that traditional
 # local continuation "requires expertise and constant interventions".
 # See [Datseris2023](@cite) for a more thorough comparison
-# (that was based on and older and # less powerful version of Attractors.jl).
+# (that was based on and older and less powerful version of Attractors.jl).
