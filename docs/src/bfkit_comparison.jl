@@ -1,16 +1,16 @@
-# # [Comparison with traditional continuation & bifurcation software](@id bfkit_comparison)
+# # [Comparison with traditional local continuation and bifurcation analysis software](@id bfkit_comparison)
 
 # !!! note "Continues from tutorial"
 #     This page continues after the end of the main [Tutorial](@ref)!
 #     Ensure you have gon through it first!
 
 # As we discussed in the subsection on [global continuation](@ref global_cont_tutorial),
-# the approach of Attractors.jl is fundamentally different from traditional continuation
-# and bifurcation software like AUTO, MatCont, BifurcationKit.jl.
+# the approach of Attractors.jl is fundamentally different from traditional local continuation
+# and bifurcation analysis software like AUTO, MatCont, or BifurcationKit.jl.
 # Nevertheless in this page we will compare using BifurcationKit.jl
 # to attempt to find and continue the limit cycle of the tutorial modified Lorenz-like system.
 # We forfeit looking for the chaotic attractors, as to our knowledge there exists no
-# software on dynamical systems# beyond Attractors.jl can find chaotic attractors.
+# software on dynamical systems beyond Attractors.jl can find chaotic attractors.
 
 # The goal of this comparison is to highlight
 # the differences in usage complexity and overall capability

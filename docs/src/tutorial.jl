@@ -436,6 +436,6 @@ fig
 # like [`AttractorMapper`](@ref). All documentation strings are in the [API](@ref) page.
 # See the [examples](@ref examples) page for more varied applications.
 # And lastly, see the [comparison page](@ref bfkit_comparison) in our docs
-# that attempts to do the same analysis of our Tutorial with traditional local continuation software
+# that attempts to do the same analysis of our Tutorial with traditional local continuation and bifurcation analysis software
 # showing that (at least for this example) using Attractors.jl is clearly beneficial
 # over the alternatives.
