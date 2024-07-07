@@ -13,6 +13,64 @@
 # but we won't cover anything else in this introductory tutorial.
 # See the [examples](@ref examples) page instead.
 
+# ## Tutorial - copy-pasteable version
+
+# _Gotta go fast!_
+
+# ```julia
+# using Attractors, CairoMakie, OrdinaryDiffEq
+# # Define key input: a `DynamicalSystem`
+# function modified_lorenz_rule(u, p, t)
+#     x, y, z = u; a, b = p
+#     dx = y - x
+#     dy = - x*z + b*abs(z)
+#     dz = x*y - a
+#     return SVector(dx, dy, dz)
+# end
+# p0 = [5.0, 0.1] # parameters
+# u0 = [-4.0, 5, 0] # state
+# diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
+# ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
+
+# # Define key input: an `AttractorMaper` that finds
+# # attractors of a `DynamicalSystem`
+# grid = (
+#     range(-15.0, 15.0; length = 150), # x
+#     range(-20.0, 20.0; length = 150), # y
+#     range(-20.0, 20.0; length = 150), # z
+# )
+# mapper = AttractorsViaRecurrences(ds, grid;
+#     consecutive_recurrences = 1000,
+#     consecutive_lost_steps = 100,
+# )
+
+# # Find attractors and their basins of attraction state space fraction
+# # by randomly sampling initial conditions in state sapce
+# sampler, = statespace_sampler(grid)
+# algo = AttractorSeedContinueMatch(mapper)
+# fs = basins_fractions(mapper, sampler)
+# attractors = extract_attractors(mapper)
+
+# # found two attractors: one is a limit cycle, the other is chaotic
+# # visualize them
+# plot_attractors(attractors)
+
+# # continue all attractors and their basin fractions across a parameter axis
+# # using a global continuation algorithm
+# algo = AttractorSeedContinueMatch(mapper)
+# prange = 4.7:0.02:6
+# pidx = 1
+# fractions_cont, attractors_cont = global_continuation(
+# 	algo, prange, pidx, sampler; samples_per_parameter = 1_000
+# )
+
+# # and visualize the results
+# fig = plot_basins_attractors_curves(
+# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange; add_legend = false
+# )
+# ```
+
+
 # ## Input: a `DynamicalSystem`
 
 # The key input for most functionality of Attractors.jl is an instance of
@@ -67,9 +125,9 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 # they are already tuned for the dynamical system at hand. So we initialize
 
 grid = (
-    range(-10.0, 10.0; length = 100), # x
-    range(-15.0, 15.0; length = 100), # y
-    range(-15.0, 15.0; length = 100), # z
+    range(-10.0, 10.0; length = 150), # x
+    range(-15.0, 15.0; length = 150), # y
+    range(-15.0, 15.0; length = 150), # z
 )
 
 mapper = AttractorsViaRecurrences(ds, grid;
