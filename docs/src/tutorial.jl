@@ -35,9 +35,9 @@
 # # Define key input: an `AttractorMaper` that finds
 # # attractors of a `DynamicalSystem`
 # grid = (
-#     range(-15.0, 15.0; length = 100), # x
-#     range(-20.0, 20.0; length = 100), # y
-#     range(-20.0, 20.0; length = 100), # z
+#     range(-15.0, 15.0; length = 150), # x
+#     range(-20.0, 20.0; length = 150), # y
+#     range(-20.0, 20.0; length = 150), # z
 # )
 # mapper = AttractorsViaRecurrences(ds, grid;
 #     consecutive_recurrences = 1000,
@@ -125,9 +125,9 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 # they are already tuned for the dynamical system at hand. So we initialize
 
 grid = (
-    range(-10.0, 10.0; length = 100), # x
-    range(-15.0, 15.0; length = 100), # y
-    range(-15.0, 15.0; length = 100), # z
+    range(-10.0, 10.0; length = 150), # x
+    range(-15.0, 15.0; length = 150), # y
+    range(-15.0, 15.0; length = 150), # z
 )
 
 mapper = AttractorsViaRecurrences(ds, grid;

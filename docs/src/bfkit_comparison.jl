@@ -182,9 +182,9 @@ ds = CoupledODEs(modified_lorenz_rule!, u0, p0;
 )
 
 grid = (
-    range(-15.0, 15.0; length = 100), # x
-    range(-20.0, 20.0; length = 100), # y
-    range(-20.0, 20.0; length = 100), # z
+    range(-15.0, 15.0; length = 200), # x
+    range(-20.0, 20.0; length = 200), # y
+    range(-20.0, 20.0; length = 200), # z
 )
 
 mapper = AttractorsViaRecurrences(ds, grid;
