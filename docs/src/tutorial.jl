@@ -1,6 +1,6 @@
 # # [Attractors.jl Tutorial](@id tutorial)
 
-# [`Attractors`](@ref) is a submodule of the **DynamicalSystems.jl** library.
+# [`Attractors`](@ref) is a component of the **DynamicalSystems.jl** library.
 # This tutorial will walk you through its main functionality.
 # That is, given a `DynamicalSystem` instance, find all its attractors and their basins
 # of attraction. Then,
