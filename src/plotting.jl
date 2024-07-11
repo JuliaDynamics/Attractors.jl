@@ -81,14 +81,15 @@ while `ds, prange, pidx` are the input to [`global_continuation`](@ref).
 - `Δt, T`: propagated to `trajectory` for evolving an initial condition sampled
   from an attractor.
 - Also all [common plotting keywords](@ref common_plot_kwargs).
-- `figure, axis, fracaxis`: named tuples propagated as keyword arguments to the
-  creation of the `Figure`, the `Axis` and the "bar-like" axis containing the fractions.
+- `figure, axis, fracaxis, legend`: named tuples propagated as keyword arguments to the
+  creation of the `Figure`, the `Axis`, the "bar-like" axis containing the fractions,
+  and the `axislegend` that adds the legend (if `add_legend = true`).
 """
 function animate_attractors_continuation end
 export animate_attractors_continuation
 
 """
-    plot_basins_curves(fractions_cont, prange = 1:length(); kwargs...)
+    plot_basins_curves(fractions_cont [, prange]; kwargs...)
 
 Plot the fractions of basins of attraction versus a parameter range,
 i.e., visualize the output of [`global_continuation`](@ref).
@@ -127,7 +128,7 @@ function plot_attractors_curves! end
 export plot_attractors_curves, plot_attractors_curves!
 
 """
-    plot_continuation_curves(continuation_info, prange = 1:length(); kwargs...)
+    plot_continuation_curves(continuation_info [, prange]; kwargs...)
 
 Same as in [`plot_basins_curves`](@ref) but visualizes any arbitrary quantity characterizing
 the continuation. Hence, the `continuation_info` is of exactly the same format as
