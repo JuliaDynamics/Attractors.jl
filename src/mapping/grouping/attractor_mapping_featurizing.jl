@@ -166,6 +166,7 @@ function extract_features_single(mapper, ics; show_progress = true, N = 1000)
     return feature_vector
 end
 
+
 # TODO: We need an alternative to deep copying integrators that efficiently
 # initializes integrators for any given kind of system. But that can be done
 # later in the DynamicalSystems.jl 3.0 rework.
