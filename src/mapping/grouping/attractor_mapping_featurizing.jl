@@ -166,10 +166,9 @@ function extract_features_single(mapper, ics; show_progress = true, N = 1000)
     return feature_vector
 end
 
-# Mapper function that works with GroupViaNearestFeature
 function (mapper::AttractorsViaFeaturizing)(u0)
-   f = extract_features_single(mapper,[u0]) 
-   return feature_to_group(f[1],mapper.group_config) 
+   f = extract_features_single(mapper, [u0]) 
+   return feature_to_group(f[1], mapper.group_config) 
 end
 
 # TODO: We need an alternative to deep copying integrators that efficiently
