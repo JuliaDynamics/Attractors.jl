@@ -8,20 +8,22 @@ using ProgressMeter
     stagger_trajectory!(ds, x0, isinside; kwargs...) -> xi
 
 This function returns a point `xi` which _guarantees_ `T(xi) > 
-Tm`. This is an auxiliary function for [`stagger_and_step`](@
-ref). Keyword arguments and definitions are identical for both 
+Tm` with a random walk search around the initial coordinates 
+`x0`. There is no guarantee to find such point, the parameters 
+must be adjusted to find the suitable point. This is an .
+auxiliary function for [`stagger_and_step`](@ref). Keyword arguments and definitions are identical for both 
 functions. 
 
-The initial search radius is much bigger, `δ = 1.` by default.
+The initial search radius is much bigger, `δ₀ = 1.` by default.
 
 """
-function stagger_trajectory!(ds, x0, isinside; δ = 1., Tm = 30, stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
-    T = escape_time!(x0, ds, isinside)
+function stagger_trajectory!(ds, x0, isinside; δ₀ = 1., Tm = 30, stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
+    T = escape_time!(ds, x0, isinside)
     xi = deepcopy(x0) 
     while T < Tm  # we must have T ≥ Tm at each step 
-        xi, T = get_stagger!(ds, xi, δ, T, isinside; f, stagger_mode, max_steps)
+        xi, T = get_stagger!(ds, xi, δ₀, T, isinside; f, stagger_mode, max_steps)
         if T < 0
-            error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ.")
+            error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
         end 
             
     end
@@ -92,7 +94,7 @@ to the stable manifold of the chaotic saddle.
       distribution in a random direction `u` around the current
       `x` such that `x_c = x + u*r`. `r = 10^-s` with `s` taken
       from a uniform distribution in [-15, δ]. This mode fails
-      often but stills manage to provide long enough stretch of
+      often but still manage to provide long enough stretch of
       trajectories. 
 
     * `:unif`: The next candidate is `x_c = x + u*r` with `r` 
@@ -104,24 +106,28 @@ to the stable manifold of the chaotic saddle.
       when it succeeds.    
 * `f = 1.1`: It is the free parameter for the adaptive stagger
   method. 
-
+* `δ₀ = 1.`: This is the radius for the first stagger 
+trajectory search. The algorithm looks for a point 
+sufficiently close to the saddle before switching to the 
+stagger-and-step routine. The search radius must be large 
+enough to find a suitable initial. 
 [^Sweet2001]: D. Sweet, *et al.*, Phys. Rev. Lett. **86**, pp 2261  (2001)
 [^Sala2016]: M. Sala, *et al.*, Chaos **26**, pp 123124 (2016)
 """
 function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
-    f = 1.1, max_steps = Int(1e5), stagger_mode = :exp)
+    f = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1.)
 
-    xi = stagger_trajectory!(ds,x0, isinside; δ = 1., Tm, stagger_mode = :exp, max_steps) 
+    xi = stagger_trajectory!(ds, x0, isinside; δ₀, Tm, stagger_mode = :unif, max_steps) 
     v = Vector{Vector{Float64}}(undef,N)
     v[1] = xi
 @showprogress   for n in 1:N
-        if escape_time!(xi, ds, isinside) > Tm
+        if escape_time!(ds, xi, isinside) > Tm
             set_state!(ds, xi)
         else
             xp, Tp = get_stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, f)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
-                xp = stagger_trajectory!(ds, x0, isinside; δ = 1., Tm, stagger_mode = :exp, max_steps, f) 
+                xp = stagger_trajectory!(ds, x0, isinside; δ₀, Tm, stagger_mode = :exp, max_steps, f) 
                 δ = 0.1
             end
             set_state!(ds,xp)
@@ -135,7 +141,7 @@ end
 
 
     
-function escape_time!(x0, ds, isinside) 
+function escape_time!(ds, x0, isinside) 
     x = deepcopy(x0) 
     set_state!(ds,x)
     ds.t = 1
@@ -173,9 +179,8 @@ end
 # with a random search depending on some distribution. 
 # If the search fails it returns a negative time.
 function get_stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), f = 1.1, stagger_mode = :exp, verbose = false)
-
     Tp = 0; xp = zeros(length(x0)); k = 1; 
-    T0 = escape_time!(x0, ds, isinside)
+    T0 = escape_time!(ds, x0, isinside)
     if !isinside(x0)
         error("x0 must be in grid")
     end
@@ -190,7 +195,7 @@ function get_stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), f = 1.1, s
            end
            return 0,-1
         end
-        Tp = escape_time!(xp, ds, isinside)
+        Tp = escape_time!(ds, xp, isinside)
         if stagger_mode == :adaptive
             # We adapt the variance of the search
             # if the alg. can't find a candidate
