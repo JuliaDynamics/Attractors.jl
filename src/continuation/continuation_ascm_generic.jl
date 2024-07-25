@@ -120,7 +120,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
-    progress = ProgressMeter.Progress(length(prange);
+    progress = ProgressMeter.Progress(length(pcurve);
         desc = "Continuing attractors and basins:", enabled=show_progress
     )
     mapper = acam.mapper
@@ -164,7 +164,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, pcurve, ics;
         ProgressMeter.next!(progress)
     end
     rmaps = match_sequentially!(
-        attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper), pidx
+        attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper)
     )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont
