@@ -27,7 +27,7 @@ abstract type IDMatcher end
 """
     matching_map(
         a₊::Dict, a₋::Dict, matcher;
-        ds::DynamicalSystem, p, pprev, pidx, next_id
+        ds::DynamicalSystem, p, pprev, next_id
     ) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
@@ -47,8 +47,9 @@ Typically the +,- mean after and before some change of parameter of a dynamical 
 ## Keyword arguments
 
 - `ds`: the dynamical system that generated `a₊, a₋`.
-- `p, pprev, pidx`: the parameter values corresponding to `a₊, a₋` and the index the
-  parameter has in `ds`.
+- `p, pprev`: the parameters corresponding to `a₊, a₋`. Both need to be iterables mapping
+  parameter index to parameter value (such as `Dict, Vector{Pair}`, etc., so whatever
+  can be given as input to `DynamicalSystems.set_parameters!`).
 - `next_id = next_free_id(a₊, a₋)`: the ID to give to values of  `a₊` that cannot be
   matched to `a₋` and hence must obtain a new unique ID.
 
@@ -92,9 +93,9 @@ i.e., the pairs of `old => new` IDs.
 
 ## Keyword arguments
 
-- `prange = eachindex(attractors)`: the range of parameters from which to extract
-  the `p, pprev` values given to [`matching_map`](@ref).
-- `pidx, ds`: both propagated to [`matching_map`](@ref) and are `nothing` by default.
+- `pcurve = nothing`: the curve of parameters along which the continuation occured,
+  from which to extract the `p, pprev` values given to [`matching_map`](@ref).
+- `ds = nothing`: propagated to [`matching_map`](@ref).
 - `retract_keys::Bool = true`: If `true` at the end the function will "retract" keys (i.e., make the
   integers smaller integers) so that all unique IDs
   are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become
