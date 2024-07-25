@@ -160,27 +160,27 @@ end
 
 # Concrete implementation of `match_sequentially!`:
 function _rematch_ignored!(attractors_cont, matcher;
-        pidx = nothing, ds = nothing, prange = eachindex(attractors_cont),
+        ds = nothing, pcurve = eachindex(attractors_cont),
     )
     next_id = 1
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = prange[i+1], prange[i]
+        p, pprev = pcurve[i+1], pcurve[i]
         # If there are no attractors, skip the matching
         (isempty(a₊) || isempty(a₋)) && continue
         # Here we always compute a next id. In this way, if an attractor disappears
         # and reappears, it will get a different (incremented) ID as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
         next_id = max(next_id, next_id_a) + 1
-        rmap = matching_map!(a₊, a₋, matcher; next_id, pidx, ds, p, pprev)
+        rmap = matching_map!(a₊, a₋, matcher; next_id, ds, p, pprev)
         push!(rmaps, rmap)
     end
     return rmaps
 end
 
 function _rematch_with_past!(attractors_cont, matcher;
-        pidx = nothing, ds = nothing, prange = eachindex(attractors_cont),
+        ds = nothing, pcurve = eachindex(attractors_cont),
     )
     # this dictionary stores all instances of previous attractors and is updated
     # at every step. It is then given to the matching function as if it was
@@ -189,12 +189,12 @@ function _rematch_with_past!(attractors_cont, matcher;
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = prange[i+1], prange[i]
+        p, pprev = pcurve[i+1], pcurve[i]
         # update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
-        rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds, pidx)
+        rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds)
         push!(rmaps, rmap)
     end
     return rmaps
