@@ -494,9 +494,13 @@ fig
 
 ## Continuation along arbitrary parameter curves
 
-# One of the many advantages of the global continuation is that we choose
+# One of the many advantages of the global continuation is that we can choose
 # what parameters to continue over. We can provide any arbitrary curve
-# in parameter space. For example, we can probe an elipsoid defined as
+# in parameter space. This is possible because (1) finding and matching attractors
+# are two completely orthogonal steps, and (2) it is completely fine for
+# attractors to dissapear (and perhaps re-appear) during a global continuation.
+
+#For example, we can probe an elipsoid defined as
 
 params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 pcurve = params.(range(0, 2π; length = 101))
