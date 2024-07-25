@@ -54,20 +54,21 @@ function mean_across_features(fs)
 end
 
 function global_continuation(
-        continuation::FeaturizeGroupAcrossParameter, prange, pidx, ics;
+        continuation::FeaturizeGroupAcrossParameter, pcurve, ics;
         show_progress = true, samples_per_parameter = 100
     )
     (; mapper, info_extraction, par_weight) = continuation
-    spp, n = samples_per_parameter, length(prange)
-    features = _get_features_prange(mapper, ics, n, spp, prange, pidx, show_progress)
+    spp, n = samples_per_parameter, length(pcurve)
+    features = _get_features_pcurve(mapper, ics, n, spp, pcurve, show_progress)
 
     # This is a special clause for implementing the MCBB algorithm (weighting
     # also by parameter value, i.e., making the parameter value a feature)
     # It calls a special `group_features` function that also incorporates the
     # parameter value (see below). Otherwise, we call normal `group_features`.
+    # TODO: We have deprecated this special clause. In the next version we need to cleanup
+    # the source code and remove the `par_weight` and its special treatment in `group_features`.
     if mapper.group_config isa GroupViaClustering && par_weight ≠ 0
         labels = group_features(features, mapper.group_config; par_weight, plength = n, spp)
-
     else
         labels = group_features(features, mapper.group_config)
     end
@@ -76,7 +77,7 @@ function global_continuation(
     return fractions_cont, attractors_cont
 end
 
-function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, prange, pidx, show_progress)
+function _get_features_pcurve(mapper::AttractorsViaFeaturizing, ics, n, spp, pcurve, show_progress)
     progress = ProgressMeter.Progress(n;
         desc="Generating features", enabled=show_progress, offset = 2,
     )
@@ -84,8 +85,8 @@ function _get_features_prange(mapper::AttractorsViaFeaturizing, ics, n, spp, pra
     feature = extract_features(mapper, ics; N = 1)
     features = Vector{typeof(feature[1])}(undef, n*spp)
     # Collect features
-    for (i, p) in enumerate(prange)
-        set_parameter!(mapper.ds, pidx, p)
+    for (i, p) in enumerate(pcurve)
+        set_parameters!(mapper.ds, p)
         current_features = extract_features(mapper, ics; show_progress, N = spp)
         features[((i - 1)*spp + 1):i*spp] .= current_features
         ProgressMeter.next!(progress)
