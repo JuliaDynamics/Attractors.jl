@@ -416,7 +416,7 @@ function Attractors.animate_attractors_continuation(
     )
     length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
     K = length(ukeys)
-    fig = Figure(figure...)
+    fig = Figure(; figure...)
     ax = Axis(fig[1,1]; limits, axis...)
     fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions",
         yaxisposition = :right, fracaxis...
