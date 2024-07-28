@@ -1,3 +1,9 @@
+# v1.19
+
+- Global continuation can now be performed across any arbitrary curve
+  in parameter space. This is something completely novel
+  and we'll likely work on a paper on this!
+
 # v1.18
 
 This is a big release, with (hopefully) nothing breaking, but lots of deprecations!
