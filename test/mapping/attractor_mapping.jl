@@ -115,6 +115,8 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
 
         config = GroupViaNearestFeature(templates; max_distance)
         mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr=500)
+        # test the functionality mapper(u0) -> label
+        @test isinteger(mapper(get_state(ds))) == true
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
     end
 
