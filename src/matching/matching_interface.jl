@@ -27,7 +27,7 @@ abstract type IDMatcher end
 """
     matching_map(
         a₊::Dict, a₋::Dict, matcher;
-        ds::DynamicalSystem, p, pprev, pidx, next_id
+        ds::DynamicalSystem, p, pprev, next_id
     ) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
@@ -47,8 +47,9 @@ Typically the +,- mean after and before some change of parameter of a dynamical 
 ## Keyword arguments
 
 - `ds`: the dynamical system that generated `a₊, a₋`.
-- `p, pprev, pidx`: the parameter values corresponding to `a₊, a₋` and the index the
-  parameter has in `ds`.
+- `p, pprev`: the parameters corresponding to `a₊, a₋`. Both need to be iterables mapping
+  parameter index to parameter value (such as `Dict, Vector{Pair}`, etc., so whatever
+  can be given as input to `DynamicalSystems.set_parameters!`).
 - `next_id = next_free_id(a₊, a₋)`: the ID to give to values of  `a₊` that cannot be
   matched to `a₋` and hence must obtain a new unique ID.
 
@@ -92,9 +93,9 @@ i.e., the pairs of `old => new` IDs.
 
 ## Keyword arguments
 
-- `prange = eachindex(attractors)`: the range of parameters from which to extract
-  the `p, pprev` values given to [`matching_map`](@ref).
-- `pidx, ds`: both propagated to [`matching_map`](@ref) and are `nothing` by default.
+- `pcurve = nothing`: the curve of parameters along which the continuation occured,
+  from which to extract the `p, pprev` values given to [`matching_map`](@ref).
+- `ds = nothing`: propagated to [`matching_map`](@ref).
 - `retract_keys::Bool = true`: If `true` at the end the function will "retract" keys (i.e., make the
   integers smaller integers) so that all unique IDs
   are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become
@@ -159,27 +160,27 @@ end
 
 # Concrete implementation of `match_sequentially!`:
 function _rematch_ignored!(attractors_cont, matcher;
-        pidx = nothing, ds = nothing, prange = eachindex(attractors_cont),
+        ds = nothing, pcurve = eachindex(attractors_cont),
     )
     next_id = 1
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = prange[i+1], prange[i]
+        p, pprev = pcurve[i+1], pcurve[i]
         # If there are no attractors, skip the matching
         (isempty(a₊) || isempty(a₋)) && continue
         # Here we always compute a next id. In this way, if an attractor disappears
         # and reappears, it will get a different (incremented) ID as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
         next_id = max(next_id, next_id_a) + 1
-        rmap = matching_map!(a₊, a₋, matcher; next_id, pidx, ds, p, pprev)
+        rmap = matching_map!(a₊, a₋, matcher; next_id, ds, p, pprev)
         push!(rmaps, rmap)
     end
     return rmaps
 end
 
 function _rematch_with_past!(attractors_cont, matcher;
-        pidx = nothing, ds = nothing, prange = eachindex(attractors_cont),
+        ds = nothing, pcurve = eachindex(attractors_cont),
     )
     # this dictionary stores all instances of previous attractors and is updated
     # at every step. It is then given to the matching function as if it was
@@ -188,12 +189,12 @@ function _rematch_with_past!(attractors_cont, matcher;
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = prange[i+1], prange[i]
+        p, pprev = pcurve[i+1], pcurve[i]
         # update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
-        rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds, pidx)
+        rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds)
         push!(rmaps, rmap)
     end
     return rmaps

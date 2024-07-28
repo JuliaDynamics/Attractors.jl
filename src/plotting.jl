@@ -61,7 +61,7 @@ export shaded_basins_heatmap, shaded_basins_heatmap!
 ##########################################################################################
 """
     animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx;
+        ds::DynamicalSystem, attractors_cont, fractions_cont, pcurve;
         kwargs...
     )
 
@@ -72,7 +72,7 @@ and output of the [`global_continuation`](@ref) function into a video output.
 The input dynamical system `ds` is used to evolve initial conditions sampled from the
 found attractors, so that the attractors are better visualized.
 `attractors_cont, fractions_cont` are the output of [`global_continuation`](@ref)
-while `ds, prange, pidx` are the input to [`global_continuation`](@ref).
+while `ds, pcurve` are the input to [`global_continuation`](@ref).
 
 ## Keyword arguments
 
@@ -89,9 +89,9 @@ function animate_attractors_continuation end
 export animate_attractors_continuation
 
 """
-    plot_basins_curves(fractions_cont [, prange]; kwargs...)
+    plot_basins_curves(fractions_cont [, prange]; kw...)
 
-Plot the fractions of basins of attraction versus a parameter range,
+Plot the fractions of basins of attraction versus a parameter range/curve,
 i.e., visualize the output of [`global_continuation`](@ref).
 See also [`plot_basins_attractors_curves`](@ref) and
 [`plot_continuation_curves`](@ref).
@@ -112,10 +112,10 @@ function plot_basins_curves! end
 export plot_basins_curves, plot_basins_curves!
 
 """
-    plot_attractors_curves(attractors_cont, attractor_to_real, prange = 1:length(); kwargs...)
+    plot_attractors_curves(attractors_cont, attractor_to_real [, prange]; kw...)
 
-Same as in [`plot_basins_curves`](@ref) but visualizes the attractor dependence on
-the parameter instead of their fraction.
+Same as in [`plot_basins_curves`](@ref) but visualize the attractor dependence on
+the parameter(s) instead of their basin fraction.
 The function `attractor_to_real` takes as input a `StateSpaceSet` (attractor)
 and returns a real number so that it can be plotted versus the parameter axis.
 See also [`plot_basins_attractors_curves`](@ref).
@@ -130,7 +130,7 @@ export plot_attractors_curves, plot_attractors_curves!
 """
     plot_continuation_curves(continuation_info [, prange]; kwargs...)
 
-Same as in [`plot_basins_curves`](@ref) but visualizes any arbitrary quantity characterizing
+Same as in [`plot_basins_curves`](@ref) but visualize any arbitrary quantity characterizing
 the continuation. Hence, the `continuation_info` is of exactly the same format as
 `fractions_cont`: a vector of dictionaries, each dictionary mapping attractor IDs to real numbers.
 `continuation_info` is meant to accompany `attractor_info` in [`plot_attractors_curves`](@ref).

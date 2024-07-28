@@ -50,21 +50,19 @@ attraction and whose elements are the IDs.
 
 See [`MatchByBasinOverlap`](@ref) for how matching works.
 """
-function matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
+function matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; kw...)
     a₊, a₋ = _basin_to_dict.((b₊, b₋))
-    matching_map(a₊, a₋, matcher; i)
+    matching_map(a₊, a₋, matcher; kw...)
 end
 
-function matching_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; i = nothing)
-    rmap = matching_map(b₊, b₋, matcher; i)
+function matching_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; kw...)
+    rmap = matching_map(b₊, b₋, matcher; kw...)
     replace!(b₊, rmap...)
     return rmap
 end
 
 # actual implementation
-function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap;
-        i = nothing, kw...
-    )
+function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap; kw...)
     # input checks
     if !(valtype(a₊) <: Vector{<:CartesianIndex})
         throw(ArgumentError("Incorrect input given. For matcher `MatchByBasinOverlap`,
@@ -99,5 +97,3 @@ function _basin_to_dict(b::AbstractArray{Int})
     d = Dict(k => findall(isequal(k), b) for k in ukeys)
     return d
 end
-
-# TODO: test that it works also with vector of basins of attraction

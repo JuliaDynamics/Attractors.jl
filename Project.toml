@@ -2,8 +2,7 @@ name = "Attractors"
 uuid = "f3fd9213-ca85-4dba-9dfd-7fc91308fec7"
 authors = ["George Datseris <datseris.george@gmail.com>", "Kalel Rossi", "Alexandre Wagemakers"]
 repo = "https://github.com/JuliaDynamics/Attractors.jl.git"
-version = "1.18.6"
-
+version = "1.19.0"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
@@ -33,7 +32,7 @@ Clustering = "0.15"
 ComplexityMeasures = "2.3, 3"
 Distances = "0.7, 0.8, 0.9, 0.10"
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
-DynamicalSystemsBase = "3.0.3"
+DynamicalSystemsBase = "3.9.1"
 Makie = "≥ 0.19"
 Neighborhood = "0.2.2"
 Optim = "1.7"

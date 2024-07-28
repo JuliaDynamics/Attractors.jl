@@ -56,14 +56,14 @@ end
 
 function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
-        ds, pidx, p, pprev, next_id = next_free_id(current_attractors, prev_attractors)
+        ds, p, pprev = nothing, next_id = next_free_id(current_attractors, prev_attractors)
     )
     if matcher.ε === nothing
         e = ε_from_centroids(current_attractors)
     else
         e = matcher.ε
     end
-    set_parameter!(ds, pidx, p)
+    set_parameters!(ds, p)
     proximity = AttractorsViaProximity(ds, current_attractors, e;
         horizon_limit = Inf, Ttr = 0, consecutive_lost_steps = matcher.consecutive_lost_steps
     )
@@ -135,5 +135,4 @@ function _grouped_flows(flows) # separated into
         grouped[k] = findall(isequal(k), oldids)
     end
     return grouped
-    # return Dict(k => findall(isequal(k), flows) for k in values(flows))
 end
