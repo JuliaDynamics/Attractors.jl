@@ -210,7 +210,7 @@ plot_attractors_curves(
 
 # ## Discussion and comparison
 
-# On the one hand, Attractors.jl found not only a single limit cycle,
+# Attractors.jl found not only a single limit cycle,
 # but also all system attractors, including chaotic ones.
 # It didn't require any initial guess regarding the limit cycle or its period,
 # but only a state space box that may contain attractors.
@@ -227,7 +227,7 @@ plot_attractors_curves(
 # Moreover, due to the orthogonality of finding and matching attractors,
 # as well as finding _all_ attractors, the global continuation of Attractors.jl
 # can continue along arbitrary user-defined curves in parameter space; not just
-# along a single parameter axis. This is possible because it is compeltely fine
+# along a single parameter axis. This is possible because it is completely fine
 # for some attractors to stop existing during the global continuation,
 # while local continuation stops when attractors (and their unstable version)
 # stop existing.

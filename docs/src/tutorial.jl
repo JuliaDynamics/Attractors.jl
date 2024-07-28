@@ -492,7 +492,7 @@ for ax in (ax1, ax2,); hidexdecorations!(ax; grid = false); end
 resize!(fig, 500, 500)
 fig
 
-## Continuation along arbitrary parameter curves
+# ## Continuation along arbitrary parameter curves
 
 # One of the many advantages of the global continuation is that we can choose
 # what parameters to continue over. We can provide any arbitrary curve
