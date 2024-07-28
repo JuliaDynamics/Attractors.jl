@@ -84,6 +84,7 @@ while `ds, pcurve` are the input to [`global_continuation`](@ref).
 - `figure, axis, fracaxis, legend`: named tuples propagated as keyword arguments to the
   creation of the `Figure`, the `Axis`, the "bar-like" axis containing the fractions,
   and the `axislegend` that adds the legend (if `add_legend = true`).
+- `add_legend = true`: whether to display the axis legend.
 """
 function animate_attractors_continuation end
 export animate_attractors_continuation

@@ -412,6 +412,7 @@ function Attractors.animate_attractors_continuation(
         T = 100,
         figure = NamedTuple(), axis = NamedTuple(), fracaxis = NamedTuple(),
         legend = NamedTuple(),
+        add_legend = length(ukeys) ≤ 6
     )
     length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
     K = length(ukeys)
@@ -429,7 +430,9 @@ function Attractors.animate_attractors_continuation(
     for k in ukeys
         plotf!(ax, att_obs[k]; color = (colors[k], 0.75), label = "$k", markersize, marker = markers[k])
     end
-    axislegend(ax; legend...)
+    if add_legend
+        axislegend(ax; legend...)
+    end
 
     # setup fractions axis
     heights = Observable(fill(0.1, K))
