@@ -36,30 +36,27 @@ An important feature of the basin entropy is that it allows
 comparisons between different basins using the same box size `ε`.
 """
 function basin_entropy(basins::Array, ε = 20)
-    dims = size(basins)
     Sb = 0.0; Nb = 0
-    bx_tuple = ntuple(i -> range(1, dims[i] - rem(dims[i],ε), step = ε), length(dims))
-    box_indices = CartesianIndices(bx_tuple)
-    for box in box_indices
-        # compute the range of indices for the current box
-        I = CartesianIndices(ntuple(i -> range(box[i], box[i]+ε-1, step = 1), length(dims)))
-        box_values = [basins[k] for k in I]
-        Nb = Nb + (length(unique(box_values)) > 1)
-        Sb = Sb + _box_entropy(box_values)
+    εranges = map(d -> 1:ε:(d - rem(d, ε)), size(basins))
+    box_iterator = Iterators.product(εranges...)
+    for box_start in box_iterator
+        box_ranges = map(d -> d:(d+ε-1), box_start)
+        box_values = view(basins, box_ranges...)
+        uvals = unique(box_values)
+        Nb = Nb + (length(uvals) > 1)
+        Sb = Sb + _box_entropy(box_values, uvals)
     end
-    return Sb/length(box_indices), Sb/Nb
+    return Sb/length(box_iterator), Sb/Nb
 end
 
-function _box_entropy(box_values)
+function _box_entropy(box_values, unique_vals)
     h = 0.0
-    for v in unique(box_values)
+    for v in unique_vals
         p = count(x -> (x == v), box_values)/length(box_values)
         h += p*log(1/p)
     end
     return h
 end
-
-
 
 
 
