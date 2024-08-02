@@ -37,29 +37,28 @@ comparisons between different basins using the same box size `ε`.
 """
 function basin_entropy(basins::Array, ε = 20)
     dims = size(basins)
-    vals = unique(basins)
-    Sb = 0; Nb = 0; N = 0
+    Sb = 0.0; Nb = 0
     bx_tuple = ntuple(i -> range(1, dims[i] - rem(dims[i],ε), step = ε), length(dims))
     box_indices = CartesianIndices(bx_tuple)
     for box in box_indices
         # compute the range of indices for the current box
         I = CartesianIndices(ntuple(i -> range(box[i], box[i]+ε-1, step = 1), length(dims)))
         box_values = [basins[k] for k in I]
-        N = N + 1
         Nb = Nb + (length(unique(box_values)) > 1)
         Sb = Sb + _box_entropy(box_values)
     end
-    return Sb/N, Sb/Nb
+    return Sb/length(box_indices), Sb/Nb
 end
 
 function _box_entropy(box_values)
-    h = 0.
-    for (k,v) in enumerate(unique(box_values))
-        p = count( x -> (x == v), box_values)/length(box_values)
+    h = 0.0
+    for v in unique(box_values)
+        p = count(x -> (x == v), box_values)/length(box_values)
         h += p*log(1/p)
     end
     return h
 end
+
 
 
 
