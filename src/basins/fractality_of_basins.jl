@@ -49,7 +49,7 @@ function basin_entropy(basins::Array, ε = 20)
     return Sb/length(box_iterator), Sb/Nb
 end
 
-function _box_entropy(box_values, unique_vals)
+function _box_entropy(box_values, unique_vals = unique(box_values))
     h = 0.0
     for v in unique_vals
         p = count(x -> (x == v), box_values)/length(box_values)
