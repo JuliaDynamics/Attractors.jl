@@ -60,7 +60,7 @@ function _box_entropy(box_values, unique_vals = unique(box_values))
     h = 0.0
     for v in unique_vals
         p = count(x -> (x == v), box_values)/length(box_values)
-        h += p*log(1/p)
+        h += -p*log(p)
     end
     return h
 end
