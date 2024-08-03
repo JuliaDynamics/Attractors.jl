@@ -50,8 +50,12 @@ function basin_entropy(basins::AbstractArray{Int, D}, es::Dims{D}) where {D}
         box_ranges = map((d, ε) -> d:(d+ε-1), box_start, es)
         box_values = view(basins, box_ranges...)
         uvals = unique(box_values)
-        Nb = Nb + (length(uvals) > 1)
-        Sb = Sb + _box_entropy(box_values, uvals)
+        if length(uvals) > 1
+            Nb += 1
+            # we only need to estimate entropy for boxes with more than 1 val,
+            # because in other cases the entropy is zero
+            Sb = Sb + _box_entropy(box_values, uvals)
+        end
     end
     return Sb/length(box_iterator), Sb/Nb
 end
