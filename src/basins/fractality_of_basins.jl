@@ -9,7 +9,9 @@ of the given `basins` of attraction by considering `ε`-sized boxes along each d
 ## Description
 
 First, the n-dimensional input `basins`
-is divided regularly into n-dimensional boxes of side `ε` (same along all dimensions).
+is divided regularly into n-dimensional boxes of side `ε`.
+If `ε` is an integer, the same size is used for all dimensions, otherwise `ε` can be
+a tuple with the same size as the dimensions of `basins`.
 Assuming that there are ``N`` `ε`-boxes that cover the `basins`, the basin entropy is estimated
 as [Daza2016](@cite)
 
@@ -35,12 +37,17 @@ have a fractal boundary, for a more precise test see [`basins_fractal_test`](@re
 An important feature of the basin entropy is that it allows
 comparisons between different basins using the same box size `ε`.
 """
-function basin_entropy(basins::Array, ε = 20)
+function basin_entropy(basins::AbstractArray{Int, D}, ε::Int = 20) where {D}
+    es = ntuple(i -> ε, Val(D))
+    return basin_entropy(basins, es)
+end
+
+function basin_entropy(basins::AbstractArray{Int, D}, es::Dims{D})
     Sb = 0.0; Nb = 0
-    εranges = map(d -> 1:ε:d, size(basins))
+    εranges = map((d, ε) -> 1:ε:d, size(basins), es)
     box_iterator = Iterators.product(εranges...)
     for box_start in box_iterator
-        box_ranges = map(d -> d:(d+ε-1), box_start)
+        box_ranges = map((d, ε) -> d:(d+ε-1), box_start, es)
         box_values = view(basins, box_ranges...)
         uvals = unique(box_values)
         Nb = Nb + (length(uvals) > 1)
