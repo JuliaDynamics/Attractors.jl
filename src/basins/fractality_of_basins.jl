@@ -93,15 +93,12 @@ the estimated value of the boundary basin entropy with the sampling method.
 """
 function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     dims = size(basins)
-    vals = unique(basins)
-    S=Int(length(vals))
-
     # Sanity check.
     if minimum(dims)/ε < 50
         @warn "Maybe the size of the grid is not fine enough."
     end
     if Ntotal < 100
-        error("Ntotal must be larger than 1000 to gather enough statistics.")
+        error("Ntotal must be larger than 100 to gather enough statistics.")
     end
 
     v_pts = zeros(Float64, length(dims), prod(dims))
@@ -111,7 +108,7 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     end
     tree = searchstructure(KDTree, v_pts, Euclidean())
     # Now get the values in the boxes.
-    Nb = 1; N = 1; Sb = 0;
+    Nb = 1
     N_stat = zeros(Ntotal)
     while Nb < Ntotal
         p = [rand()*(sz-ε)+ε for sz in dims]
