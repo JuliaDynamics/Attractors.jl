@@ -42,7 +42,7 @@ function basin_entropy(basins::AbstractArray{Int, D}, ε::Int = 20) where {D}
     return basin_entropy(basins, es)
 end
 
-function basin_entropy(basins::AbstractArray{Int, D}, es::Dims{D})
+function basin_entropy(basins::AbstractArray{Int, D}, es::Dims{D}) where {D}
     Sb = 0.0; Nb = 0
     εranges = map((d, ε) -> 1:ε:d, size(basins), es)
     box_iterator = Iterators.product(εranges...)
