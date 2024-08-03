@@ -22,7 +22,7 @@ where ``m`` is the number of unique IDs (integers of `basins`) in box ``i``
 and ``p_{ij}`` is the relative frequency (probability) to obtain ID ``j``
 in the ``i`` box (simply the count of IDs ``j`` divided by the total in the box).
 
-`Sbb` is the boundary basin entropy `Sbb`.
+`Sbb` is the boundary basin entropy.
 This follows the same definition as ``S_b``, but now averaged over only
 only boxes that contains at least two
 different basins, that is, for the boxes on the boundaries.
