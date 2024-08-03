@@ -37,7 +37,7 @@ comparisons between different basins using the same box size `ε`.
 """
 function basin_entropy(basins::Array, ε = 20)
     Sb = 0.0; Nb = 0
-    εranges = map(d -> 1:ε:(d - rem(d, ε)), size(basins))
+    εranges = map(d -> 1:ε:d, size(basins))
     box_iterator = Iterators.product(εranges...)
     for box_start in box_iterator
         box_ranges = map(d -> d:(d+ε-1), box_start)
