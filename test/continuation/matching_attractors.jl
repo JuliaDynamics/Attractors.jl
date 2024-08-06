@@ -39,6 +39,22 @@ end
     end
 end
 
+@testset "synthetic multistable matching" begin
+    attractors_cont_simple = Dict{Int64, SVector{1, Float64}}[Dict(1 => [0.0]), Dict(1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [0.0], 1 => [2.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(2 => [4.0], 3 => [-5.0], 1 => [2.0]), Dict(4 => [6.0], 2 => [0.0], 3 => [2.0], 1 => [4.0]), Dict(4 => [4.0], 2 => [0.0], 3 => [2.0], 1 => [6.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [0.0], 3 => [2.0], 1 => [4.0])]
+    attractors_cont = [Dict(k=>StateSpaceSet(Vector(v)) for (k,v) in atts) for atts in attractors_cont_simple]
+
+    mapped_atts = deepcopy(attractors_cont)
+    rmaps = match_sequentially!(mapped_atts, default)
+
+    fractions_cont = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 1 => 0.8), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.6, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.4), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2)]
+    mapped_fracs = deepcopy(fractions_cont)
+    match_sequentially!(mapped_fracs, rmaps)
+
+    @test all(keys.(attractors_cont) .== keys.(mapped_atts)    )
+    @test all(keys.(attractors_cont) .== keys.(mapped_fracs)    )
+    @test all(Set.(values.(fractions_cont)) .== Set.(values.(mapped_fracs)))
+end
+
 @testset "global_continuation matching" begin
     # Make fake attractors with points that become more "separated" as "parameter"
     # is increased
