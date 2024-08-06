@@ -165,3 +165,56 @@ end # Matcher by distance tests
     @test rmap[2] == 3
     @test rmap[3] == 2
 end
+
+@testset "BasinEncloure" begin
+   
+    @testset "synthetic multistable continuation" begin
+        function dummy_multistable_equilibrium!(dx, x, p, n)
+            r = p[1]
+            num_max_atts = 5
+            x_max_right = 10
+            x_pos_atts = [x_max_right*(i-1)/num_max_atts for i=1:num_max_atts]
+            if 3 <=r < 4 && (x[1] <= 2)
+                x_pos_atts[1] = -5
+            end
+            num_atts = r < (num_max_atts + 1) ? floor(Int, r) : ceil(Int, 2*num_max_atts - r)
+            x_atts = [x_pos_atts[i] for i=1:num_atts]
+            att_of_x = findlast(xatt->xatt<=x[1], x_atts)
+            if x[1] < 0 att_of_x = 1 end
+            dx .= x_atts[att_of_x]
+                
+            return nothing
+        end
+        
+        ds = DeterministicIteratedMap(dummy_multistable_equilibrium!, [0.], [1.0])
+        featurizer(A,t) = A[end]
+        grouping_config = GroupViaPairwiseComparison(; threshold=0.2)
+        mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config)
+        
+        xg = range(0, 10, length = 100)
+        grid = (xg,)
+        sampler, = statespace_sampler(grid, 1234)
+        samples_per_parameter = 1000
+        ics = Dataset([deepcopy(sampler()) for _ in 1:samples_per_parameter])
+    
+        rrange = range(1, 9.5; step=0.5)
+        ridx = 1
+    
+        mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config; T=10, Ttr=1)
+        assc = AttractorSeedContinueMatch(mapper, default)
+        fs_curves, atts_all = global_continuation(assc, rrange, ridx, ics; show_progress = true)
+        atts_keys = keys.(atts_all)
+        
+        atts_keys_solution = [[1], [1], [2, 1], [2, 1], [2, 3, 1], [2, 3, 1], [4, 2, 3, 1], [4, 2, 3, 1], [5, 4, 2, 3, 1], [5, 4, 2, 3, 1], [4, 2, 3, 1], [4, 2, 3, 1], [2, 3, 1], [2, 3, 1], [2, 3], [2, 3], [3], [3]]
+        fs_curves_solution = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 1 => 0.8), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.6, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.4), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2)]
+        
+        @test all(Set.(atts_keys) .== Set.(atts_keys_solution))
+        @test all(Set.(atts_keys) .== Set.(keys.(fs_curves)))
+        for (fs_curve, fs_curve_solution) in zip(fs_curves, fs_curves_solution)
+            for (k, fs) in fs_curve
+                @test isapprox(fs, fs_curve_solution[k], atol=1e-3)
+            end 
+        end
+    end
+    
+end
