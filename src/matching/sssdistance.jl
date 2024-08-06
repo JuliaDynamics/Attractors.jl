@@ -108,9 +108,6 @@ function _matching_map_distances(keys₊, keys₋, distances::Dict, threshold;
         end
     end
 
-    # the final step is to filter out equivalent mappings where key and value are the same
-    # filter!(p -> p.first ≠ p.second, rmap)
-
     return rmap
 end
 
