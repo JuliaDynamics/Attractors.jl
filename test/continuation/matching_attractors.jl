@@ -39,53 +39,20 @@ end
     end
 end
 
-@testset "synthetic_multistable_continuation" begin 
-    function dummy_multistable_equilibrium!(dx, x, p, n)
-        r = p[1]
-        num_max_atts = 5
-        x_max_right = 10
-        x_pos_atts = [x_max_right*(i-1)/num_max_atts for i=1:num_max_atts]
-        if 3 <=r < 4 && (x[1] <= 2)
-            x_pos_atts[1] = -5
-        end
-        num_atts = r < (num_max_atts + 1) ? floor(Int, r) : ceil(Int, 2*num_max_atts - r)
-        x_atts = [x_pos_atts[i] for i=1:num_atts]
-        att_of_x = findlast(xatt->xatt<=x[1], x_atts)
-        if x[1] < 0 att_of_x = 1 end
-        dx .= x_atts[att_of_x]
-            
-        return nothing
-    end
-    
-    ds = DeterministicIteratedMap(dummy_multistable_equilibrium!, [0.], [1.0])
-    featurizer(A,t) = A[end]
-    grouping_config = GroupViaPairwiseComparison(; threshold=0.2)
-    mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config)
-    
-    xg = range(0, 10, length = 100)
-    grid = (xg,)
-    sampler, = statespace_sampler(grid, 1234)
-    samples_per_parameter = 1000
-    ics = Dataset([deepcopy(sampler()) for _ in 1:samples_per_parameter])
+@testset "synthetic multistable matching" begin
+    attractors_cont_simple = Dict{Int64, SVector{1, Float64}}[Dict(1 => [0.0]), Dict(1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [0.0], 1 => [2.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(2 => [4.0], 3 => [-5.0], 1 => [2.0]), Dict(4 => [6.0], 2 => [0.0], 3 => [2.0], 1 => [4.0]), Dict(4 => [4.0], 2 => [0.0], 3 => [2.0], 1 => [6.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [0.0], 3 => [2.0], 1 => [4.0])]
+    attractors_cont = [Dict(k=>StateSpaceSet(Vector(v)) for (k,v) in atts) for atts in attractors_cont_simple]
 
-    rrange = range(1, 9.5; step=0.5)
-    ridx = 1
+    mapped_atts = deepcopy(attractors_cont)
+    rmaps = match_sequentially!(mapped_atts, default)
 
-    mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config; T=10, Ttr=1)
-    assc = AttractorSeedContinueMatch(mapper, default)
-    fs_curves, atts_all = global_continuation(assc, rrange, ridx, ics; show_progress = true)
-    atts_keys = keys.(atts_all)
-    
-    atts_keys_solution = [[1], [1], [2, 1], [2, 1], [2, 3, 1], [2, 3, 1], [4, 2, 3, 1], [4, 2, 3, 1], [5, 4, 2, 3, 1], [5, 4, 2, 3, 1], [4, 2, 3, 1], [4, 2, 3, 1], [2, 3, 1], [2, 3, 1], [2, 3], [2, 3], [3], [3]]
-    fs_curves_solution = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8091908091908092, 1 => 0.19080919080919082), Dict(2 => 0.8093812375249501, 1 => 0.1906187624750499), Dict(2 => 0.18862275449101795, 3 => 0.1906187624750499, 1 => 0.6207584830339321), Dict(2 => 0.18843469591226322, 3 => 0.19042871385842472, 1 => 0.6211365902293121), Dict(4 => 0.4097706879361914, 2 => 0.18843469591226322, 3 => 0.19042871385842472, 1 => 0.21136590229312063), Dict(4 => 0.4103585657370518, 2 => 0.18824701195219123, 3 => 0.1902390438247012, 1 => 0.21115537848605578), Dict(5 => 0.21613545816733068, 4 => 0.1942231075697211, 2 => 0.18824701195219123, 3 => 0.1902390438247012, 1 => 0.21115537848605578), Dict(5 => 0.21691542288557214, 4 => 0.19402985074626866, 2 => 0.1880597014925373, 3 => 0.1900497512437811, 1 => 0.2109452736318408), Dict(4 => 0.4109452736318408, 2 => 0.1880597014925373, 3 => 0.1900497512437811, 1 => 0.2109452736318408), Dict(4 => 0.4103585657370518, 2 => 0.18824701195219123, 3 => 0.1902390438247012, 1 => 0.21115537848605578), Dict(2 => 0.18824701195219123, 3 => 0.1902390438247012, 1 => 0.6215139442231076), Dict(2 => 0.18843469591226322, 3 => 0.19042871385842472, 1 => 0.6211365902293121), Dict(2 => 0.8095712861415753, 3 => 0.19042871385842472), Dict(2 => 0.8093812375249501, 3 => 0.1906187624750499), Dict(3 => 1.0), Dict(3 => 1.0)]
-    
-    @test all(Set.(atts_keys) .== Set.(atts_keys_solution))
-    @test all(Set.(atts_keys) .== Set.(keys.(fs_curves)))
-    for (fs_curve, fs_curve_solution) in zip(fs_curves, fs_curves_solution)
-        for (k, fs) in fs_curve
-            @test isapprox(fs, fs_curve_solution[k], atol=1e-3)
-        end 
-    end
+    fractions_cont = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 1 => 0.8), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.6, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.4), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2)]
+    mapped_fracs = deepcopy(fractions_cont)
+    match_sequentially!(mapped_fracs, rmaps)
+
+    @test all(keys.(attractors_cont) .== keys.(mapped_atts)    )
+    @test all(keys.(attractors_cont) .== keys.(mapped_fracs)    )
+    @test all(Set.(values.(fractions_cont)) .== Set.(values.(mapped_fracs)))
 end
 
 @testset "global_continuation matching" begin
