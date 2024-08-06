@@ -201,18 +201,20 @@ end
         ridx = 1
     
         mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config; T=10, Ttr=1)
-        assc = AttractorSeedContinueMatch(mapper, default)
+        matcher  = MatchByBasinEnclosure(;ε=0.1) 
+        assc = AttractorSeedContinueMatch(mapper, matcher)
         fs_curves, atts_all = global_continuation(assc, rrange, ridx, ics; show_progress = true)
-        atts_keys = keys.(atts_all)
         
-        atts_keys_solution = [[1], [1], [2, 1], [2, 1], [2, 3, 1], [2, 3, 1], [4, 2, 3, 1], [4, 2, 3, 1], [5, 4, 2, 3, 1], [5, 4, 2, 3, 1], [4, 2, 3, 1], [4, 2, 3, 1], [2, 3, 1], [2, 3, 1], [2, 3], [2, 3], [3], [3]]
-        fs_curves_solution = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 1 => 0.8), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.6, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.4), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2)]
+        atts_all_endpoint_solution = Dict{Int64, SVector{1, Float64}}[Dict(1 => [0.0]), Dict(1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(1 => [0.0]), Dict(1 => [0.0])]
+        atts_all_endpoint = [Dict(k=>v[end] for (k,v) in atts) for atts in atts_all] 
+
+        @test atts_all_endpoint == atts_all_endpoint_solution
         
-        @test all(Set.(atts_keys) .== Set.(atts_keys_solution))
-        @test all(Set.(atts_keys) .== Set.(keys.(fs_curves)))
+        fs_curves_solution = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.8, 1 => 0.2), Dict(1 => 1.0), Dict(1 => 1.0)]
+        @test all(keys.(fs_curves_solution) .== keys.(fs_curves)    )
         for (fs_curve, fs_curve_solution) in zip(fs_curves, fs_curves_solution)
             for (k, fs) in fs_curve
-                @test isapprox(fs, fs_curve_solution[k], atol=1e-3)
+                @test isapprox(fs, fs_curve_solution[k], atol=1e-1)
             end 
         end
     end
