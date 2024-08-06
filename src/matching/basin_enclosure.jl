@@ -54,6 +54,25 @@ Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@ci
     consecutive_lost_steps::Int = 1000
 end
 
+function next_key(dict)
+    allkeys = collect(values(dict))
+    maxkey = maximum(allkeys)
+    return maxkey+1
+end
+
+# missing key: a key that is in a₊ but not in keys(rmap);
+# when keys are swapped, this missing key might be lost 
+# to fix it, I add the missing key to rmap, pointing to the next available key 
+function add_missing_keys_rmap!(rmap, current_attractors)
+    allkeys = collect(keys(current_attractors))
+    usedkeys = collect(keys(rmap))
+    missingkeys = [k for k in allkeys if !(k ∈ usedkeys)]
+    for missingkey in sort(missingkeys)
+        rmap[missingkey] = next_key(rmap)
+    end
+    return
+end
+ 
 function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
         ds, p, pprev = nothing, next_id = next_free_id(current_attractors, prev_attractors)
@@ -71,6 +90,7 @@ function matching_map(
     # to where they flowed to in current attractors
     # (notice that `proximity(u)` returns IDs of current attractors)
     flow = Dict(k => proximity(matcher.seeding(A)) for (k, A) in prev_attractors)
+
     # of course, the matching map is the inverse of `flow`
     rmap = Dict{Int, Int}()
     # but we need to take care of diverging and co-flowing attractors.
@@ -95,7 +115,6 @@ function matching_map(
             a₊ = Dict(new_ID => current_attractors[new_ID])
             a₋ = Dict(old_ID => prev_attractors[old_ID] for old_ID in old_flowed_to_same)
             ssmatcher = MatchBySSSetDistance(; distance = matcher.distance)
-            @show length(a₊), length(a₋)
             matched_rmap = matching_map(a₊, a₋, ssmatcher)
             # this matcher has only one entry, so we use it to match
             # (we don't care what happens to the rest of the old_IDs, as the `rmap`
@@ -104,6 +123,8 @@ function matching_map(
             rmap[new_ID] = old_ID
         end
     end
+    add_missing_keys_rmap!(rmap, current_attractors)
+
     return rmap
 end
 
@@ -129,10 +150,6 @@ end
 
 # group flows so that all old IDs that go to same new ID are in one vector
 function _grouped_flows(flows) # separated into
-    grouped = Dict{Int, Vector{Int}}()
-    oldids = collect(keys(flows))
-    for k in values(flows)
-        grouped[k] = findall(isequal(k), oldids)
-    end
+    grouped = Dict(v2=>[k for (k,v) in flows if v==v2] for (k2, v2) in flows)
     return grouped
 end
