@@ -61,8 +61,8 @@ function next_key(dict)
 end
 
 # missing key: a key that is in a₊ but not in keys(rmap);
-# when keys are swapped, this missing key might be lost 
-# to fix it, I add the missing key to rmap, pointing to the next available key 
+# when keys are swapped, this missing key might be lost
+# to fix it, I add the missing key to rmap, pointing to the next available key
 function add_missing_keys_rmap!(rmap, current_attractors)
     allkeys = collect(keys(current_attractors))
     usedkeys = collect(keys(rmap))
@@ -72,7 +72,7 @@ function add_missing_keys_rmap!(rmap, current_attractors)
     end
     return
 end
- 
+
 function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
         ds, p, pprev = nothing, next_id = next_free_id(current_attractors, prev_attractors)
