@@ -92,6 +92,7 @@ function matching_map(
     for (new_ID, old_flowed_to_same) in grouped_flows
         if length(old_flowed_to_same) == 0 # none of the old IDs converged to the current `new_ID`
             rmap[new_ID] = next_id #necessary to make rmap complete and avoid skipping keys
+            next_id += 1
         elseif length(old_flowed_to_same) == 1
             rmap[new_ID] = only(old_flowed_to_same)
         else # need to resolve coflowing using distances
