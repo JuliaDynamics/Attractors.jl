@@ -2,7 +2,7 @@ name = "Attractors"
 uuid = "f3fd9213-ca85-4dba-9dfd-7fc91308fec7"
 authors = ["George Datseris <datseris.george@gmail.com>", "Kalel Rossi", "Alexandre Wagemakers"]
 repo = "https://github.com/JuliaDynamics/Attractors.jl.git"
-version = "1.19.3"
+version = "1.19.4"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
