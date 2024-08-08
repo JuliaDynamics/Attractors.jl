@@ -53,9 +53,9 @@ Typically the +,- mean after and before some change of parameter of a dynamical 
 - `next_id = next_free_id(a₊, a₋)`: the ID to give to values of  `a₊` that cannot be
   matched to `a₋` and hence must obtain a new unique ID.
 
-Some matchers like [`MatchBySSSetDistance`](@ref) do not utilize `ds, p, pprev, pidx` in any way
+Some matchers like [`MatchBySSSetDistance`](@ref) do not utilize `ds, p, pprev` in any way
 while other matchers like [`MatchByBasinEnclosure`](@ref) do, and those require
-expliticly giving values to `ds, p, pprev, pidx` as their default values
+expliticly giving values to `ds, p, pprev` as their default values
 is just `nothing`.
 """
 function matching_map(a₊, a₋, matcher::IDMatcher; kw...)
@@ -95,6 +95,7 @@ i.e., the pairs of `old => new` IDs.
 
 - `pcurve = nothing`: the curve of parameters along which the continuation occured,
   from which to extract the `p, pprev` values given to [`matching_map`](@ref).
+  See [`global_continuation`](@ref) if you are unsure what this means.
 - `ds = nothing`: propagated to [`matching_map`](@ref).
 - `retract_keys::Bool = true`: If `true` at the end the function will "retract" keys (i.e., make the
   integers smaller integers) so that all unique IDs
