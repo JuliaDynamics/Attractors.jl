@@ -54,25 +54,6 @@ Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@ci
     consecutive_lost_steps::Int = 1000
 end
 
-function next_key(dict)
-    allkeys = collect(values(dict))
-    maxkey = maximum(allkeys)
-    return maxkey+1
-end
-
-# missing key: a key that is in a₊ but not in keys(rmap);
-# when keys are swapped, this missing key might be lost
-# to fix it, I add the missing key to rmap, pointing to the next available key
-function add_missing_keys_rmap!(rmap, current_attractors)
-    allkeys = collect(keys(current_attractors))
-    usedkeys = collect(keys(rmap))
-    missingkeys = [k for k in allkeys if !(k ∈ usedkeys)]
-    for missingkey in sort(missingkeys)
-        rmap[missingkey] = next_key(rmap)
-    end
-    return
-end
-
 function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
         ds, p, pprev = nothing, next_id = next_free_id(current_attractors, prev_attractors)
@@ -104,11 +85,13 @@ function matching_map(
         end
     end
     # next up are the co-flowing attractors
-    grouped_flows = _grouped_flows(flow)
+    allnewids = keys(current_attractors) #needed because flow only includes new ids that prev attractors flowed onto
+    grouped_flows = _grouped_flows(flow, allnewids) #map all current ids to prev ids that flowed onto them (if the att is new, no prev ids flowed, and the corresponding entry is empty)
+
     # notice the keys of `grouped_flows` are new IDs, same as with `rmap`.
     for (new_ID, old_flowed_to_same) in grouped_flows
-        if length(old_flowed_to_same) == 0
-            continue # none of the old IDs converged to the current `new_ID`
+        if length(old_flowed_to_same) == 0 # none of the old IDs converged to the current `new_ID`
+            rmap[new_ID] = next_id #necessary to make rmap complete and avoid skipping keys
         elseif length(old_flowed_to_same) == 1
             rmap[new_ID] = only(old_flowed_to_same)
         else # need to resolve coflowing using distances
@@ -123,8 +106,6 @@ function matching_map(
             rmap[new_ID] = old_ID
         end
     end
-    add_missing_keys_rmap!(rmap, current_attractors)
-
     return rmap
 end
 
@@ -149,7 +130,8 @@ function ε_from_centroids(attractors::AbstractDict)
 end
 
 # group flows so that all old IDs that go to same new ID are in one vector
-function _grouped_flows(flows) # separated into
-    grouped = Dict(v2=>[k for (k,v) in flows if v==v2] for (k2, v2) in flows)
+# i.e., new id => [prev ids that flowed to new id]
+function _grouped_flows(flows, allnewids) # separated into
+    grouped = Dict(newid=>[k for (k,v) in flows if v==newid] for newid in allnewids)
     return grouped
 end
