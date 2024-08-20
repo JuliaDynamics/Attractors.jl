@@ -72,6 +72,7 @@ function matching_map(
     # to where they flowed to in current attractors
     # (notice that `proximity(u)` returns IDs of current attractors)
     flow = Dict(k => proximity(matcher.seeding(A)) for (k, A) in prev_attractors)
+
     # of course, the matching map is the inverse of `flow`
     rmap = Dict{Int, Int}()
     # but we need to take care of diverging and co-flowing attractors.
@@ -85,18 +86,20 @@ function matching_map(
         end
     end
     # next up are the co-flowing attractors
-    grouped_flows = _grouped_flows(flow)
+    allnewids = keys(current_attractors) #needed because flow only includes new ids that prev attractors flowed onto
+    grouped_flows = _grouped_flows(flow, allnewids) #map all current ids to prev ids that flowed onto them (if the att is new, no prev ids flowed, and the corresponding entry is empty)
+
     # notice the keys of `grouped_flows` are new IDs, same as with `rmap`.
     for (new_ID, old_flowed_to_same) in grouped_flows
-        if length(old_flowed_to_same) == 0
-            continue # none of the old IDs converged to the current `new_ID`
+        if length(old_flowed_to_same) == 0 # none of the old IDs converged to the current `new_ID`
+            rmap[new_ID] = next_id #necessary to make rmap complete and avoid skipping keys
+            next_id += 1
         elseif length(old_flowed_to_same) == 1
             rmap[new_ID] = only(old_flowed_to_same)
         else # need to resolve coflowing using distances
             a₊ = Dict(new_ID => current_attractors[new_ID])
             a₋ = Dict(old_ID => prev_attractors[old_ID] for old_ID in old_flowed_to_same)
             ssmatcher = MatchBySSSetDistance(; distance = matcher.distance)
-            @show length(a₊), length(a₋)
             matched_rmap = matching_map(a₊, a₋, ssmatcher)
             # this matcher has only one entry, so we use it to match
             # (we don't care what happens to the rest of the old_IDs, as the `rmap`
@@ -129,11 +132,8 @@ function ε_from_centroids(attractors::AbstractDict)
 end
 
 # group flows so that all old IDs that go to same new ID are in one vector
-function _grouped_flows(flows) # separated into
-    grouped = Dict{Int, Vector{Int}}()
-    oldids = collect(keys(flows))
-    for k in values(flows)
-        grouped[k] = findall(isequal(k), oldids)
-    end
+# i.e., new id => [prev ids that flowed to new id]
+function _grouped_flows(flows, allnewids) # separated into
+    grouped = Dict(newid=>[k for (k,v) in flows if v==newid] for newid in allnewids)
     return grouped
 end
