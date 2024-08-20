@@ -6,6 +6,8 @@
 # </video>
 # ```
 
+#nb @doc Attractors
+
 # [`Attractors`](@ref) is a component of the **DynamicalSystems.jl** library.
 # This tutorial will walk you through its main functionality.
 # That is, given a `DynamicalSystem` instance, find all its attractors and their basins
@@ -18,6 +20,18 @@
 # like for example [`edgestate`](@ref) or [`basins_fractal_dimension`](@ref),
 # but we won't cover anything else in this introductory tutorial.
 # See the [examples](@ref examples) page instead.
+
+
+# ### Package versions used
+
+import Pkg
+
+#nb # Activate an environment in the folder containing the notebook
+#nb Pkg.activate(dirname(@__DIR__))
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq", "BenchmarkTools"])
+
+Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
+
 
 # ## Tutorial - copy-pasteable version
 
