@@ -44,7 +44,8 @@ which is estimated with the `distance` keyword, which can be anything
 [`MatchBySSSetDistance`](@ref) accepts. The closest `₊` attractor gets the
 ID of the `₋` closest attractor that converge to it.
 
-Basin enclosure is a concept similar to "basin instability" in [Ritchie2023](@cite).
+Basin enclosure is a concept similar to "basin (in)stability" in [Ritchie2023](@cite):
+attractors that quantify as "basin stable" are matched.
 """
 @kwdef struct MatchByBasinEnclosure{E, D, S, T} <: IDMatcher
     ε::E = nothing
