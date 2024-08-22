@@ -30,7 +30,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 
 # ## Attractors.jl summary
 
-#nb using Attractors
+#nb using Attractors # re=exported by `DynamicalSystems`
 #nb @doc Attractors
 
 # ## Tutorial - copy-pasteable version
