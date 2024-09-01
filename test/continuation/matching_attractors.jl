@@ -39,6 +39,22 @@ end
     end
 end
 
+@testset "synthetic multistable matching" begin
+    attractors_cont_simple = Dict{Int64, SVector{1, Float64}}[Dict(1 => [0.0]), Dict(1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [0.0], 1 => [2.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(2 => [4.0], 3 => [-5.0], 1 => [2.0]), Dict(4 => [6.0], 2 => [0.0], 3 => [2.0], 1 => [4.0]), Dict(4 => [4.0], 2 => [0.0], 3 => [2.0], 1 => [6.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [0.0], 3 => [2.0], 1 => [4.0])]
+    attractors_cont = [Dict(k=>StateSpaceSet(Vector(v)) for (k,v) in atts) for atts in attractors_cont_simple]
+
+    mapped_atts = deepcopy(attractors_cont)
+    rmaps = match_sequentially!(mapped_atts, default)
+
+    fractions_cont = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 1 => 0.8), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.6, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.4), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2)]
+    mapped_fracs = deepcopy(fractions_cont)
+    match_sequentially!(mapped_fracs, rmaps)
+
+    @test all(keys.(attractors_cont) .== keys.(mapped_atts)    )
+    @test all(keys.(attractors_cont) .== keys.(mapped_fracs)    )
+    @test all(Set.(values.(fractions_cont)) .== Set.(values.(mapped_fracs)))
+end
+
 @testset "global_continuation matching" begin
     # Make fake attractors with points that become more "separated" as "parameter"
     # is increased
@@ -164,4 +180,59 @@ end # Matcher by distance tests
     @test length(rmap) == 2
     @test rmap[2] == 3
     @test rmap[3] == 2
+end
+
+@testset "BasinEncloure" begin
+
+    @testset "synthetic multistable continuation" begin
+        function dummy_multistable_equilibrium!(dx, x, p, n)
+            r = p[1]
+            num_max_atts = 5
+            x_max_right = 10
+            x_pos_atts = [x_max_right*(i-1)/num_max_atts for i=1:num_max_atts]
+            if 3 <=r < 4 && (x[1] <= 2)
+                x_pos_atts[1] = -5
+            end
+            num_atts = r < (num_max_atts + 1) ? floor(Int, r) : ceil(Int, 2*num_max_atts - r)
+            x_atts = [x_pos_atts[i] for i=1:num_atts]
+            att_of_x = findlast(xatt->xatt<=x[1], x_atts)
+            if x[1] < 0 att_of_x = 1 end
+            dx .= x_atts[att_of_x]
+
+            return nothing
+        end
+
+        ds = DeterministicIteratedMap(dummy_multistable_equilibrium!, [0.], [1.0])
+        featurizer(A,t) = A[end]
+        grouping_config = GroupViaPairwiseComparison(; threshold=0.2)
+        mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config)
+
+        xg = range(0, 10, length = 100)
+        grid = (xg,)
+        sampler, = statespace_sampler(grid, 1234)
+        samples_per_parameter = 1000
+        ics = Dataset([deepcopy(sampler()) for _ in 1:samples_per_parameter])
+
+        rrange = range(1, 9.5; step=0.5)
+        ridx = 1
+
+        mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config; T=10, Ttr=1)
+        matcher  = MatchByBasinEnclosure(;ε=0.1)
+        assc = AttractorSeedContinueMatch(mapper, matcher)
+        fs_curves, atts_all = global_continuation(assc, rrange, ridx, ics; show_progress = true)
+
+        atts_all_endpoint_solution = Dict{Int64, SVector{1, Float64}}[Dict(1 => [0.0]), Dict(1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(1 => [0.0]), Dict(1 => [0.0])]
+        atts_all_endpoint = [Dict(k=>v[end] for (k,v) in atts) for atts in atts_all]
+
+        @test atts_all_endpoint == atts_all_endpoint_solution
+
+        fs_curves_solution = [Dict(1 => 1.0), Dict(1 => 1.0), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(5 => 0.2, 4 => 0.2, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(4 => 0.4, 2 => 0.2, 3 => 0.2, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.2, 3 => 0.6, 1 => 0.2), Dict(2 => 0.8, 1 => 0.2), Dict(2 => 0.8, 1 => 0.2), Dict(1 => 1.0), Dict(1 => 1.0)]
+        @test all(keys.(fs_curves_solution) .== keys.(fs_curves)    )
+        for (fs_curve, fs_curve_solution) in zip(fs_curves, fs_curves_solution)
+            for (k, fs) in fs_curve
+                @test isapprox(fs, fs_curve_solution[k], atol=1e-1)
+            end
+        end
+    end
+
 end

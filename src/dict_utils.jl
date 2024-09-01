@@ -65,6 +65,7 @@ end
 
 """
     retract_keys_to_consecutive(v::Vector{<:Dict}) → rmap
+
 Given a vector of dictionaries with various positive integer keys, retract all keys so that
 consecutive integers are used. So if the dictionaries have overall keys 2, 3, 42,
 then they will transformed to 1, 2, 3.

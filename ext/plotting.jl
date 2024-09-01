@@ -395,7 +395,13 @@ end
 # Videos
 ##########################################################################################
 function Attractors.animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx;
+    ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx; kw...)
+    pcurve = [[pidx => p] for p in prange]
+    return animate_attractors_continuation(ds, attractors_cont, fractions_cont, pcurve; kw...)
+end
+
+function Attractors.animate_attractors_continuation(
+        ds::DynamicalSystem, attractors_cont, fractions_cont, pcurve;
         savename = "attracont.mp4", access = SVector(1, 2),
         limits = auto_attractor_lims(attractors_cont, access),
         framerate = 4, markersize = 10,
@@ -406,10 +412,11 @@ function Attractors.animate_attractors_continuation(
         T = 100,
         figure = NamedTuple(), axis = NamedTuple(), fracaxis = NamedTuple(),
         legend = NamedTuple(),
+        add_legend = length(ukeys) ≤ 6
     )
     length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
     K = length(ukeys)
-    fig = Figure(figure...)
+    fig = Figure(; figure...)
     ax = Axis(fig[1,1]; limits, axis...)
     fracax = Axis(fig[1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions",
         yaxisposition = :right, fracaxis...
@@ -423,19 +430,21 @@ function Attractors.animate_attractors_continuation(
     for k in ukeys
         plotf!(ax, att_obs[k]; color = (colors[k], 0.75), label = "$k", markersize, marker = markers[k])
     end
-    axislegend(ax; legend...)
+    if add_legend
+        axislegend(ax; legend...)
+    end
 
     # setup fractions axis
     heights = Observable(fill(0.1, K))
     barcolors = [colors[k] for k in ukeys]
     barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = barcolors)
 
-    record(fig, savename, eachindex(prange); framerate) do i
-        p = prange[i]
-        ax.title = "p = $p"
+    record(fig, savename, eachindex(pcurve); framerate) do i
+        p = pcurve[i]
+        ax.title = "p: $p" # TODO: Add compat printing here.
         attractors = attractors_cont[i]
         fractions = fractions_cont[i]
-        set_parameter!(ds, pidx, p)
+        set_parameters!(ds, p)
         heights[] = [get(fractions, k, 0) for k in ukeys]
 
         for (k, att) in attractors

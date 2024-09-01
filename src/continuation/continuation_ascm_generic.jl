@@ -8,8 +8,8 @@ using Random: MersenneTwister
 A global continuation method for [`global_continuation`](@ref).
 `mapper` is any subtype of [`AttractorMapper`](@ref) which implements
 [`extract_attractors`](@ref), i.e., it finds the actual attractors.
-`matcher` is a configuration of how to match attractor IDs,
-and at the moment can only be an instance of [`MatchBySSSetDistance`](@ref).
+`matcher` is a configuration of how to match attractor IDs, see [`IDMatcher`](@ref)
+for more options.
 
 ## Description
 
@@ -116,17 +116,17 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
     return (attractor[1],) # must be iterable
 end
 
-function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics;
+function global_continuation(acam::AttractorSeedContinueMatch, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
-    progress = ProgressMeter.Progress(length(prange);
+    progress = ProgressMeter.Progress(length(pcurve);
         desc = "Continuing attractors and basins:", enabled=show_progress
     )
     mapper = acam.mapper
     reset_mapper!(mapper)
     # first parameter is run in isolation, as it has no prior to seed from
-    set_parameter!(referenced_dynamical_system(mapper), pidx, prange[1])
+    set_parameters!(referenced_dynamical_system(mapper), pcurve[1])
     if ics isa Function
         fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
     else # we ignore labels in this continuation algorithm
@@ -137,10 +137,10 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
     # The attractors are also stored (and are the primary output)
     prev_attractors = deepcopy(extract_attractors(mapper))
     attractors_cont = [deepcopy(prev_attractors)] # we need the copy
-    ProgressMeter.next!(progress; showvalues = [("previous parameter", prange[1]),])
+    ProgressMeter.next!(progress)
     # Continue loop over all remaining parameters
-    for (j, p) in enumerate(prange[2:end])
-        set_parameter!(referenced_dynamical_system(mapper), pidx, p)
+    for p in @view(pcurve[2:end])
+        set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
         # Seed initial conditions from previous attractors
         # Notice that one of the things that happens here is some attractors have
@@ -161,10 +161,10 @@ function global_continuation(acam::AttractorSeedContinueMatch, prange, pidx, ics
         push!(attractors_cont, current_attractors)
         # This is safe due to the deepcopies
         overwrite_dict!(prev_attractors, current_attractors)
-        ProgressMeter.next!(progress; showvalues = [("previous parameter", p),])
+        ProgressMeter.next!(progress)
     end
     rmaps = match_sequentially!(
-        attractors_cont, acam.matcher; prange, ds = referenced_dynamical_system(mapper), pidx
+        attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper)
     )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont

@@ -10,12 +10,8 @@ using CairoMakie, Attractors
 
 ## Latest news
 
-- Brand new [tutorial](@ref tutorial) for the whole repo!
-- `continuation` has been renamed to `global_continuation`
-- Brand new continuation algorithm `AttractorSeedContinueMatch`
-  that generalizes existing infrastructure and makes Attractors.jl
-  more composable and more extendable.
-- New "matchers" and extendable interface for them.
+- Global continuation can now be performed across any arbitrary curve
+  in parameter space.
 - See the CHANGELOG.md (at the GitHub repo) for more!
 
 ## Getting started

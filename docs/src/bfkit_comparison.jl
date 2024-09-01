@@ -210,7 +210,7 @@ plot_attractors_curves(
 
 # ## Discussion and comparison
 
-# On the one hand, Attractors.jl found not only a single limit cycle,
+# Attractors.jl found not only a single limit cycle,
 # but also all system attractors, including chaotic ones.
 # It didn't require any initial guess regarding the limit cycle or its period,
 # but only a state space box that may contain attractors.
@@ -224,9 +224,17 @@ plot_attractors_curves(
 # And finally, Attractors.jl estimates a more general nonlocal measure of stability,
 # in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable,
 # however the other way around isn't guaranteed.
+# Moreover, due to the orthogonality of finding and matching attractors,
+# as well as finding _all_ attractors, the global continuation of Attractors.jl
+# can continue along arbitrary user-defined curves in parameter space; not just
+# along a single parameter axis. This is possible because it is completely fine
+# for some attractors to stop existing during the global continuation,
+# while local continuation stops when attractors (and their unstable version)
+# stop existing.
 
-# On the other hand, traditional local continuation can track the unstable
-# branches, and automatically detect and label local bifurcations
+# Traditional local continuation can track the unstable
+# branches, and automatically detect and label local bifurcations,
+# both of which are not possible in Attractors.jl
 # (note we didn't bother to plot any of the detected bifurcations - if any are found).
 # In our experience having the local bifurcations is always useful.
 # Now, whether the unstable branches are of a limit cycle are useful or not,
@@ -248,6 +256,7 @@ plot_attractors_curves(
 # Using a slightly incorrect initial period guess of 20.0 instead of 19.0 also fails.
 # We imagine that this sensitivity would apply also to some other of the
 # several meta-parameters that enter a traditional continuation routine,
+# for example the thresholds and accuracy parameters related to Newton convergence,
 # but we didn't check further. This is exactly what we were alluding to
 # in the comparison we did in [Datseris2023](@cite), that traditional
 # local continuation "requires expertise and constant interventions".

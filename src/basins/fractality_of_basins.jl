@@ -3,20 +3,32 @@ export uncertainty_exponent, basins_fractal_dimension, basins_fractal_test, basi
 """
     basin_entropy(basins::Array, ε = 20) -> Sb, Sbb
 
-Compute the basin entropy [Daza2016](@cite) `Sb` and basin boundary entropy `Sbb`
-of the given `basins` of attraction by considering `ε` boxes along each dimension.
+Return the basin entropy [Daza2016](@cite) `Sb` and basin boundary entropy `Sbb`
+of the given `basins` of attraction by considering `ε`-sized boxes along each dimension.
 
 ## Description
 
-First, the input `basins`
-is divided regularly into n-dimensional boxes of side `ε` (along all dimensions).
-Then `Sb` is simply the average of the Gibbs entropy computed over these boxes. The
-function returns the basin entropy `Sb` as well as the boundary basin entropy `Sbb`.
-The later is the average of the entropy only for boxes that contains at least two
+First, the n-dimensional input `basins`
+is divided regularly into n-dimensional boxes of side `ε`.
+If `ε` is an integer, the same size is used for all dimensions, otherwise `ε` can be
+a tuple with the same size as the dimensions of `basins`.
+Assuming that there are ``N`` `ε`-boxes that cover the `basins`, the basin entropy is estimated
+as [Daza2016](@cite)
+
+```math
+S_b = \\tfrac{1}{N}\\sum_{i=1}^{N}\\sum_{j=1}^{m_i}-p_{ij}\\log(p_{ij})
+```
+where ``m`` is the number of unique IDs (integers of `basins`) in box ``i``
+and ``p_{ij}`` is the relative frequency (probability) to obtain ID ``j``
+in the ``i`` box (simply the count of IDs ``j`` divided by the total in the box).
+
+`Sbb` is the boundary basin entropy.
+This follows the same definition as ``S_b``, but now averaged over only
+only boxes that contains at least two
 different basins, that is, for the boxes on the boundaries.
 
 The basin entropy is a measure of the uncertainty on the initial conditions of the basins.
-It is maximum at the value `log(n_att)` being `n_att` the number of attractors. In
+It is maximum at the value `log(n_att)` being `n_att` the number of unique IDs in `basins`. In
 this case the boundary is intermingled: for a given initial condition we can find
 another initial condition that lead to another basin arbitrarily close. It provides also
 a simple criterion for fractality: if the boundary basin entropy `Sbb` is above `log(2)`
@@ -25,32 +37,37 @@ have a fractal boundary, for a more precise test see [`basins_fractal_test`](@re
 An important feature of the basin entropy is that it allows
 comparisons between different basins using the same box size `ε`.
 """
-function basin_entropy(basins, ε = 20)
-    dims = size(basins)
-    vals = unique(basins)
-    Sb = 0; Nb = 0; N = 0
-    bx_tuple = ntuple(i -> range(1, dims[i] - rem(dims[i],ε), step = ε), length(dims))
-    box_indices = CartesianIndices(bx_tuple)
-    for box in box_indices
-        # compute the range of indices for the current box
-        I = CartesianIndices(ntuple(i -> range(box[i], box[i]+ε-1, step = 1), length(dims)))
-        box_values = [basins[k] for k in I]
-        N = N + 1
-        Nb = Nb + (length(unique(box_values)) > 1)
-        Sb = Sb + _box_entropy(box_values)
-    end
-    return Sb/N, Sb/Nb
+function basin_entropy(basins::AbstractArray{Int, D}, ε::Int = 20) where {D}
+    es = ntuple(i -> ε, Val(D))
+    return basin_entropy(basins, es)
 end
 
-function _box_entropy(box_values)
-    h = 0.
-    for (k,v) in enumerate(unique(box_values))
-        p = count( x -> (x == v), box_values)/length(box_values)
-        h += p*log(1/p)
+function basin_entropy(basins::AbstractArray{Int, D}, es::Dims{D}) where {D}
+    Sb = 0.0; Nb = 0
+    εranges = map((d, ε) -> 1:ε:d, size(basins), es)
+    box_iterator = Iterators.product(εranges...)
+    for box_start in box_iterator
+        box_ranges = map((d, ε) -> d:(d+ε-1), box_start, es)
+        box_values = view(basins, box_ranges...)
+        uvals = unique(box_values)
+        if length(uvals) > 1
+            Nb += 1
+            # we only need to estimate entropy for boxes with more than 1 val,
+            # because in other cases the entropy is zero
+            Sb = Sb + _box_entropy(box_values, uvals)
+        end
+    end
+    return Sb/length(box_iterator), Sb/Nb
+end
+
+function _box_entropy(box_values, unique_vals = unique(box_values))
+    h = 0.0
+    for v in unique_vals
+        p = count(x -> (x == v), box_values)/length(box_values)
+        h += -p*log(p)
     end
     return h
 end
-
 
 
 
@@ -87,15 +104,12 @@ the estimated value of the boundary basin entropy with the sampling method.
 """
 function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     dims = size(basins)
-    vals = unique(basins)
-    S=Int(length(vals))
-
     # Sanity check.
     if minimum(dims)/ε < 50
         @warn "Maybe the size of the grid is not fine enough."
     end
     if Ntotal < 100
-        error("Ntotal must be larger than 1000 to gather enough statistics.")
+        error("Ntotal must be larger than 100 to gather enough statistics.")
     end
 
     v_pts = zeros(Float64, length(dims), prod(dims))
@@ -105,7 +119,7 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     end
     tree = searchstructure(KDTree, v_pts, Euclidean())
     # Now get the values in the boxes.
-    Nb = 1; N = 1; Sb = 0;
+    Nb = 1
     N_stat = zeros(Ntotal)
     while Nb < Ntotal
         p = [rand()*(sz-ε)+ε for sz in dims]

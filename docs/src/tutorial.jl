@@ -1,5 +1,13 @@
 # # [Attractors.jl Tutorial](@id tutorial)
 
+# ```@raw html
+# <video width="auto" controls loop>
+# <source src="../attracont.mp4" type="video/mp4">
+# </video>
+# ```
+
+#nb @doc Attractors
+
 # [`Attractors`](@ref) is a component of the **DynamicalSystems.jl** library.
 # This tutorial will walk you through its main functionality.
 # That is, given a `DynamicalSystem` instance, find all its attractors and their basins
@@ -12,6 +20,18 @@
 # like for example [`edgestate`](@ref) or [`basins_fractal_dimension`](@ref),
 # but we won't cover anything else in this introductory tutorial.
 # See the [examples](@ref examples) page instead.
+
+
+# ### Package versions used
+
+import Pkg
+
+#nb # Activate an environment in the folder containing the notebook
+#nb Pkg.activate(dirname(@__DIR__))
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq", "BenchmarkTools"])
+
+Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
+
 
 # ## Tutorial - copy-pasteable version
 
@@ -294,7 +314,7 @@ pidx = 1 # index of the parameter
 # Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
-# which is the generic [`AttractorSeedContinueMatch`](@ref).
+# which is the geenral [`AttractorSeedContinueMatch`](@ref).
 # This algorithm uses the `mapper` to find all attractors at each parameter value
 # and from the found attractors it continues them along a parameter axis
 # using a seeding process (see its documentation string).
@@ -485,6 +505,45 @@ plot_continuation_curves!(ax3, mfss, prange; add_legend = false)
 for ax in (ax1, ax2,); hidexdecorations!(ax; grid = false); end
 resize!(fig, 500, 500)
 fig
+
+# ## Continuation along arbitrary parameter curves
+
+# One of the many advantages of the global continuation is that we can choose
+# what parameters to continue over. We can provide any arbitrary curve
+# in parameter space. This is possible because (1) finding and matching attractors
+# are two completely orthogonal steps, and (2) it is completely fine for
+# attractors to dissapear (and perhaps re-appear) during a global continuation.
+
+#For example, we can probe an elipsoid defined as
+
+params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
+pcurve = params.(range(0, 2π; length = 101))
+
+# here each component maps the parameter index to its value.
+# We can just give this `pcurve` to the global continuation,
+# using the same mapper and continuation algorithm,
+# but adjusting the matching process so that vanished attractors
+# are kept in "memory"
+
+matcher = MatchBySSSetDistance(use_vanished = true)
+
+ascm = AttractorSeedContinueMatch(mapper, matcher)
+
+fractions_cont, attractors_cont = global_continuation(
+	ascm, pcurve, sampler; samples_per_parameter = 1_000
+)
+
+# and animate the result
+animate_attractors_continuation(
+    ds, attractors_cont, fractions_cont, pcurve;
+    savename = "curvecont.mp4"
+);
+
+# ```@raw html
+# <video width="auto" controls loop>
+# <source src="../curvecont.mp4" type="video/mp4">
+# </video>
+# ```
 
 # ## Conclusion and comparison with traditional local continuation
 

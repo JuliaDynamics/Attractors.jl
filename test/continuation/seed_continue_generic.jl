@@ -9,7 +9,7 @@ using Random
     # for r > 0.5. It has analytically resolved fractions for any box.
     function dumb_map(dz, z, p, n)
         x, y = z
-        r = p[1]
+        r, q = p
 
         if r < 0.5
             dz[1] = dz[2] = 0.0
@@ -25,11 +25,11 @@ using Random
         return
     end
 
-    r = 1.0
-    ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r])
+    r = 1.0; q = 0.5
+    ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r, q])
     yg = xg = range(-10., 10, length = 100)
     grid = (xg,yg)
-    mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+    mapper1 = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
 
     sampler, = statespace_sampler(grid, 1234)
 
@@ -43,15 +43,29 @@ using Random
     # in all honesty, we don't have to test 2 grouping configs,
     # as the algorithm is agnostic to the grouping. But oh well!
     group1 = GroupViaClustering(optimal_radius_method = 0.1)
-    group2 = GroupViaPairwiseComparison(threshold = 0.1)
+    mapper2 = AttractorsViaFeaturizing(ds, featurizer, group1; Ttr = 2, T = 2)
 
-    @testset "grouping: $(nameof(typeof(group)))" for group in (group1, group2)
-        mapper = AttractorsViaFeaturizing(ds, featurizer, group; Ttr = 2, T = 2)
+    group2 = GroupViaPairwiseComparison(threshold = 0.1)
+    mapper3 = AttractorsViaFeaturizing(ds, featurizer, group2; Ttr = 2, T = 2)
+
+    mappers = [mapper1, mapper2, mapper3, mapper1]
+
+    @testset "case: $(i)" for (i, mapper) in enumerate(mappers)
         algo = AttractorSeedContinueMatch(mapper)
-        fractions_cont, a = global_continuation(
-            algo, rrange, ridx, sampler;
-            show_progress = false, samples_per_parameter = 1000
-        )
+
+        if i < 4
+            fractions_cont, a = global_continuation(
+                algo, rrange, ridx, sampler;
+                show_progress = false, samples_per_parameter = 1000
+            )
+        else # test parameter curve version
+            pcurve = [[1 => r, 2 => 1.1] for r in rrange]
+            fractions_cont, a = global_continuation(
+                algo, pcurve, sampler;
+                show_progress = false, samples_per_parameter = 1000
+            )
+        end
+
 
         for (i, r) in enumerate(rrange)
 
