@@ -5,19 +5,20 @@ using ProgressMeter
 
 
 """
-    stagger_trajectory!(ds, x0, isinside; kwargs...) -> xi
+    stagger_trajectory!(ds, x0, Tm, isinside; kwargs...) -> xi
 
 This function returns a point `xi` which _guarantees_ `T(xi) > 
 Tm` with a random walk search around the initial coordinates 
-`x0`. There is no guarantee to find such point, the parameters 
+`x0`. `T(xi)` is the escape time of the initial condition `xi`.  
+There is no guarantee to find such point, the parameters 
 must be adjusted to find the suitable point. This is an .
-auxiliary function for [`stagger_and_step`](@ref). Keyword arguments and definitions are identical for both 
-functions. 
+auxiliary function for [`stagger_and_step`](@ref). Keyword arguments and 
+definitions are identical for both functions. 
 
-The initial search radius is much bigger, `δ₀ = 1.` by default.
+The initial search radius `δ₀` is big, `δ₀ = 1.` by default.
 
 """
-function stagger_trajectory!(ds, x0, isinside; δ₀ = 1., Tm = 30, stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
+function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
     T = escape_time!(ds, x0, isinside)
     xi = deepcopy(x0) 
     while T < Tm  # we must have T ≥ Tm at each step 
@@ -117,7 +118,7 @@ enough to find a suitable initial.
 function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
     f = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1.)
 
-    xi = stagger_trajectory!(ds, x0, isinside; δ₀, Tm, stagger_mode = :unif, max_steps) 
+    xi = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, max_steps) 
     v = Vector{Vector{Float64}}(undef,N)
     v[1] = xi
 @showprogress   for n in 1:N
@@ -127,7 +128,7 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
             xp, Tp = get_stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, f)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
-                xp = stagger_trajectory!(ds, x0, isinside; δ₀, Tm, stagger_mode = :exp, max_steps, f) 
+                xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp, max_steps, f) 
                 δ = 0.1
             end
             set_state!(ds,xp)
