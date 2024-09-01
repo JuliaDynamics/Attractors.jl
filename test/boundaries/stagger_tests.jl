@@ -21,7 +21,7 @@ x0 = sampler()
 df = DeterministicIteratedMap(F!, x0) 
 xi = stagger_trajectory!(df, x0, 30, isinside; δ₀ = 2.) 
 @test isinside(xi)
-@test Attractors.escape_time!(df, xi, isinside) ≥ 30
+@test Attractors.escape_time!(df, xi, isinside) > 30
 
 # Test if all the points have escape time ≥ Tm 
 # :exp mode
