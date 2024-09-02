@@ -21,7 +21,7 @@ The initial search radius `δ₀` is big, `δ₀ = 1.` by default.
 function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
     T = escape_time!(ds, x0, isinside)
     xi = deepcopy(x0) 
-    while T < Tm + 1  # we must have T > Tm at each step 
+    while !(T > Tm)  # we must have T > Tm at each step 
         xi, T = get_stagger!(ds, xi, δ₀, T, isinside; f, stagger_mode, max_steps)
         if T < 0
             error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
@@ -123,7 +123,7 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
     v[1] = xi
 @showprogress   for n in 1:N
         if escape_time!(ds, xi, isinside) > Tm
-            set_state!(ds, xi)
+            reinit!(ds, xi; t0 = 0)
         else
             xp, Tp = get_stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, f)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
@@ -131,10 +131,10 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
                 xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp, max_steps, f) 
                 δ = 0.1
             end
-            set_state!(ds,xp)
+            reinit!(ds, xp; t0 = 0)
         end 
         step!(ds)
-        xi = current_state(ds)
+        xi = deepcopy(current_state(ds))
         v[n] = xi
     end
     return v
@@ -145,7 +145,7 @@ end
 function escape_time!(ds, x0, isinside) 
     x = deepcopy(x0) 
     set_state!(ds,x)
-    ds.t = 1
+    reinit!(ds, x; t0 = 0)
     k = 1; max_step = 10000;
     while isinside(x) 
         k > max_step && break
@@ -153,7 +153,7 @@ function escape_time!(ds, x0, isinside)
         x = current_state(ds)
         k += 1
     end
-    return ds.t
+    return current_time(ds)
 end
 
 function rand_u(δ, n; stagger_mode = :exp)
