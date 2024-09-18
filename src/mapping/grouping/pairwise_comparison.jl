@@ -86,7 +86,7 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
         feature = features[idx_feature]
         # because here the cluster labels are always the positive integers,
         # we don't need a dictionary. `Vector` keys are the IDs we need.
-        dist_to_clusters = [metric(feature, features[cluster_idx]) for cluster_idx in cluster_idxs]
+        dist_to_clusters = [metric(feature, features[idx]) for idx in cluster_idxs]
         min_dist, closest_cluster_label = findmin(dist_to_clusters)
 
         if min_dist > threshold # bigger than threshold: new attractor
