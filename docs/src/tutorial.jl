@@ -25,10 +25,10 @@ import Pkg
 
 #nb # Activate an environment in the folder containing the notebook
 #nb Pkg.activate(dirname(@__DIR__))
-#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq", "BenchmarkTools"])
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq"])
 Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 
-# ## Attractors.jl summary
+#nb # ## Attractors.jl summary
 
 #nb using Attractors # re=exported by `DynamicalSystems`
 #nb @doc Attractors
