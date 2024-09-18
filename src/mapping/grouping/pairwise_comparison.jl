@@ -47,8 +47,8 @@ attractors, as it groups 2+ distinct attractors together. Therefore, as a rule o
 one can repeat the procedure a few times, starting with a relatively large value and
 reducing it until no more attractors are found and no duplicates appear.
 
-The method uses relatively little memory, as it only stores vectors whose size is on order
-of the number of attractors of the system.
+The method scales as O(N) in memory and performance with N the number of features.
+This is a huge difference versus the O(N^2) of [`GroupViaClustering`](@ref).
 """
 @kwdef struct GroupViaPairwiseComparison{R<:Real, M} <: GroupingConfig
     threshold::R = 0.1
