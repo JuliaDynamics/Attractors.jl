@@ -50,17 +50,10 @@ reducing it until no more attractors are found and no duplicates appear.
 The method uses relatively little memory, as it only stores vectors whose size is on order
 of the number of attractors of the system.
 """
-struct GroupViaPairwiseComparison{R<:Real, M} <: GroupingConfig
-    threshold::R
-    metric::M
-    rescale_features::Bool
-end
-
-function GroupViaPairwiseComparison(;
-        threshold = 0.1, #impossible to set a good default value, depends on the features
-        metric=Euclidean(), rescale_features=true,
-    )
-    return GroupViaPairwiseComparison(threshold, metric, rescale_features)
+@kwdef struct GroupViaPairwiseComparison{R<:Real, M} <: GroupingConfig
+    threshold::R = 0.1
+    metric::M = Euclidean()
+    rescale_features::Bool = true
 end
 
 function group_features(features, config::GroupViaPairwiseComparison)
