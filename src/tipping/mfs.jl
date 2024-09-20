@@ -7,10 +7,12 @@ export excitability_threshold
 """
     minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm; kw...)
 
-Return the _minimal fatal shock_ `mfs` (also known as _excitability threshold_)
+Return the _minimal fatal shock_ (also known as _excitability threshold_)
 for the initial point `u0` according to the
 specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
 (see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
+The output `mfs` is a vector with length `dimension(ds)`.
+
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
 The options for `algorithm` are: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
 For high dimensional systems [`MFSBlackBoxOptim`](@ref) is likely more accurate.
@@ -21,7 +23,7 @@ for each dimension of the system in `mapper`. Otherwise, it can be a vector of 2
 each for each dimension of the system. The search area is defined w.r.t. to `u0`
 (i.e., it is the search area for perturbations of `u0`).
 
-An alias to `minimal_fata_shock` is `excitability_threshold`.
+An alias to `minimal_fatal_shock` is `excitability_threshold`.
 
 ## Keyword arguments
 
