@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, D, V} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, SSS<:AbstractStateSpaceSet} <: AttractorMapper
     ds::DS
     featurizer::F
     group_config::G
@@ -16,7 +16,7 @@ struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, D,
     Δt::T
     total::T
     threaded::Bool
-    attractors::Dict{Int, StateSpaceSet{D, V}}
+    attractors::Dict{Int, SSS}
 end
 
 """
@@ -167,8 +167,8 @@ function extract_features_single(mapper, ics; show_progress = true, N = 1000)
 end
 
 function (mapper::AttractorsViaFeaturizing)(u0)
-   f = extract_features_single(mapper, [u0]) 
-   return feature_to_group(f[1], mapper.group_config) 
+   f = extract_features_single(mapper, [u0])
+   return feature_to_group(f[1], mapper.group_config)
 end
 
 # TODO: We need an alternative to deep copying integrators that efficiently

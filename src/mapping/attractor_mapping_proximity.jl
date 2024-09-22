@@ -9,8 +9,11 @@ The system gets stepped, and at each step the minimum distance to all
 attractors is computed. If any of these distances is `< ε`, then the label of the nearest
 attractor is returned.
 
+`attractors` do not have to be "true" attractors. Any arbitrary sets (or points)
+in the state space can be provided.
+
 If an `ε::Real` is not provided by the user, a value is computed
-automatically as half of the minimum distance between all attractors.
+automatically as half of the minimum distance between all `attractors`.
 This operation can be expensive for large `StateSpaceSet`s.
 If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box containing
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
@@ -23,13 +26,13 @@ an error is thrown.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
-* `consecutive_lost_steps = 1000`: If the integrator has been stepped this many times without
+* `consecutive_lost_steps = 1000`: If the `ds` has been stepped this many times without
   coming `ε`-near to any attractor,  it is assumed
   that the trajectory diverged (gets labelled as `-1`).
 """
-struct AttractorsViaProximity{DS<:DynamicalSystem, AK, D, T, N, K} <: AttractorMapper
+struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K} <: AttractorMapper
     ds::DS
-    attractors::Dict{AK, StateSpaceSet{D, T}}
+    attractors::Dict{AK, SSS}
     ε::Float64
     Δt::N
     Ttr::N

@@ -250,7 +250,7 @@ end
 # the grid subtypes are in the grids file.
 abstract type Grid end
 
-mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
+mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
     basins::A # sparse or dense
     grid_nfo::G
     Δt::Δ
@@ -261,7 +261,7 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, A <: AbstractArray{Int, D}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    attractors::Dict{Int, StateSpaceSet{D, T}}
+    attractors::Dict{Int, StateSpaceSet{D, T, V}}
     visited_cells::Vector{CartesianIndex{D}}
     return_code::Symbol
 end
@@ -291,13 +291,14 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
     else
         zeros(Int, (map(length, grid).*(2^multiplier))...)
     end
+    V = SVector{G, T}
     bsn_nfo = BasinsInfo(
         basins_array,
         grid_nfo,
         Δt,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int, StateSpaceSet{G, T}}(),
+        Dict{Int, StateSpaceSet{G, T, V}}(),
         Vector{CartesianIndex{G}}(),
         :search,
     )
