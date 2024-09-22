@@ -73,7 +73,7 @@ using OrdinaryDiffEq
 using CairoMakie
 
 bf_prob = BK.BifurcationProblem(
-    modified_lorenz_rule!, u0, p0, (pidx)
+    modified_lorenz_rule!, u0, p0, (BK.@lens _[pidx])
 )
 
 # and then a full solution structure from DifferentialEquations.jl, that
