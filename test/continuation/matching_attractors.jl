@@ -211,7 +211,7 @@ end
         grid = (xg,)
         sampler, = statespace_sampler(grid, 1234)
         samples_per_parameter = 1000
-        ics = Dataset([deepcopy(sampler()) for _ in 1:samples_per_parameter])
+        ics = StateSpaceSet([deepcopy(sampler()) for _ in 1:samples_per_parameter])
 
         rrange = range(1, 9.5; step=0.5)
         ridx = 1
