@@ -7,8 +7,8 @@ export excitability_threshold
 """
     minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm; kw...)
 
-Return the _minimal fatal shock_ (also known as _excitability threshold_)
-for the initial point `u0` according to the
+Return the _minimal fatal shock_ (also known as _excitability threshold_
+or _stability threshold_) for the initial point `u0` according to the
 specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
 (see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
 The output `mfs` is a vector with length `dimension(ds)`.
@@ -37,9 +37,20 @@ An alias to `minimal_fatal_shock` is `excitability_threshold`.
 ## Description
 
 The minimal fatal shock is defined as the smallest-norm perturbation of the initial
-point `u0` that will lead it a different basin of attraction. It is inspired by the paper
-"Minimal fatal shocks in multistable complex networks" [Halekotte2020](@cite),
-however the implementation here is generic: it works for _any_ dynamical system.
+point `u0` that will lead it a different basin of attraction than the one it was originally in.
+
+This concept has many names. Many papers computed this quantity without explicitly
+naming it, or naming it something simple like "distance to the threshold".
+The first work that proposed the concept as a nonlocal stability quantifier
+was by [Klinshov2015](@cite) with the name "stability threshold".
+Here we use the name of [Halekotte2020](@cite).
+
+Our implementation is generic and works for _any_ dynamical system,
+using either black box optimization or brute force searching approaches
+and the unique interface of Attractors.jl for mapping initial conditions to attractors.
+In contrast to [Klinshov2015](@cite) or [Halekotte2020](@cite), our implementation
+does not place any assumptions on the nature of the dynamical system, or whether
+the basin boundaries are smooth.
 
 The _excitability threshold_ is a concept nearly identical, however, instead of looking
 for a perturbation that simply brings us out of the basin, we look for the smallest
