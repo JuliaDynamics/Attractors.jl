@@ -84,7 +84,8 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
         markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
-        access = SVector(1, 2)
+        access = SVector(1, 2),
+        sckwargs = (strokewidth = 1.5, strokecolor = :white,)
     )
 
     sort!(ukeys) # necessary because colormap is ordered
@@ -103,8 +104,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     # Scatter attractors
     plot_attractors!(ax, attractors;
         ukeys, colors, access, markers,
-        labels, add_legend,
-        sckwargs = (strokewidth = 1.5, strokecolor = :white,)
+        labels, add_legend, sckwargs
     )
     return ax
 end

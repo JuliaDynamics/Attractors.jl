@@ -28,7 +28,8 @@ Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 
 ## Keyword arguments
 
-- All the [common plotting keywords](@ref common_plot_kwargs).
+- All the [common plotting keywords](@ref common_plot_kwargs) and
+  `sckwargs` as in [`plot_attractors`](@ref).
 """
 function heatmap_basins_attractors end
 function heatmap_basins_attractors! end
