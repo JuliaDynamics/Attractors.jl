@@ -1,6 +1,5 @@
 using Attractors
 using Test
-using OrdinaryDiffEq
 
 function grebogi_map()
 
@@ -73,4 +72,9 @@ end
     basin, attractors = basins_of_attraction(mapper; show_progress = false)
     test_res, Sbb = basins_fractal_test(basin; ε = 5)
     @test test_res == :smooth
+end
+
+@testset "Basin entropy API" begin
+    basins = rand(Int, 50, 50)
+    @test_throws ArgumentError basin_entropy(basins, 7)
 end
