@@ -49,8 +49,8 @@ function Attractors.plot_attractors!(ax, attractors;
         access = SVector(1, 2),
         sckwargs = (strokewidth = 0.5, strokecolor = :black,)
     )
-    for (i, k) ∈ enumerate(ukeys)
-        k ≤ 0 && continue
+    for k in ukeys
+        k ∉ keys(attractors) && continue
         A = attractors[k]
         x, y = columns(A[:, access])
         scatter!(ax, x, y;
