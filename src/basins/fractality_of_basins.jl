@@ -1,7 +1,7 @@
 export uncertainty_exponent, basins_fractal_dimension, basins_fractal_test, basin_entropy
 
 """
-    basin_entropy(basins::Array, ε = 20) -> Sb, Sbb
+    basin_entropy(basins::Array{Integer}, ε = size(basins, 1)÷10) -> Sb, Sbb
 
 Return the basin entropy [Daza2016](@cite) `Sb` and basin boundary entropy `Sbb`
 of the given `basins` of attraction by considering `ε`-sized boxes along each dimension.
@@ -12,13 +12,15 @@ First, the n-dimensional input `basins`
 is divided regularly into n-dimensional boxes of side `ε`.
 If `ε` is an integer, the same size is used for all dimensions, otherwise `ε` can be
 a tuple with the same size as the dimensions of `basins`.
+The size of the basins has to be divisible by `ε`.
+
 Assuming that there are ``N`` `ε`-boxes that cover the `basins`, the basin entropy is estimated
 as [Daza2016](@cite)
 
 ```math
 S_b = \\tfrac{1}{N}\\sum_{i=1}^{N}\\sum_{j=1}^{m_i}-p_{ij}\\log(p_{ij})
 ```
-where ``m`` is the number of unique IDs (integers of `basins`) in box ``i``
+where ``m_i`` is the number of unique IDs (integers of `basins`) in box ``i``
 and ``p_{ij}`` is the relative frequency (probability) to obtain ID ``j``
 in the ``i`` box (simply the count of IDs ``j`` divided by the total in the box).
 
@@ -37,12 +39,15 @@ have a fractal boundary, for a more precise test see [`basins_fractal_test`](@re
 An important feature of the basin entropy is that it allows
 comparisons between different basins using the same box size `ε`.
 """
-function basin_entropy(basins::AbstractArray{<:Integer, D}, ε::Integer = 20) where {D}
+function basin_entropy(basins::AbstractArray{<:Integer, D}, ε::Integer = size(basins, 1)÷10) where {D}
     es = ntuple(i -> ε, Val(D))
     return basin_entropy(basins, es)
 end
 
 function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Integer}) where {D}
+    if size(basins) .% es ≠ ntuple(i -> 0, D)
+        throw(ArgumentError("The basins are not fully divisible by the sizes `ε`"))
+    end
     Sb = 0.0; Nb = 0
     εranges = map((d, ε) -> 1:ε:d, size(basins), es)
     box_iterator = Iterators.product(εranges...)
