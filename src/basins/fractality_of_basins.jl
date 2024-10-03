@@ -37,12 +37,12 @@ have a fractal boundary, for a more precise test see [`basins_fractal_test`](@re
 An important feature of the basin entropy is that it allows
 comparisons between different basins using the same box size `ε`.
 """
-function basin_entropy(basins::AbstractArray{Integer, D}, ε::Integer = 20) where {D}
+function basin_entropy(basins::AbstractArray{<:Integer, D}, ε::Integer = 20) where {D}
     es = ntuple(i -> ε, Val(D))
     return basin_entropy(basins, es)
 end
 
-function basin_entropy(basins::AbstractArray{Integer, D}, es::Dims{D}) where {D}
+function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Integer}) where {D}
     Sb = 0.0; Nb = 0
     εranges = map((d, ε) -> 1:ε:d, size(basins), es)
     box_iterator = Iterators.product(εranges...)
