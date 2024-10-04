@@ -64,7 +64,7 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm
     # generate a function that returns `true` for ids that that are in the target basin
     idchecker = id_check_function(id_u0, target_id)
     dim = length(u0)
-    if typeof(search_area) <: Tuple{Any,Any}
+    if typeof(search_area) <: Tuple{<:Real,<:Real}
         search_area = [search_area for _ in 1:dim]
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
