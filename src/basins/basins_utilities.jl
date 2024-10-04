@@ -82,7 +82,7 @@ See also [`convergence_time`](@ref).
 - `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
-    if length(grid) != dimension(mapper.ds)
+    if length(grid) != dimension(referenced_dynamical_system(mapper))
         @error "The mapper and the grid must have the same dimension"
     end
     basins = zeros(length.(grid))

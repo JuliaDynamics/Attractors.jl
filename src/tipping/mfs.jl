@@ -120,7 +120,7 @@ end
 
 function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, metric)
     algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
-    dim = dimension(mapper.ds)
+    dim = length(u0)
     best_shock, best_dist = crude_initial_radius(
         mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations
     )
@@ -258,7 +258,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     function objective_function(perturbation)
         return mfs_objective(perturbation, u0, idchecker, metric, mapper, algorithm.penalty)
     end
-    dim = dimension(mapper.ds)
+    dim = length(u0)
     if algorithm.print_info == true
         TraceMode = :compact
     else
