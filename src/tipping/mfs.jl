@@ -60,15 +60,15 @@ perturbation that brings us into specified basin(s). This is enabled via the key
 function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm;
         metric = LinearAlgebra.norm, target_id = nothing
     )
-    id_u0 = mapper(u0)
-    # generate a function that returns `true` for ids that that are in the target basin
-    idchecker = id_check_function(id_u0, target_id)
     dim = length(u0)
     if typeof(search_area) <: Tuple{<:Real,<:Real}
         search_area = [search_area for _ in 1:dim]
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
     end
+    # generate a function that returns `true` for ids that that are in the target basin
+    id_u0 = mapper(u0)
+    idchecker = id_check_function(id_u0, target_id)
     return _mfs(algorithm, mapper, u0, search_area, idchecker, metric)
 end
 const excitability_threshold = minimal_fatal_shock
