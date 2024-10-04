@@ -11,7 +11,7 @@ Return the _minimal fatal shock_ (also known as _excitability threshold_
 or _stability threshold_) for the initial point `u0` according to the
 specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
 (see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
-The output `mfs` is a vector with length `dimension(ds)`.
+The output `mfs` is a vector like `u0`.
 
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
 The options for `algorithm` are: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
@@ -38,8 +38,9 @@ An alias to `minimal_fatal_shock` is `excitability_threshold`.
 
 The minimal fatal shock is defined as the smallest-norm perturbation of the initial
 point `u0` that will lead it a different basin of attraction than the one it was originally in.
+This alternative basin is not returned, do `mapper(u0 .+ mfs)` if you need the ID.
 
-This concept has many names. Many papers computed this quantity without explicitly
+The minimal fatal shock has many names. Many papers computed this quantity without explicitly
 naming it, or naming it something simple like "distance to the threshold".
 The first work that proposed the concept as a nonlocal stability quantifier
 was by [Klinshov2015](@cite) with the name "stability threshold".
@@ -102,6 +103,8 @@ with a smaller radius. Each time a better result is found, the radius is reduced
 
 The algorithm records the perturbation with smallest radius that leads to a different basin.
 
+Because this algorithm is based on hyperspheres, it assumes the Euclidean norm as the metric.
+
 ## Keyword arguments
 
 - `initial_iterations = 10000`: number of random perturbations to try in the first step of the
@@ -118,7 +121,8 @@ Base.@kwdef struct MFSBruteForce
     sphere_decrease_factor::Float64 = 0.999
 end
 
-function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, metric)
+function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, _metric)
+    metric = LinearAlgebra.norm
     algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
     dim = length(u0)
     best_shock, best_dist = crude_initial_radius(
