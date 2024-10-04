@@ -63,11 +63,9 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm
     id_u0 = mapper(u0)
     # generate a function that returns `true` for ids that that are in the target basin
     idchecker = id_check_function(id_u0, target_id)
-    dim = dimension(mapper.ds)
+    dim = length(u0)
     if typeof(search_area) <: Tuple{Any,Any}
-        search_area  = [search_area for _ in 1:dim]
-    elseif length(search_area) == 1
-        search_area = [search_area[1] for _ in 1:dim]
+        search_area = [search_area for _ in 1:dim]
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
     end
@@ -76,12 +74,12 @@ end
 const excitability_threshold = minimal_fatal_shock
 
 id_check_function(id::Int, ::Nothing) = i -> i != id
-function id_check_function(id::Int, ti::Int)
+function id_check_function(id::Integer, ti::Integer)
     id == ti && error("target id and attractor id of u0 are the same.")
     return i -> i == ti
 end
-function id_check_function(id::Int, ti::AbstractVector{Int})
-    id ∈ ti && error("target id and attractor id of u0 are the same.")
+function id_check_function(id::Integer, ti::AbstractVector{<:Integer})
+    id ∈ ti && error("attractor id of u0 belongs in target ids.")
     return i -> i ∈ ti
 end
 
