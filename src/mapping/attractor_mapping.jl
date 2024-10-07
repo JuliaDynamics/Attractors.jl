@@ -63,7 +63,7 @@ referenced_dynamical_system(mapper::AttractorMapper) = mapper.ds
 function generic_mapper_print(io, mapper)
     ps = 14
     println(io, "$(nameof(typeof(mapper)))")
-    println(io, rpad(" system: ", ps), nameof(typeof(mapper.ds)))
+    println(io, rpad(" system: ", ps), nameof(typeof(referenced_dynamical_system(ds))))
     return ps
 end
 Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)

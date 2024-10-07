@@ -270,7 +270,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     end
 
     if isnothing(algorithm.random_algo) && isnothing(algorithm.guess)
-            result = bboptimize(objective_function;
+        result = bboptimize(objective_function;
             MaxSteps = algorithm.max_steps, SearchRange = search_area,
             NumDimensions = dim, TraceMode
         )
