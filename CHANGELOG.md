@@ -1,3 +1,7 @@
+# v1.20
+
+- `AttractorsViaProximity` has been significantly improved: it now allows for a keyword `distance`. This keyword decides how the distance between the trajectory end-point and the attractors is decided. The function has further been simplified and re-uses the existing `set_distance` function. The default `distance` keeps the previous behavior unaltered.
+
 # v1.19
 
 - Global continuation can now be performed across any arbitrary curve
