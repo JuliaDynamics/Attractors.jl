@@ -13,7 +13,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
     @testset "mapping" begin
         testfile("mapping/grouping.jl")
         testfile("mapping/recurrence.jl")
-        testfile("mapping/proximity_deduce_ε.jl")
+        testfile("mapping/proximity.jl")
         testfile("mapping/attractor_mapping.jl")
         testfile("mapping/basins_of_attraction.jl")
         testfile("mapping/histogram_grouping.jl")
