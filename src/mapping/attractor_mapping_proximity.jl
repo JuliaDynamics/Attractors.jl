@@ -53,11 +53,11 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
         Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
         distance = StrictlyMinimumDistance(),
     )
-    if keytype(attractors) <: AbstractStateSpaceSet
-        error("The input attractors must be a dictionary of `StateSpaceSet`s.")
+    if !(valtype(attractors) <: AbstractStateSpaceSet)
+        error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
     end
     if dimension(ds) ≠ dimension(first(attractors)[2])
-        error("Dimension of the dynamical system and candidate attractors must match")
+        error("Dimension of the dynamical system and candidate attractors must match.")
     end
 
     if distance isa Union{Hausdorff, StrictlyMinimumDistance}
