@@ -130,7 +130,7 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS
 
     for i ∈ 1:N
         ic = _get_ic(ics, i)
-        label = mapper(ic; show_progress)
+        label = mapper(ic; show_progress = false)
         fs[label] = get(fs, label, 0) + 1
         labels[i] = label
         iterations[i] = convergence_time(mapper)
