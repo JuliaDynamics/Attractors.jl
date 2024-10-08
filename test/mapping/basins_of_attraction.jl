@@ -50,7 +50,8 @@ end
     fs, labels, iterations = convergence_and_basins_fractions(mapper, ics)
 
     @test length(fs) == 2
-    @test 0.4 < fs[1] < 0.6
+    @test fs[1] ≈ 0.66 atol = 1e-2
+    @test fs[2] ≈ 0.33 atol = 1e-2
 
 end
 
