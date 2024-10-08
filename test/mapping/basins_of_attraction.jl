@@ -45,7 +45,7 @@ end
 
 @testset "dict set state" begin
 
-    set_state!(ds, 2, 0.0)
+    set_state!(ds, 0.0, 2)
     ics = [Dict(1 => x) for x in xg]
     fs, labels, iterations = convergence_and_basins_fractions(mapper, ics)
 
