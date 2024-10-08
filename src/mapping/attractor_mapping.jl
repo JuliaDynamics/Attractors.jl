@@ -17,6 +17,8 @@ export AttractorMapper,
     SubdivisionBasedGrid,
     reset_mapper!
 
+ValidICS = Union{AbstractVector, Function}
+
 #########################################################################################
 # AttractorMapper structure definition
 #########################################################################################
@@ -75,7 +77,7 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
 """
     basins_fractions(
         mapper::AttractorMapper,
-        ics::Union{StateSpaceSet, Function};
+        ics::Union{AbstractVector, Function};
         kwargs...
     )
 
@@ -86,7 +88,8 @@ The fractions are simply the ratios of how many initial conditions ended up
 at each attractor.
 
 Initial conditions to use are defined by `ics`. It can be:
-* a `StateSpaceSet` of initial conditions, in which case all are used.
+* an `AbstractVector` of initial conditions, in which case all are used.
+  Typically this is a `StateSpaceSet`.
 * a 0-argument function `ics()` that spits out random initial conditions.
   Then `N` random initial conditions are chosen.
   See [`statespace_sampler`](@ref) to generate such functions.
@@ -113,22 +116,22 @@ See also [`convergence_and_basins_fractions`](@ref).
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
-function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpaceSet, Function};
+function basins_fractions(mapper::AttractorMapper, ics::ValidICS;
         show_progress = true, N = 1000, additional_fs::Dict = Dict(),
     )
-    used_StateSpaceSet = ics isa AbstractStateSpaceSet
-    N = used_StateSpaceSet ? size(ics, 1) : N
+    used_container = ics isa AbstractVector
+    N = used_container ? length(ics) : N
     progress = ProgressMeter.Progress(N;
         desc="Mapping initial conditions to attractors:", enabled = show_progress
     )
     fs = Dict{Int, Int}()
-    used_StateSpaceSet && (labels = Vector{Int}(undef, N))
+    used_container && (labels = Vector{Int}(undef, N))
 
     for i ∈ 1:N
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
-        used_StateSpaceSet && (labels[i] = label)
+        used_container && (labels[i] = label)
         show_progress && ProgressMeter.next!(progress)
     end
     # the non-public-API `additional_fs` i s used in the continuation methods
@@ -136,7 +139,7 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
     ffs = Dict(k => v/N for (k, v) in fs)
-    if used_StateSpaceSet
+    if used_container
         return ffs, labels
     else
         return ffs
@@ -144,7 +147,6 @@ function basins_fractions(mapper::AttractorMapper, ics::Union{AbstractStateSpace
 end
 
 _get_ic(ics::Function, i) = ics()
-_get_ic(ics::AbstractStateSpaceSet, i) = ics[i]
 _get_ic(ics::AbstractVector, i) = ics[i]
 
 """

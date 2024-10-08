@@ -103,7 +103,7 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
 end
 
 """
-    convergence_and_basins_fractions(mapper::AttractorMapper, ics::StateSpaceSet)
+    convergence_and_basins_fractions(mapper::AttractorMapper, ics)
 
 An extension of [`basins_fractions`](@ref).
 Return `fs, labels, convergence`. The first two are as in `basins_fractions`,
@@ -117,10 +117,10 @@ See also [`convergence_time`](@ref).
 
 - `show_progress = true`: show progress bar.
 """
-function convergence_and_basins_fractions(mapper::AttractorMapper, ics::AbstractStateSpaceSet;
-        show_progress = true,
+function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS;
+        show_progress = true, N = 1000,
     )
-    N = size(ics, 1)
+    N = ics isa Function ? N : length(ics)
     progress = ProgressMeter.Progress(N;
         desc="Mapping initial conditions to attractors:", enabled = show_progress
     )
