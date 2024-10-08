@@ -48,10 +48,13 @@ end
     set_state!(ds, 0.0, 2)
     ics = [Dict(1 => x) for x in xg]
     fs, labels, iterations = convergence_and_basins_fractions(mapper, ics)
+    fs2, labels = basins_fractions(mapper, ics)
 
-    @test length(fs) == 2
-    @test fs[1] ≈ 0.66 atol = 1e-2
-    @test fs[2] ≈ 0.33 atol = 1e-2
+    for fs in (fs, fs2)
+        @test length(fs) == 2
+        @test fs[1] ≈ 0.66 atol = 1e-2
+        @test fs[2] ≈ 0.33 atol = 1e-2
+    end
 
 end
 
