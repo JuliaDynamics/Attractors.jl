@@ -122,8 +122,7 @@ The function `attractor_to_real` takes as input a `StateSpaceSet` (attractor)
 and returns a real number so that it can be plotted versus the parameter axis.
 See also [`plot_basins_attractors_curves`](@ref).
 
-Same keywords as [`plot_basins_curves`](@ref common_plot_kwargs).
-See also [`plot_continuation_curves`](@ref).
+Same keywords as [`plot_continuation_curves`](@ref).
 """
 function plot_attractors_curves end
 function plot_attractors_curves! end
@@ -144,6 +143,13 @@ continuation_info = map(attractors_cont) do attractors
 end
 ```
 with `f` your function of interest that returns a real number.
+
+## Keyword arguments
+
+- `slines_kwargs = (linewidth = 1,)`: named tuple of arguments propagated
+  to `Makie.scatterlines!` that plots the curves.
+- Also all [common plotting keywords](@ref common_plot_kwargs).
+
 """
 function plot_continuation_curves end
 function plot_continuation_curves! end

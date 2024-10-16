@@ -1,3 +1,9 @@
+# v1.22
+
+- The function `plot_continuation_curves` has been changed and now plots using
+  `scatterlines!` (which also makes it much more efficient). To restore the old behavior
+  of only scatter use `slines_kwargs = (linewidth = 0,)` as a keyword.
+
 # v1.21
 
 - Initial conditions given to `basins_fractions` and similar functions have been generalized to `AbstractVector` from `StateSpaceSet`. In practice this means that it is now possible to pass in as initial conditions a vector of dictionaries, which allows specifying initial conditions via a mapping of symbolic variables if the dynamical system was made via ModelingToolkit.jl.
