@@ -86,7 +86,11 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
         @error "The mapper and the grid must have the same dimension"
     end
     basins = zeros(length.(grid))
-    iterations = zeros(Int, length.(grid))
+    if isa(mapper.ds,ContinuousDynamicalSystem)
+        iterations = zeros(length.(grid))
+    else
+        iterations = zeros(Int, length.(grid))
+    end
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
         length(basins); desc = "Basins and convergence: ", dt = 1.0
