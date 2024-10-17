@@ -82,15 +82,12 @@ See also [`convergence_time`](@ref).
 - `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
-    if length(grid) != dimension(mapper.ds)
+    if length(grid) != dimension(referenced_dynamical_system(mapper))
         @error "The mapper and the grid must have the same dimension"
     end
     basins = zeros(length.(grid))
-    if isa(mapper.ds,ContinuousDynamicalSystem)
-        iterations = zeros(length.(grid))
-    else
-        iterations = zeros(Int, length.(grid))
-    end
+    ds = referenced_dynamical_system(mapper)
+    iterations = zeros(typeof(current_time(ds)), length.(grid))
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
         length(basins); desc = "Basins and convergence: ", dt = 1.0
