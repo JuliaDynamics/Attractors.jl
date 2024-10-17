@@ -11,7 +11,7 @@ Return the _minimal fatal shock_ (also known as _excitability threshold_
 or _stability threshold_) for the initial point `u0` according to the
 specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
 (see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
-The output `mfs` is a vector with length `dimension(ds)`.
+The output `mfs` is a vector like `u0`.
 
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
 The options for `algorithm` are: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
@@ -38,8 +38,9 @@ An alias to `minimal_fatal_shock` is `excitability_threshold`.
 
 The minimal fatal shock is defined as the smallest-norm perturbation of the initial
 point `u0` that will lead it a different basin of attraction than the one it was originally in.
+This alternative basin is not returned, do `mapper(u0 .+ mfs)` if you need the ID.
 
-This concept has many names. Many papers computed this quantity without explicitly
+The minimal fatal shock has many names. Many papers computed this quantity without explicitly
 naming it, or naming it something simple like "distance to the threshold".
 The first work that proposed the concept as a nonlocal stability quantifier
 was by [Klinshov2015](@cite) with the name "stability threshold".
@@ -60,28 +61,26 @@ perturbation that brings us into specified basin(s). This is enabled via the key
 function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm;
         metric = LinearAlgebra.norm, target_id = nothing
     )
-    id_u0 = mapper(u0)
-    # generate a function that returns `true` for ids that that are in the target basin
-    idchecker = id_check_function(id_u0, target_id)
-    dim = dimension(mapper.ds)
-    if typeof(search_area) <: Tuple{Any,Any}
-        search_area  = [search_area for _ in 1:dim]
-    elseif length(search_area) == 1
-        search_area = [search_area[1] for _ in 1:dim]
+    dim = length(u0)
+    if typeof(search_area) <: Tuple{<:Real,<:Real}
+        search_area = [search_area for _ in 1:dim]
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
     end
+    # generate a function that returns `true` for ids that that are in the target basin
+    id_u0 = mapper(u0)
+    idchecker = id_check_function(id_u0, target_id)
     return _mfs(algorithm, mapper, u0, search_area, idchecker, metric)
 end
 const excitability_threshold = minimal_fatal_shock
 
 id_check_function(id::Int, ::Nothing) = i -> i != id
-function id_check_function(id::Int, ti::Int)
+function id_check_function(id::Integer, ti::Integer)
     id == ti && error("target id and attractor id of u0 are the same.")
     return i -> i == ti
 end
-function id_check_function(id::Int, ti::AbstractVector{Int})
-    id ∈ ti && error("target id and attractor id of u0 are the same.")
+function id_check_function(id::Integer, ti::AbstractVector{<:Integer})
+    id ∈ ti && error("attractor id of u0 belongs in target ids.")
     return i -> i ∈ ti
 end
 
@@ -104,6 +103,8 @@ with a smaller radius. Each time a better result is found, the radius is reduced
 
 The algorithm records the perturbation with smallest radius that leads to a different basin.
 
+Because this algorithm is based on hyperspheres, it assumes the Euclidean norm as the metric.
+
 ## Keyword arguments
 
 - `initial_iterations = 10000`: number of random perturbations to try in the first step of the
@@ -120,9 +121,10 @@ Base.@kwdef struct MFSBruteForce
     sphere_decrease_factor::Float64 = 0.999
 end
 
-function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, metric)
+function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, _metric)
+    metric = LinearAlgebra.norm
     algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
-    dim = dimension(mapper.ds)
+    dim = length(u0)
     best_shock, best_dist = crude_initial_radius(
         mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations
     )
@@ -260,7 +262,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     function objective_function(perturbation)
         return mfs_objective(perturbation, u0, idchecker, metric, mapper, algorithm.penalty)
     end
-    dim = dimension(mapper.ds)
+    dim = length(u0)
     if algorithm.print_info == true
         TraceMode = :compact
     else
@@ -268,7 +270,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     end
 
     if isnothing(algorithm.random_algo) && isnothing(algorithm.guess)
-            result = bboptimize(objective_function;
+        result = bboptimize(objective_function;
             MaxSteps = algorithm.max_steps, SearchRange = search_area,
             NumDimensions = dim, TraceMode
         )

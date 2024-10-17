@@ -305,20 +305,41 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
         markers = markers_from_keys(ukeys),
+        slines_kwargs = (;linewidth = 3,),
         axislegend_kwargs = (position = :lt,)
     )
-    for i in eachindex(continuation_info)
-        info = continuation_info[i]
-        for (k, val) in info
-            scatter!(ax, prange[i], val;
-                color = colors[k], marker = markers[k], label = string(labels[k]),
-            )
-        end
+
+    series = continuation_series(continuation_info, ukeys)
+    for (j, k) in enumerate(ukeys)
+        scatterlines!(ax, prange, series[j];
+            color = colors[k], label = "$(labels[k])", marker = markers[k],
+            markersize = 15, linewidth = 3, slines_kwargs...
+        )
     end
+
+    # for i in eachindex(continuation_info)
+    #     info = continuation_info[i]
+    #     for (k, val) in info
+    #         scatter!(ax, prange[i], val;
+    #             color = colors[k], marker = markers[k], label = string(labels[k]),
+    #         )
+    #     end
+    # end
     xlims!(ax, minimum(prange), maximum(prange))
     add_legend && axislegend(ax; axislegend_kwargs..., unique = true)
     return
 end
+
+function continuation_series(continuation_info, ukeys = unique_keys(continuation_info))
+    bands = [zeros(length(continuation_info)) for _ in ukeys]
+    for i in eachindex(continuation_info)
+        for (j, k) in enumerate(ukeys)
+            bands[j][i] = get(continuation_info[i], k, NaN)
+        end
+    end
+    return bands
+end
+
 
 function Attractors.plot_continuation_curves(args...; kw...)
     fig = Figure()

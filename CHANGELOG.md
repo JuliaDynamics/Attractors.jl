@@ -1,3 +1,17 @@
+# v1.22
+
+- The function `plot_continuation_curves` has been changed and now plots using
+  `scatterlines!` (which also makes it much more efficient). To restore the old behavior
+  of only scatter use `slines_kwargs = (linewidth = 0,)` as a keyword.
+
+# v1.21
+
+- Initial conditions given to `basins_fractions` and similar functions have been generalized to `AbstractVector` from `StateSpaceSet`. In practice this means that it is now possible to pass in as initial conditions a vector of dictionaries, which allows specifying initial conditions via a mapping of symbolic variables if the dynamical system was made via ModelingToolkit.jl.
+
+# v1.20
+
+- `AttractorsViaProximity` has been significantly improved: it now allows for a keyword `distance`. This keyword decides how the distance between the trajectory end-point and the attractors is decided. The function has further been simplified and re-uses the existing `set_distance` function. The default `distance` keeps the previous behavior unaltered.
+
 # v1.19
 
 - Global continuation can now be performed across any arbitrary curve

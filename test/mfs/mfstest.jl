@@ -23,14 +23,14 @@ using LinearAlgebra
     attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
     algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.96)
 
-    randomised = Dict([atr => minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r) for atr in attractors])
+    randomised = Dict([atr => minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_r) for atr in attractors])
 
     algo_bb = Attractors.MFSBlackBoxOptim()
-    blackbox = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb)) for atr in attractors])
+    blackbox = Dict([atr => (minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_bb)) for atr in attractors])
 
     random_seed = [[rand([-1,1])*rand()/2, rand([-1,1])*rand()/2] for _ in 1:20]
-    randomised_r = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_r)) for atr in random_seed])
-    blackbox_r = Dict([atr => (minimal_fatal_shock(newton, atr, [(-1.5, 1.5)], algo_bb)) for atr in random_seed])
+    randomised_r = Dict([atr => (minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_r)) for atr in random_seed])
+    blackbox_r = Dict([atr => (minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_bb)) for atr in random_seed])
 
     test = true
     for i in (keys(randomised))

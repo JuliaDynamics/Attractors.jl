@@ -102,8 +102,6 @@ function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
     return
 end
 
-ValidICS = Union{AbstractStateSpaceSet, Function}
-
 #####################################################################################
 # Extension of `AttractorMapper` API
 #####################################################################################
@@ -124,7 +122,7 @@ function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
     fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
     # we can always extract attractors because we store all initial conditions
     extract_attractors!(mapper, group_labels, icscol)
-    if typeof(ics) <: AbstractStateSpaceSet
+    if typeof(ics) <: AbstractVector
         return fs, group_labels
     else
         return fs
