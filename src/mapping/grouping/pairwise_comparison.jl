@@ -65,7 +65,7 @@ function group_features(features, config::GroupViaPairwiseComparison)
 end
 
 function _cluster_features_into_labels(features, config::GroupViaPairwiseComparison)
-    labels = ones(length(features))
+    labels = ones(Int, length(features))
     metric = config.metric
     threshold = config.threshold
 
