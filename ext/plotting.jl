@@ -233,7 +233,7 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = fractions_series(fractions_cont, ukeys)
+    bands = continuation_series(fractions_cont, style == :band ? 0.0 : NaN, ukeys)
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
@@ -258,7 +258,7 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
         for (j, k) in enumerate(ukeys)
             scatterlines!(ax, prange, bands[j];
                 color = colors[k], label = "$(labels[k])", marker = markers[k],
-                markersize = 5, linewidth = 3, series_kwargs...
+                markersize = 10, linewidth = 3, series_kwargs...
             )
         end
     else
@@ -270,11 +270,11 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     return
 end
 
-function fractions_series(fractions_cont, ukeys = unique_keys(fractions_cont))
-    bands = [zeros(length(fractions_cont)) for _ in ukeys]
-    for i in eachindex(fractions_cont)
+function continuation_series(continuation_info, defval, ukeys = unique_keys(continuation_info))
+    bands = [zeros(length(continuation_info)) for _ in ukeys]
+    for i in eachindex(continuation_info)
         for (j, k) in enumerate(ukeys)
-            bands[j][i] = get(fractions_cont[i], k, 0)
+            bands[j][i] = get(continuation_info[i], k, defval)
         end
     end
     return bands
@@ -309,11 +309,11 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
         axislegend_kwargs = (position = :lt,)
     )
 
-    series = continuation_series(continuation_info, ukeys)
+    series = continuation_series(continuation_info, NaN, ukeys)
     for (j, k) in enumerate(ukeys)
         scatterlines!(ax, prange, series[j];
             color = colors[k], label = "$(labels[k])", marker = markers[k],
-            markersize = 15, linewidth = 3, slines_kwargs...
+            markersize = 10, linewidth = 3, slines_kwargs...
         )
     end
 
@@ -329,17 +329,6 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
     add_legend && axislegend(ax; axislegend_kwargs..., unique = true)
     return
 end
-
-function continuation_series(continuation_info, ukeys = unique_keys(continuation_info))
-    bands = [zeros(length(continuation_info)) for _ in ukeys]
-    for i in eachindex(continuation_info)
-        for (j, k) in enumerate(ukeys)
-            bands[j][i] = get(continuation_info[i], k, NaN)
-        end
-    end
-    return bands
-end
-
 
 function Attractors.plot_continuation_curves(args...; kw...)
     fig = Figure()
