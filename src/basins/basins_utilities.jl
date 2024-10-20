@@ -1,3 +1,5 @@
+export ics_from_grid
+
 # It works for all mappers that define a `basins_fractions` method.
 """
     basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → basins, attractors
@@ -24,13 +26,25 @@ See also [`convergence_and_basins_of_attraction`](@ref).
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
-    I = CartesianIndices(basins)
-    A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
+    A = ics_from_grid(grid)
     fs, labels = basins_fractions(mapper, A; kwargs...)
     attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
     return basins, attractors
 end
+
+"""
+    ics_from_grid(grid)
+
+Generate all initial conditions corresponding to the given `grid`
+(a state space tessellation used e.g. in [`basins_of_attraction`](@ref)).
+"""
+function ics_from_grid(grid)
+    I = CartesianIndices(length.(grid))
+    A = [generate_ic_on_grid(grid, i) for i in vec(I)]
+    return A
+end
+
 
 # Type-stable generation of an initial condition given a grid array index
 @generated function generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}

@@ -3,6 +3,7 @@
 - The function `plot_continuation_curves` has been changed and now plots using
   `scatterlines!` (which also makes it much more efficient). To restore the old behavior
   of only scatter use `slines_kwargs = (linewidth = 0,)` as a keyword.
+- Internal function `ics_from_grid` is now exported.
 
 # v1.21
 
