@@ -19,6 +19,7 @@ include("basins/basins.jl")
 include("continuation/basins_fractions_continuation_api.jl")
 include("matching/matching_interface.jl")
 include("boundaries/edgetracking.jl")
+include("boundaries/stagger_and_step.jl")
 include("deprecated.jl")
 include("tipping/tipping.jl")
 
