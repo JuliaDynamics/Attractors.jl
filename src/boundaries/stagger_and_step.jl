@@ -106,7 +106,7 @@ to the stable manifold of the chaotic saddle.
       when it succeeds.    
 * `f = 1.1`: It is the free parameter for the adaptive stagger
   method. 
-* `δ₀ = 1.`: This is the radius for the first stagger 
+* `δ₀ = 1.0`: This is the radius for the first stagger 
   trajectory search. The algorithm looks for a point 
   sufficiently close to the saddle before switching to the 
   stagger-and-step routine. The search radius must be large 
