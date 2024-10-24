@@ -107,10 +107,10 @@ to the stable manifold of the chaotic saddle.
 * `f = 1.1`: It is the free parameter for the adaptive stagger
   method. 
 * `δ₀ = 1.`: This is the radius for the first stagger 
-trajectory search. The algorithm looks for a point 
-sufficiently close to the saddle before switching to the 
-stagger-and-step routine. The search radius must be large 
-enough to find a suitable initial. 
+  trajectory search. The algorithm looks for a point 
+  sufficiently close to the saddle before switching to the 
+  stagger-and-step routine. The search radius must be large 
+  enough to find a suitable initial. 
 """
 function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
     f = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1.)
