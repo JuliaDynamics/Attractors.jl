@@ -42,7 +42,7 @@ of a system, namely the stable manifold of a chaotic saddle.
 Given the dynamical system `ds` and a initial guess `x0` in a 
 region *with no attractors* defined by the membership function 
 `isinside`, the algorithm provides `N` points close to the 
-stable manifold that escape from the region after a least `Tm` 
+stable manifold that escape from the region after at least `Tm` 
 steps of `ds`. The search is stochastic and depends on the 
 parameter `δ` defining a (small) neighborhood of search. 
 
