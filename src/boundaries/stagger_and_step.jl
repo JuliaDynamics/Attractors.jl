@@ -35,7 +35,7 @@ end
 """
     stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; kwargs...) -> trajectory
 
-This function implements the stagger-and-step method 
+Implement the stagger-and-step method 
 [^Sweet2001] and [^Sala2016] to approximate the invariant 
 non-attracting set governing the chaotic transient dynamics 
 of a system, namely the stable manifold of a chaotic saddle. 
