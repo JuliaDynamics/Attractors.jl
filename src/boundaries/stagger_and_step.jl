@@ -7,7 +7,7 @@ using ProgressMeter
 """
     stagger_trajectory!(ds, x0, Tm, isinside; kwargs...) -> xi
 
-This function returns a point `xi` which _guarantees_ `T(xi) > 
+Return a point `xi` which _guarantees_ `T(xi) > 
 Tm` with a random walk search around the initial coordinates 
 `x0`. `T(xi)` is the escape time of the initial condition `xi`.  
 There is no guarantee to find such point, the parameters 
