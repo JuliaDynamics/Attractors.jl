@@ -15,8 +15,7 @@ must be adjusted to find the suitable point. This is an .
 auxiliary function for [`stagger_and_step`](@ref). Keyword arguments and 
 definitions are identical for both functions. 
 
-The initial search radius `δ₀` is big, `δ₀ = 1.` by default.
-
+The initial search radius `δ₀` is big, `δ₀ = 1.0` by default.
 """
 function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
     T = escape_time!(ds, x0, isinside)
