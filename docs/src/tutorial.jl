@@ -6,8 +6,6 @@
 # </video>
 # ```
 
-#nb @doc Attractors
-
 # [`Attractors`](@ref) is a component of the **DynamicalSystems.jl** library.
 # This tutorial will walk you through its main functionality.
 # That is, given a `DynamicalSystem` instance, find all its attractors and their basins
@@ -21,17 +19,19 @@
 # but we won't cover anything else in this introductory tutorial.
 # See the [examples](@ref examples) page instead.
 
-
 # ### Package versions used
 
 import Pkg
 
 #nb # Activate an environment in the folder containing the notebook
 #nb Pkg.activate(dirname(@__DIR__))
-#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq", "BenchmarkTools"])
-
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq"])
 Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 
+#nb # ## Attractors.jl summary
+
+#nb using Attractors # re=exported by `DynamicalSystems`
+#nb @doc Attractors
 
 # ## Tutorial - copy-pasteable version
 
@@ -39,7 +39,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 
 # ```julia
 # using Attractors, CairoMakie, OrdinaryDiffEq
-# # Define key input: a `DynamicalSystem`
+# ## Define key input: a `DynamicalSystem`
 # function modified_lorenz_rule(u, p, t)
 #     x, y, z = u; a, b = p
 #     dx = y - x
@@ -52,8 +52,8 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 # diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
 # ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
-# # Define key input: an `AttractorMaper` that finds
-# # attractors of a `DynamicalSystem`
+# ## Define key input: an `AttractorMaper` that finds
+# ## attractors of a `DynamicalSystem`
 # grid = (
 #     range(-15.0, 15.0; length = 150), # x
 #     range(-20.0, 20.0; length = 150), # y
@@ -64,29 +64,29 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 #     consecutive_lost_steps = 100,
 # )
 
-# # Find attractors and their basins of attraction state space fraction
-# # by randomly sampling initial conditions in state sapce
+# ## Find attractors and their basins of attraction state space fraction
+# ## by randomly sampling initial conditions in state sapce
 # sampler, = statespace_sampler(grid)
 # algo = AttractorSeedContinueMatch(mapper)
 # fs = basins_fractions(mapper, sampler)
 # attractors = extract_attractors(mapper)
 
-# # found two attractors: one is a limit cycle, the other is chaotic
-# # visualize them
+# ## found two attractors: one is a limit cycle, the other is chaotic
+# ## visualize them
 # plot_attractors(attractors)
 
-# # continue all attractors and their basin fractions across a parameter axis
-# # using a global continuation algorithm
+# ## continue all attractors and their basin fractions across any arbigrary
+# ## curve in parameter space using a global continuation algorithm
 # algo = AttractorSeedContinueMatch(mapper)
-# prange = 4.7:0.02:6
-# pidx = 1
+# params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
+# pcurve = params.(range(0, 2π; length = 101))
 # fractions_cont, attractors_cont = global_continuation(
-# 	algo, prange, pidx, sampler; samples_per_parameter = 1_000
+# 	algo, pcurve, sampler; samples_per_parameter = 1_000
 # )
 
-# # and visualize the results
+# ## and visualize the results
 # fig = plot_basins_attractors_curves(
-# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange; add_legend = false
+# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), pcurve; add_legend = false
 # )
 # ```
 

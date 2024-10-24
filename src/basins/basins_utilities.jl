@@ -1,3 +1,5 @@
+export ics_from_grid
+
 # It works for all mappers that define a `basins_fractions` method.
 """
     basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → basins, attractors
@@ -24,13 +26,25 @@ See also [`convergence_and_basins_of_attraction`](@ref).
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
-    I = CartesianIndices(basins)
-    A = StateSpaceSet([generate_ic_on_grid(grid, i) for i in vec(I)])
+    A = ics_from_grid(grid)
     fs, labels = basins_fractions(mapper, A; kwargs...)
     attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
     return basins, attractors
 end
+
+"""
+    ics_from_grid(grid)
+
+Generate all initial conditions corresponding to the given `grid`
+(a state space tessellation used e.g. in [`basins_of_attraction`](@ref)).
+"""
+function ics_from_grid(grid)
+    I = CartesianIndices(length.(grid))
+    A = [generate_ic_on_grid(grid, i) for i in vec(I)]
+    return A
+end
+
 
 # Type-stable generation of an initial condition given a grid array index
 @generated function generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
@@ -82,11 +96,12 @@ See also [`convergence_time`](@ref).
 - `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
-    if length(grid) != dimension(mapper.ds)
+    if length(grid) != dimension(referenced_dynamical_system(mapper))
         @error "The mapper and the grid must have the same dimension"
     end
     basins = zeros(length.(grid))
-    iterations = zeros(Int, length.(grid))
+    ds = referenced_dynamical_system(mapper)
+    iterations = zeros(typeof(current_time(ds)), length.(grid))
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
         length(basins); desc = "Basins and convergence: ", dt = 1.0
@@ -103,7 +118,7 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
 end
 
 """
-    convergence_and_basins_fractions(mapper::AttractorMapper, ics::StateSpaceSet)
+    convergence_and_basins_fractions(mapper::AttractorMapper, ics)
 
 An extension of [`basins_fractions`](@ref).
 Return `fs, labels, convergence`. The first two are as in `basins_fractions`,
@@ -117,10 +132,10 @@ See also [`convergence_time`](@ref).
 
 - `show_progress = true`: show progress bar.
 """
-function convergence_and_basins_fractions(mapper::AttractorMapper, ics::AbstractStateSpaceSet;
-        show_progress = true,
+function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS;
+        show_progress = true, N = 1000,
     )
-    N = size(ics, 1)
+    N = ics isa Function ? N : length(ics)
     progress = ProgressMeter.Progress(N;
         desc="Mapping initial conditions to attractors:", enabled = show_progress
     )
@@ -130,7 +145,7 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::Abstract
 
     for i ∈ 1:N
         ic = _get_ic(ics, i)
-        label = mapper(ic; show_progress)
+        label = mapper(ic; show_progress = false)
         fs[label] = get(fs, label, 0) + 1
         labels[i] = label
         iterations[i] = convergence_time(mapper)

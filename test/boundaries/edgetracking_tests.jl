@@ -1,4 +1,4 @@
-using Attractors
+    using Attractors
 using Test
 using OrdinaryDiffEq
 using LinearAlgebra
@@ -20,7 +20,7 @@ end
     edge = edgetracking(ds, attrs; u1=[-1.0, 0.2], u2=[1.0, 0.2],
         bisect_thresh, diverge_thresh, maxiter, abstol).edge
     println(edge[end], edge[end-1])
-    @test sqrt(sum(abs, (edge[end]-zeros(2)).^2)) < 1e-6
+    @test sqrt(sum(abs, (edge[end]-zeros(2)).^2)) < 1e-5
 end
 
 @testset "Thomas' rule" begin

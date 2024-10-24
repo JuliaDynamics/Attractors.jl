@@ -49,8 +49,8 @@ function Attractors.plot_attractors!(ax, attractors;
         access = SVector(1, 2),
         sckwargs = (strokewidth = 0.5, strokecolor = :black,)
     )
-    for (i, k) ∈ enumerate(ukeys)
-        k ≤ 0 && continue
+    for k in ukeys
+        k ∉ keys(attractors) && continue
         A = attractors[k]
         x, y = columns(A[:, access])
         scatter!(ax, x, y;
@@ -84,7 +84,8 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
         markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
-        access = SVector(1, 2)
+        access = SVector(1, 2),
+        sckwargs = (strokewidth = 1.5, strokecolor = :white,)
     )
 
     sort!(ukeys) # necessary because colormap is ordered
@@ -103,8 +104,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     # Scatter attractors
     plot_attractors!(ax, attractors;
         ukeys, colors, access, markers,
-        labels, add_legend,
-        sckwargs = (strokewidth = 1.5, strokecolor = :white,)
+        labels, add_legend, sckwargs
     )
     return ax
 end
@@ -233,7 +233,7 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = fractions_series(fractions_cont, ukeys)
+    bands = continuation_series(fractions_cont, style == :band ? 0.0 : NaN, ukeys)
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
@@ -258,7 +258,7 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
         for (j, k) in enumerate(ukeys)
             scatterlines!(ax, prange, bands[j];
                 color = colors[k], label = "$(labels[k])", marker = markers[k],
-                markersize = 5, linewidth = 3, series_kwargs...
+                markersize = 10, linewidth = 3, series_kwargs...
             )
         end
     else
@@ -270,11 +270,11 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     return
 end
 
-function fractions_series(fractions_cont, ukeys = unique_keys(fractions_cont))
-    bands = [zeros(length(fractions_cont)) for _ in ukeys]
-    for i in eachindex(fractions_cont)
+function continuation_series(continuation_info, defval, ukeys = unique_keys(continuation_info))
+    bands = [zeros(length(continuation_info)) for _ in ukeys]
+    for i in eachindex(continuation_info)
         for (j, k) in enumerate(ukeys)
-            bands[j][i] = get(fractions_cont[i], k, 0)
+            bands[j][i] = get(continuation_info[i], k, defval)
         end
     end
     return bands
@@ -305,16 +305,26 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
         markers = markers_from_keys(ukeys),
+        slines_kwargs = (;linewidth = 3,),
         axislegend_kwargs = (position = :lt,)
     )
-    for i in eachindex(continuation_info)
-        info = continuation_info[i]
-        for (k, val) in info
-            scatter!(ax, prange[i], val;
-                color = colors[k], marker = markers[k], label = string(labels[k]),
-            )
-        end
+
+    series = continuation_series(continuation_info, NaN, ukeys)
+    for (j, k) in enumerate(ukeys)
+        scatterlines!(ax, prange, series[j];
+            color = colors[k], label = "$(labels[k])", marker = markers[k],
+            markersize = 10, linewidth = 3, slines_kwargs...
+        )
     end
+
+    # for i in eachindex(continuation_info)
+    #     info = continuation_info[i]
+    #     for (k, val) in info
+    #         scatter!(ax, prange[i], val;
+    #             color = colors[k], marker = markers[k], label = string(labels[k]),
+    #         )
+    #     end
+    # end
     xlims!(ax, minimum(prange), maximum(prange))
     add_legend && axislegend(ax; axislegend_kwargs..., unique = true)
     return
