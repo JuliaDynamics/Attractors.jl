@@ -72,7 +72,7 @@ The method produces a pseudo-trajectory of `N` points δ-close
 to the stable manifold of the chaotic saddle. 
 
 ## Keyword arguments
-* `δ = 1e-10`: it is a small number constraining the random
+* `δ = 1e-10`: A small number constraining the random
   search around a particular point. The interpretation of this 
   number will depend on the distribution chosen for the 
   generation (see `stagger_mode`).
