@@ -36,7 +36,7 @@ end
     stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; kwargs...) -> trajectory
 
 Implement the stagger-and-step method 
-[^Sweet2001] and [^Sala2016] to approximate the invariant 
+[Sweet2001](@cite) and [Sala2016](@cite) to approximate the invariant 
 non-attracting set governing the chaotic transient dynamics 
 of a system, namely the stable manifold of a chaotic saddle. 
 
@@ -112,8 +112,6 @@ trajectory search. The algorithm looks for a point
 sufficiently close to the saddle before switching to the 
 stagger-and-step routine. The search radius must be large 
 enough to find a suitable initial. 
-[^Sweet2001]: D. Sweet, *et al.*, Phys. Rev. Lett. **86**, pp 2261  (2001)
-[^Sala2016]: M. Sala, *et al.*, Chaos **26**, pp 123124 (2016)
 """
 function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
     f = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1.)
