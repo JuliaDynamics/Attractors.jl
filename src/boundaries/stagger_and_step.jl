@@ -20,7 +20,7 @@ The initial search radius `δ₀` is big, `δ₀ = 1.` by default.
 """
 function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
     T = escape_time!(ds, x0, isinside)
-    xi = deepcopy(x0) 
+    xi = copy(x0) 
     while !(T > Tm)  # we must have T > Tm at each step 
         xi, T = get_stagger!(ds, xi, δ₀, T, isinside; f, stagger_mode, max_steps)
         if T < 0
