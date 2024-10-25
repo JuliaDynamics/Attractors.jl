@@ -50,27 +50,6 @@ The function `isinside(x)` returns `true` if the point `x` is
 inside the chosen bounded region and `false` otherwise. See 
 [`statespace_sampler`](@ref) to construct this function.
 
-## Description 
-
-The method relies on the stagger-and-step algorithm that 
-computes points close to the saddle that escapes in a time 
-`T(x_n) > Tm`. The function `T` represents the escape time 
-from a region defined by the user (see the argument 
-`isinside`).
-
-Given the dynamical mapping `F`, if the iteration `x_{n+1} = 
-F(x_n)` respects the condition `T(x_{n+1}) > Tm` we accept 
-this next point, this is the _step_ part of the method. If 
-not, the method search randomly the next point in a 
-neighborhood following a given probability distribution, this 
-is the _stagger_ part. This part sometimes fails to find a new 
-candidate and a new starting point of the trajectory is chosen 
-within the defined region. See the keyword argument 
-`stagger_mode` for the different available methods.   
-
-The method produces a pseudo-trajectory of `N` points δ-close
-to the stable manifold of the chaotic saddle. 
-
 ## Keyword arguments
 * `δ = 1e-10`: A small number constraining the random
   search around a particular point. The interpretation of this 
@@ -110,6 +89,28 @@ to the stable manifold of the chaotic saddle.
   sufficiently close to the saddle before switching to the 
   stagger-and-step routine. The search radius must be large 
   enough to find a suitable initial. 
+
+## Description 
+
+The method relies on the stagger-and-step algorithm that 
+computes points close to the saddle that escapes in a time 
+`T(x_n) > Tm`. The function `T` represents the escape time 
+from a region defined by the user (see the argument 
+`isinside`).
+
+Given the dynamical mapping `F`, if the iteration `x_{n+1} = 
+F(x_n)` respects the condition `T(x_{n+1}) > Tm` we accept 
+this next point, this is the _step_ part of the method. If 
+not, the method search randomly the next point in a 
+neighborhood following a given probability distribution, this 
+is the _stagger_ part. This part sometimes fails to find a new 
+candidate and a new starting point of the trajectory is chosen 
+within the defined region. See the keyword argument 
+`stagger_mode` for the different available methods.   
+
+The method produces a pseudo-trajectory of `N` points δ-close
+to the stable manifold of the chaotic saddle. 
+
 """
 function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
     γ = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1., show_progress = true)
@@ -118,7 +119,7 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
         N; desc = "Saddle estimation: ", dt = 1.0
     )
     xi = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, max_steps) 
-    v = Vector{Vector{Float64}}(undef,N)
+    v = Vector{typeof(current_state(ds))}(undef, N)
     v[1] = xi
     for n in 1:N
         show_progress && ProgressMeter.update!(progress, n)
