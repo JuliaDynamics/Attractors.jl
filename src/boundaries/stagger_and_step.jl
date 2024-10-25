@@ -135,7 +135,7 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
             reinit!(ds, xp; t0 = 0)
         end 
         step!(ds)
-        xi = deepcopy(current_state(ds))
+        xi = copy(current_state(ds))
         v[n] = xi
     end
     return v
