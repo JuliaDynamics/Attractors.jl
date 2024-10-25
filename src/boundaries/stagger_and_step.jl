@@ -21,7 +21,7 @@ function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :e
     T = escape_time!(ds, x0, isinside; max_steps)
     xi = copy(x0) 
     while !(T > Tm)  # we must have T > Tm at each step 
-        xi, T = get_stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps)
+        xi, T = stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps)
         if T < 0
             error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
         end 
@@ -126,7 +126,7 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
         if escape_time!(ds, xi, isinside; max_steps) > Tm
             reinit!(ds, xi; t0 = 0)
         else
-            xp, Tp = get_stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, γ)
+            xp, Tp = stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, γ)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
                 xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp, max_steps, γ) 
@@ -177,10 +177,12 @@ function rand_u(δ, n; stagger_mode = :exp)
     end
 end
 
-# This function searches a new candidate in a neighborhood of x0 
-# with a random search depending on some distribution. 
-# If the search fails it returns a negative time.
-function get_stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stagger_mode = :exp, verbose = false)
+"""
+    stagger!(ds, x0, δ, Tm, isinside; kwargs...) -> stagger_point
+
+This function searches a new candidate in a neighborhood of x0 with a random search depending on some distribution. If the search fails it returns a negative time.
+"""
+function stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stagger_mode = :exp, verbose = false)
     Tp = 0; xp = zeros(length(x0)); k = 1; 
     T0 = escape_time!(ds, x0, isinside; max_steps)
     if !isinside(x0)
