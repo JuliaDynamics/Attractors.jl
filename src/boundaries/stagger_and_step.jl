@@ -17,11 +17,11 @@ definitions are identical for both functions.
 
 The initial search radius `δ₀` is big, `δ₀ = 1.0` by default.
 """
-function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp, max_steps = Int(1e5), f = 1.1)
+function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp, max_steps = Int(1e5), γ = 1.1)
     T = escape_time!(ds, x0, isinside)
     xi = copy(x0) 
     while !(T > Tm)  # we must have T > Tm at each step 
-        xi, T = get_stagger!(ds, xi, δ₀, T, isinside; f, stagger_mode, max_steps)
+        xi, T = get_stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps)
         if T < 0
             error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
         end 
@@ -101,11 +101,10 @@ to the stable manifold of the chaotic saddle.
       taken from a uniform distribution [0,δ]. 
     * `:adaptive`: The next candidate is `x_c = x + u*r` with 
       `r` drawn from a gaussian distribution with variance  δ.
-      The variance changes according to a free parameter `f`  
-      such that `δ = δ/f` if no candidate is found and `δ = δ*f`
-      when it succeeds.    
-* `f = 1.1`: It is the free parameter for the adaptive stagger
-  method. 
+      The variance changes according to a free parameter `γ`  
+      such that `δ = δ/γ` if no candidate is found and `δ = δ*γ`
+      when it succeeds. `γ = 1.1`: It is the free parameter for 
+      the adaptive stagger method. 
 * `δ₀ = 1.0`: This is the radius for the first stagger 
   trajectory search. The algorithm looks for a point 
   sufficiently close to the saddle before switching to the 
@@ -113,19 +112,23 @@ to the stable manifold of the chaotic saddle.
   enough to find a suitable initial. 
 """
 function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
-    f = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1.)
+    γ = 1.1, max_steps = Int(1e5), stagger_mode = :exp, δ₀ = 1., show_progress = true)
 
+    progress = ProgressMeter.Progress(
+        N; desc = "Saddle estimation: ", dt = 1.0
+    )
     xi = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, max_steps) 
     v = Vector{Vector{Float64}}(undef,N)
     v[1] = xi
-@showprogress   for n in 1:N
+    for n in 1:N
+        show_progress && ProgressMeter.update!(progress, n)
         if escape_time!(ds, xi, isinside) > Tm
             reinit!(ds, xi; t0 = 0)
         else
-            xp, Tp = get_stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, f)
+            xp, Tp = get_stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, γ)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
-                xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp, max_steps, f) 
+                xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp, max_steps, γ) 
                 δ = 0.1
             end
             reinit!(ds, xp; t0 = 0)
@@ -176,7 +179,7 @@ end
 # This function searches a new candidate in a neighborhood of x0 
 # with a random search depending on some distribution. 
 # If the search fails it returns a negative time.
-function get_stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), f = 1.1, stagger_mode = :exp, verbose = false)
+function get_stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stagger_mode = :exp, verbose = false)
     Tp = 0; xp = zeros(length(x0)); k = 1; 
     T0 = escape_time!(ds, x0, isinside)
     if !isinside(x0)
@@ -198,9 +201,9 @@ function get_stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), f = 1.1, s
             # We adapt the variance of the search
             # if the alg. can't find a candidate
             if Tp < T0
-                δ = δ/f
+                δ = δ/γ
             elseif Tp == T0
-                δ = δ*f
+                δ = δ*γ
             end
             if Tp == Tm
                 # The adaptive alg. accepts T == Tp
