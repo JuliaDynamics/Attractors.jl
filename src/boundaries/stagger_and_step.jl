@@ -10,10 +10,10 @@ using ProgressMeter
 Return a point `xi` which _guarantees_ `T(xi) > 
 Tm` with a random walk search around the initial coordinates 
 `x0`. `T(xi)` is the escape time of the initial condition `xi`.  
-There is no guarantee to find such point, the parameters 
-must be adjusted to find the suitable point. This is an .
-auxiliary function for [`stagger_and_step`](@ref). Keyword arguments and 
-definitions are identical for both functions. 
+In the case where the algorithm cannot find this point the algorithm 
+returns nothing and the parameters must be adjusted to find the suitable point.
+This is an auxiliary function for [`stagger_and_step`](@ref).
+Keyword arguments and definitions are identical for both functions. 
 
 The initial search radius `δ₀` is big, `δ₀ = 1.0` by default.
 """
@@ -23,7 +23,7 @@ function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :e
     while !(T > Tm)  # we must have T > Tm at each step 
         xi, T = stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps)
         if T < 0
-            error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
+            return nothing
         end 
             
     end
@@ -119,6 +119,10 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
         N; desc = "Saddle estimation: ", dt = 1.0
     )
     xi = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, max_steps) 
+    if isnothing(xi)
+        error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
+    end
+
     v = Vector{typeof(current_state(ds))}(undef, N)
     v[1] = xi
     for n in 1:N
@@ -130,6 +134,9 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
                 xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp, max_steps, γ) 
+                if isnothing(xp)
+                    error("Cannot find a stagger trajectory. Choose a different starting point or search radius δ₀.")
+                end
                 δ = 0.1
             end
             reinit!(ds, xp; t0 = 0)

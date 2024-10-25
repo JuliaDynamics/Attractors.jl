@@ -20,7 +20,10 @@ R_max = [4.; 4.; 4.; 4.]
 sampler, isinside = statespace_sampler(HRectangle(R_min,R_max))
 x0 = sampler()
 df = DeterministicIteratedMap(F!, x0) 
-xi = stagger_trajectory!(df, x0, 30, isinside; δ₀= 2.) 
+xi = stagger_trajectory!(df, x0, 20, isinside; δ₀= 2.) 
+if isnothing(xi) 
+    error("couldn't find a suitable point")
+end
 @show Tp = Attractors.escape_time!(df, xi, isinside)
 
 v = stagger_and_step!(df, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
