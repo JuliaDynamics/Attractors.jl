@@ -169,7 +169,10 @@ function _rematch_ignored!(attractors_cont, matcher;
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
         p, pprev = pcurve[i+1], pcurve[i]
         # If there are no attractors, skip the matching
-        (isempty(a₊) || isempty(a₋)) && continue
+        if (isempty(a₊) || isempty(a₋))
+            push!(rmaps, Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}())
+            continue
+        end
         # Here we always compute a next id. In this way, if an attractor disappears
         # and reappears, it will get a different (incremented) ID as it should!
         next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
@@ -180,6 +183,7 @@ function _rematch_ignored!(attractors_cont, matcher;
     return rmaps
 end
 
+# Another concrete implementation of `match_sequentially!`:
 function _rematch_with_past!(attractors_cont, matcher;
         ds = nothing, pcurve = eachindex(attractors_cont),
     )
