@@ -166,8 +166,8 @@ function escape_time!(ds, x0, isinside; max_escape_time = 10000)
     k = 1; 
     while isinside(x) 
         if k > max_escape_time 
-            error("The trajectory did not escape for ", k, " steps, you probably have 
-                  an attractor in the defined region.")
+            error("The trajectory did not escape for ", k, " steps, you probably have \
+an attractor in the defined region.")
         end
         step!(ds)
         x = current_state(ds)

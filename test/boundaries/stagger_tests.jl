@@ -31,7 +31,7 @@ for u in v
 end
 
 # Test if all the points have escape time ≥ Tm 
-# :unif mode
+# :unif mo_de
 v = stagger_and_step!(df, xi, 10, isinside; δ₀ = 1e-3, stagger_mode = :unif) 
 for u in v
     @test Attractors.escape_time!(df, u, isinside) ≥ 30
@@ -42,6 +42,25 @@ end
 v = stagger_and_step!(df, xi, 10, isinside; δ₀ = 1e-3, stagger_mode = :adaptive) 
 for u in v
     @test Attractors.escape_time!(df, u, isinside) ≥ 30 - 1
+end
+
+# Dynamical system with a fixed point at 0
+function F_stable!(du, u ,p, n)
+    x,y = u
+    du[1] = -x 
+    du[2] = -y 
+    return 
+end
+
+df = DeterministicIteratedMap(F_stable!, x0) 
+# Test if the program throws an error when the 
+# trajectory stays inside the square
+try 
+    u = sampler()
+    Attractors.escape_time!(df, u, isinside)
+    @test false
+catch 
+    @test true  
 end
 
 
