@@ -65,7 +65,11 @@ inside the chosen bounded region and `false` otherwise. See
 * `max_steps = 10^5`: The search for a new candidate point may 
   fail at some point. If the search fails after `max_steps`, 
   a new initial point is set and the method starts from a new
-  point 
+  point.
+
+* `max_escape_time = 10000`: If the trajectory stays in the 
+  defined region after `max_escape_time` steps, there is probably
+  an attractor in the region and the algorithm will fail. 
 
 * `stagger_mode = :exp`: There are several ways to produce 
   candidate points `x` that have to fulfill the condition 
