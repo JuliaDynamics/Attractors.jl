@@ -43,6 +43,8 @@ v = stagger_and_step!(df, xi, 10, isinside; δ₀ = 1e-3, stagger_mode = :adapti
 for u in v
     @test Attractors.escape_time!(df, u, isinside) ≥ 30 - 1
 end
+
+
 end
 
 

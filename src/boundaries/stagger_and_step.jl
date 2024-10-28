@@ -156,7 +156,9 @@ function escape_time!(ds, x0, isinside; max_steps = 10000)
     reinit!(ds, x; t0 = 0)
     k = 1; 
     while isinside(x) 
-        k > max_steps && break
+        if k > max_steps 
+            error("The trajectory did not escape for ", k, " steps, you probably have an attractor in the defined region.")
+        end
         step!(ds)
         x = current_state(ds)
         k += 1
@@ -200,9 +202,9 @@ function stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stag
 
         if k > max_steps 
            if verbose 
-           @warn "Stagger search fails, δ is too small or T is too large. 
+               @warn "Stagger search fails, δ is too small or T is too large. 
                 We reinitiate the algorithm
-           "
+               "
            end
            return 0,-1
         end
