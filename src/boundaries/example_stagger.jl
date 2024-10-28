@@ -29,6 +29,6 @@ end
 v = stagger_and_step!(df, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
 v = hcat(v...)'
 
-# using CairoMakie
-# scatter(v[:,1], v[:,3]; markersize = 3)
+using CairoMakie
+scatter(v[:,1], v[:,3]; markersize = 3)
 
