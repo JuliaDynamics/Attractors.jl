@@ -33,10 +33,11 @@ end
 ##########################################################################################
 # Attractors
 ##########################################################################################
-function Attractors.plot_attractors(a; kw...)
+function Attractors.plot_attractors(a; access = SVector(1, 2), kw...)
     fig = Figure()
-    ax = Axis(fig[1,1])
-    plot_attractors!(ax, a; kw...)
+    AX = length(access) == 2 ? Axis : Axis3
+    ax = AX(fig[1,1])
+    plot_attractors!(ax, a; access, kw...)
     return fig
 end
 
