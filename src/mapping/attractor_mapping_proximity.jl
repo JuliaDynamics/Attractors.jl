@@ -56,7 +56,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
     distance::M
     cset::SS # current state of dynamical system as `StateSpaceSet`.
     stop_at_Δt::Bool
-    latest_convergence_time::RefValue{T}
+    latest_convergence_time::Base.RefValue{T}
 end
 
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
