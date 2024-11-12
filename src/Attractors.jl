@@ -16,7 +16,7 @@ using Reexport
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
 include("basins/basins.jl")
-include("continuation/basins_fractions_continuation_api.jl")
+include("continuation/global_continuation_api.jl")
 include("matching/matching_interface.jl")
 include("boundaries/edgetracking.jl")
 include("deprecated.jl")
