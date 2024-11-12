@@ -29,6 +29,9 @@ Return:
    `attractors_cont[i]` is a dictionary mapping attractor ID to the
    attractor set at the `i`-th parameter combination.
 
+See the function [`continuation_series`](@ref) if you wish to transform the output
+to an alternative format.
+
 ## Keyword arguments
 
 - `show_progress = true`: display a progress bar of the computation.

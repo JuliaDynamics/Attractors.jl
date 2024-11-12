@@ -126,6 +126,8 @@ MFSBruteForce
 
 ```@docs
 global_continuation
+GlobalContinuationAlgorithm
+continuation_series
 ```
 
 ### General seeding-based continuation

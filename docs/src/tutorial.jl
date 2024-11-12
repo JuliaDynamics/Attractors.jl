@@ -284,9 +284,10 @@ plot_attractors(attractors3)
 # If you have heard before the word "continuation", then you are likely aware of the
 # **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
 # such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
+# These software perform **local continuation**.
 # Here we offer a completely different kind of continuation called **global continuation**.
 
-# The traditional continuation analysis continues the curves of individual _fixed
+# The local continuation continues the curves of individual _fixed
 # points (and under some conditions limit cycles)_ across the joint state-parameter space and
 # tracks their _local (linear) stability_.
 # This approach needs to manually be "re-run" for every individual branch of fixed points
@@ -298,15 +299,15 @@ plot_attractors(attractors3)
 # Additionally, the global continuation tracks a _nonlocal_ stability property which by
 # default is the basin fraction.
 
-# This is a fundamental difference. Because all attractors are simultaneously
+# Because all attractors are simultaneously
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
 # A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
 # See also the [comparison page](@ref bfkit_comparison) in our docs
 # that attempts to do the same analysis of our Tutorial with traditional continuation software.
 
-# To perform the continuation is extremely simple. First, we decide what parameter,
-# and what range, to continue over:
+# To perform a global continuation is surprisingly simple. First, we decide what parameter,
+# and what range of that parameter, to continue over:
 
 prange = 4.5:0.01:6
 pidx = 1 # index of the parameter
@@ -314,7 +315,7 @@ pidx = 1 # index of the parameter
 # Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
-# which is the geenral [`AttractorSeedContinueMatch`](@ref).
+# which is the general [`AttractorSeedContinueMatch`](@ref).
 # This algorithm uses the `mapper` to find all attractors at each parameter value
 # and from the found attractors it continues them along a parameter axis
 # using a seeding process (see its documentation string).
@@ -337,8 +338,10 @@ fractions_cont, attractors_cont = global_continuation(
 
 attractors_cont[34]
 
-# There is a fantastic convenience function for animating
-# the attractors evolution, that utilizes things we have
+# If you want to transform the output to the alternative format of
+# a dictionary of vectors, use [`continuation_series`](@ref).
+# You typically don't have to though, because there is a fantastic convenience function
+# for animating the attractors evolution, that utilizes things we have
 # already defined:
 
 animate_attractors_continuation(
@@ -352,7 +355,7 @@ animate_attractors_continuation(
 # ```
 
 # Hah, how cool is that! The attractors pop in and out of existence like out of nowhere!
-# It would be incredibly difficult to find these attractors in traditional continuation software
+# It can be difficult to find these attractors in traditional continuation software
 # where a rough estimate of the period is required! (It would also be too hard due to the presence
 # of chaos for most of the parameter values, but that's another issue!)
 
