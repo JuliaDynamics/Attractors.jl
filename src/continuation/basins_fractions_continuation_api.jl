@@ -17,7 +17,26 @@ abstract type GlobalContinuationAlgorithm end
     global_continuation(gca::GlobalContinuationAlgorithm, pcurve, ics; kwargs...)
 
 Find and continue attractors (or representations of attractors)
-and the fractions of their basins of attraction across a parameter range.
+and the fractions of their basins of attraction across a parameter range `pcurve`
+by sampling given initial conditions `ics` according to algorithm `gca`.
+
+Return:
+
+1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
+   `fractions_cont[i]` is a dictionary mapping attractor IDs to their basin fraction
+   at the `i`-th parameter combination.
+2. `attractors_cont::Vector{Dict{Int, <:Any}}`. The continued attractors.
+   `attractors_cont[i]` is a dictionary mapping attractor ID to the
+   attractor set at the `i`-th parameter combination.
+
+## Keyword arguments
+
+- `show_progress = true`: display a progress bar of the computation.
+- `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
+  combination from `ics` if `ics` is a function instead of set initial conditions.
+
+## Description
+
 `global_continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
@@ -46,21 +65,6 @@ Possible subtypes of `GlobalContinuationAlgorithm` are:
 
 - [`AttractorSeedContinueMatch`](@ref)
 - [`FeaturizeGroupAcrossParameter`](@ref)
-
-## Return
-
-1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
-   `fractions_cont[i]` is a dictionary mapping attractor IDs to their basin fraction
-   at the `i`-th parameter combination.
-2. `attractors_cont::Vector{Dict{Int, <:Any}}`. The continued attractors.
-   `attractors_cont[i]` is a dictionary mapping attractor ID to the
-   attractor set at the `i`-th parameter combination.
-
-## Keyword arguments
-
-- `show_progress = true`: display a progress bar of the computation.
-- `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
-  combination from `ics` if `ics` is a function instead of set initial conditions.
 """
 function global_continuation(alg::GlobalContinuationAlgorithm, prange::AbstractVector, pidx, sampler; kw...)
     # everything is propagated to the curve setting
