@@ -23,6 +23,7 @@ an error is thrown.
 
 * `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
+* `stop_at_Δt = false`: Third argument given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
@@ -33,7 +34,7 @@ an error is thrown.
   between the trajectory end-point and the given attractors. Can be anything given to
   [`set_distance`](@ref).
 """
-struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet} <: AttractorMapper
+struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet, T} <: AttractorMapper
     ds::DS
     attractors::Dict{AK, SSS}
     ε::Float64
@@ -47,11 +48,13 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
     maxdist::Float64
     distance::M
     cset::SS # current state of dynamical system as `StateSpaceSet`.
+    stop_at_Δt::Bool
+    latest_convergence_time::RefValue{T}
 end
 
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
         Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
-        distance = StrictlyMinimumDistance(),
+        distance = StrictlyMinimumDistance(), stop_at_Δt = false,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
         error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
@@ -77,6 +80,7 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
         ds, attractors,
         ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0, distance, StateSpaceSet([current_state(ds)]),
+        Ref(current_time(ds)),
     )
 
     return mapper
@@ -122,11 +126,13 @@ end
 # TODO: Implement `show_progress`
 function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     reinit!(mapper.ds, u0)
-    maxdist = 0.0
+    t0 = current_time(ds)
+    maxdist = zero(eltype(first(mapper.attractors)[2]))
+    mapper.latest_convergence_time[] = Inf # default return value
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0
     while lost_count < mapper.consecutive_lost_steps
-        step!(mapper.ds, mapper.Δt)
+        step!(mapper.ds, mapper.Δt, mapper.stop_at_Δt)
         lost_count += 1
         u = current_state(mapper.ds)
         # first check for Inf or NaN
@@ -139,6 +145,7 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
             # we use internal method from StateSpaceSets.jl
             d = set_distance(mapper.cset, A, mapper.distance; tree2 = tree)
             if d < mapper.ε
+                mapper.latest_convergence_time[] = current_time(ds) - t0
                 return k
             elseif maxdist < d
                 maxdist = d
@@ -149,32 +156,6 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     end
     return -1
 end
-
-# function (mapper::AttractorsViaProximity)(u0; show_progress = false)
-#     reinit!(mapper.ds, u0)
-#     maxdist = 0.0
-#     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
-#     lost_count = 0
-#     while lost_count < mapper.consecutive_lost_steps
-#         step!(mapper.ds, mapper.Δt)
-#         lost_count += 1
-#         u = current_state(mapper.ds)
-#         # first check for Inf or NaN
-#         any(x -> (isnan(x) || isinf(x)), u) && return -1
-#         for (k, tree) in mapper.search_trees # this is a `Dict`
-#             Neighborhood.NearestNeighbors.knn_point!(
-#                 tree, u, false, mapper.dist, mapper.idx, Neighborhood.NearestNeighbors.always_false
-#             )
-#             if mapper.dist[1] < mapper.ε
-#                 return k
-#             elseif maxdist < mapper.dist[1]
-#                 maxdist = mapper.dist[1]
-#                 maxdist > mapper.horizon_limit && return -1
-#             end
-#         end
-#     end
-#     return -1
-# end
 
 function Base.show(io::IO, mapper::AttractorsViaProximity)
     ps = generic_mapper_print(io, mapper)
@@ -191,4 +172,4 @@ end
 
 extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
 
-convergence_time(mapper::AttractorsViaProximity) = current_time(mapper.ds) - initial_time(mapper.ds)
+convergence_time(mapper::AttractorsViaProximity) = mapper.latest_convergence_time[]
