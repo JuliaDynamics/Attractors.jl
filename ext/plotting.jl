@@ -52,8 +52,7 @@ function Attractors.plot_attractors!(ax, attractors;
     for k in ukeys
         k ∉ keys(attractors) && continue
         A = attractors[k]
-        x, y = columns(A[:, access])
-        scatter!(ax, x, y;
+        scatter!(ax, A[:, access];
             color = (colors[k], 0.9), markersize = 20,
             marker = markers[k],
             label = "$(labels[k])",
