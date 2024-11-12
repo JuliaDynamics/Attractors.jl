@@ -237,14 +237,14 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
-            bands[j] .+= bands[j-1]
+            bands[k[j]] .+= bands[k[j-1]]
         end
         for (j, k) in enumerate(ukeys)
             if j == 1
-                l, u = 0, bands[j]
+                l, u = 0, bands[k]
                 l = fill(0f0, length(u))
             else
-                l, u = bands[j-1], bands[j]
+                l, u = bands[k-1], bands[k]
             end
             band!(ax, prange, l, u;
                 color = colors[k], label = "$(labels[k])", series_kwargs...
@@ -255,8 +255,8 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
         end
         ylims!(ax, 0, 1)
     elseif style == :lines
-        for (j, k) in enumerate(ukeys)
-            scatterlines!(ax, prange, bands[j];
+        for k in ukeys
+            scatterlines!(ax, prange, bands[k];
                 color = colors[k], label = "$(labels[k])", marker = markers[k],
                 markersize = 10, linewidth = 3, series_kwargs...
             )
@@ -270,11 +270,11 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     return
 end
 
-function continuation_series(continuation_info, defval, ukeys = unique_keys(continuation_info))
-    bands = [zeros(length(continuation_info)) for _ in ukeys]
+function continuation_series(continuation_info, defval = NaN, ukeys = unique_keys(continuation_info))
+    bands = Dict(k => zeros(length(continuation_info)) for k in ukeys)
     for i in eachindex(continuation_info)
-        for (j, k) in enumerate(ukeys)
-            bands[j][i] = get(continuation_info[i], k, defval)
+        for k in ukeys
+            bands[k][i] = get(continuation_info[i], k, defval)
         end
     end
     return bands
