@@ -46,11 +46,9 @@ want to search for attractors in a lower dimensional subspace.
   For continuous systems, an automatic value is calculated using
   [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
   much smaller than the typical integrator internal step size in case of adaptive
-  integrators. In such cases, use `force_non_adaptive = true`.
-* `force_non_adaptive = false`: Only used if the input dynamical system is `CoupledODEs`.
-  If `true` the additional keywords `adaptive = false, dt = Δt` are given as `diffeq`
-  to the `CoupledODEs`. This means that adaptive integration is turned off and `Δt` is
-  used as the ODE integrator timestep. This is useful in (1) very fine grids, and (2)
+  integrators. In such cases, use `stop_at_dt = true`.
+* `stop_at_Δt = false`: Only used if the input dynamical system is `CoupledODEs`.
+  It is given as a third input to `step!`. Value `true` is useful in (1) very fine grids, and (2)
   if some of the attractors are limit cycles. We have noticed that in this case the
   integrator timestep becomes commensurate with the limit cycle period, leading to
   incorrectly counting the limit cycle as more than one attractor.
@@ -132,7 +130,8 @@ struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
 end
 
 function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
-        Dt = nothing, Δt = Dt, sparse = true, force_non_adaptive = false, kwargs...
+        Dt = nothing, Δt = Dt, sparse = true,
+        force_non_adaptive = false, stop_at_Δt = force_non_adaptive, kwargs...
     )
 
     if grid isa Tuple  # regular or irregular
@@ -149,11 +148,7 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
         error("Incorrect grid specification!")
     end
 
-    bsn_nfo = initialize_basin_info(ds, finalgrid, Δt, sparse)
-    if ds isa CoupledODEs && force_non_adaptive
-        newdiffeq = (ds.diffeq..., adaptive = false, dt = bsn_nfo.Δt)
-        ds = CoupledODEs(ds, newdiffeq)
-    end
+    bsn_nfo = initialize_basin_info(ds, finalgrid, Δt, sparse, stop_at_Δt)
     return AttractorsViaRecurrences(ds, bsn_nfo, finalgrid, kwargs)
 end
 
@@ -264,9 +259,10 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
     attractors::Dict{Int, StateSpaceSet{D, T, V}}
     visited_cells::Vector{CartesianIndex{D}}
     return_code::Symbol
+    stop_at_Δt::Bool
 end
 
-function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
+function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop_at_Δt)
     Δt = if isnothing(Δtt)
         isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid_nfo)
     else
@@ -301,6 +297,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse)
         Dict{Int, StateSpaceSet{G, T, V}}(),
         Vector{CartesianIndex{G}}(),
         :search,
+        stop_at_Δt,
     )
 
     reset_basins_counters!(bsn_nfo)

@@ -2,6 +2,9 @@
 
 - New convenience function `continuation_series` that was already used internally
   when plotting, but now also made public.
+- The keyword `force_non_adaptive` of `AttractorsViaRecurrences` is deprecated in favor
+  of the keyword `stop_at_Δt` which has the same practical impact with simpler implementation.
+
 
 # v1.22
 
