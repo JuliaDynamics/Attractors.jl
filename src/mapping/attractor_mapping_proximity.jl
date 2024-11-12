@@ -19,6 +19,8 @@ If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box 
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
 an error is thrown.
 
+The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
+
 ## Keywords
 
 * `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
@@ -133,10 +135,9 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     lost_count = 0
     while lost_count < mapper.consecutive_lost_steps
         step!(mapper.ds, mapper.Δt, mapper.stop_at_Δt)
+        successful_step(ds) || return -1 # first check for Inf or NaN
         lost_count += 1
         u = current_state(mapper.ds)
-        # first check for Inf or NaN
-        any(x -> (isnan(x) || isinf(x)), u) && return -1
         # then update the stored set
         mapper.cset[1] = u
         # then compute all distances
