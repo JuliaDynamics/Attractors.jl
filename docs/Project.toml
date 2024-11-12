@@ -15,4 +15,4 @@ PredefinedDynamicalSystems = "31e2f376-db9e-427a-b76e-a14f56347a14"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 
 [compat]
-BifurcationKit = "0.3"
+BifurcationKit = "0.4"
