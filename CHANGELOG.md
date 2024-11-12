@@ -1,3 +1,8 @@
+# v1.23
+
+- New convenience function `continuation_series` that was already used internally
+  when plotting, but now also made public.
+
 # v1.22
 
 - The function `plot_continuation_curves` has been changed and now plots using

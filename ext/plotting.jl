@@ -270,16 +270,6 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     return
 end
 
-function continuation_series(continuation_info, defval = NaN, ukeys = unique_keys(continuation_info))
-    bands = Dict(k => zeros(length(continuation_info)) for k in ukeys)
-    for i in eachindex(continuation_info)
-        for k in ukeys
-            bands[k][i] = get(continuation_info[i], k, defval)
-        end
-    end
-    return bands
-end
-
 function Attractors.plot_attractors_curves(attractors_cont, attractor_to_real, prange = 1:length(attractors_cont); kwargs...)
     fig = Figure()
     ax = Axis(fig[1,1])
