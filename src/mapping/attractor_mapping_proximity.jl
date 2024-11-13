@@ -39,7 +39,6 @@ an error is thrown.
 
 The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
 As such, the convergence time is always a float type even for discrete time systems.
-
 """
 struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet, T} <: AttractorMapper
     ds::DS
@@ -87,7 +86,7 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
         ds, attractors,
         ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0, distance, StateSpaceSet([current_state(ds)]),
-        Ref(float(current_time(ds))), # we make it float so that it can handle `Inf`.
+        stop_at_Δt, Ref(float(current_time(ds))), # we make it float so that it can handle `Inf`.
     )
 
     return mapper
