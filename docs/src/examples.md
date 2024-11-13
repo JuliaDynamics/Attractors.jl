@@ -793,7 +793,7 @@ condition `x0`:
 
 ```@example MAIN
 x0 = sampler()
-v = stagger_and_step!(df, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
+v = stagger_and_step!(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
 ```
 The `stagger_mode` keyword select the type of search in the 
 phase space to stick close to the saddle at each step. 
