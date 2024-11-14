@@ -4,7 +4,7 @@
   when plotting, but now also made public.
 - The keyword `force_non_adaptive` of `AttractorsViaRecurrences` is deprecated in favor
   of the keyword `stop_at_Δt` which has the same practical impact with simpler implementation.
-
+- Keyword `stop_at_Δt` added to `AttractorsViaProximity`.
 
 # v1.22
 
