@@ -79,14 +79,15 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 # ## curve in parameter space using a global continuation algorithm
 # algo = AttractorSeedContinueMatch(mapper)
 # params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
-# pcurve = params.(range(0, 2π; length = 101))
+# angles = range(0, 2π; length = 101)
+# pcurve = params.(angles)
 # fractions_cont, attractors_cont = global_continuation(
 # 	algo, pcurve, sampler; samples_per_parameter = 1_000
 # )
 
 # ## and visualize the results
 # fig = plot_basins_attractors_curves(
-# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), pcurve; add_legend = false
+# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), angles; add_legend = false
 # )
 # ```
 

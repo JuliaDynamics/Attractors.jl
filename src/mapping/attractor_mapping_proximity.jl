@@ -131,17 +131,18 @@ end
 
 # TODO: Implement `show_progress`
 function (mapper::AttractorsViaProximity)(u0; show_progress = false)
-    reinit!(mapper.ds, u0)
+    ds = referenced_dynamical_system(mapper)
+    reinit!(ds, u0)
     t0 = current_time(ds)
     maxdist = zero(eltype(first(mapper.attractors)[2]))
     mapper.latest_convergence_time[] = Inf # default return value
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0
     while lost_count < mapper.consecutive_lost_steps
-        step!(mapper.ds, mapper.Δt, mapper.stop_at_Δt)
+        step!(ds, mapper.Δt, mapper.stop_at_Δt)
         successful_step(ds) || return -1 # first check for Inf or NaN
         lost_count += 1
-        u = current_state(mapper.ds)
+        u = current_state(ds)
         # then update the stored set
         mapper.cset[1] = u
         # then compute all distances
