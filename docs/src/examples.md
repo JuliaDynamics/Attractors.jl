@@ -730,7 +730,6 @@ track the basin boundary all the way to the saddle, or edge state.
 ```@example MAIN
 traj1 = trajectory(ds, 2, et.track1[et.bisect_idx[1]], Δt=1e-5)
 traj2 = trajectory(ds, 2, et.track2[et.bisect_idx[1]], Δt=1e-5)
-:_ 
 fig = Figure()
 ax = Axis(fig[1,1], xlabel="x", ylabel="y")
 heatmap_basins_attractors!(ax, grid, basins, attractors, add_legend=false, labels=Dict(1=>"Attractor A", 2=>"Attractor B", 3=>"Saddle"))
@@ -770,13 +769,13 @@ before the trajectories escape:
 function F!(du, u ,p, n)
     x,y,u,v = u
     A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4; 
-    du[1] = _A - x^2 + B*y + k*(x-u)
+    du[1] = A - x^2 + B*y + k*(x-u)
     du[2] = x
     du[3] = C - u^2 + D*v + k*(u-x)
     du[4] = u
     return 
 end
-ds = DeterministicIteratedMap(F!, x0) 
+ds = DeterministicIteratedMap(F!, zeros(4)) 
 ```
 
 Next we define a region in the phase space that should not contain attractors. 
@@ -807,6 +806,6 @@ example:
 fig = Figure()
 ax = Axis(fig[1,1], xlabel="x", ylabel="y")
 v = StateSpaceSet(v)
-scatter(ax, v[:,1], v[:,3]; markersize = 3)
+scatter!(ax, v[:,1], v[:,3]; markersize = 3)
 fig
 ```
