@@ -25,7 +25,7 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
     bsn_nfo.safety_counter = 0
 
     while cell_label == 0
-        step!(ds, bsn_nfo.Δt)
+        step!(ds, bsn_nfo.Δt, bsn_nfo.stop_at_Δt)
 
         # This clause here is added because sometimes the algorithm will never halt
         # for e.g., an ill conditioned grid where two or more attractors intersect
