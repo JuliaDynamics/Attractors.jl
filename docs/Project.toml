@@ -16,5 +16,5 @@ OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
 
 [compat]
-BifurcationKit = "0.3"
+BifurcationKit = "0.3.6"
 KrylovKit = "0.8.1"
