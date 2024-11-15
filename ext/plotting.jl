@@ -300,21 +300,12 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
     )
 
     series = continuation_series(continuation_info, NaN, ukeys)
-    for (j, k) in enumerate(ukeys)
-        scatterlines!(ax, prange, series[j];
+    for k in ukeys
+        scatterlines!(ax, prange, series[k];
             color = colors[k], label = "$(labels[k])", marker = markers[k],
             markersize = 10, linewidth = 3, slines_kwargs...
         )
     end
-
-    # for i in eachindex(continuation_info)
-    #     info = continuation_info[i]
-    #     for (k, val) in info
-    #         scatter!(ax, prange[i], val;
-    #             color = colors[k], marker = markers[k], label = string(labels[k]),
-    #         )
-    #     end
-    # end
     xlims!(ax, minimum(prange), maximum(prange))
     add_legend && axislegend(ax; axislegend_kwargs..., unique = true)
     return
