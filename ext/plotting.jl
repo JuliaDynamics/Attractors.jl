@@ -237,14 +237,14 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
-            bands[k[j]] .+= bands[k[j-1]]
+            bands[ukeys[j]] .+= bands[ukeys[j-1]]
         end
         for (j, k) in enumerate(ukeys)
             if j == 1
                 l, u = 0, bands[k]
                 l = fill(0f0, length(u))
             else
-                l, u = bands[k-1], bands[k]
+                l, u = bands[ukeys[j-1]], bands[ukeys[j]]
             end
             band!(ax, prange, l, u;
                 color = colors[k], label = "$(labels[k])", series_kwargs...

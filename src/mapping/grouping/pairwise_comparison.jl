@@ -22,7 +22,9 @@ advantage that it is simpler, typically faster and uses less memory.
   here.
 * `rescale_features = true`: if true, rescale each dimension of the extracted features
   separately into the range `[0, 1]`. This typically leads to more accurate grouping
-  for the default `metric`.
+  for the default `metric. threshold`, however, it should be avoid for when
+  there is only one attractor for the system, because it leads to it being
+  wrongly classified as many different attractors at the same location).
 
 ## Description
 
