@@ -184,10 +184,12 @@ function finite_state_machine!(
             # so we throw an error.
             error("""
             During the phase of locating a new attractor, found via sufficient recurrences,
-            we encountered a cell of a previously-found attractor. This means that two
-            attractors intersect in the grid, or that the precision with which we find
-            and store attractors is not high enough. Either decrease the grid spacing,
-            or increase `consecutive_recurrences` (or both).
+            we encountered a cell of a previously-found attractor. This can happen because:
+            - two attractors intersect in the grid (decrease grid spacing)
+            - the precision with which we find and store attractors is not high enough
+              (increase any of `consecutive_recurrences, consecutive_attractor_steps, attractor_locate_steps`)
+            - there exists significant slowdown/stickiness in state space that is wrongly
+              interpreted as an attractor (increase any of `consecutive_recurrences, Ttr, Δt`)
 
             Index of cell that this occured at: $(n).
             """)
