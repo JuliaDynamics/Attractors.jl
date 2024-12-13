@@ -88,7 +88,7 @@ IDs to attractors (`StateSpaceSet`s), however the function is generic and would
 work for any values that `matcher` works with.
 
 Return `rmaps`, which is a vector of dictionaries.
-`rmaps[i]` contains the [`matching_map`](@ref) for `attractors[i+1]`,
+`rmaps[i]` contains the [`matching_map`](@ref) for `dicts[i+1]`,
 i.e., the pairs of `old => new` IDs.
 
 ## Keyword arguments
