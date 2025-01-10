@@ -15,7 +15,9 @@ export AttractorMapper,
     extract_attractors,
     subdivision_based_grid,
     SubdivisionBasedGrid,
-    reset_mapper!
+    reset_mapper!,
+    StabilityMeasuresAccumulator#,
+    #referenced_dynamical_system ### AM why is this not exported above? Or where else is the export statement for this?
 
 ValidICS = Union{AbstractVector, Function}
 
@@ -183,3 +185,4 @@ function convergence_time end
 include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")
+include("stability_measures_accumulator.jl")

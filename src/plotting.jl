@@ -171,3 +171,6 @@ panel is created for each entry in `a2rs`.
 function plot_basins_attractors_curves end
 function plot_basins_attractors_curves! end
 export plot_basins_attractors_curves, plot_basins_attractors_curves!
+
+function plot_continuation_stability_measures end
+export plot_continuation_stability_measures

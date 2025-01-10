@@ -381,6 +381,32 @@ function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, att
     return
 end
 
+# Plotting stability measures
+function Attractors.plot_continuation_stability_measures(measures_cont, attractors_cont, prange, measures, plot_quantity; xlabel = nothing, ylabels = measures)
+    measures_cont = deepcopy(measures_cont)
+    fig = plot_attractors_curves(attractors_cont, A -> plot_quantity(A), prange; add_legend = true)
+    axs = Dict(1 =>content(fig[1, 1]))
+    axs[1].ylabel = "System State"
+    axs[1].xlabel = ""
+    for (i, measure) in enumerate(measures)
+        for dict in measures_cont[measure]
+            for key in keys(dict)
+                if isinf(dict[key])
+                    dict[key] = NaN
+                end
+            end
+        end
+        axs[i+1] = Axis(fig[1 + i, 1]; ylabel = ylabels[i])
+        if measure in ["basin_fractions", "finite_time_basin_fractions", "basin_stability", "finite_time_basin_stability"]
+            plot_basins_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false)
+        else
+            plot_continuation_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false)
+        end
+    end
+    axs[length(measures)+1].xlabel = xlabel
+    resize!(fig.scene, 600, 200*length(measures) + 200)
+    return fig
+end
 
 ##########################################################################################
 # Videos
