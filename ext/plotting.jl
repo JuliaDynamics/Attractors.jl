@@ -382,9 +382,19 @@ function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, att
 end
 
 # Plotting stability measures
-function Attractors.plot_continuation_stability_measures(measures_cont, attractors_cont, prange, measures, plot_quantity; xlabel = nothing, ylabels = measures)
+function Attractors.plot_continuation_stability_measures(measures_cont, attractors_cont, prange, measures, attractor_to_real;
+    ukeys = unique_keys(attractors_cont), # internal argument
+    colors = colors_from_keys(ukeys),
+    labels = Dict(ukeys .=> ukeys),
+    xlabel = nothing,
+    ylabels = measures,
+    kwargs...)
+    # Convert kwargs to a dictionary for easier manipulation
+    kwargs_dict = Dict(kwargs)
+    # Remove 'add_legend' from kwargs_dict to avoid passing it again
+    delete!(kwargs_dict, :add_legend)
     measures_cont = deepcopy(measures_cont)
-    fig = plot_attractors_curves(attractors_cont, A -> plot_quantity(A), prange; add_legend = true)
+    fig = plot_attractors_curves(attractors_cont, A -> attractor_to_real(A), prange; add_legend = true, ukeys, colors, labels, kwargs...)
     axs = Dict(1 =>content(fig[1, 1]))
     axs[1].ylabel = "System State"
     axs[1].xlabel = ""
@@ -398,14 +408,38 @@ function Attractors.plot_continuation_stability_measures(measures_cont, attracto
         end
         axs[i+1] = Axis(fig[1 + i, 1]; ylabel = ylabels[i])
         if measure in ["basin_fractions", "finite_time_basin_fractions", "basin_stability", "finite_time_basin_stability"]
-            plot_basins_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false)
+            plot_basins_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false, ukeys, colors, labels, kwargs...)
         else
-            plot_continuation_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false)
+            plot_continuation_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false, ukeys, colors, labels, kwargs...)
         end
     end
     axs[length(measures)+1].xlabel = xlabel
     resize!(fig.scene, 600, 200*length(measures) + 200)
     return fig
+end
+
+function Attractors.plot_continuation_stability_measures!(axs, measures_cont, attractors_cont, prange, measures, attractor_to_real;
+    ukeys = unique_keys(attractors_cont), # internal argument
+    colors = colors_from_keys(ukeys),
+    labels = Dict(ukeys .=> ukeys),
+    kwargs...)
+    measures_cont = deepcopy(measures_cont)
+    fig = plot_attractors_curves!(axs[1], attractors_cont, A -> attractor_to_real(A), prange; add_legend = true, ukeys, colors, labels, kwargs...)
+    for (i, measure) in enumerate(measures)
+        for dict in measures_cont[measure]
+            for key in keys(dict)
+                if isinf(dict[key])
+                    dict[key] = NaN
+                end
+            end
+        end
+        if measure in ["basin_fractions", "finite_time_basin_fractions", "basin_stability", "finite_time_basin_stability"]
+            plot_basins_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false, ukeys, colors, labels, kwargs...)
+        else
+            plot_continuation_curves!(axs[i+1], measures_cont[measure], prange; add_legend = false, ukeys, colors, labels, kwargs...)
+        end
+    end
+    return nothing
 end
 
 ##########################################################################################
