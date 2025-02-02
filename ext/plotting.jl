@@ -295,7 +295,7 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
         markers = markers_from_keys(ukeys),
-        slines_kwargs = (;linewidth = 3,),
+        series_kwargs = NamedTuple(),
         axislegend_kwargs = (position = :lt,)
     )
 
@@ -303,7 +303,7 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
     for k in ukeys
         scatterlines!(ax, prange, series[k];
             color = colors[k], label = "$(labels[k])", marker = markers[k],
-            markersize = 10, linewidth = 3, slines_kwargs...
+            markersize = 10, linewidth = 3, series_kwargs...
         )
     end
     xlims!(ax, minimum(prange), maximum(prange))
