@@ -45,58 +45,60 @@ function returns a dictionary with the stability measures. Each value of this
 dictionary is again a dictionary mapping the attractor ID to the respective
 stability measure.
 
-The following stability measures are accumulated for each attractor and its
-basin of attraction:
-* `characteristic_return_time`: The characteristic return time of a point
-  attractor. It is defined as the reciprocal of the largest real part of the
-  eigenvalues of the Jacobian matrix at the attractor. If the attractor is not
-  stable, i.e. the relevant real part is positive, the characteristic return
-  time is set to `Inf`. If the attractor is not a point attractor, the
-  characteristic return time is set to `NaN`.
-* `reactivity`: The reactivity of a point attractor. It is defined as the
-  largest growth rate of the linearized system at the attractor. If the
-  attractor is not a point attractor, the reactivity is set to `NaN`. See also
-  [Krakovska2024ResilienceDynamicalSystems](@cite).
-* `maximal_amplification`: The maximal amplification of the attractor. It is
-  defined as the maximal (with respect to disturbances) amplification of the
-  linearized system at the attractor over all time. If the attractor is not
-  stable, i.e. the relevant real part is positive, the maximal amplification is
-  set to `Inf`. If the attractor is not a point attractor, the maximal
-  amplification is set to `NaN`.
+The following stability measures are estimated for each attractor:
+
+### Local (fixed point) stability measures
+
+These measures apply only to fixed point attractors.
+Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
+If an unstable fixed point attractor is recorded (due to an initial condition starting
+there for example), a value `Inf` is assigned to all measures.
+
+* `characteristic_return_time`: The reciprocal of the largest real part of the
+  eigenvalues of the Jacobian matrix at the fixed point.
+* `reactivity`: The largest growth rate of the linearized system at the fixed point.
+  See also [Krakovska2024ResilienceDynamicalSystems](@cite).
+* `maximal_amplification`: The maximal (with respect to disturbances) amplification of the
+  linearized system at the attractor over all time.
 * `maximal_amplification_time`: The time at which the maximal amplification
-  occurs. If the attractor is not stable, i.e. the relevant real part is
-  positive, the maximal amplification time is set to `Inf`. If the attractor is
-  not a point attractor, the maximal amplification time is set to `NaN`.
-* `mean_convergence_time`: The mean convergence time of called initial
-  conditions to the attractor. The convergence time is determined by the
-  `mapper`. The convergence times are weighted by the probability density of the
-  distribution `d`.
+  occurs.
+
+### Nonlocal stability measures
+
+These nonlocal stability measures are accumulated while initial conditions are mapped
+to attractors. Afterwards they are averaged according to the probability density `d`
+when calling `finalize!`. The word "distance" here refers to the distance established
+by the `metric` keyword.
+
+* `mean_convergence_time`: The convergence time is determined by the
+  `mapper` using [`convergence_time`](@ref).
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
-  to the attractor. The convergence time is determined by the `mapper`. Only
-  initial conditions with a positive probability density are considered.
+  to the attractor.
 * `mean_convergence_pace`: The mean convergence pace of initial conditions to
   the attractor. Similar to the mean convergence time, except that each
   convergence time is divided by the distance of the respective initial
   condition to the attractor.
-* `maximal_convergence_pace`: The maximal convergence pace of initial conditions
-  to the attractor. Similar to the maximal convergence time, except that each
-  convergence time is divided by the distance of the respective initial
-  condition to the attractor.
-* `minimal_fatal_shock_magnitude`: The minimal distance of the attractor to the
+* `maximal_convergence_pace`: Same as above but maximum instead of mean.
+* `minimal_critical_shock_magnitude`: The minimal distance of the attractor to the
   closest basin of attraction of a different attractor.
-* `maximal_nonfatal_shock_magnitude`: The distance of the attractor to the
-  furthest point of its own basin of attraction. If that basin of attraction
-  touches the grid boundaries, the maximal nonfatal shock magnitude is set to
-  `Inf` since the basin seems to be unbounded.
+* `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
+  furthest point of its own basin of attraction. The key difference with
+  the critical shock is that if a basin touches the grid boundaries,
+  the maximal nonfatal shock magnitude is set to `Inf`.
+  TODO: This is ambiguous. The mapper may not have a well defined grid.
+  And I think it is impossible to extract a grid from `d`...
 * `basin_fractions`: The fraction of initial conditions that converge to the
   attractor.
 * `finite_time_basin_fractions`: The fraction of initial conditions that
   converge to the attractor within the time horizon `T`.
+  TODO: I guess this is estimated by thresholding the already estimated convergence times?
 * `basin_stability`: Same as `basin_fractions`, but the initial conditions are
-  weighted by the probability density of the distribution `d`.
+  weighted by `d`.
 * `finite_time_basin_stability`: Same as `finite_time_basin_fractions`, but the
-  initial conditions are weighted by the probability density of the distribution
-  `d`.
+  initial conditions are weighted by `d`.
+  TODO: I don't see the point of having measures that are or are not weighted by `d`.
+  Either all should be or they shouldnt? Why don't we have two variants for the
+  convergence time for example?
 * `persistence`: Trajectories from all points of the attractor are evolved under
   the alternative parameter setting `p`. The persistence is the time at which
   one of the trajectories first leaves the original basin of attraction of the
