@@ -6,15 +6,20 @@ using Distributions
 """
     StabilityMeasuresAccumulator(mapper::AttractorMapper; kwargs...)
 
-A subtype of `AttractorMapper` that accumulates stability measures of attractors
-and their basins whenever calling and updating this accumulator with an initial
-condition. The mapping to attractors is done via the `mapper` passed to this
-accumulator, which is an `AttractorMapper` subtype. Currently supported mapping
-methods:
-* [`AttractorsViaProximity`](@ref)
-* [`AttractorsViaRecurrences`](@ref)
+A special data structure that allows mapping initial conditions to attractors
+_while_ at the same time calculating many stability measures in the most efficient
+way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
+that satisfies the `id = mapper(u0)` syntax.
+
+`StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions such as
+[`basins_fractions`](@ref). After mapping all initial conditions to attractors,
+the [`finalize!`](@ref) function should be called which will return a dictionary
+of all stability measures estimated by the accumulator.
+Each dictionary maps the measure description (`Symbol`) to a dictionary
+mapping attractor IDs to the measure value.
 
 ## Keyword arguments
+
 * `T = 1.0`: Finite time horizon considered for the computation of the
   `finite_time_basin_fractions`. Initial coditions with a convergence time
   larger than `T` are not considered to be in the respective finite time basin.
@@ -27,7 +32,19 @@ methods:
   parameter setting of the dynamical system considered for computing the
   `persistence` of the attractors.
 
-### Stability measures
+## Description
+
+`StabilityMeasuresAccumulator` efficiently uses a single `id = mapper(u0)` call
+to accumulate information for many differnt stability measures corresponding
+to each attractor of the dynamical system.
+### Finalizing the stability measures
+After calling the accumulator on all initial conditions in `mapper.grid`, the
+stability measures need to be finalized. To obtain the final stability measures,
+call `Attractors.finalize(accumulator::StabilityMeasuresAccumulator)`. This
+function returns a dictionary with the stability measures. Each value of this
+dictionary is again a dictionary mapping the attractor ID to the respective
+stability measure.
+
 The following stability measures are accumulated for each attractor and its
 basin of attraction:
 * `characteristic_return_time`: The characteristic return time of a point
@@ -85,14 +102,6 @@ basin of attraction:
   one of the trajectories first leaves the original basin of attraction of the
   attractor. If the trajectories do not leave the basin of attraction, the
   persistence is set to `Inf`.
-
-### Finalizing the stability measures
-After calling the accumulator on all initial conditions in `mapper.grid`, the
-stability measures need to be finalized. To obtain the final stability measures,
-call `Attractors.finalize(accumulator::StabilityMeasuresAccumulator)`. This
-function returns a dictionary with the stability measures. Each value of this
-dictionary is again a dictionary mapping the attractor ID to the respective
-stability measure.
 """
 mutable struct StabilityMeasuresAccumulator <: AttractorMapper
     mapper::AttractorMapper
@@ -225,9 +234,9 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
                 push!(inside_points, point)
             end
         end
-        
+
         maximal_nonfatal_shock_magnitudes[key1] = length(inside_points) == length(accumulator.nonzero_measure_basin_points[key1]) ? maximum([norm(a-b) for a in attractors[key1] for b in inside_points]) : Inf64
-        
+
     end
 
     # Calculate persistence
@@ -261,7 +270,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
                         if findmin(distances[attr_key])[2] != attr_key
                             persistence[attr_key] = min(persistence[attr_key], this_t)
                             break
-                        end    
+                        end
                     end
                 end
             end
@@ -305,7 +314,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         end
         J = isinplace(ds) ? Array{Float64}(undef, length(A[1]), length(A[1])) : jac(Array(A[1]), initial_parameters(ds), 0)
         isinplace(ds) && jac(J, Array(A[1]), initial_parameters(ds), 0)
-        
+
         thisλ = min(0, maximum(real.(eigvals(J))))
         characteristic_return_time[id] = abs(1 / thisλ)
         H = (J + J') / 2
