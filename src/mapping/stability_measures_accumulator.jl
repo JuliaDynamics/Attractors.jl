@@ -165,7 +165,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) + pdf(accumulator.d, u0)*ct
     accumulator.maximal_convergence_time[id] = pdf(accumulator.d, u0) > 0.0 ? max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : get(accumulator.maximal_convergence_time, id, 0.0)
     attractors = extract_attractors(accumulator.mapper) ### AM more elegent way to do this?
-    u0_dist = set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true))
+    u0_dist = id == -1 ? Inf64 : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true))
     accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) + pdf(accumulator.d, u0)*ct/u0_dist
     accumulator.maximal_convergence_pace[id] = pdf(accumulator.d, u0) > 0.0 ? max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : get(accumulator.maximal_convergence_pace, id, 0.0)
 
@@ -198,10 +198,10 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
     # Calculate mean convergence time and pace
     normalization != 0.0 && foreach(key -> accumulator.mean_convergence_time[key] /= normalization, keys(accumulator.mean_convergence_time))
     normalization != 0.0 && foreach(key -> accumulator.mean_convergence_pace[key] /= normalization, keys(accumulator.mean_convergence_pace))
-    foreach(key -> !(key in keys(accumulator.mean_convergence_time)) && (accumulator.mean_convergence_time[key] = 0.0), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.maximal_convergence_time)) && (accumulator.maximal_convergence_time[key] = 0.0), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = 0.0), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = 0.0), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.mean_convergence_time)) && (accumulator.mean_convergence_time[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.maximal_convergence_time)) && (accumulator.maximal_convergence_time[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = Inf64), keys(attractors))
 
     # Calculate minimal fatal shock magnitude
     minimal_fatal_shock_magnitudes = Dict{Int64, Float64}()
@@ -247,7 +247,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
             new_mapper = nothing
             println("Unsupported mapper type")
         end
-        if new_mapper !== nothing
+        if new_mapper != nothing
             for attr_key in keys(attractors)
                 persistence[attr_key] = Inf64
                 for u0 in attractors[attr_key]
