@@ -72,18 +72,21 @@ when calling `finalize!`. The word "distance" here refers to the distance establ
 by the `metric` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
-  `mapper` using [`convergence_time`](@ref).
+  `mapper` using [`convergence_time`](@ref). The mean is computed with respect
+  to the probability distribution `d`.
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
-  to the attractor.
+  to the attractor. Only initial conditions with non-zero probability under `d` 
+  are considered.
 * `mean_convergence_pace`: The mean convergence pace of initial conditions to
   the attractor. Similar to the mean convergence time, except that each
   convergence time is divided by the distance of the respective initial
   condition to the attractor.
 * `maximal_convergence_pace`: Same as above but maximum instead of mean.
 * `minimal_critical_shock_magnitude`: The minimal distance of the attractor to the
-  closest basin of attraction of a different attractor.
+  closest non-zero probability point (under `d`) in a basin of attraction of a 
+  different attractor.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
-  furthest point of its own basin of attraction. The key difference with
+  furthest non-zero probability point (under `d`) of its own basin of attraction. The key difference with
   the critical shock is that if a basin touches the grid boundaries,
   the maximal nonfatal shock magnitude is set to `Inf`.
   TODO: This is ambiguous. The mapper may not have a well defined grid.
@@ -175,7 +178,7 @@ end
 
 # Function to get the referenced dynamical system from the accumulator
 function referenced_dynamical_system(accumulator::StabilityMeasuresAccumulator)
-    return accumulator.ds
+    return referenced_dynamical_system(accumulator.mapper)
 end
 
 # Function to update the accumulator with a new state
@@ -233,7 +236,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
     foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = Inf64), keys(attractors))
     foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = Inf64), keys(attractors))
 
-    # Calculate minimal fatal shock magnitude
+    # Calculate minimal fatal shock and maximal non-fatal shock magnitude
     minimal_fatal_shock_magnitudes = Dict{Int64, Float64}()
     maximal_nonfatal_shock_magnitudes = Dict{Int64, Float64}()
     for key1 in keys(attractors)
@@ -261,18 +264,19 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
     end
 
     # Calculate persistence
+    ds = referenced_dynamical_system(accumulator.mapper)
     persistence = Dict{Int64, Float64}()
-    if accumulator.p == initial_parameters(accumulator.ds)
+    if accumulator.p == initial_parameters(ds)
         for key in keys(attractors)
             persistence[key] = Inf64
         end
     else
-        p_init = initial_parameters(accumulator.ds)
-        set_parameters!(accumulator.ds, accumulator.p)
+        p_init = initial_parameters(ds)
+        set_parameters!(ds, accumulator.p)
         if typeof(accumulator.mapper)<:AttractorsViaRecurrences
-            new_mapper = AttractorsViaRecurrences(accumulator.ds, accumulator.mapper.grid.grid)
+            new_mapper = AttractorsViaRecurrences(ds, accumulator.mapper.grid.grid)
         elseif typeof(accumulator.mapper)<:AttractorsViaProximity
-            new_mapper = AttractorsViaProximity(accumulator.ds, accumulator.mapper.grid.grid, getfield(accumulator.mapper, :ε))
+            new_mapper = AttractorsViaProximity(ds, accumulator.mapper.grid.grid, getfield(accumulator.mapper, :ε))
         else
             new_mapper = nothing
             println("Unsupported mapper type")
@@ -283,7 +287,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
                 for u0 in attractors[attr_key]
                     id_new = new_mapper(u0)
                     ct = convergence_time(new_mapper)
-                    X, t = trajectory(accumulator.ds, ct, u0, Δt=0.01)
+                    X, t = trajectory(ds, ct, u0, Δt=0.01)
                     X_dict = Dict(zip(t, vec(X)))
                     for this_t in t
                         distances = setsofsets_distances(Dict([(attr_key, StateSpaceSet([X_dict[this_t]]))]), attractors, StateSpaceSets.StrictlyMinimumDistance(Chebyshev()))
@@ -300,7 +304,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
                 persistence[key] = Inf64
             end
         end
-        set_parameters!(accumulator.ds, p_init)
+        set_parameters!(ds, p_init)
     end
 
     # Calculate basin fractions and finite time basin fractions

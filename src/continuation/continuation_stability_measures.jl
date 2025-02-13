@@ -62,16 +62,15 @@ function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher,
 
     # Calculate distance to bifurcation
     distance_to_bifurcation = Array{Dict{Int64, Float64}}([])
+    char_ret_time_cont = measures_cont["characteristic_return_time"]
     attractors_cont_keys = unique(vcat([collect(keys(attractors_cont[i])) for i in 1:length(attractors_cont)]...))
     prange = [pdict[1][2] for pdict in pcurve]
     for i in 1:length(prange)
         push!(distance_to_bifurcation, Dict{Int64, Float64}())
         for key in attractors_cont_keys
-            ps = [prange[i] for i in 1:length(attractors_cont) if key in keys(attractors_cont[i])]
-            if prange[i] in ps
-                ps[1] = ps[1]==prange[1] ? Inf64 : ps[1]
-                ps[end] = ps[end]==prange[end] ? Inf64 : ps[end]
-                distance_to_bifurcation[end][key] = min(abs(ps[1] - prange[i]), abs(ps[end] - prange[i]))
+            ps_unstable = [prange[j] for j in 1:length(prange) if haskey(char_ret_time_cont[j], key) && (char_ret_time_cont[j][key]==Inf64 || isnan(char_ret_time_cont[j][key]))]
+            if haskey(char_ret_time_cont[i], key) && (char_ret_time_cont[i][key]!=Inf64 && !isnan(char_ret_time_cont[i][key]))
+                distance_to_bifurcation[end][key] = minimum([abs(ps_unstable[k] - prange[i]) for k in 1:length(ps_unstable)])
             else
                 distance_to_bifurcation[end][key] = NaN
             end
