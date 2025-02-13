@@ -93,6 +93,8 @@ by the `metric` keyword.
   an initial condition is inside a sampling region (or in general any region of interest)
   the user cares about. This is the proper way to do it rigorously and would work
   for any conceivable mapper.
+    TODO: Alternatively, we can simply obtain the maximal non critical shock from the
+    points we have already estimated the shocks and just store this.
 * `basin_fractions`: The fraction of initial conditions that converge to the
   attractor.
 * `finite_time_basin_fractions`: The fraction of initial conditions that
