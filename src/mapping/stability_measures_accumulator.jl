@@ -87,7 +87,12 @@ by the `metric` keyword.
   the critical shock is that if a basin touches the grid boundaries,
   the maximal nonfatal shock magnitude is set to `Inf`.
   TODO: This is ambiguous. The mapper may not have a well defined grid.
-  And I think it is impossible to extract a grid from `d`...
+  And I think it is impossible to extract a grid from `d`... COMMENT: It is surely
+  impossible to extrract the grid. However we could add an additional keyowrd
+  argument that is a user-provided function `isinside`, which checks whether
+  an initial condition is inside a sampling region (or in general any region of interest)
+  the user cares about. This is the proper way to do it rigorously and would work
+  for any conceivable mapper.
 * `basin_fractions`: The fraction of initial conditions that converge to the
   attractor.
 * `finite_time_basin_fractions`: The fraction of initial conditions that
