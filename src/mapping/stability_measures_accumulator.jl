@@ -105,10 +105,10 @@ by the `metric` keyword.
   attractor. If the trajectories do not leave the basin of attraction, the
   persistence is set to `Inf`.
 """
-mutable struct StabilityMeasuresAccumulator <: AttractorMapper
-    mapper::AttractorMapper
-    ds::DynamicalSystem
-    basin_points::Dict{Int64, StateSpaceSet}
+mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, D, T,X<:Union{Nothing, Distribution}} <: AttractorMapper
+    mapper::AM
+    basin_points::Dict{Int64, StateSpaceSet{D, T}}
+    # TODO: Put D, T everywhere
     finite_time_basin_points::Dict{Int64, StateSpaceSet}
     nonzero_measure_basin_points::Dict{Int64, StateSpaceSet}
     mean_convergence_time::Dict{Int64, Float64}
@@ -116,14 +116,19 @@ mutable struct StabilityMeasuresAccumulator <: AttractorMapper
     mean_convergence_pace::Dict{Int64, Float64}
     maximal_convergence_pace::Dict{Int64, Float64}
     T::Float64
-    d::Distribution
+    d::X
     p::AbstractArray
     function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=Product([Uniform(accumulator.mapper.grid.grid_minima[dim], accumulator.mapper.grid.grid_maxima[dim]) for dim in 1:length(mapper.grid.grid)])::Distribution, p=initial_parameters(referenced_dynamical_system(mapper))::Vector)
         reset_mapper!(mapper)
-        new(
+        ds = referenced_dynamical_system(mapper)
+        D = dimension(ds)
+        T = eltype(current_state(ds))
+        # TODO: D, T everywhere
+        AM = typeof(mapper)
+        new{AM,D,T}(
             mapper,
             referenced_dynamical_system(mapper),
-            Dict{Int64, StateSpaceSet}(),
+            Dict{Int64, StateSpaceSet{D,T}}(),
             Dict{Int64, StateSpaceSet}(),
             Dict{Int64, StateSpaceSet}(),
             Dict{Int64, Float64}(),
@@ -140,8 +145,12 @@ end
 # Function to reset the accumulator
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
-    reinit!(a.ds)
-    a.basin_points = Dict{Int64, StateSpaceSet}()
+    ds = referenced_dynamical_system(a.mapper)
+    D = dimension(ds)
+    T = eltype(current_state(ds))
+    reinit!(ds)
+    # TODO: D, T everywhere:
+    a.basin_points = Dict{Int64, StateSpaceSet{D,T}}()
     a.finite_time_basin_points = Dict{Int64, StateSpaceSet}()
     a.nonzero_measure_basin_points = Dict{Int64, StateSpaceSet}()
     a.mean_convergence_time = Dict{Int64, Float64}()
