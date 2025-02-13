@@ -1,7 +1,9 @@
 using LinearAlgebra
 using Optim
 using Distributions
+struct EverywhereUniform end # helper type for not computing any weights for uniform distribution
 
+Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
     StabilityMeasuresAccumulator(mapper::AttractorMapper; kwargs...)
@@ -24,10 +26,9 @@ mapping attractor IDs to the measure value.
   `finite_time_basin_fractions`. Initial coditions with a convergence time
   larger than `T` are not considered to be in the respective finite time basin.
   Convergence time is determined by the `mapper`.
-* `d = Product([Uniform(accumulator.mapper.grid.grid_minima[dim],
-  accumulator.mapper.grid.grid_maxima[dim]) for dim in
-  1:length(mapper.grid.grid)])`: Distribution of uncertain initial conditions
-  used for example in the computation of `basin_stability`.
+* `d::Distribution`: Distribution of uncertain initial conditions
+  used for example in the computation of `basin_stability`. By default it is a uniform
+  distribution everywhere in the state space.
 * `p = initial_parameters(referenced_dynamical_system(mapper))`: Alternative
   parameter setting of the dynamical system considered for computing the
   `persistence` of the attractors.
@@ -105,7 +106,7 @@ by the `metric` keyword.
   attractor. If the trajectories do not leave the basin of attraction, the
   persistence is set to `Inf`.
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, D, T,X<:Union{Nothing, Distribution}} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, D, T,X<:Union{EverywhereUniform, Distribution}} <: AttractorMapper
     mapper::AM
     basin_points::Dict{Int64, StateSpaceSet{D, T}}
     # TODO: Put D, T everywhere
@@ -115,10 +116,11 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, D, T,X<:Union{N
     maximal_convergence_time::Dict{Int64, Float64}
     mean_convergence_pace::Dict{Int64, Float64}
     maximal_convergence_pace::Dict{Int64, Float64}
+    # TODO: It is wrong to say that T is a float. it should be type parameterized.
     T::Float64
     d::X
     p::AbstractArray
-    function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=Product([Uniform(accumulator.mapper.grid.grid_minima[dim], accumulator.mapper.grid.grid_maxima[dim]) for dim in 1:length(mapper.grid.grid)])::Distribution, p=initial_parameters(referenced_dynamical_system(mapper))::Vector)
+    function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=EverywhereUniform(), p=initial_parameters(referenced_dynamical_system(mapper))::Vector)
         reset_mapper!(mapper)
         ds = referenced_dynamical_system(mapper)
         D = dimension(ds)
@@ -199,7 +201,8 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     end
 
     # Update nonzero measure basin points
-    if pdf(accumulator.d, u0) > 0.0
+    # TODO: here is how to conditionally use a distribution:
+    if !isnothing(accumulator.d) && pdf(accumulator.d, u0) > 0.0
         if !(id in keys(accumulator.nonzero_measure_basin_points))
             accumulator.nonzero_measure_basin_points[id] = StateSpaceSet([u0])
         else
