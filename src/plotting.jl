@@ -134,8 +134,9 @@ export plot_attractors_curves, plot_attractors_curves!
 Same as in [`plot_basins_curves`](@ref) but visualize any arbitrary quantity characterizing
 the continuation. Hence, the `continuation_info` is of exactly the same format as
 `fractions_cont`: a vector of dictionaries, each dictionary mapping attractor IDs to real numbers.
-`continuation_info` is meant to accompany `attractor_info` in [`plot_attractors_curves`](@ref).
-To produce `continuation_info` from `attractor_info` you can do something like:
+`continuation_info` is meant to accompany `attractors_cont` in [`plot_attractors_curves`](@ref).
+
+To produce `continuation_info` from `attractors_cont` you can do something like:
 
 ```julia
 continuation_info = map(attractors_cont) do attractors
@@ -146,7 +147,7 @@ with `f` your function of interest that returns a real number.
 
 ## Keyword arguments
 
-- `slines_kwargs = (linewidth = 1,)`: named tuple of arguments propagated
+- `series_kwargs`: named tuple of arguments propagated
   to `Makie.scatterlines!` that plots the curves.
 - Also all [common plotting keywords](@ref common_plot_kwargs).
 
@@ -171,3 +172,28 @@ panel is created for each entry in `a2rs`.
 function plot_basins_attractors_curves end
 function plot_basins_attractors_curves! end
 export plot_basins_attractors_curves, plot_basins_attractors_curves!
+
+"""
+    plot_continuation_stability_measures(measures_cont, prange; kwargs...)
+
+Useful for plotting the stability measures of attractors found during a continuation using
+the [`StabilityMeasuresAccumulator`](@ref). The `measures_cont` is the output of the
+[`global_continuation`](@ref) of the `StabilityMeasuresAccumulator` type. All measures are
+plotted in a column of subplots, one for each measure.
+
+## Keyword arguments
+
+- measures = keys(measures_cont): the measures to plot. By default, all measures are plotted.
+- attractors_cont = nothing: the attractors found during the continuation. If provided, the
+  attractors `attractor_to_real` function is used to plot the measures versus the parameter.
+  This subplot will be at the top of the column of subplots.
+- attractor_to_real = nothing: must be provided if `attractors_cont` is provided. It is a
+  function that maps an attractor to a real number.
+- xlabel = nothing: the x-axis label for the last subplot of the column of subplots.
+- ylabels = measures: the y-axis labels for each subplot.
+- Also all [common plotting keywords](@ref common_plot_kwargs).
+
+"""
+function plot_continuation_stability_measures end
+function plot_continuation_stability_measures! end
+export plot_continuation_stability_measures, plot_continuation_stability_measures!
