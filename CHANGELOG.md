@@ -1,3 +1,7 @@
+# v1.24
+
+- Improved `continuation_series`: now it works for any type of input, including attractor continuation info because the default value (now renamed to fill value) is used to deduce the type of the series vectors.
+
 # v1.23
 
 - New convenience function `continuation_series` that was already used internally
