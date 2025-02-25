@@ -230,6 +230,7 @@ shaded_basins_heatmap
 plot_basins_curves
 plot_attractors_curves
 plot_basins_attractors_curves
+plot_continuation_curves
 ```
 
 ### Video output
