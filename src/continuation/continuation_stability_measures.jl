@@ -68,8 +68,8 @@ function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher,
     for i in 1:length(prange)
         push!(distance_to_bifurcation, Dict{Int64, Float64}())
         for key in attractors_cont_keys
-            ps_unstable = [prange[j] for j in 1:length(prange) if haskey(char_ret_time_cont[j], key) && (char_ret_time_cont[j][key]==Inf64 || isnan(char_ret_time_cont[j][key]))]
-            if haskey(char_ret_time_cont[i], key) && (char_ret_time_cont[i][key]!=Inf64 && !isnan(char_ret_time_cont[i][key]))
+            ps_unstable = [prange[j] for j in 1:length(prange) if !haskey(char_ret_time_cont[j], key) || (char_ret_time_cont[j][key]==Inf64 || isnan(char_ret_time_cont[j][key]))]
+            if haskey(char_ret_time_cont[i], key) && length(ps_unstable)>0 && (char_ret_time_cont[i][key]!=Inf64 && !isnan(char_ret_time_cont[i][key]))
                 distance_to_bifurcation[end][key] = minimum([abs(ps_unstable[k] - prange[i]) for k in 1:length(ps_unstable)])
             else
                 distance_to_bifurcation[end][key] = NaN

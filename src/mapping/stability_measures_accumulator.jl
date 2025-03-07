@@ -23,7 +23,7 @@ mapping attractor IDs to the measure value.
 ## Keyword arguments
 
 * `T = 1.0`: Finite time horizon considered for the computation of the
-  `finite_time_basin_fractions`. Initial coditions with a convergence time
+  `finite_time_basin_stability`. Initial coditions with a convergence time
   larger than `T` are not considered to be in the respective finite time basin.
   Convergence time is determined by the `mapper`.
 * `d::Distribution`: Distribution of uncertain initial conditions
@@ -39,7 +39,7 @@ mapping attractor IDs to the measure value.
 to accumulate information for many differnt stability measures corresponding
 to each attractor of the dynamical system.
 ### Finalizing the stability measures
-After calling the accumulator on all initial conditions in `mapper.grid`, the
+After calling the accumulator on all initial conditions in the state space sample of the `mapper`, the
 stability measures need to be finalized. To obtain the final stability measures,
 call `Attractors.finalize(accumulator::StabilityMeasuresAccumulator)`. This
 function returns a dictionary with the stability measures. Each value of this
@@ -69,7 +69,7 @@ there for example), a value `Inf` is assigned to all measures.
 These nonlocal stability measures are accumulated while initial conditions are mapped
 to attractors. Afterwards they are averaged according to the probability density `d`
 when calling `finalize!`. The word "distance" here refers to the distance established
-by the `metric` keyword.
+by the `metric` keyword ( TODO: I would do this, just use the 2-norm distance.).
 
 * `mean_convergence_time`: The convergence time is determined by the
   `mapper` using [`convergence_time`](@ref). The mean is computed with respect
@@ -86,63 +86,41 @@ by the `metric` keyword.
   closest non-zero probability point (under `d`) in a basin of attraction of a 
   different attractor.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
-  furthest non-zero probability point (under `d`) of its own basin of attraction. The key difference with
-  the critical shock is that if a basin touches the grid boundaries,
-  the maximal nonfatal shock magnitude is set to `Inf`.
-  TODO: This is ambiguous. The mapper may not have a well defined grid.
-  And I think it is impossible to extract a grid from `d`... COMMENT: It is surely
-  impossible to extrract the grid. However we could add an additional keyowrd
-  argument that is a user-provided function `isinside`, which checks whether
-  an initial condition is inside a sampling region (or in general any region of interest)
-  the user cares about. This is the proper way to do it rigorously and would work
-  for any conceivable mapper.
-    TODO: Alternatively, we can simply obtain the maximal non critical shock from the
-    points we have already estimated the shocks and just store this.
-* `basin_fractions`: The fraction of initial conditions that converge to the
-  attractor.
-* `finite_time_basin_fractions`: The fraction of initial conditions that
-  converge to the attractor within the time horizon `T`.
-  TODO: I guess this is estimated by thresholding the already estimated convergence times?
-* `basin_stability`: Same as `basin_fractions`, but the initial conditions are
-  weighted by `d`.
-* `finite_time_basin_stability`: Same as `finite_time_basin_fractions`, but the
-  initial conditions are weighted by `d`.
-  TODO: I don't see the point of having measures that are or are not weighted by `d`.
-  Either all should be or they shouldnt? Why don't we have two variants for the
-  convergence time for example?
+  furthest non-zero probability point (under `d`) of its own basin of attraction.
+* `basin_stability`: The fraction of initial conditions that converge to the
+  attractor, weighted by `d`.
+* `finite_time_basin_stability`: The fraction of initial conditions that
+  converge to the attractor within the time horizon `T`, weighted by `d`.
 * `persistence`: Trajectories from all points of the attractor are evolved under
   the alternative parameter setting `p`. The persistence is the time at which
   one of the trajectories first leaves the original basin of attraction of the
   attractor. If the trajectories do not leave the basin of attraction, the
   persistence is set to `Inf`.
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, D, T,X<:Union{EverywhereUniform, Distribution}} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype} <: AttractorMapper
     mapper::AM
-    basin_points::Dict{Int64, StateSpaceSet{D, T}}
-    # TODO: Put D, T everywhere
-    finite_time_basin_points::Dict{Int64, StateSpaceSet}
-    nonzero_measure_basin_points::Dict{Int64, StateSpaceSet}
+    basin_points::Dict{Int64, StateSpaceSet{Dims, Datatype}}
+    finite_time_basin_points::Dict{Int64, StateSpaceSet{Dims, Datatype}}
+    nonzero_measure_basin_points::Dict{Int64, StateSpaceSet{Dims, Datatype}}
     mean_convergence_time::Dict{Int64, Float64}
     maximal_convergence_time::Dict{Int64, Float64}
     mean_convergence_pace::Dict{Int64, Float64}
     maximal_convergence_pace::Dict{Int64, Float64}
     # TODO: It is wrong to say that T is a float. it should be type parameterized.
     T::Float64
-    d::X
+    d::Union{EverywhereUniform, Distribution}
     p::AbstractArray
     function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=EverywhereUniform(), p=initial_parameters(referenced_dynamical_system(mapper))::Vector)
         reset_mapper!(mapper)
         ds = referenced_dynamical_system(mapper)
-        D = dimension(ds)
-        T = eltype(current_state(ds))
-        # TODO: D, T everywhere
+        Dims = dimension(ds)
+        Datatype = eltype(current_state(ds))
         AM = typeof(mapper)
-        new{AM,D,T}(
+        new{AM,Dims,Datatype}(
             mapper,
-            referenced_dynamical_system(mapper),
-            Dict{Int64, StateSpaceSet{D,T}}(),
-            Dict{Int64, StateSpaceSet}(),
-            Dict{Int64, StateSpaceSet}(),
+            Dict{Int64, StateSpaceSet{Dims, Datatype}}(),
+            Dict{Int64, StateSpaceSet{Dims, Datatype}}(),
+            Dict{Int64, StateSpaceSet{Dims, Datatype}}(),
             Dict{Int64, Float64}(),
             Dict{Int64, Float64}(),
             Dict{Int64, Float64}(),
@@ -158,13 +136,12 @@ end
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     ds = referenced_dynamical_system(a.mapper)
-    D = dimension(ds)
-    T = eltype(current_state(ds))
+    Dims = dimension(ds)
+    Datatype = eltype(current_state(ds))
     reinit!(ds)
-    # TODO: D, T everywhere:
-    a.basin_points = Dict{Int64, StateSpaceSet{D,T}}()
-    a.finite_time_basin_points = Dict{Int64, StateSpaceSet}()
-    a.nonzero_measure_basin_points = Dict{Int64, StateSpaceSet}()
+    a.basin_points = Dict{Int64, StateSpaceSet{Dims,Datatype}}()
+    a.finite_time_basin_points = Dict{Int64, StateSpaceSet{Dims,Datatype}}()
+    a.nonzero_measure_basin_points = Dict{Int64, StateSpaceSet{Dims,Datatype}}()
     a.mean_convergence_time = Dict{Int64, Float64}()
     a.maximal_convergence_time = Dict{Int64, Float64}()
     a.mean_convergence_pace = Dict{Int64, Float64}()
@@ -211,8 +188,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     end
 
     # Update nonzero measure basin points
-    # TODO: here is how to conditionally use a distribution:
-    if !isnothing(accumulator.d) && pdf(accumulator.d, u0) > 0.0
+    if pdf(accumulator.d, u0) > 0.0
         if !(id in keys(accumulator.nonzero_measure_basin_points))
             accumulator.nonzero_measure_basin_points[id] = StateSpaceSet([u0])
         else
@@ -244,23 +220,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         maximal_nonfatal_shock_magnitudes[key1] = Inf64
         (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
         minimal_fatal_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
-        # Find points not at the perimeter by checking if they are at the grid boundaries
-        inside_points = StateSpaceSet()
-        for point in accumulator.nonzero_measure_basin_points[key1]
-            is_at_boundary = false
-            for dim in 1:length(point)
-                if point[dim] == accumulator.mapper.grid.grid_minima[dim] || point[dim] == accumulator.mapper.grid.grid_maxima[dim]
-                    is_at_boundary = true
-                    break
-                end
-            end
-            if !is_at_boundary
-                push!(inside_points, point)
-            end
-        end
-
-        maximal_nonfatal_shock_magnitudes[key1] = length(inside_points) == length(accumulator.nonzero_measure_basin_points[key1]) ? maximum([norm(a-b) for a in attractors[key1] for b in inside_points]) : Inf64
-
+        maximal_nonfatal_shock_magnitudes[key1] = maximum([norm(a-b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
     end
 
     # Calculate persistence
@@ -276,7 +236,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         if typeof(accumulator.mapper)<:AttractorsViaRecurrences
             new_mapper = AttractorsViaRecurrences(ds, accumulator.mapper.grid.grid)
         elseif typeof(accumulator.mapper)<:AttractorsViaProximity
-            new_mapper = AttractorsViaProximity(ds, accumulator.mapper.grid.grid, getfield(accumulator.mapper, :ε))
+            new_mapper = AttractorsViaProximity(ds, extract_attractors(accumulator.mapper), getfield(accumulator.mapper, :ε))
         else
             new_mapper = nothing
             println("Unsupported mapper type")
@@ -306,12 +266,6 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         end
         set_parameters!(ds, p_init)
     end
-
-    # Calculate basin fractions and finite time basin fractions
-    basin_fractions = Dict(id => length(accumulator.basin_points[id]) / sum(length.(values(accumulator.basin_points))) for id in keys(accumulator.basin_points))
-    finite_time_basin_fractions = Dict(id => length(accumulator.finite_time_basin_points[id]) / sum(length.(values(accumulator.finite_time_basin_points))) for id in keys(accumulator.finite_time_basin_points))
-    foreach(key -> !(key in keys(basin_fractions)) && (basin_fractions[key] = 0.0), keys(attractors))
-    foreach(key -> !(key in keys(finite_time_basin_fractions)) && (finite_time_basin_fractions[key] = 0.0), keys(attractors))
 
     # Calculate basin stability and finite time basin stability
     basin_stab = Dict(key => sum(pdf(accumulator.d, point) for point in accumulator.basin_points[key]) for key in keys(accumulator.basin_points))
@@ -367,8 +321,6 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         "maximal_convergence_pace" => accumulator.maximal_convergence_pace,
         "minimal_fatal_shock_magnitude" => minimal_fatal_shock_magnitudes,
         "maximal_nonfatal_shock_magnitude" => maximal_nonfatal_shock_magnitudes,
-        "basin_fractions" => basin_fractions,
-        "finite_time_basin_fractions" => finite_time_basin_fractions,
         "basin_stability" => basin_stab,
         "finite_time_basin_stability" => finite_time_basin_stab,
         "persistence" => persistence
