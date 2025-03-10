@@ -25,8 +25,8 @@ import Pkg
 
 #nb # Activate an environment in the folder containing the notebook
 #nb Pkg.activate(dirname(@__DIR__))
-#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq"])
-Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEqDefault"])
+Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqDefault"])
 
 #nb # ## Attractors.jl summary
 
@@ -110,7 +110,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 
 # which we define in code as
 using Attractors # part of `DynamicalSystems`, so it re-exports functionality for making them!
-using OrdinaryDiffEq # for accessing advanced ODE Solvers
+using OrdinaryDiffEqVerner # for accessing advanced ODE Solvers
 
 function modified_lorenz_rule(u, p, t)
     x, y, z = u; a, b = p
@@ -127,7 +127,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
 # ## Finding attractors
 
-# There are two major methods for finding attractors in dynamical systems.
+# In this tutorial we will utilize two methods for finding attractors in dynamical systems.
 # Explanation of how they work is in their respective docs.
 
 # 1. [`AttractorsViaRecurrences`](@ref).
@@ -166,8 +166,22 @@ mapper([-4.0, 5, 0])
 mapper([4.0, 2, 0])
 
 # the fact that these two different initial conditions got assigned different IDs means
-# that they converged to a different attractor.
-# The attractors are stored in the mapper internally, to obtain them we
+# that they converged to a different attractor. Indeed,
+
+mapper([1.0, 3, 2])
+
+# gets the same ID as the first initial condition.
+
+# This functionality is already incredibly powerful!
+# To our knowledge the DynamicalSystems.jl library is the only
+# dynamical systems software (in any language) that provides such an
+# infrastructure for mapping initial conditions of any arbitrary dynamical system to its
+# unique attractors. And this is only the tip of this iceberg!
+# The rest of the functionality of Attractors.jl is all full of brand new cutting edge
+# progress in dynamical systems research.
+
+# Okay, back to the tutorial now!
+# The found attractors are stored in the mapper internally, to obtain them we
 # use the function
 
 attractors = extract_attractors(mapper)
