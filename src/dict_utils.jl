@@ -100,20 +100,17 @@ end
 
 
 """
-    next_free_id(new::Dict, old::Dict, default = 1)
+    next_free_id(new::Dict, old::Dict)
 
 Return the minimum key of the "new" dictionary
 that doesn't exist in the "old" dictionary.
-Return `default` if the old dictionary is empty.
 """
-function next_free_id(a₊::AbstractDict, a₋::AbstractDict, default = 1)
-    isempty(a₋) && return default
+function next_free_id(a₊::AbstractDict, a₋::AbstractDict)
     s = setdiff(keys(a₊), keys(a₋))
     nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
     return nextid
 end
-function next_free_id(keys₊, keys₋, default = 1)
-    length(keys₋) == 0 && return default
+function next_free_id(keys₊, keys₋)
     s = setdiff(keys₊, keys₋)
     nextid = isempty(s) ? maximum(keys₋) + 1 : minimum(s)
     return nextid
