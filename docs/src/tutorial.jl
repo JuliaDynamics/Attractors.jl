@@ -38,7 +38,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqDefault"])
 # _Gotta go fast!_
 
 # ```julia
-# using Attractors, CairoMakie, OrdinaryDiffEq
+# using Attractors, CairoMakie, OrdinaryDiffEqVerner
 # ## Define key input: a `DynamicalSystem`
 # function modified_lorenz_rule(u, p, t)
 #     x, y, z = u; a, b = p
