@@ -69,11 +69,11 @@ u0 = [-4.0, 5, 0] # state
 # Now we can create the bifurcation problem
 
 import BifurcationKit as BK
-using OrdinaryDiffEq
+using OrdinaryDiffEqVerner
 using CairoMakie
 
 bf_prob = BK.BifurcationProblem(
-    modified_lorenz_rule!, u0, p0, (BK.@lens _[pidx])
+    modified_lorenz_rule!, u0, p0, (BK.@optic _[pidx])
 )
 
 # and then a full solution structure from DifferentialEquations.jl, that
@@ -88,8 +88,8 @@ point_on_lc = [
     -5.178825669659272,
 ]
 
-ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 100.0), p0)
-sol = OrdinaryDiffEq.solve(ode_prob; alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
+ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 50.0), p0)
+sol = OrdinaryDiffEqVerner.solve(ode_prob; alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
 j = length(sol)÷2
 fig, ax = lines(sol.t[j:end], sol[1, j:end])
 lines!(ax, sol.t[j:end], sol[2, j:end])
@@ -105,15 +105,15 @@ fig
 # would need to fine tune to the problem at hand.
 opts_br = BK.ContinuationPar(
     p_min = prange[1], p_max = prange[end],
-    ds = 0.002, dsmax = 0.01, n_inversion = 6,
-    detect_bifurcation = 3, max_bisection_steps = 25, nev = 4,
+    ds = 0.002, dsmax = 0.01, dsmin = 1e-6, n_inversion = 6,
+    detect_bifurcation = 3, max_bisection_steps = 50, nev = 4,
     max_steps = 2000, tol_stability = 1e-3,
 )
 
 # We now create a periodic orbit problem type, by choosing a periodic
 # orbit finding algorithm
 
-periodic_orbit_algo = BK.PeriodicOrbitOCollProblem(40, 4)
+periodic_orbit_algo = BK.PeriodicOrbitOCollProblem(40, 4; meshadapt = true)
 
 # and creating the problem type giving the period guess 19.0
 
@@ -124,7 +124,7 @@ probpo, cish = BK.generate_ci_problem(
 # To call the continuation we need to also tell it what aspects of the
 # periodic orbit to record, so we define
 
-argspo = (record_from_solution = (x, p) -> begin
+argspo = (record_from_solution = (x, p; k...) -> begin
 		xtt = BK.get_periodic_orbit(p.prob, x, p.p)
 		return (max = maximum(xtt[1,:]),
 				min = minimum(xtt[1,:]),
@@ -142,21 +142,27 @@ predictor = BK.PALC(tangent = BK.Bordered())
     verbosity = 0, plot = false, argspo...
 )
 
+# The code fails to converge. It used to convege in a previous version of BifurcationKit.jl
+# but now it doesn't anymore. If it did converge, the following would plot it:
+
 stability = branch.stable
 color = [s ? "black" : "red" for s in stability]
 marker = [s ? :circle : :x for s in stability]
 scatter(branch.branch.p, branch.branch.min; color, marker)
 
 # The above code takes about 5 seconds to run.
-# Thankfully it works. Or rather, almost.
-# The code finds no stable limit cycle for parameter less than 5.0,
-# even though we know (see Tutorial final plot) that there is one.
+
+# Even the previous version that did work, did not find a
+# stable limit cycle for parameter less than 5.0,
+# even though we know (see Tutorial) that there is one.
 # Or maybe, it is an extremely weakly chaotic attractor with MLE almost 0.
 # Or maybe it is a quasiperiodic attractor. One needs to analyze further,
-# but Attractors.jl finds everything without much difficulty.
+# but Attractors.jl finds everything without much difficulty no matter what.
 # Altering the above code to start the continuation at 4.7 finds a limit cycle
 # there, but only manages to continue it only up to parameter 4.74,
 # instead of well into parameter 5.5 or more that Attractors.jl shows.
+
+# %% #src
 
 # ## Attractors.jl version
 
@@ -174,8 +180,6 @@ scatter(branch.branch.p, branch.branch.min; color, marker)
 # 1. a global continuation algorithm, and optionally a matcher for it.
 # 1. a sampler to sample initial conditions in the state space.
 
-
-# %% #src
 using Attractors
 ds = CoupledODEs(modified_lorenz_rule!, u0, p0;
     diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)

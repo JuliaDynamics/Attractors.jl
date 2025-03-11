@@ -134,7 +134,7 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     ds = referenced_dynamical_system(mapper)
     reinit!(ds, u0)
     t0 = current_time(ds)
-    maxdist = zero(eltype(first(mapper.attractors)[2]))
+    maxdist = zero(eltype(eltype(first(mapper.attractors)[2])))
     mapper.latest_convergence_time[] = Inf # default return value
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0

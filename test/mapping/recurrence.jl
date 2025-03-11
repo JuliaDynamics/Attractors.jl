@@ -8,7 +8,7 @@ if DO_EXTENSIVE_TESTS
 
 using Attractors
 using Test
-using OrdinaryDiffEq: Vern9
+using OrdinaryDiffEqVerner: Vern9
 using Random
 
 @testset "point saving limit cycles" begin
