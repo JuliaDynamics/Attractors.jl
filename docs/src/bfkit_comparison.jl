@@ -111,9 +111,10 @@ opts_br = BK.ContinuationPar(
 )
 
 # We now create a periodic orbit problem type, by choosing a periodic
-# orbit finding algorithm
+# orbit finding algorithm. Here we will use an optimized Jacobian
+# for a collocation problem (advised via BifurcationKit.jl)
 
-periodic_orbit_algo = BK.PeriodicOrbitOCollProblem(40, 4; meshadapt = true)
+periodic_orbit_algo = BK.PeriodicOrbitOCollProblem(40, 4; jacobian = BK.DenseAnalyticalInplace())
 
 # and creating the problem type giving the period guess 19.0
 
@@ -139,28 +140,37 @@ predictor = BK.PALC(tangent = BK.Bordered())
 # and _finally_ call the continuation from BK
 
 @time branch = BK.continuation(probpo, cish, predictor, opts_br;
-    verbosity = 0, plot = false, argspo...
+    verbosity = 0, plot = false,
+    linear_algo = BK.COPBLS(), # faster linear solver
+    argspo...,
+    bothside = true,
 )
 
-# The code fails to converge. It used to convege in a previous version of BifurcationKit.jl
-# but now it doesn't anymore. If it did converge, the following would plot it:
+# The converges within about 2 seconds, ignoring compilation time.
+# Let's plot the result:
 
 stability = branch.stable
-color = [s ? "black" : "red" for s in stability]
-marker = [s ? :circle : :x for s in stability]
-scatter(branch.branch.p, branch.branch.min; color, marker)
+fig, ax = scatter(
+    branch.branch.p[stability], branch.branch.min[stability];
+    label = "stable PO", color = "black", marker = :circle
+)
+scatter!(
+    branch.branch.p[.!stability], branch.branch.min[.!stability];
+    label = "unstable PO", color = "red", marker = :x
 
-# The above code takes about 5 seconds to run.
+)
+axislegend(ax)
+fig
 
 # Even the previous version that did work, did not find a
 # stable limit cycle for parameter less than 5.0,
-# even though we know (see Tutorial) that there is one.
-# Or maybe, it is an extremely weakly chaotic attractor with MLE almost 0.
-# Or maybe it is a quasiperiodic attractor. One needs to analyze further,
-# but Attractors.jl finds everything without much difficulty no matter what.
-# Altering the above code to start the continuation at 4.7 finds a limit cycle
-# there, but only manages to continue it only up to parameter 4.74,
-# instead of well into parameter 5.5 or more that Attractors.jl shows.
+# In the main Tutorial we see that there is a limit cycle for
+# parameter value down to 4.7. Here we see that the limit cycle is actually
+# unstable. So the attractor found in the main Tutorial
+# could be a weakly chaotic attractor with MLE almost 0.
+# Or maybe it is a quasiperiodic attractor. Or maybe it is an alternative limit cycle
+# close to the one tracked here by BifurcationKit.jl.
+# One needs to analyze further!
 
 # %% #src
 
@@ -215,7 +225,7 @@ plot_attractors_curves(
 # ## Discussion and comparison
 
 # Attractors.jl found not only a single limit cycle,
-# but also all system attractors, including chaotic ones.
+# but also all system attractors, including chaotic or quasiperiodic ones.
 # It didn't require any initial guess regarding the limit cycle or its period,
 # but only a state space box that may contain attractors.
 # Attractors.jl is extremely robust w.r.t. to its input parameters:
@@ -228,36 +238,36 @@ plot_attractors_curves(
 # And finally, Attractors.jl estimates a more general nonlocal measure of stability,
 # in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable,
 # however the other way around isn't guaranteed.
-# Moreover, due to the orthogonality of finding and matching attractors,
-# as well as finding _all_ attractors, the global continuation of Attractors.jl
-# can continue along arbitrary user-defined curves in parameter space; not just
-# along a single parameter axis. This is possible because it is completely fine
-# for some attractors to stop existing during the global continuation,
-# while local continuation stops when attractors (and their unstable version)
-# stop existing.
+# The global continuation of Attractors.jl continues the whole of a
+# multistable state space across an arbitrary parameter curve.
+# It finds all attractors that exist at each parameter combination and
+# matches them to previous ones to establish continuity.
+# It is completely fine
+# for some attractors to stop existing during the global continuation.
 
-# Traditional local continuation can track the unstable
-# branches, and automatically detect and label local bifurcations,
-# both of which are not possible in Attractors.jl
-# (note we didn't bother to plot any of the detected bifurcations - if any are found).
+# Local continuation tracks a single and specific fixed point or limit cycle within a specified
+# parameter range. The continuation will stop if the object stops existing all-together.
+# But the local continuation can continue to track the object if it becomes unstable.
+# Local continuation also automatically detects and labels local bifurcations.
 # In our experience having the local bifurcations is always useful.
-# Now, whether the unstable branches are of a limit cycle are useful or not,
+# Now, whether the unstable branches of a limit cycle are useful or not,
 # depends on the research question and whether the analysis is done for some
 # sort of real world understanding (unstable limit cycles / fixed points don't
 # actually exist in the real world).
 # Beyond this however, BifurcationKit.jl is also optimised for PDE systems,
 # while Attractors.jl isn't.
 
-# Now, we have to be a bit more transparent here.
-# Besides this absence of stable orbits for parameter less than 5.0
-# that we discussed in the end of the BifurcationKit.jl version,
-# we need to say that it took **a lot of effort** to make the
-# BifurcationKit.jl code work. At least, a lot of effort compared with the effort
+# To be transparent, the biggest downside of local continuation software
+# (and not a particular downside of BifurcationKit.jl specifically),
+# is that it can take **a lot of effort** or **a lot of expertise** to make them work.
+# At least, a lot of effort compared with the effort
 # it took to make the Attractors.jl version work, which was simply "increase the recurrences
 # threshold", which is standard practice when dealing with chaotic systems
 # [Datseris2022](@cite). For example, any other of the
-# periodic orbit algorithms of BifurcationKit.jl (such as shooting or trapezoid) fails.
-# Using a slightly incorrect initial period guess of 20.0 instead of 19.0 also fails.
+# periodic orbit algorithms of BifurcationKit.jl (such as shooting or trapezoid) fails
+# unless its parameters are adjusted. Using alternative specifications for the Jacobian
+# or the linear solving algorithm can also lead to failure.
+# Using an incorrect initial period guess can also lead to failure.
 # We imagine that this sensitivity would apply also to some other of the
 # several meta-parameters that enter a traditional continuation routine,
 # for example the thresholds and accuracy parameters related to Newton convergence,
