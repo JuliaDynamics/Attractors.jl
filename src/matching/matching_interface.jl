@@ -194,11 +194,19 @@ function _rematch_with_past!(attractors_cont, matcher;
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = pcurve[i+1], pcurve[i]
-        # update ghosts
+        # If there are no attractors in the new step, skip the matching
+        # (in contrast with `_rematch_ignored!`, here there is a past to match with
+        # even if `a₋` is empty)
+        if isempty(a₊)
+            push!(rmaps, Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}())
+            continue
+        end
+        # else, first update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
+        # and then match
+        p, pprev = pcurve[i+1], pcurve[i]
         rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds)
         push!(rmaps, rmap)
     end
