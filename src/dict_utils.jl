@@ -104,14 +104,21 @@ end
 
 Return the minimum key of the "new" dictionary
 that doesn't exist in the "old" dictionary.
+If one of the two dictionaries are empty, return its maximum key + 1.
+If both are empty, return 1.
+
+The function assumes tha the dictionary keys are integers.
 """
-function next_free_id(a₊::AbstractDict, a₋::AbstractDict)
-    s = setdiff(keys(a₊), keys(a₋))
-    nextid = isempty(s) ? maximum(keys(a₋)) + 1 : minimum(s)
-    return nextid
-end
+next_free_id(a₊::AbstractDict, a₋::AbstractDict) = next_free_id(keys(a₊), keys(a₋))
 function next_free_id(keys₊, keys₋)
-    s = setdiff(keys₊, keys₋)
-    nextid = isempty(s) ? maximum(keys₋) + 1 : minimum(s)
-    return nextid
+    if length(keys₋) == 0 && length(keys(keys₊)) == 0
+        return 1
+    elseif length(keys₋) == 0
+        return maximum(keys₊) + 1
+    elseif length(keys₊) == 0
+        return maximum(keys₋) + 1
+    else
+        s = setdiff(keys₊, keys₋)
+        return isempty(s) ? maximum(keys₋) + 1 : minimum(s)
+    end
 end
