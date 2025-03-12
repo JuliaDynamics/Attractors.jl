@@ -170,15 +170,14 @@ function _rematch_ignored!(attractors_cont, matcher;
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
         p, pprev = pcurve[i+1], pcurve[i]
-        # If there are no attractors, skip the matching
-        if (isempty(a₊) || isempty(a₋))
-            push!(rmaps, Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}())
-            continue
+        # If there attractors, update the max id
+        if !(isempty(a₊) || isempty(a₋))
+            # we always compute a next id. In this way, if an attractor disappears
+            # and reappears, it will get a different (incremented) ID as it should!
+            next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
+            next_id = max(next_id, next_id_a) + 1
         end
-        # Here we always compute a next id. In this way, if an attractor disappears
-        # and reappears, it will get a different (incremented) ID as it should!
-        next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
-        next_id = max(next_id, next_id_a) + 1
+        # matching_map returns empty dict if the inputs are empty dicts
         rmap = matching_map!(a₊, a₋, matcher; next_id, ds, p, pprev)
         push!(rmaps, rmap)
     end
@@ -196,14 +195,7 @@ function _rematch_with_past!(attractors_cont, matcher;
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        # If there are no attractors in the new step, skip the matching
-        # (in contrast with `_rematch_ignored!`, here there is a past to match with
-        # even if `a₋` is empty)
-        if isempty(a₊)
-            push!(rmaps, Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}())
-            continue
-        end
-        # else, first update ghosts
+        # first update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
