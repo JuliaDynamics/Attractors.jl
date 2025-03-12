@@ -207,7 +207,6 @@ function _rematch_with_past!(attractors_cont, matcher;
         end
         # and then match
         p, pprev = pcurve[i+1], pcurve[i]
-        error("make sure to add a test for this fix!!!")
         rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds)
         push!(rmaps, rmap)
     end
