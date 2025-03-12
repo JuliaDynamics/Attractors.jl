@@ -54,6 +54,8 @@ _use_vanished(m::MatchBySSSetDistance) = m.use_vanished
 function matching_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
         kw...
     )
+    # if either dictionary is empty there is no matching to be done
+    isempty(a₊) || isempty(a₋) && return Dict{keytype(a₊), keytype(a₋)}()
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = sort.(collect.(keys.((a₊, a₋))))
     _matching_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold; kw...)

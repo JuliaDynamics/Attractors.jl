@@ -44,6 +44,8 @@ The values contained in `a₊, a₋` can be anything supported by `matcher`.
 Within Attractors.jl they are typically `StateSpaceSet`s representing attractors.
 Typically the +,- mean after and before some change of parameter of a dynamical system.
 
+`matching_map` always returns an empty dictionary of either `a₊, a₋` is empty.
+
 ## Keyword arguments
 
 - `ds`: the dynamical system that generated `a₊, a₋`.
