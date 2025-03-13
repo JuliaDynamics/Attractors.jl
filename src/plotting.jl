@@ -172,28 +172,3 @@ panel is created for each entry in `a2rs`.
 function plot_basins_attractors_curves end
 function plot_basins_attractors_curves! end
 export plot_basins_attractors_curves, plot_basins_attractors_curves!
-
-"""
-    plot_continuation_stability_measures(measures_cont, prange; kwargs...)
-
-Useful for plotting the stability measures of attractors found during a continuation using
-the [`StabilityMeasuresAccumulator`](@ref). The `measures_cont` is the output of the
-[`global_continuation`](@ref) of the `StabilityMeasuresAccumulator` type. All measures are
-plotted in a column of subplots, one for each measure.
-
-## Keyword arguments
-
-- measures = keys(measures_cont): the measures to plot. By default, all measures are plotted.
-- attractors_cont = nothing: the attractors found during the continuation. If provided, the
-  attractors `attractor_to_real` function is used to plot the measures versus the parameter.
-  This subplot will be at the top of the column of subplots.
-- attractor_to_real = nothing: must be provided if `attractors_cont` is provided. It is a
-  function that maps an attractor to a real number.
-- xlabel = nothing: the x-axis label for the last subplot of the column of subplots.
-- ylabels = measures: the y-axis labels for each subplot.
-- Also all [common plotting keywords](@ref common_plot_kwargs).
-
-"""
-function plot_continuation_stability_measures end
-function plot_continuation_stability_measures! end
-export plot_continuation_stability_measures, plot_continuation_stability_measures!

@@ -1,5 +1,5 @@
 # global continuation algorithm tracking attractors and stability measures
-function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher, pcurve, ics; samples_per_parameter = 100, show_progress = true, seeding = _default_seeding) ### AM I had to remove the ::IDMatcher after matcher for it to precompile but I dont know why
+function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher, pcurve, ics; samples_per_parameter = 100, show_progress = true, seeding = A->[])#_default_seeding ### AM I had to remove the ::IDMatcher after matcher for it to precompile but I dont know why
     N = samples_per_parameter
     progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and basins:", enabled=show_progress)
     mapper = accumulator

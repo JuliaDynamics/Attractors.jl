@@ -69,7 +69,7 @@ there for example), a value `Inf` is assigned to all measures.
 These nonlocal stability measures are accumulated while initial conditions are mapped
 to attractors. Afterwards they are averaged according to the probability density `d`
 when calling `finalize!`. The word "distance" here refers to the distance established
-by the `metric` keyword ( TODO: I would do this, just use the 2-norm distance.).
+by the `metric` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
   `mapper` using [`convergence_time`](@ref). The mean is computed with respect
@@ -106,11 +106,14 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype}
     maximal_convergence_time::Dict{Int64, Float64}
     mean_convergence_pace::Dict{Int64, Float64}
     maximal_convergence_pace::Dict{Int64, Float64}
+    convergence_times::Dict{Int64, Vector{Float64}}
+    convergence_paces::Dict{Int64, Vector{Float64}}
     # TODO: It is wrong to say that T is a float. it should be type parameterized.
     T::Float64
     d::Union{EverywhereUniform, Distribution}
     p::AbstractArray
-    function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=EverywhereUniform(), p=initial_parameters(referenced_dynamical_system(mapper))::Vector)
+    metric::Metric
+    function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=EverywhereUniform(), p=initial_parameters(referenced_dynamical_system(mapper))::Vector, metric=Euclidean())
         reset_mapper!(mapper)
         ds = referenced_dynamical_system(mapper)
         Dims = dimension(ds)
@@ -125,9 +128,12 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype}
             Dict{Int64, Float64}(),
             Dict{Int64, Float64}(),
             Dict{Int64, Float64}(),
+            Dict{Int64, Vector{Float64}}(),
+            Dict{Int64, Vector{Float64}}(),
             T,
             d,
-            p
+            p,
+            metric
         )
     end
 end
@@ -146,6 +152,8 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     a.maximal_convergence_time = Dict{Int64, Float64}()
     a.mean_convergence_pace = Dict{Int64, Float64}()
     a.maximal_convergence_pace = Dict{Int64, Float64}()
+    a.convergence_times = Dict{Int64, Vector{Float64}}()
+    a.convergence_paces = Dict{Int64, Vector{Float64}}()
 end
 
 # Function to extract attractors from the accumulator
@@ -169,15 +177,19 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
         push!(accumulator.basin_points[id], u0)
     end
 
-    # Update mean and maximal convergence time and pace
+    # Gather convergence time and pace
     ct = convergence_time(accumulator.mapper)
+    attractors = extract_attractors(accumulator.mapper) ### AM more elegent way to do this?
+    u0_dist = id == -1 ? Inf64 : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
+    accumulator.convergence_times[id] = pdf(accumulator.d, u0) > 0.0 ? push!(get(accumulator.convergence_times, id, []), ct) : get(accumulator.convergence_times, id, [])
+    accumulator.convergence_paces[id] = pdf(accumulator.d, u0) > 0.0 ? push!(get(accumulator.convergence_paces, id, []), ct/u0_dist) : get(accumulator.convergence_paces, id, [])
+
+    # Update mean and maximal convergence time and pace
     accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) + pdf(accumulator.d, u0)*ct
     accumulator.maximal_convergence_time[id] = pdf(accumulator.d, u0) > 0.0 ? max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : get(accumulator.maximal_convergence_time, id, 0.0)
-    attractors = extract_attractors(accumulator.mapper) ### AM more elegent way to do this?
-    u0_dist = id == -1 ? Inf64 : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true))
     accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) + pdf(accumulator.d, u0)*ct/u0_dist
     accumulator.maximal_convergence_pace[id] = pdf(accumulator.d, u0) > 0.0 ? max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : get(accumulator.maximal_convergence_pace, id, 0.0)
-
+    
     # Update finite time basin points
     if ct <= accumulator.T
         if !(id in keys(accumulator.finite_time_basin_points))
@@ -212,6 +224,12 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
     foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = Inf64), keys(attractors))
     foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = Inf64), keys(attractors))
 
+    # Calculate median convergence time and pace
+    median_convergence_time = Dict{Int64, Float64}()
+    median_convergence_pace = Dict{Int64, Float64}()
+    foreach(key -> median_convergence_time[key] = median(accumulator.convergence_times[key]), keys(accumulator.convergence_times))
+    foreach(key -> median_convergence_pace[key] = median(accumulator.convergence_paces[key]), keys(accumulator.convergence_paces))
+
     # Calculate minimal fatal shock and maximal non-fatal shock magnitude
     minimal_fatal_shock_magnitudes = Dict{Int64, Float64}()
     maximal_nonfatal_shock_magnitudes = Dict{Int64, Float64}()
@@ -219,8 +237,8 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         minimal_fatal_shock_magnitudes[key1] = Inf64
         maximal_nonfatal_shock_magnitudes[key1] = Inf64
         (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
-        minimal_fatal_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
-        maximal_nonfatal_shock_magnitudes[key1] = maximum([norm(a-b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
+        minimal_fatal_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
+        maximal_nonfatal_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
     end
 
     # Calculate persistence
@@ -250,7 +268,7 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
                     X, t = trajectory(ds, ct, u0, Δt=0.01)
                     X_dict = Dict(zip(t, vec(X)))
                     for this_t in t
-                        distances = setsofsets_distances(Dict([(attr_key, StateSpaceSet([X_dict[this_t]]))]), attractors, StateSpaceSets.StrictlyMinimumDistance(Chebyshev()))
+                        distances = setsofsets_distances(Dict([(attr_key, StateSpaceSet([X_dict[this_t]]))]), accumulator.basin_points, StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
                         #println("Distance of attractor $attr_key at time $this_t: $distances")
                         if findmin(distances[attr_key])[2] != attr_key
                             persistence[attr_key] = min(persistence[attr_key], this_t)
@@ -317,8 +335,10 @@ function finalize(accumulator::StabilityMeasuresAccumulator)
         "maximal_amplification_time" => maximal_amplification_time,
         "mean_convergence_time" => accumulator.mean_convergence_time,
         "maximal_convergence_time" => accumulator.maximal_convergence_time,
+        "median_convergence_time" => median_convergence_time,
         "mean_convergence_pace" => accumulator.mean_convergence_pace,
         "maximal_convergence_pace" => accumulator.maximal_convergence_pace,
+        "median_convergence_pace" => median_convergence_pace,
         "minimal_fatal_shock_magnitude" => minimal_fatal_shock_magnitudes,
         "maximal_nonfatal_shock_magnitude" => maximal_nonfatal_shock_magnitudes,
         "basin_stability" => basin_stab,
