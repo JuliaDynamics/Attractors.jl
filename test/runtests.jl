@@ -40,5 +40,6 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
 
     @testset "boundaries" begin
         testfile("boundaries/edgetracking_tests.jl")
+        testfile("boundaries/stagger_tests.jl")
     end
 end

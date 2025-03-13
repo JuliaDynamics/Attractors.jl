@@ -98,13 +98,14 @@ uncertainty_exponent
 test_wada_merge
 ```
 
-## Edge tracking and edge states
-The edge tracking algorithm allows to locate and construct so-called edge states (also referred to as *Melancholia states*) embedded in the basin boundary separating different basins of attraction. These could be saddle points, unstable periodic orbits or chaotic saddles. The general idea is that these sets can be found because they act as attractors when restricting to the basin boundary.
+## Edge tracking, edge states and chaotic saddles
+The edge tracking algorithm allows to locate and construct so-called edge states (also referred to as *Melancholia states*) embedded in the basin boundary separating different basins of attraction. These could be saddle points, unstable periodic orbits or chaotic saddles. The general idea is that these sets can be found because they act as attractors when restricting to the basin boundary. Another technique to get a pseudo trajectory close to a saddle is the stagger-and-step method that requires little information on the dynamical system. 
 
 ```@docs
 edgetracking
 EdgeTrackingResults
 bisect_to_edge
+stagger_and_step
 ```
 
 ## Tipping points
