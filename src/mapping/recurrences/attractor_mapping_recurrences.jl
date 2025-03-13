@@ -180,10 +180,11 @@ function convergence_time(m::AttractorsViaRecurrences)
         # time of neighboring grid cells.
         x = get(kw, :consecutive_recurrences, 100) + get(kw, :attractor_locate_steps, 1000)
     elseif m.bsn_nfo.return_code == :bas_hit
-        return NaN
+        return typemax(bsn_nfo.Δt)
     else
         x = get(kw, :consecutive_attractor_steps, 2)
     end
+    x = max(i, x) # it cannot be more than i!
     return (i - x + 1)*m.bsn_nfo.Δt
 end
 
