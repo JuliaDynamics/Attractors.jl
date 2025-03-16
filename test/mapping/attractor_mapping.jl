@@ -8,7 +8,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 using Test
 using Attractors
 using LinearAlgebra
-using OrdinaryDiffEq: Vern9
+using OrdinaryDiffEqVerner: Vern9
 using Random
 using Statistics
 

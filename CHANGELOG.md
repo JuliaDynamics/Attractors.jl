@@ -1,3 +1,8 @@
+# v1.24
+
+- Improved `continuation_series`: now it works for any type of input, including attractor continuation info because the default value (now renamed to fill value) is used to deduce the type of the series vectors.
+- Fixed a critical bug where global continuation would fail if there was a parameter where all initial conditions diverge and the matching was with vanished.
+
 # v1.23
 
 - New convenience function `continuation_series` that was already used internally

@@ -5,7 +5,7 @@ The following Julia script inputs a 2D continuous time dynamical system and anim
 ```julia
 using Attractors, CairoMakie
 using PredefinedDynamicalSystems
-using OrdinaryDiffEq
+using OrdinaryDiffEqVerner
 
 # Set up dynamical system: bi-stable predator pray
 function predator_prey_rule(u, p, t)

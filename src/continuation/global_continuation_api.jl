@@ -77,22 +77,22 @@ end
 
 
 """
-    continuation_series(continuation_info, defval = NaN)
+    continuation_series(continuation_info, fillval = NaN)
 
 Transform a continuation quantity (a vector of dictionaries, each dictionary
-mapping attractor IDs to real numbers) to a dictionary of vectors where
-the `k` entry is the series of the continuation quantity corresponding to
-attractor with ID `k`. `defval` denotes the value to assign in the series
-if an attractor does not exist at this particular series index.
+mapping attractor IDs to values of same type as `fillval`) to a dictionary of vectors
+where the `k` dictionary entry is the series of the continuation quantity corresponding to
+attractor with ID `k`. `fillval` denotes the value to assign in the series
+if the attractor with ID `k` does not exist at this particular series index.
 """
-function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, defval = NaN, ukeys = unique_keys(continuation_info))
-    bands = Dict(k => zeros(length(continuation_info)) for k in ukeys)
+function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, fillval = NaN, ukeys = unique_keys(continuation_info))
+    series = Dict(k => fill(fillval, length(continuation_info)) for k in ukeys)
     for i in eachindex(continuation_info)
         for k in ukeys
-            bands[k][i] = get(continuation_info[i], k, defval)
+            series[k][i] = get(continuation_info[i], k, fillval)
         end
     end
-    return bands
+    return series
 end
 
 include("continuation_ascm_generic.jl")

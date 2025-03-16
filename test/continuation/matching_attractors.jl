@@ -141,6 +141,23 @@ end
                 end
             end
         end
+        @testset "no attractors for a step" begin
+            atts = deepcopy(allatts)
+            atts[5] = Dict()
+            match_sequentially!(atts, MatchBySSSetDistance(use_vanished = true))
+            @test unique_keys(atts) == 1:3
+            for i in eachindex(jrange)
+                if iseven(i)
+                    @test sort!(collect(keys(atts[i]))) == 1:2
+                else
+                    if i == 5
+                        @test isempty(atts[i])
+                    else
+                        @test sort!(collect(keys(atts[i]))) == 1:3
+                    end
+                end
+            end
+        end
     end
 end
 
