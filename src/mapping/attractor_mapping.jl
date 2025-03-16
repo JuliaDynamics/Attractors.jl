@@ -16,8 +16,8 @@ export AttractorMapper,
     subdivision_based_grid,
     SubdivisionBasedGrid,
     reset_mapper!,
-    StabilityMeasuresAccumulator#,
-    #referenced_dynamical_system ### AM why is this not exported above? Or where else is the export statement for this?
+    StabilityMeasuresAccumulator,
+    finalize_accumulator
 
 ValidICS = Union{AbstractVector, Function}
 
@@ -49,6 +49,9 @@ The mappers that can do this are:
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref) configuration.
+
+See also [`StabilityMeasuresAccumulator`](@ref) that extends this interface
+to accelerate estimation of stability measures.
 
 ## For developers
 

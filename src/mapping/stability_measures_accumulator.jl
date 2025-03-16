@@ -11,11 +11,11 @@ Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 A special data structure that allows mapping initial conditions to attractors
 _while_ at the same time calculating many stability measures in the most efficient
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
-that satisfies the `id = mapper(u0)` syntax.
+that implements the `id = mapper(u0)` syntax.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions such as
 [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
-the [`finalize!`](@ref) function should be called which will return a dictionary
+the [`finalize_accumulator`](@ref) function should be called which will return a dictionary
 of all stability measures estimated by the accumulator.
 Each dictionary maps the measure description (`Symbol`) to a dictionary
 mapping attractor IDs to the measure value.
@@ -38,15 +38,13 @@ mapping attractor IDs to the measure value.
 `StabilityMeasuresAccumulator` efficiently uses a single `id = mapper(u0)` call
 to accumulate information for many differnt stability measures corresponding
 to each attractor of the dynamical system.
-### Finalizing the stability measures
-After calling the accumulator on all initial conditions in the state space sample of the `mapper`, the
-stability measures need to be finalized. To obtain the final stability measures,
-call `Attractors.finalize(accumulator::StabilityMeasuresAccumulator)`. This
-function returns a dictionary with the stability measures. Each value of this
-dictionary is again a dictionary mapping the attractor ID to the respective
-stability measure.
+It accumulates all these different measures when different initial conditions
+are mapped through it. After enough `u0`s have been given to the accumulator, they
+can be finalized (comput maxima or averages) using `finalize!(accumulator)`.
 
-The following stability measures are estimated for each attractor:
+The following stability measures are estimated for each attractor
+(and the returned dictionary maps strings with the names of the measures
+to the dictionaries containing the measure values for each attractor):
 
 ### Local (fixed point) stability measures
 
@@ -75,7 +73,7 @@ by the `metric` keyword.
   `mapper` using [`convergence_time`](@ref). The mean is computed with respect
   to the probability distribution `d`.
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
-  to the attractor. Only initial conditions with non-zero probability under `d` 
+  to the attractor. Only initial conditions with non-zero probability under `d`
   are considered.
 * `mean_convergence_pace`: The mean convergence pace of initial conditions to
   the attractor. Similar to the mean convergence time, except that each
@@ -83,7 +81,7 @@ by the `metric` keyword.
   condition to the attractor.
 * `maximal_convergence_pace`: Same as above but maximum instead of mean.
 * `minimal_critical_shock_magnitude`: The minimal distance of the attractor to the
-  closest non-zero probability point (under `d`) in a basin of attraction of a 
+  closest non-zero probability point (under `d`) in a basin of attraction of a
   different attractor.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
   furthest non-zero probability point (under `d`) of its own basin of attraction.
@@ -108,12 +106,11 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype}
     maximal_convergence_pace::Dict{Int64, Float64}
     convergence_times::Dict{Int64, Vector{Float64}}
     convergence_paces::Dict{Int64, Vector{Float64}}
-    # TODO: It is wrong to say that T is a float. it should be type parameterized.
     T::Float64
     d::Union{EverywhereUniform, Distribution}
-    p::AbstractArray
+    p::Any # this needs to be removed
     metric::Metric
-    function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0::Float64, d=EverywhereUniform(), p=initial_parameters(referenced_dynamical_system(mapper))::Vector, metric=Euclidean())
+    function StabilityMeasuresAccumulator(mapper::AttractorMapper; T=1.0, d=EverywhereUniform(), p=initial_parameters(referenced_dynamical_system(mapper)), metric=Euclidean())
         reset_mapper!(mapper)
         ds = referenced_dynamical_system(mapper)
         Dims = dimension(ds)
@@ -189,7 +186,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     accumulator.maximal_convergence_time[id] = pdf(accumulator.d, u0) > 0.0 ? max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : get(accumulator.maximal_convergence_time, id, 0.0)
     accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) + pdf(accumulator.d, u0)*ct/u0_dist
     accumulator.maximal_convergence_pace[id] = pdf(accumulator.d, u0) > 0.0 ? max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : get(accumulator.maximal_convergence_pace, id, 0.0)
-    
+
     # Update finite time basin points
     if ct <= accumulator.T
         if !(id in keys(accumulator.finite_time_basin_points))
@@ -212,7 +209,14 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
 end
 
 # Function to finalize the stability measures
-function finalize(accumulator::StabilityMeasuresAccumulator)
+"""
+    finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+
+Return a dictionary mapping stability measures (strings) to dictionaries
+mapping attractor IDs to corresponding measure values.
+See [`StabilityMeasuresAccumulator`](@ref) for more.
+"""
+function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     attractors = extract_attractors(accumulator.mapper)
     normalization = sum([sum(pdf(accumulator.d, point) for point in accumulator.basin_points[key]) for key in keys(accumulator.basin_points)])
 
