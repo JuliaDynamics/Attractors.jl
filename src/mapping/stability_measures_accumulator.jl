@@ -220,7 +220,13 @@ mapping attractor IDs to corresponding measure values.
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 """
 function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+    ds = referenced_dynamical_system(accumulator)
+    Dims = dimension(ds)
+    Datatype = eltype(current_state(ds))
     attractors = extract_attractors(accumulator.mapper)
+    foreach(key -> !(key in keys(accumulator.basin_points)) && (accumulator.basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.finite_time_basin_points)) && (accumulator.finite_time_basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.nonzero_measure_basin_points)) && (accumulator.nonzero_measure_basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
     normalization = sum([sum(pdf(accumulator.d, point) for point in accumulator.basin_points[key]) for key in keys(accumulator.basin_points)])
 
     # Calculate mean convergence time and pace
@@ -249,8 +255,8 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     end
 
     # Calculate basin stability and finite time basin stability
-    basin_stab = Dict(key => sum(pdf(accumulator.d, point) for point in accumulator.basin_points[key]) for key in keys(accumulator.basin_points))
-    finite_time_basin_stab = Dict(key => sum(pdf(accumulator.d, point) for point in accumulator.finite_time_basin_points[key]) for key in keys(accumulator.finite_time_basin_points))
+    basin_stab = Dict(key => (isempty(accumulator.basin_points[key]) ? 0.0 : sum(pdf(accumulator.d, point) for point in accumulator.basin_points[key])) for key in keys(accumulator.basin_points))
+    finite_time_basin_stab = Dict(key => (isempty(accumulator.finite_time_basin_points[key]) ? 0.0 : sum(pdf(accumulator.d, point) for point in accumulator.finite_time_basin_points[key])) for key in keys(accumulator.finite_time_basin_points))
     normalization != 0.0 && (foreach(key -> basin_stab[key] /= normalization, keys(basin_stab)); foreach(key -> finite_time_basin_stab[key] /= normalization, keys(finite_time_basin_stab)))
     foreach(key -> !(key in keys(basin_stab)) && (basin_stab[key] = 0.0), keys(attractors))
     foreach(key -> !(key in keys(finite_time_basin_stab)) && (finite_time_basin_stab[key] = 0.0), keys(attractors))
@@ -262,7 +268,6 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     maximal_amplification_time = Dict(id => NaN for id in keys(attractors))
 
     # Calculate linear measures
-    ds = referenced_dynamical_system(accumulator)
     jac = jacobian(ds)
     for (id, A) in attractors
         if length(A) > 1

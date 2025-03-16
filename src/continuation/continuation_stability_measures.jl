@@ -24,12 +24,29 @@ function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher,
         set_parameters!(referenced_dynamical_system(accumulator), p)
         reset_mapper!(accumulator)
         accumulator.d = distributions(p)
-        fs = if allows_mapper_u0(accumulator)
-            seed_attractors_to_fractions_individual(accumulator, prev_attractors, ics, N, seeding)
+        if typeof(accumulator.mapper) <: AttractorsViaRecurrences
+            fs = if allows_mapper_u0(accumulator)
+                seed_attractors_to_fractions_individual(accumulator, prev_attractors, ics, N, seeding)
+            else
+                seed_attractors_to_fractions_grouped(accumulator, prev_attractors, ics, N, seeding)
+            end
+            current_attractors = deepcopy(extract_attractors(accumulator))
+        elseif typeof(accumulator.mapper) <: AttractorsViaProximity
+            dummy_mapper = AttractorsViaRecurrences(referenced_dynamical_system(accumulator), ics)
+            fs = if allows_mapper_u0(dummy_mapper)
+                seed_attractors_to_fractions_individual(dummy_mapper, prev_attractors, ics, N, seeding)
+            else
+                seed_attractors_to_fractions_grouped(dummy_mapper, prev_attractors, ics, N, seeding)
+            end
+            current_attractors = deepcopy(extract_attractors(dummy_mapper))
+            accumulator.mapper.attractors = current_attractors
+            A = ics_from_grid(grid)
+            for u0 in A
+                id = accumulator(u0)
+            end
         else
-            seed_attractors_to_fractions_grouped(accumulator, prev_attractors, ics, N, seeding)
+            error("Unsupported mapper type: $(typeof(accumulator.mapper))")
         end
-        current_attractors = deepcopy(extract_attractors(accumulator))
         push!(attractors_cont, current_attractors)
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress)
