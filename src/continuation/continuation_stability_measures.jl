@@ -13,7 +13,7 @@ function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher,
     end
 
     # This is the third difference in global continuation
-    measures = finalize(accumulator)
+    measures = finalize_accumulator(accumulator)
     measures_cont = [measures]
 
     prev_attractors = deepcopy(extract_attractors(mapper))
@@ -35,7 +35,7 @@ function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher,
         ProgressMeter.next!(progress)
 
         # this is the second difference in global continuation
-        measures = finalize(accumulator)
+        measures = finalize_accumulator(accumulator)
         push!(measures_cont, measures)
     end
 

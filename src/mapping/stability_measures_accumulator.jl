@@ -272,7 +272,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
                     X, t = trajectory(ds, ct, u0, Δt=0.01)
                     X_dict = Dict(zip(t, vec(X)))
                     for this_t in t
-                        distances = setsofsets_distances(Dict([(attr_key, StateSpaceSet([X_dict[this_t]]))]), accumulator.basin_points, StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
+                        distances = setsofsets_distances(Dict([(attr_key, StateSpaceSet([X_dict[this_t]]))]), accumulator.basin_points, StateSpaceSets.StrictlyMinimumDistance(false, accumulator.metric))
                         #println("Distance of attractor $attr_key at time $this_t: $distances")
                         if findmin(distances[attr_key])[2] != attr_key
                             persistence[attr_key] = min(persistence[attr_key], this_t)
