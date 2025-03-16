@@ -1,35 +1,35 @@
 # global continuation algorithm tracking attractors and stability measures
-function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher, pcurve, ics; samples_per_parameter = 100, show_progress = true, seeding = A->[])#_default_seeding ### AM I had to remove the ::IDMatcher after matcher for it to precompile but I dont know why
+function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher, pcurve, ics; distributions = p->accumulator.d, samples_per_parameter = 100, show_progress = true, seeding = A->[])#_default_seeding ### AM I had to remove the ::IDMatcher after matcher for it to precompile but I dont know why
     N = samples_per_parameter
     progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and basins:", enabled=show_progress)
-    mapper = accumulator
-    reset_mapper!(mapper)
+    reset_mapper!(accumulator)
 
-    set_parameters!(referenced_dynamical_system(mapper), pcurve[1])
+    set_parameters!(referenced_dynamical_system(accumulator), pcurve[1])
     if ics isa Function
-        fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+        fs = basins_fractions(accumulator, ics; show_progress = false, N = samples_per_parameter)
     else # we ignore labels in this continuation algorithm
-        fs, = basins_fractions(mapper, ics; show_progress = false)
+        fs, = basins_fractions(accumulator, ics; show_progress = false)
     end
 
     # This is the third difference in global continuation
     measures = finalize_accumulator(accumulator)
     measures_cont = [measures]
 
-    prev_attractors = deepcopy(extract_attractors(mapper))
+    prev_attractors = deepcopy(extract_attractors(accumulator))
     attractors_cont = [deepcopy(prev_attractors)] # we need the copy
     ProgressMeter.next!(progress)
 
     # Continue loop over all remaining parameters
     for p in @view(pcurve[2:end])
-        set_parameters!(referenced_dynamical_system(mapper), p)
-        reset_mapper!(mapper)
-        fs = if allows_mapper_u0(mapper)
-            seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, seeding)
+        set_parameters!(referenced_dynamical_system(accumulator), p)
+        reset_mapper!(accumulator)
+        accumulator.d = distributions(p)
+        fs = if allows_mapper_u0(accumulator)
+            seed_attractors_to_fractions_individual(accumulator, prev_attractors, ics, N, seeding)
         else
-            seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, seeding)
+            seed_attractors_to_fractions_grouped(accumulator, prev_attractors, ics, N, seeding)
         end
-        current_attractors = deepcopy(extract_attractors(mapper))
+        current_attractors = deepcopy(extract_attractors(accumulator))
         push!(attractors_cont, current_attractors)
         overwrite_dict!(prev_attractors, current_attractors)
         ProgressMeter.next!(progress)
@@ -39,7 +39,7 @@ function global_continuation(accumulator::StabilityMeasuresAccumulator, matcher,
         push!(measures_cont, measures)
     end
 
-    rmaps = match_sequentially!(attractors_cont, matcher; pcurve, ds = referenced_dynamical_system(mapper))
+    rmaps = match_sequentially!(attractors_cont, matcher; pcurve, ds = referenced_dynamical_system(accumulator))
 
     # This is the third difference in global continuation
     for i in 2:length(pcurve)

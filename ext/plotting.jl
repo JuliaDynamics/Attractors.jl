@@ -381,16 +381,6 @@ function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, att
     return
 end
 
-function unique_keys_measures_cont(measures_cont)
-    attractor_keys = Set{Any}()
-    for list_of_dicts in values(measures_cont)
-        for key in unique_keys(list_of_dicts)
-            push!(attractor_keys, key)
-        end
-    end
-    return collect(attractor_keys)
-end
-
 ##########################################################################################
 # Videos
 ##########################################################################################
