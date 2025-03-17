@@ -26,7 +26,7 @@ function global_continuation(
     ProgressMeter.next!(progress)
 
     # Continue loop over all remaining parameters
-    ### For George: Is this what you had in mind when we emailed about 
+    ### For @Datseris: Is this what you had in mind when we emailed about 
     ### the global continuation algorithm with AttractorsViaProximity?
     ### Currently, line 44 has an error because we cant pass ics to the AttractorsViaRecurrences.
     for p in @view(pcurve[2:end])
