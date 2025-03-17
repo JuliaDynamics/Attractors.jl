@@ -19,6 +19,19 @@ the [`finalize_accumulator`](@ref) function should be called which will return a
 of all stability measures estimated by the accumulator.
 Each dictionary maps the measure description (`Symbol`) to a dictionary
 mapping attractor IDs to the measure value.
+Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
+
+**Using with [`global_continuation`](@ref)**:
+Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
+used with [`global_continuation`](@ref). Simply give it as a `mapper` input
+to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation` as normal.
+The only difference now is that `global_continuation` will not return just one
+measure of nonlocal stability (the basin fraction). Rather,
+now the first return argument of `global_continuation` will be a
+`measures_cont`, a dictionary mapping nonlocal stability measures (strings)
+to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
+of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
+to the corresponding nonlocal stability measure.
 
 ## Keyword arguments
 

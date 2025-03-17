@@ -83,7 +83,7 @@ without having to recompute the whole global continuation!
 
 ### Step 5 - Finish
 
-After matching the parameter is incremented.
+After matching the parameter(s) is incremented.
 Steps 1-4 repeat until all parameter values are exhausted.
 
 ### Further note
