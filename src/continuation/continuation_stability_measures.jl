@@ -2,7 +2,7 @@
 # of the original `ASCM` implementation?
 
 function global_continuation(
-    acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
+    acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics; distributions = p->accumulator.d,
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
@@ -26,13 +26,35 @@ function global_continuation(
     ProgressMeter.next!(progress)
 
     # Continue loop over all remaining parameters
+    ### For George: Is this what you had in mind when we emailed about 
+    ### the global continuation algorithm with AttractorsViaProximity?
+    ### Currently, line 44 has an error because we cant pass ics to the AttractorsViaRecurrences.
     for p in @view(pcurve[2:end])
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
-        fs = if allows_mapper_u0(mapper)
-            seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, acam.seeding)
+        mapper.d = distributions(p)
+        if typeof(mapper.mapper) <: AttractorsViaRecurrences
+            fs = if allows_mapper_u0(mapper)
+                seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, seeding)
+            else
+                seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, seeding)
+            end
+            current_attractors = deepcopy(extract_attractors(mapper))
+        elseif typeof(mapper.mapper) <: AttractorsViaProximity
+            dummy_mapper = AttractorsViaRecurrences(referenced_dynamical_system(mapper), ics)
+            fs = if allows_mapper_u0(dummy_mapper)
+                seed_attractors_to_fractions_individual(dummy_mapper, prev_attractors, ics, N, seeding)
+            else
+                seed_attractors_to_fractions_grouped(dummy_mapper, prev_attractors, ics, N, seeding)
+            end
+            current_attractors = deepcopy(extract_attractors(dummy_mapper))
+            mapper.mapper.attractors = current_attractors
+            A = ics_from_grid(grid)
+            for u0 in A
+                id = mapper(u0)
+            end
         else
-            seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding)
+            error("Unsupported mapper type: $(typeof(mapper.mapper))")
         end
         push!(attractors_cont, current_attractors)
         overwrite_dict!(prev_attractors, current_attractors)
