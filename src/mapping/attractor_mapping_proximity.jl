@@ -92,6 +92,8 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
     return mapper
 end
 
+reset_mapper!(mapper::AttractorsViaProximity) = nothing # AM can we add this for consistency?
+
 function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1
         verbose && @info("Computing minimum distance between attractors to deduce `ε`...")
