@@ -1,4 +1,4 @@
-export global_continuation, GlobalContinuationAlgorithm, continuation_series
+export global_continuation, GlobalContinuationAlgorithm, continuation_series, stability_measures_along_continuation
 
 """
     GlobalContinuationAlgorithm
