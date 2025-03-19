@@ -88,7 +88,7 @@ function stability_measures_along_continuation(ds::DynamicalSystem, attractors_c
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
         accumulator = StabilityMeasuresAccumulator(
-            AttractorsViaProximity(ds, attractors, ε, proximity_mapper_options...),
+            AttractorsViaProximity(ds, attractors, ε; proximity_mapper_options...),
             d=d, T=T, metric=metric
         )
         for u0 in ics
@@ -108,6 +108,5 @@ function stability_measures_along_continuation(ds::DynamicalSystem, attractors_c
             push!(transposed[measure_name], measure_dict)
         end
     end
-    measures_cont = transposed
-    return measures_cont
+    return transposed
 end
