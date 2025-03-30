@@ -79,7 +79,8 @@ end
 
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
-function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, pcurve, εs, distributions, Ts; metric=Euclidean(), proximity_mapper_options=[])
+function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, pcurve, εs, distributions, Ts; N=1000, metric=Euclidean(), proximity_mapper_options=[], show_progress=true)
+    progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress)
     measures_cont = []
     for (i, p) in enumerate(pcurve)
         ε = εs isa AbstractVector ? εs[i] : εs # if its a vector, get i-th entry
@@ -91,10 +92,13 @@ function stability_measures_along_continuation(ds::DynamicalSystem, attractors_c
             AttractorsViaProximity(ds, attractors, ε; proximity_mapper_options...),
             d=d, T=T, metric=metric
         )
-        for u0 in ics
-            id = accumulator(u0)
+        N = ics isa Function ? N : length(ics)
+        for i ∈ 1:N
+            ic = _get_ic(ics, i)
+            id = accumulator(ic)
         end
         push!(measures_cont, finalize_accumulator(accumulator))
+        ProgressMeter.next!(progress)
     end
 
     transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
