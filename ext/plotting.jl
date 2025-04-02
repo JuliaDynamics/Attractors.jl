@@ -229,11 +229,12 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
         series_kwargs = NamedTuple(),
         markers = markers_from_keys(ukeys),
         style = :band,
+        filler = NaN,
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = continuation_series(fractions_cont, style == :band ? 0.0 : NaN, ukeys)
+    bands = continuation_series(fractions_cont, style == :band ? 0.0 : filler, ukeys)
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
