@@ -46,12 +46,13 @@ want to search for attractors in a lower dimensional subspace.
   For continuous systems, an automatic value is calculated using
   [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
   much smaller than the typical integrator internal step size in case of adaptive
-  integrators. In such cases, use `stop_at_dt = true`.
+  integrators. In such cases, use `stop_at_Δt = true`.
 * `stop_at_Δt = false`: Only used if the input dynamical system is `CoupledODEs`.
   It is given as a third input to `step!`. Value `true` is useful in (1) very fine grids, and (2)
   if some of the attractors are limit cycles. We have noticed that in this case the
   integrator timestep becomes commensurate with the limit cycle period, leading to
   incorrectly counting the limit cycle as more than one attractor.
+  `stop_at_Δt = true` should also be used if you want an accurate estimate of [`convergence_time`](@ref).
 
 ### Finite state machine configuration
 
