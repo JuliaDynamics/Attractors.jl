@@ -26,7 +26,7 @@ function global_continuation(
     ProgressMeter.next!(progress)
 
     # Continue loop over all remaining parameters
-    ### For @Datseris: Is this what you had in mind when we emailed about 
+    ### For @Datseris: Is this what you had in mind when we emailed about
     ### the global continuation algorithm with AttractorsViaProximity?
     ### Currently, line 44 has an error because we cant pass ics to the AttractorsViaRecurrences.
     for p in @view(pcurve[2:end])
@@ -79,23 +79,25 @@ end
 
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
-function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, pcurve, εs, distributions, Ts; N=1000, metric=Euclidean(), proximity_mapper_options=[], show_progress=true)
+function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, pcurve;
+        ε = nothing, duic = EverywhereUniform(), fth = 1.0, N=1000, metric=Euclidean(), proximity_mapper_options=NamedTuple(), show_progress=true
+    )
     progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress)
     measures_cont = []
     for (i, p) in enumerate(pcurve)
-        ε = εs isa AbstractVector ? εs[i] : εs # if its a vector, get i-th entry
-        d = distributions isa AbstractVector ? distributions[i] : distributions # if its a vector, get i-th entry
-        T = Ts isa AbstractVector ? Ts[i] : Ts # if its a vector, get i-th entry
+        ε_ = ε isa AbstractVector ? ε[i] : ε # if its a vector, get i-th entry
+        d = duic isa AbstractVector ? duic[i] : duic # if its a vector, get i-th entry
+        T = fth isa AbstractVector ? fth[i] : fth # if its a vector, get i-th entry
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
         accumulator = StabilityMeasuresAccumulator(
-            AttractorsViaProximity(ds, attractors, ε; proximity_mapper_options...),
-            d=d, T=T, metric=metric
+            AttractorsViaProximity(ds, attractors, ε_; proximity_mapper_options...);
+            d, T=T, metric=metric
         )
         N = ics isa Function ? N : length(ics)
         for i ∈ 1:N
             ic = _get_ic(ics, i)
-            id = accumulator(ic)
+            id = accumulator(ic) # accumulate stability measures for given i.c.
         end
         push!(measures_cont, finalize_accumulator(accumulator))
         ProgressMeter.next!(progress)
