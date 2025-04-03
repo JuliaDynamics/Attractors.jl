@@ -4,6 +4,7 @@ using Random
 using ProgressMeter
 
 
+
 """
     stagger_trajectory!(ds, x0, Tm, isinside; kwargs...) -> xi
 
