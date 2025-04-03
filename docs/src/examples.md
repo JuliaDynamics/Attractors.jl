@@ -751,7 +751,7 @@ edge states also in high-dimensional and chaotic systems where a simple computat
 unstable equilibria becomes infeasible.
 
 ## Non-local and local stability measures
-The new mapper type `StabilityMeasuresAccumulator` is showcased here for the Duffing oscillator. 
+The new mapper type `StabilityMeasuresAccumulator` is showcased here for the Duffing oscillator.
 
 ```@example MAIN
 function duffing(u, p, t)
@@ -762,6 +762,9 @@ function duffing(u, p, t)
     return SVector(dx, dy)
 end
 
+import LinearAlgebra: I
+import Distributions: MvNormal
+
 params = [0.2, 0.0]
 ds = CoupledODEs(duffing, ones(2), params, diffeq=(; reltol=1e-11))
 
@@ -770,7 +773,7 @@ grid = (range(-2, 2; length = n_grid),range(-2, 2; length = n_grid),)
 
 mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
 
-accumulator = StabilityMeasuresAccumulator(mapper, T=50.0, d=MvNormal(zeros(2), 1.0*I))
+accumulator = StabilityMeasuresAccumulator(mapper, finite_time=50.0, weighting_distribution=MvNormal(zeros(2), 1.0*I))
 ```
 If we call this object on some initial conditions and finalize its values, we receive several different stability measures. Their interpretation can be found in the documentation of `StabilityMeasuresAccumulator`.
 ```@example MAIN
