@@ -70,9 +70,8 @@ function global_continuation(
             push!(transposed[measure_name], measure_dict)
         end
     end
-    measures_cont = transposed
 
-    return measures_cont, attractors_cont
+    return transposed, attractors_cont
 end
 
 
@@ -80,14 +79,14 @@ end
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
 function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, pcurve;
-        ε = nothing, duic = EverywhereUniform(), fth = 1.0, N=1000, metric=Euclidean(), proximity_mapper_options=NamedTuple(), show_progress=true
+        ε = nothing, weighting_distribution = EverywhereUniform(), finite_time = 1.0, N=1000, metric=Euclidean(), proximity_mapper_options=NamedTuple(), show_progress=true
     )
     progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress)
     measures_cont = []
     for (i, p) in enumerate(pcurve)
         ε_ = ε isa AbstractVector ? ε[i] : ε # if its a vector, get i-th entry
-        d = duic isa AbstractVector ? duic[i] : duic # if its a vector, get i-th entry
-        T = fth isa AbstractVector ? fth[i] : fth # if its a vector, get i-th entry
+        d = weighting_distribution isa AbstractVector ? weighting_distribution[i] : weighting_distribution # if its a vector, get i-th entry
+        T = finite_time isa AbstractVector ? finite_time[i] : finite_time # if its a vector, get i-th entry
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
         accumulator = StabilityMeasuresAccumulator(
