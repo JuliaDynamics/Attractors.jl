@@ -1,3 +1,16 @@
+# v1.24
+
+- Improved `continuation_series`: now it works for any type of input, including attractor continuation info because the default value (now renamed to fill value) is used to deduce the type of the series vectors.
+- Fixed a critical bug where global continuation would fail if there was a parameter where all initial conditions diverge and the matching was with vanished.
+
+# v1.23
+
+- New convenience function `continuation_series` that was already used internally
+  when plotting, but now also made public.
+- The keyword `force_non_adaptive` of `AttractorsViaRecurrences` is deprecated in favor
+  of the keyword `stop_at_Δt` which has the same practical impact with simpler implementation.
+- Keyword `stop_at_Δt` added to `AttractorsViaProximity`.
+
 # v1.22
 
 - The function `plot_continuation_curves` has been changed and now plots using

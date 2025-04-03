@@ -2,12 +2,30 @@
     AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict [, ε]; kwargs...)
 
 Map initial conditions to attractors based on whether the trajectory reaches `ε`-distance
-close to any of the user-provided `attractors`. They have to be in a form of a dictionary
+close to any of the user-provided `attractors`, which have to be in a form of a dictionary
 mapping attractor labels to `StateSpaceSet`s containing the attractors.
 
+## Keywords
+
+* `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
+* `Δt = 1`: Step time given to `step!`.
+* `stop_at_Δt = false`: Third argument given to `step!`.
+* `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
+  attractors exceeds this limit, it is assumed
+  that the trajectory diverged (gets labelled as `-1`).
+* `consecutive_lost_steps = 1000`: If the `ds` has been stepped this many times without
+  coming `ε`-near to any attractor,  it is assumed
+  that the trajectory diverged (gets labelled as `-1`).
+* `distance = StrictlyMinimumDistance()`: Distance function for evaluating the distance
+  between the trajectory end-point and the given attractors. Can be anything given to
+  [`set_distance`](@ref).
+
+## Description
+
 The system gets stepped, and at each step the distance of the current state to all
-attractors is computed. If any of these distances is `< ε`, then the label of the nearest
-attractor is returned. The distance is defined by the `distance` keyword.
+attractors is computed via `set_distance` using the `distance` keyword.
+If any of these distances is `< ε`, then the label of the nearest
+attractor is returned.
 
 `attractors` do not have to be "true" attractors. Any arbitrary sets
 in the state space can be provided.
@@ -19,21 +37,10 @@ If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box 
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
 an error is thrown.
 
-## Keywords
-
-* `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
-* `Δt = 1`: Step time given to `step!`.
-* `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
-  attractors exceeds this limit, it is assumed
-  that the trajectory diverged (gets labelled as `-1`).
-* `consecutive_lost_steps = 1000`: If the `ds` has been stepped this many times without
-  coming `ε`-near to any attractor,  it is assumed
-  that the trajectory diverged (gets labelled as `-1`).
-* `distance = StrictlyMinimumDistance()`: Distance function for evaluating the distance
-  between the trajectory end-point and the given attractors. Can be anything given to
-  [`set_distance`](@ref).
+The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
+As such, the convergence time is always a float type even for discrete time systems.
 """
-struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet} <: AttractorMapper
+struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet, T} <: AttractorMapper
     ds::DS
     attractors::Dict{AK, SSS}
     ε::Float64
@@ -47,11 +54,13 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
     maxdist::Float64
     distance::M
     cset::SS # current state of dynamical system as `StateSpaceSet`.
+    stop_at_Δt::Bool
+    latest_convergence_time::Base.RefValue{T}
 end
 
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
         Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
-        distance = StrictlyMinimumDistance(),
+        distance = StrictlyMinimumDistance(), stop_at_Δt = false,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
         error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
@@ -77,6 +86,7 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
         ds, attractors,
         ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0, distance, StateSpaceSet([current_state(ds)]),
+        stop_at_Δt, Ref(float(current_time(ds))), # we make it float so that it can handle `Inf`.
     )
 
     return mapper
@@ -121,16 +131,18 @@ end
 
 # TODO: Implement `show_progress`
 function (mapper::AttractorsViaProximity)(u0; show_progress = false)
-    reinit!(mapper.ds, u0)
-    maxdist = 0.0
+    ds = referenced_dynamical_system(mapper)
+    reinit!(ds, u0)
+    t0 = current_time(ds)
+    maxdist = zero(eltype(eltype(first(mapper.attractors)[2])))
+    mapper.latest_convergence_time[] = Inf # default return value
     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
     lost_count = 0
     while lost_count < mapper.consecutive_lost_steps
-        step!(mapper.ds, mapper.Δt)
+        step!(ds, mapper.Δt, mapper.stop_at_Δt)
+        successful_step(ds) || return -1 # first check for Inf or NaN
         lost_count += 1
-        u = current_state(mapper.ds)
-        # first check for Inf or NaN
-        any(x -> (isnan(x) || isinf(x)), u) && return -1
+        u = current_state(ds)
         # then update the stored set
         mapper.cset[1] = u
         # then compute all distances
@@ -139,6 +151,7 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
             # we use internal method from StateSpaceSets.jl
             d = set_distance(mapper.cset, A, mapper.distance; tree2 = tree)
             if d < mapper.ε
+                mapper.latest_convergence_time[] = current_time(ds) - t0
                 return k
             elseif maxdist < d
                 maxdist = d
@@ -149,32 +162,6 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     end
     return -1
 end
-
-# function (mapper::AttractorsViaProximity)(u0; show_progress = false)
-#     reinit!(mapper.ds, u0)
-#     maxdist = 0.0
-#     mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
-#     lost_count = 0
-#     while lost_count < mapper.consecutive_lost_steps
-#         step!(mapper.ds, mapper.Δt)
-#         lost_count += 1
-#         u = current_state(mapper.ds)
-#         # first check for Inf or NaN
-#         any(x -> (isnan(x) || isinf(x)), u) && return -1
-#         for (k, tree) in mapper.search_trees # this is a `Dict`
-#             Neighborhood.NearestNeighbors.knn_point!(
-#                 tree, u, false, mapper.dist, mapper.idx, Neighborhood.NearestNeighbors.always_false
-#             )
-#             if mapper.dist[1] < mapper.ε
-#                 return k
-#             elseif maxdist < mapper.dist[1]
-#                 maxdist = mapper.dist[1]
-#                 maxdist > mapper.horizon_limit && return -1
-#             end
-#         end
-#     end
-#     return -1
-# end
 
 function Base.show(io::IO, mapper::AttractorsViaProximity)
     ps = generic_mapper_print(io, mapper)
@@ -191,4 +178,4 @@ end
 
 extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
 
-convergence_time(mapper::AttractorsViaProximity) = current_time(mapper.ds) - initial_time(mapper.ds)
+convergence_time(mapper::AttractorsViaProximity) = mapper.latest_convergence_time[]

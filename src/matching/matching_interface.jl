@@ -44,6 +44,8 @@ The values contained in `a₊, a₋` can be anything supported by `matcher`.
 Within Attractors.jl they are typically `StateSpaceSet`s representing attractors.
 Typically the +,- mean after and before some change of parameter of a dynamical system.
 
+`matching_map` always returns an empty dictionary of either `a₊, a₋` is empty.
+
 ## Keyword arguments
 
 - `ds`: the dynamical system that generated `a₊, a₋`.
@@ -88,7 +90,7 @@ IDs to attractors (`StateSpaceSet`s), however the function is generic and would
 work for any values that `matcher` works with.
 
 Return `rmaps`, which is a vector of dictionaries.
-`rmaps[i]` contains the [`matching_map`](@ref) for `attractors[i+1]`,
+`rmaps[i]` contains the [`matching_map`](@ref) for `dicts[i+1]`,
 i.e., the pairs of `old => new` IDs.
 
 ## Keyword arguments
@@ -168,18 +170,21 @@ function _rematch_ignored!(attractors_cont, matcher;
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
         p, pprev = pcurve[i+1], pcurve[i]
-        # If there are no attractors, skip the matching
-        (isempty(a₊) || isempty(a₋)) && continue
-        # Here we always compute a next id. In this way, if an attractor disappears
-        # and reappears, it will get a different (incremented) ID as it should!
-        next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
-        next_id = max(next_id, next_id_a) + 1
+        # If there attractors, update the max id
+        if !(isempty(a₊) || isempty(a₋))
+            # we always compute a next id. In this way, if an attractor disappears
+            # and reappears, it will get a different (incremented) ID as it should!
+            next_id_a = max(maximum(keys(a₊)), maximum(keys(a₋)))
+            next_id = max(next_id, next_id_a) + 1
+        end
+        # matching_map returns empty dict if the inputs are empty dicts
         rmap = matching_map!(a₊, a₋, matcher; next_id, ds, p, pprev)
         push!(rmaps, rmap)
     end
     return rmaps
 end
 
+# Another concrete implementation of `match_sequentially!`:
 function _rematch_with_past!(attractors_cont, matcher;
         ds = nothing, pcurve = eachindex(attractors_cont),
     )
@@ -190,11 +195,12 @@ function _rematch_with_past!(attractors_cont, matcher;
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
     for i in 1:length(attractors_cont)-1
         a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = pcurve[i+1], pcurve[i]
-        # update ghosts
+        # first update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
+        # and then match
+        p, pprev = pcurve[i+1], pcurve[i]
         rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds)
         push!(rmaps, rmap)
     end

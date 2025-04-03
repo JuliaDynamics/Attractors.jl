@@ -59,6 +59,11 @@ function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
         ds, p, pprev = nothing, next_id = next_free_id(current_attractors, prev_attractors)
     )
+    # if either dictionary is empty there is no matching to be done
+    if isempty(current_attractors) || isempty(prev_attractors)
+        return Dict{keytype(a₊), keytype(a₋)}()
+    end
+
     if matcher.ε === nothing
         e = ε_from_centroids(current_attractors)
     else

@@ -25,8 +25,8 @@ import Pkg
 
 #nb # Activate an environment in the folder containing the notebook
 #nb Pkg.activate(dirname(@__DIR__))
-#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEq"])
-Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEqDefault"])
+Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqDefault"])
 
 #nb # ## Attractors.jl summary
 
@@ -38,7 +38,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 # _Gotta go fast!_
 
 # ```julia
-# using Attractors, CairoMakie, OrdinaryDiffEq
+# using Attractors, CairoMakie, OrdinaryDiffEqVerner
 # ## Define key input: a `DynamicalSystem`
 # function modified_lorenz_rule(u, p, t)
 #     x, y, z = u; a, b = p
@@ -79,14 +79,15 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 # ## curve in parameter space using a global continuation algorithm
 # algo = AttractorSeedContinueMatch(mapper)
 # params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
-# pcurve = params.(range(0, 2π; length = 101))
+# angles = range(0, 2π; length = 101)
+# pcurve = params.(angles)
 # fractions_cont, attractors_cont = global_continuation(
 # 	algo, pcurve, sampler; samples_per_parameter = 1_000
 # )
 
 # ## and visualize the results
 # fig = plot_basins_attractors_curves(
-# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), pcurve; add_legend = false
+# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), angles; add_legend = false
 # )
 # ```
 
@@ -109,7 +110,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEq"])
 
 # which we define in code as
 using Attractors # part of `DynamicalSystems`, so it re-exports functionality for making them!
-using OrdinaryDiffEq # for accessing advanced ODE Solvers
+using OrdinaryDiffEqVerner # for accessing advanced ODE Solvers
 
 function modified_lorenz_rule(u, p, t)
     x, y, z = u; a, b = p
@@ -126,7 +127,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
 # ## Finding attractors
 
-# There are two major methods for finding attractors in dynamical systems.
+# In this tutorial we will utilize two methods for finding attractors in dynamical systems.
 # Explanation of how they work is in their respective docs.
 
 # 1. [`AttractorsViaRecurrences`](@ref).
@@ -165,8 +166,22 @@ mapper([-4.0, 5, 0])
 mapper([4.0, 2, 0])
 
 # the fact that these two different initial conditions got assigned different IDs means
-# that they converged to a different attractor.
-# The attractors are stored in the mapper internally, to obtain them we
+# that they converged to a different attractor. Indeed,
+
+mapper([1.0, 3, 2])
+
+# gets the same ID as the first initial condition.
+
+# This functionality is already incredibly powerful!
+# To our knowledge the DynamicalSystems.jl library is the only
+# dynamical systems software (in any language) that provides such an
+# infrastructure for mapping initial conditions of any arbitrary dynamical system to its
+# unique attractors. And this is only the tip of this iceberg!
+# The rest of the functionality of Attractors.jl is all full of brand new cutting edge
+# progress in dynamical systems research.
+
+# Okay, back to the tutorial now!
+# The found attractors are stored in the mapper internally, to obtain them we
 # use the function
 
 attractors = extract_attractors(mapper)
@@ -284,9 +299,10 @@ plot_attractors(attractors3)
 # If you have heard before the word "continuation", then you are likely aware of the
 # **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
 # such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
+# These software perform **local continuation**.
 # Here we offer a completely different kind of continuation called **global continuation**.
 
-# The traditional continuation analysis continues the curves of individual _fixed
+# The local continuation continues the curves of individual _fixed
 # points (and under some conditions limit cycles)_ across the joint state-parameter space and
 # tracks their _local (linear) stability_.
 # This approach needs to manually be "re-run" for every individual branch of fixed points
@@ -298,15 +314,15 @@ plot_attractors(attractors3)
 # Additionally, the global continuation tracks a _nonlocal_ stability property which by
 # default is the basin fraction.
 
-# This is a fundamental difference. Because all attractors are simultaneously
+# Because all attractors are simultaneously
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
 # A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
 # See also the [comparison page](@ref bfkit_comparison) in our docs
 # that attempts to do the same analysis of our Tutorial with traditional continuation software.
 
-# To perform the continuation is extremely simple. First, we decide what parameter,
-# and what range, to continue over:
+# To perform a global continuation is surprisingly simple. First, we decide what parameter,
+# and what range of that parameter, to continue over:
 
 prange = 4.5:0.01:6
 pidx = 1 # index of the parameter
@@ -314,7 +330,7 @@ pidx = 1 # index of the parameter
 # Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
 # In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
-# which is the geenral [`AttractorSeedContinueMatch`](@ref).
+# which is the general [`AttractorSeedContinueMatch`](@ref).
 # This algorithm uses the `mapper` to find all attractors at each parameter value
 # and from the found attractors it continues them along a parameter axis
 # using a seeding process (see its documentation string).
@@ -337,8 +353,10 @@ fractions_cont, attractors_cont = global_continuation(
 
 attractors_cont[34]
 
-# There is a fantastic convenience function for animating
-# the attractors evolution, that utilizes things we have
+# If you want to transform the output to the alternative format of
+# a dictionary of vectors, use [`continuation_series`](@ref).
+# You typically don't have to though, because there is a fantastic convenience function
+# for animating the attractors evolution, that utilizes things we have
 # already defined:
 
 animate_attractors_continuation(
@@ -352,7 +370,7 @@ animate_attractors_continuation(
 # ```
 
 # Hah, how cool is that! The attractors pop in and out of existence like out of nowhere!
-# It would be incredibly difficult to find these attractors in traditional continuation software
+# It can be difficult to find these attractors in traditional continuation software
 # where a rough estimate of the period is required! (It would also be too hard due to the presence
 # of chaos for most of the parameter values, but that's another issue!)
 
