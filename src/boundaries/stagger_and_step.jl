@@ -101,6 +101,9 @@ function.
   stagger-and-step routine. The search radius must be large 
   enough to find a suitable initial candidate. 
 
+* `rng::AbstractRNG = MersenneTwister()`:  Random number generator. Use this for
+  reproducibility.
+
 ## Description 
 
 The method relies on the stagger-and-step algorithm that 
@@ -172,7 +175,7 @@ function escape_time!(ds, x0, isinside; max_escape_time = 10000)
     while isinside(x) 
         if k > max_escape_time 
             error("The trajectory did not escape for ", k, " steps, you probably have \
-an attractor in the defined region.")
+an attractor in the defined region. Last point evaluated: ", x)
         end
         step!(ds)
         x = current_state(ds)
