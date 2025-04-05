@@ -20,11 +20,13 @@ subdivision_based_grid
 ```
 
 ### Proximity
+
 ```@docs
 AttractorsViaProximity
 ```
 
 ### Featurizing
+
 ```@docs
 AttractorsViaFeaturizing
 ```
@@ -120,6 +122,13 @@ The algorithm to find minimal perturbation for arbitrary initial condition `u0` 
 minimal_fatal_shock
 MFSBlackBoxOptim
 MFSBruteForce
+```
+
+## Nonlocal Stability
+
+```@docs
+StabilityMeasuresAccumulator
+finalize_accumulator
 ```
 
 ## Global continuation

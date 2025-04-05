@@ -229,11 +229,12 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
         series_kwargs = NamedTuple(),
         markers = markers_from_keys(ukeys),
         style = :band,
+        filler = NaN,
     )
     if !(prange isa AbstractVector{<:Real})
         error("!(prange <: AbstractVector{<:Real})")
     end
-    bands = continuation_series(fractions_cont, style == :band ? 0.0 : NaN, ukeys)
+    bands = continuation_series(fractions_cont, style == :band ? 0.0 : filler, ukeys)
     if style == :band
         # transform to cumulative sum
         for j in 2:length(bands)
@@ -295,7 +296,7 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
         markers = markers_from_keys(ukeys),
-        slines_kwargs = (;linewidth = 3,),
+        series_kwargs = NamedTuple(),
         axislegend_kwargs = (position = :lt,)
     )
 
@@ -303,7 +304,7 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
     for k in ukeys
         scatterlines!(ax, prange, series[k];
             color = colors[k], label = "$(labels[k])", marker = markers[k],
-            markersize = 10, linewidth = 3, slines_kwargs...
+            markersize = 10, linewidth = 3, series_kwargs...
         )
     end
     xlims!(ax, minimum(prange), maximum(prange))
@@ -380,7 +381,6 @@ function Attractors.plot_basins_attractors_curves!(axb, axa, fractions_cont, att
     )
     return
 end
-
 
 ##########################################################################################
 # Videos

@@ -7,7 +7,7 @@ mapping attractor labels to `StateSpaceSet`s containing the attractors.
 
 ## Keywords
 
-* `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
+* `Ttr = 0`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
 * `stop_at_Δt = false`: Third argument given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
@@ -59,7 +59,7 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
 end
 
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
-        Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
+        Δt=1, Ttr=0, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
         distance = StrictlyMinimumDistance(), stop_at_Δt = false,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
@@ -91,6 +91,8 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
 
     return mapper
 end
+
+reset_mapper!(mapper::AttractorsViaProximity) = nothing # AM can we add this for consistency?
 
 function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1

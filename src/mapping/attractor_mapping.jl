@@ -15,7 +15,9 @@ export AttractorMapper,
     extract_attractors,
     subdivision_based_grid,
     SubdivisionBasedGrid,
-    reset_mapper!
+    reset_mapper!,
+    StabilityMeasuresAccumulator,
+    finalize_accumulator
 
 ValidICS = Union{AbstractVector, Function}
 
@@ -47,6 +49,9 @@ The mappers that can do this are:
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref) configuration.
+
+See also [`StabilityMeasuresAccumulator`](@ref) that extends this interface
+to accelerate estimation of stability measures.
 
 ## For developers
 
@@ -183,3 +188,4 @@ function convergence_time end
 include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")
+include("stability_measures_accumulator.jl")
