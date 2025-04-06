@@ -1,12 +1,11 @@
-# TODO: Can we make this function not duplicate the source code
-# of the original `ASCM` implementation?
-
 function global_continuation(
     acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
-    progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress)
+    progress = ProgressMeter.Progress(length(pcurve); 
+                                      desc = "Continuing attractors and stability:", 
+                                      enabled=show_progress)
     mapper = acam.mapper
     reset_mapper!(mapper)
 
@@ -26,17 +25,16 @@ function global_continuation(
     ProgressMeter.next!(progress)
 
     # Continue loop over all remaining parameters
-    ### For @Datseris: Is this what you had in mind when we emailed about
-    ### the global continuation algorithm with AttractorsViaProximity?
-    ### Currently, line 44 has an error because we cant pass ics to the AttractorsViaRecurrences.
     for p in @view(pcurve[2:end])
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
         if typeof(mapper.mapper) <: AttractorsViaRecurrences
             fs = if allows_mapper_u0(mapper)
-                seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, acam.seeding)
+                seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, 
+                                                        acam.seeding)
             else
-                seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding)
+                seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, 
+                                                     acam.seeding)
             end
             current_attractors = deepcopy(extract_attractors(mapper))
         else
@@ -51,7 +49,8 @@ function global_continuation(
         push!(measures_cont, measures)
     end
 
-    rmaps = match_sequentially!(attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper))
+    rmaps = match_sequentially!(attractors_cont, acam.matcher; pcurve,
+                                ds = referenced_dynamical_system(mapper))
 
     # This is the third difference in global continuation
     for i in 2:length(pcurve)
@@ -78,20 +77,25 @@ end
 
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
-function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, pcurve;
-        ε = nothing, weighting_distribution = EverywhereUniform(), finite_time = 1.0, N=1000, metric=Euclidean(), proximity_mapper_options=NamedTuple(), show_progress=true
+function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, ics, 
+    pcurve; ε = nothing, weighting_distribution = EverywhereUniform(), finite_time = 1.0, 
+    N=1000, metric=Euclidean(), proximity_mapper_options=NamedTuple(), show_progress=true
     )
-    progress = ProgressMeter.Progress(length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress)
+    progress = ProgressMeter.Progress(length(pcurve);
+                                      desc = "Continuing attractors and stability:", 
+                                      enabled=show_progress)
     measures_cont = []
     for (i, p) in enumerate(pcurve)
         ε_ = ε isa AbstractVector ? ε[i] : ε # if its a vector, get i-th entry
-        d = weighting_distribution isa AbstractVector ? weighting_distribution[i] : weighting_distribution # if its a vector, get i-th entry
-        T = finite_time isa AbstractVector ? finite_time[i] : finite_time # if its a vector, get i-th entry
+        weighting_distribution = weighting_distribution isa AbstractVector ? 
+                                weighting_distribution[i] : weighting_distribution
+        finite_time = finite_time isa AbstractVector ? finite_time[i] : finite_time
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
         accumulator = StabilityMeasuresAccumulator(
             AttractorsViaProximity(ds, attractors, ε_; proximity_mapper_options...);
-            d, T=T, metric=metric
+            weighting_distribution=weighting_distribution, finite_time=finite_time, 
+            metric=metric
         )
         N = ics isa Function ? N : length(ics)
         for i ∈ 1:N
