@@ -173,39 +173,37 @@ end
 
 
 function escape_time!(ds, x0, isinside; max_escape_time = 10000) 
-    x = copy(x0) 
-    set_state!(ds,x)
-    reinit!(ds, x)
+    set_state!(ds,x0)
+    reinit!(ds, x0)
     k = 1; 
-    while isinside(x) 
+    while isinside(current_state(ds)) 
         if k > max_escape_time 
             error("The trajectory did not escape for ", k, " steps, you probably have \
-an attractor in the defined region. Last point evaluated: ", x)
+an attractor in the defined region. Last point evaluated: ", current_state(ds))
         end
         step!(ds)
-        x = current_state(ds)
         k += 1
     end
     return current_time(ds)
 end
 
-function rand_u(δ, n, stagger_mode, rng)
+function rand_u!(u, δ, n, stagger_mode, rng)
     if stagger_mode == :exp 
         a = -log10(δ)
         s = (15-a)*rand(rng) + a
-        u = randn(rng,n)
-        u = u/norm(u)
-        return u*10.0^-s
+        u .= randn(rng,n)
+        u .= 10.0^-s*u/norm(u)
+        return
     elseif stagger_mode == :unif
         s = δ*rand(rng)
-        u = randn(rng,n)
-        u = u/norm(u)
-        return u*s
+        u .= randn(rng,n)
+        u .= s*u/norm(u)
+        return
     elseif stagger_mode == :adaptive
         s = δ*randn(rng)
-        u = randn(rng,n)
-        u = u/norm(u)
-        return u*s
+        u .= randn(rng,n)
+        u .= s*u/norm(u)
+        return
     else
         error("Invalid stagger_mode: $stagger_mode")
     end
@@ -219,12 +217,14 @@ depending on some distribution. If the search fails it returns a negative time.
 """
 function stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stagger_mode = :exp, verbose = false, max_escape_time = 10000, rng::AbstractRNG)
     Tp = 0; xp = zeros(length(x0)); k = 1; 
+    u = zeros(length(x0))
     T0 = escape_time!(ds, x0, isinside; max_escape_time)
     if !isinside(x0)
         error("x0 must be in grid")
     end
     while Tp ≤ Tm 
-        xp = x0 .+ rand_u(δ,length(x0), stagger_mode, rng)
+        rand_u!(u, δ, length(x0), stagger_mode, rng)
+        xp .= x0 .+ u 
 
         if k > max_steps 
            if verbose 
