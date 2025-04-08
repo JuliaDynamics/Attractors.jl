@@ -105,8 +105,8 @@ The edge tracking algorithm allows to locate and construct so-called edge states
 edgetracking
 EdgeTrackingResults
 bisect_to_edge
-stagger_and_step!
-stagger_trajectory!
+stagger_and_step
+stagger_trajectory
 ```
 
 ## Tipping points

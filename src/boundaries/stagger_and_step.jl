@@ -1,40 +1,14 @@
-export stagger_and_step!, stagger_trajectory!
+export stagger_and_step, stagger_trajectory
 using LinearAlgebra: norm
 using Random
 using ProgressMeter
 
 
 
-"""
-    stagger_trajectory!(ds, x0, Tm, isinside; kwargs...) -> xi
-
-On success, the function returns a point `xi` with the property `T(xi) > 
-Tm` with a random walk search around the initial coordinates 
-`x0`. `T(xi)` is the escape time of the initial condition `xi` from 
-the bounding box defined by the function `isinside`.  
-In the case where the algorithm cannot find a suitable point, the algorithm 
-returns nothing. 
-
-This is an auxiliary function for [`stagger_and_step!`](@ref). 
-Keyword arguments and definitions are identical for both functions. 
-"""
-function stagger_trajectory!(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp,
-        max_steps = Int(1e5), γ = 1.1, max_escape_time = 10000, rng = MersenneTwister())
-    T = escape_time!(ds, x0, isinside; max_escape_time)
-    xi = copy(x0) 
-    while !(T > Tm)  # we must have T > Tm at each step 
-        xi, T = stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps, max_escape_time, rng)
-        if T < 0
-            return nothing
-        end 
-            
-    end
-    return xi
-end
 
 
 """
-    stagger_and_step!(ds::DynamicalSystem, x0, N::Int, 
+    stagger_and_step(ds::DynamicalSystem, x0, N::Int, 
         isinside::Function; kwargs...) -> trajectory
 
 Implement the stagger-and-step method 
@@ -44,8 +18,10 @@ of a system, namely the stable manifold of a chaotic saddle.
 
 Given the dynamical system `ds` and a initial guess `x0` in a 
 region *with no attractors* defined by the membership function 
-`isinside`, the algorithm provides `N` points close to the 
-stable manifold that escape from the region after at least `Tm` 
+`isinside`, the algorithm returns a `StateSpaceState` named `trajectory` 
+of `N` points from the phase space close to the stable manifold. 
+If we set one of this point as an initial condition of `ds`, 
+the trajectory escape from the region after at least `Tm` 
 steps of `ds`. The search is stochastic and depends on the 
 parameter `δ` defining a (small) neighborhood of search. 
 
@@ -101,7 +77,7 @@ function.
   stagger-and-step routine. The search radius must be large 
   enough to find a suitable initial candidate. 
 
-* `rng::AbstractRNG = MersenneTwister()`:  Random number generator. Use this for
+* `rng::AbstractRNG = Xoshiro()`:  Random number generator. Use this for
   reproducibility.
 
 ## Description 
@@ -126,14 +102,14 @@ The method produces a pseudo-trajectory of `N` points δ-close
 to the stable manifold of the chaotic saddle. 
 
 """
-function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm  = 30, 
-    γ = 1.1, max_steps = Int(1e5), max_escape_time = 10000, stagger_mode = :exp, δ₀ = 1., 
-    show_progress = true,  rng = MersenneTwister())
+function stagger_and_step(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm = 30, 
+    γ = 1.1, max_steps = Int64(1e5), max_escape_time = 10000, stagger_mode = :exp, δ₀ = 1.0, 
+    show_progress = true,  rng::AbstractRNG = Xoshiro())
 
     progress = ProgressMeter.Progress(
         N; desc = "Saddle estimation: ", dt = 1.0
     )
-    xi = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, 
+    xi = stagger_trajectory(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, 
                             max_steps, γ, max_escape_time, rng) 
     if isnothing(xi)
         error("Cannot find a stagger trajectory. Choose a different starting point or 
@@ -145,32 +121,61 @@ function stagger_and_step!(ds::DynamicalSystem, x0, N::Int, isinside::Function; 
     for n in 1:N
         show_progress && ProgressMeter.update!(progress, n)
         if escape_time!(ds, xi, isinside; max_escape_time) > Tm
-            reinit!(ds, xi; t0 = 0)
+            reinit!(ds, xi)
         else
             xp, Tp = stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, γ, max_escape_time, rng)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
-                xp = stagger_trajectory!(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp,max_steps, γ, max_escape_time, rng) 
+                xp = stagger_trajectory(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp,max_steps, γ, max_escape_time, rng) 
                 if isnothing(xp)
                     error("Cannot find a stagger trajectory. Choose a different starting 
                           point or search radius δ₀.")
                 end
                 δ = 0.1
             end
-            reinit!(ds, xp; t0 = 0)
+            reinit!(ds, xp)
         end 
         step!(ds)
         xi = copy(current_state(ds))
         v[n] = xi
     end
-    return v
+    return StateSpaceSet(v)
 end
 
+
+"""
+    stagger_trajectory(ds, x0, Tm, isinside; kwargs...) -> xi
+
+On success, the function returns a point `xi` with the property `T(xi) > 
+Tm` with a random walk search around the initial coordinates 
+`x0`. `T(xi)` is the escape time of the initial condition `xi` from 
+the bounding box defined by the function `isinside`.  
+In the case where the algorithm cannot find a suitable point, the algorithm 
+returns nothing. 
+
+This is an auxiliary function for [`stagger_and_step`](@ref). 
+Keyword arguments and definitions are identical for both functions. 
+"""
+function stagger_trajectory(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp,
+        max_steps = Int(1e5), γ = 1.1, max_escape_time = 10000, rng::AbstractRNG = Xoshiro())
+    T = escape_time!(ds, x0, isinside; max_escape_time)
+    xi = copy(x0) 
+    while !(T > Tm)  # we must have T > Tm at each step 
+        xi, T = stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps, max_escape_time, rng)
+        if T < 0
+            return nothing
+        end 
+            
+    end
+    return xi
+end
     
+
+
 function escape_time!(ds, x0, isinside; max_escape_time = 10000) 
     x = copy(x0) 
     set_state!(ds,x)
-    reinit!(ds, x; t0 = 0)
+    reinit!(ds, x)
     k = 1; 
     while isinside(x) 
         if k > max_escape_time 
@@ -184,7 +189,7 @@ an attractor in the defined region. Last point evaluated: ", x)
     return current_time(ds)
 end
 
-function rand_u(δ, n; stagger_mode = :exp, rng::AbstractRNG)
+function rand_u(δ, n, stagger_mode, rng)
     if stagger_mode == :exp 
         a = -log10(δ)
         s = (15-a)*rand(rng) + a
@@ -219,7 +224,7 @@ function stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stag
         error("x0 must be in grid")
     end
     while Tp ≤ Tm 
-        xp = x0 .+ rand_u(δ,length(x0); stagger_mode, rng)
+        xp = x0 .+ rand_u(δ,length(x0), stagger_mode, rng)
 
         if k > max_steps 
            if verbose 

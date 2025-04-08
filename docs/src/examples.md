@@ -750,7 +750,7 @@ edge states also in high-dimensional and chaotic systems where a simple computat
 unstable equilibria becomes infeasible.
 
 
-## Invariant saddle of a dynamical system 
+## Invariant saddle of a dynamical system 
 
 The stagger-and-step method approximates the invariant 
 non-attracting set governing the chaotic transient dynamics 
@@ -792,7 +792,7 @@ condition `x0`:
 
 ```@example MAIN
 x0 = sampler()
-v = stagger_and_step!(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
+v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
 ```
 The `stagger_mode` keyword select the type of search in the 
 phase space to stick close to the saddle at each step. 
