@@ -93,7 +93,7 @@ function stability_measures_along_continuation(ds::DynamicalSystem, attractors_c
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
         accumulator = StabilityMeasuresAccumulator(
-            AttractorsViaProximity(ds, attractors, ε_; proximity_mapper_options...);
+            AttractorsViaProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
             weighting_distribution=weighting_distribution, finite_time=finite_time,
             metric=metric
         )
