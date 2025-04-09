@@ -80,7 +80,7 @@ function.
 ## Description 
 
 The method relies on the stagger-and-step algorithm that 
-search initial conditions close to the saddle with escapes time 
+searches initial conditions close to the saddle with escapes time 
 `T(x_n) > Tm`. The function `T` represents the iteration number 
 at which the trajectory with initial condition `x_n` steps out 
 from a region defined by the user (see the argument `isinside`).
