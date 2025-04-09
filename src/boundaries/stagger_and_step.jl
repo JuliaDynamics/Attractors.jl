@@ -1,4 +1,4 @@
-export stagger_and_step, stagger_trajectory
+export stagger_and_step
 using LinearAlgebra: norm
 using Random
 using ProgressMeter
@@ -192,17 +192,17 @@ function rand_u!(u, δ, n, stagger_mode, rng)
         a = -log10(δ)
         s = (15-a)*rand(rng) + a
         u .= randn(rng,n)
-        u .= 10.0^-s*u/norm(u)
+        u .*= 10.0^-s/norm(u)
         return
     elseif stagger_mode == :unif
         s = δ*rand(rng)
         u .= randn(rng,n)
-        u .= s*u/norm(u)
+        u .*= s/norm(u)
         return
     elseif stagger_mode == :adaptive
         s = δ*randn(rng)
         u .= randn(rng,n)
-        u .= s*u/norm(u)
+        u .*= s/norm(u)
         return
     else
         error("Invalid stagger_mode: $stagger_mode")
