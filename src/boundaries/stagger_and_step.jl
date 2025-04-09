@@ -186,7 +186,7 @@ an attractor in the defined region. Last point evaluated: ", current_state(ds))
         step!(ds)
         k += 1
     end
-    return current_time(ds)
+    return current_time(ds) - initial_time(ds)
 end
 
 function rand_u!(u, δ, n, stagger_mode, rng)
