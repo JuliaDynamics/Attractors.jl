@@ -193,7 +193,7 @@ function rand_u!(u, δ, n, stagger_mode, rng)
         return
     elseif stagger_mode == :unif
         s = δ*rand(rng)
-        u .= randn(rng,n)
+        randn!(rng, u)
         u .*= s/norm(u)
         return
     elseif stagger_mode == :adaptive
