@@ -16,7 +16,7 @@ way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
 that implements the `id = mapper(u0)` syntax.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions 
-such as[`basins_fractions`](@ref). After mapping all initial conditions to attractors,
+such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
 the [`finalize_accumulator`](@ref) function should be called which will return a dictionary
 of all stability measures estimated by the accumulator.
 Each dictionary maps the measure description (`Symbol`) to a dictionary
