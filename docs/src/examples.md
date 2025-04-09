@@ -805,7 +805,6 @@ example:
 ```@example MAIN
 fig = Figure()
 ax = Axis(fig[1,1], xlabel="x", ylabel="y")
-v = StateSpaceSet(v)
 scatter!(ax, v[:,1], v[:,3]; markersize = 3)
 fig
 ```
