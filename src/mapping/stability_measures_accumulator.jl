@@ -1,8 +1,9 @@
 using LinearAlgebra
 using Optim
 using Distributions
-struct EverywhereUniform end # helper type for not computing any weights for uniform 
-                             # distribution
+
+# helper type for not computing any weights for uniform distribution
+struct EverywhereUniform end 
 
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
