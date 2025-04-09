@@ -1,4 +1,4 @@
-using Attractors, OrdinaryDiffEq
+using Attractors
 using Test
 using LinearAlgebra:norm
 
