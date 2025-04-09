@@ -3,9 +3,9 @@ function global_continuation(
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
-    progress = ProgressMeter.Progress(length(pcurve);
-                                      desc = "Continuing attractors and stability:",
-                                      enabled=show_progress)
+    progress = ProgressMeter.Progress(
+        length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress
+    )
     mapper = acam.mapper
     reset_mapper!(mapper)
 
@@ -30,11 +30,13 @@ function global_continuation(
         reset_mapper!(mapper)
         if typeof(mapper.mapper) <: AttractorsViaRecurrences
             fs = if allows_mapper_u0(mapper)
-                seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N,
-                                                        acam.seeding)
+                seed_attractors_to_fractions_individual(mapper,
+                    prev_attractors, ics, N, acam.seeding
+                )
             else
-                seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N,
-                                                     acam.seeding)
+                seed_attractors_to_fractions_grouped(mapper,
+                    prev_attractors, ics, N, acam.seeding
+                )
             end
             current_attractors = deepcopy(extract_attractors(mapper))
         else
@@ -49,8 +51,9 @@ function global_continuation(
         push!(measures_cont, measures)
     end
 
-    rmaps = match_sequentially!(attractors_cont, acam.matcher; pcurve,
-                                ds = referenced_dynamical_system(mapper))
+    rmaps = match_sequentially!(
+        attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+    )
 
     # This is the third difference in global continuation
     for i in 2:length(pcurve)
@@ -91,9 +94,9 @@ function stability_measures_along_continuation(
     show_progress=true
 )
     N = samples_per_parameter
-    progress = ProgressMeter.Progress(length(pcurve);
-                                      desc = "Continuing attractors and stability:",
-                                      enabled=show_progress)
+    progress = ProgressMeter.Progress(
+        length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress
+    )
     measures_cont = []
     for (i, p) in enumerate(pcurve)
         ε_ = ε isa AbstractVector ? ε[i] : ε # if its a vector, get i-th entry

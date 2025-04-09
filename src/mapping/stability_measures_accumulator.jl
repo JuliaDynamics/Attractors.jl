@@ -207,8 +207,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
                                      StateSpaceSet([u0]), 
                                      attractors[id], 
                                      StateSpaceSets.StrictlyMinimumDistance(
-                                         true,
-                                         accumulator.metric
+                                         true, accumulator.metric
                                      )
                                  )
     accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? 
@@ -321,8 +320,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
                                                    [set_distance(attractors[key1], 
                                                    accumulator.nonzero_measure_basin_points[key2],
                                                    StateSpaceSets.StrictlyMinimumDistance(
-                                                       true,
-                                                       accumulator.metric
+                                                       true, accumulator.metric
                                                    )
                                                )
                 for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
