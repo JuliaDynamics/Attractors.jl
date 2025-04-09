@@ -1,3 +1,6 @@
+# v1.25
+- New algorithm `stagger_and_step`: it computes a pseudo trajectory close to the stable invariant manifold of a saddle. The implementation follows the stagger and step algorithm. 
+
 # v1.24
 
 - Improved `continuation_series`: now it works for any type of input, including attractor continuation info because the default value (now renamed to fill value) is used to deduce the type of the series vectors.
