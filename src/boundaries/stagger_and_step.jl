@@ -27,7 +27,7 @@ parameter `δ` defining a (small) neighborhood of search.
 
 The function `isinside(x)` must return `true` if the point `x` is 
 inside the chosen bounded region and `false` otherwise. See 
-[`statespace_sampler`](@ref) as an helper to construct this 
+[`statespace_sampler`](@ref) as a helper to construct this 
 function.
 
 ## Keyword arguments
