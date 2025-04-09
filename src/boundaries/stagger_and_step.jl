@@ -32,7 +32,7 @@ function.
   number will depend on the probability distribution chosen 
   for the sampling (see `stagger_mode`).
 
-* `Tm = 30`: The minimum number of iterations of `ds` before 
+* `Tm = 30`: The minimum number of steps of `ds` before 
   the trajectory escapes from the bounding box defined by
   `isinside`. 
 
@@ -72,7 +72,7 @@ function.
   sufficiently close to the saddle before switching to the 
   stagger-and-step routine. The search radius must be large 
   enough to find a suitable initial candidate. 
-  To type `δ₀` use `\delta<TAB>\_0<TAB>`.
+  To type `δ₀` use `\\delta<TAB>\\_0<TAB>`.
 
 * `rng::AbstractRNG = Xoshiro()`:  Random number generator. Use this for
   reproducibility.
@@ -81,17 +81,19 @@ function.
 
 The method relies on the stagger-and-step algorithm that 
 searches initial conditions close to the saddle with escapes time 
-`T(x_n) > Tm`. The function `T` represents the iteration number 
+`T(x_n) > Tm`. The function `T` represents the time
 at which the trajectory with initial condition `x_n` steps out 
 from a region defined by the user (see the argument `isinside`).
+This time is a discrete or continuous variable depending on 
+the dynamical system `ds`.
 
-Given the dynamical mapping `F`, if the iteration `x_{n+1} = 
-F(x_n)` respects the condition `T(x_{n+1}) > Tm` we accept 
+Given the dynamical mapping `F`, if the step `x_{n+1} = 
+F(x_n)` fulfills the condition `T(x_{n+1}) > Tm` we accept 
 this next point, this is the _step_ part of the method. If 
 not, the method search randomly the next point in a 
 neighborhood following a given probability distribution, this 
-is the _stagger_ part. This part sometimes fails to find a new 
-candidate and a new starting point of the trajectory is chosen 
+is the _stagger_ part. The _stagger_ process sometimes fails to find 
+a new candidate and a new starting point of the trajectory is chosen 
 within the defined region. See the keyword argument 
 `stagger_mode` for the different available methods.   
 
@@ -106,8 +108,8 @@ function stagger_and_step(ds::DynamicalSystem, x0, N::Int, isinside::Function; �
     progress = ProgressMeter.Progress(
         N; desc = "Saddle estimation: ", dt = 1.0
     )
-    xi = stagger_trajectory(ds, x0, Tm, isinside; δ₀, stagger_mode = :unif, 
-                            max_steps, γ, max_escape_time, rng) 
+    xi = stagger_trajectory(ds, x0, Tm, isinside, :unif, δ₀, 
+                            γ, max_steps, max_escape_time, rng) 
     if isnothing(xi)
         error("Cannot find a stagger trajectory. Choose a different starting point or 
                 search radius δ₀.")
@@ -117,13 +119,15 @@ function stagger_and_step(ds::DynamicalSystem, x0, N::Int, isinside::Function; �
     v[1] = xi
     for n in 1:N
         show_progress && ProgressMeter.update!(progress, n)
-        if escape_time!(ds, xi, isinside; max_escape_time) > Tm
+        if escape_time!(ds, xi, isinside, max_escape_time) > Tm
             reinit!(ds, xi)
         else
-            xp, Tp = stagger!(ds, xi, δ, Tm, isinside; stagger_mode, max_steps, γ, max_escape_time, rng)
+            xp, Tp = stagger!(ds, xi, Tm, isinside, stagger_mode, δ, γ, max_steps,  
+                              max_escape_time, rng)
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
-                xp = stagger_trajectory(ds, x0, Tm, isinside; δ₀, stagger_mode = :exp,max_steps, γ, max_escape_time, rng) 
+                xp = stagger_trajectory(ds, x0, Tm, isinside, :exp, δ₀, γ, max_steps,  
+                                        max_escape_time, rng) 
                 if isnothing(xp)
                     error("Cannot find a stagger trajectory. Choose a different starting 
                           point or search radius δ₀.")
@@ -141,7 +145,8 @@ end
 
 
 """
-    stagger_trajectory(ds, x0, Tm, isinside; kwargs...) -> xi
+    stagger_trajectory(ds, x0, Tm, isinside, δ, γ, stagger_mode,
+        max_steps, max_escape_time, rng) -> xi
 
 On success, the function returns a point `xi` with the property `T(xi) > 
 Tm` with a random walk search around the initial coordinates 
@@ -151,14 +156,14 @@ In the case where the algorithm cannot find a suitable point, the algorithm
 returns nothing. 
 
 This is an auxiliary function for [`stagger_and_step`](@ref). 
-Keyword arguments and definitions are identical for both functions. 
+Arguments and definitions are identical for both functions. 
 """
-function stagger_trajectory(ds, x0, Tm, isinside; δ₀ = 1., stagger_mode = :exp,
-        max_steps = Int(1e5), γ = 1.1, max_escape_time = 10000, rng::AbstractRNG = Xoshiro())
-    T = escape_time!(ds, x0, isinside; max_escape_time)
+function stagger_trajectory(ds, x0, Tm, isinside, stagger_mode, δ, γ,
+        max_steps, max_escape_time, rng)
+    T = escape_time!(ds, x0, isinside, max_escape_time)
     xi = copy(x0) 
     while !(T > Tm)  # we must have T > Tm at each step 
-        xi, T = stagger!(ds, xi, δ₀, T, isinside; γ, stagger_mode, max_steps, max_escape_time, rng)
+        xi, T = stagger!(ds, xi, T, isinside, stagger_mode, δ, γ, max_steps, max_escape_time, rng)
         if T < 0
             return nothing
         end 
@@ -169,7 +174,7 @@ end
     
 
 
-function escape_time!(ds, x0, isinside; max_escape_time = 10000) 
+function escape_time!(ds, x0, isinside, max_escape_time) 
     set_state!(ds,x0)
     reinit!(ds, x0)
     k = 1; 
@@ -188,7 +193,7 @@ function rand_u!(u, δ, n, stagger_mode, rng)
     if stagger_mode == :exp 
         a = -log10(δ)
         s = (15-a)*rand(rng) + a
-        u .= randn(rng,n)
+        randn!(rng,u)
         u .*= (10.0^(-s))/norm(u)
         return
     elseif stagger_mode == :unif
@@ -198,7 +203,7 @@ function rand_u!(u, δ, n, stagger_mode, rng)
         return
     elseif stagger_mode == :adaptive
         s = δ*randn(rng)
-        u .= randn(rng,n)
+        randn!(rng,u)
         u .*= s/norm(u)
         return
     else
@@ -207,15 +212,17 @@ function rand_u!(u, δ, n, stagger_mode, rng)
 end
 
 """
-    stagger!(ds, x0, δ, Tm, isinside; kwargs...) -> stagger_point
+    stagger!(ds, x0, Tm, isinside, stagger_mode, δ₀, γ, 
+        max_steps, max_escape_time, rng) -> stagger_point
 
 This function searches a new candidate in a neighborhood of x0 with a random search 
 depending on some distribution. If the search fails it returns a negative time.
 """
-function stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stagger_mode = :exp, verbose = false, max_escape_time = 10000, rng::AbstractRNG)
+function stagger!(ds, x0, Tm, isinside, stagger_mode, δ, γ,
+        max_steps, max_escape_time, rng; verbose = false)
     Tp = 0; xp = zeros(length(x0)); k = 1; 
     u = zeros(length(x0))
-    T0 = escape_time!(ds, x0, isinside; max_escape_time)
+    T0 = escape_time!(ds, x0, isinside, max_escape_time)
     if !isinside(x0)
         error("x0 must be in grid")
     end
@@ -231,7 +238,7 @@ function stagger!(ds, x0, δ, Tm, isinside; max_steps = Int(1e6), γ = 1.1, stag
            end
            return xp, -1
         end
-        Tp = escape_time!(ds, xp, isinside; max_escape_time)
+        Tp = escape_time!(ds, xp, isinside, max_escape_time)
         if stagger_mode == :adaptive
             # We adapt the variance of the search
             # if the alg. can't find a candidate
