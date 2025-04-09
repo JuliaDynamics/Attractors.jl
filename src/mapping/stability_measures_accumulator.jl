@@ -350,10 +350,10 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
             keys(attractors))
 
     # Initialize dictionaries for linear measures
-    characteristic_return_time = Dict(k => NaN for (k, _) in attractors)
-    reactivity = Dict(k => NaN for (k, _) in attractors)
-    maximal_amplification = Dict(k => NaN for (k, _) in attractors)
-    maximal_amplification_time = Dict(k => NaN for (k, _) in attractors)
+    characteristic_return_time = Dict(k => NaN for k in keys(attractors))
+    reactivity = Dict(k => NaN for k in keys(attractors))
+    maximal_amplification = Dict(k => NaN for k in keys(attractors))
+    maximal_amplification_time = Dict(k => NaN for k in keys(attractors))
 
     # Calculate linear measures
     jac = jacobian(ds)
