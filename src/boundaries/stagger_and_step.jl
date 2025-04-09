@@ -72,6 +72,7 @@ function.
   sufficiently close to the saddle before switching to the 
   stagger-and-step routine. The search radius must be large 
   enough to find a suitable initial candidate. 
+  To type `δ₀` use `\delta<TAB>\_0<TAB>`.
 
 * `rng::AbstractRNG = Xoshiro()`:  Random number generator. Use this for
   reproducibility.
