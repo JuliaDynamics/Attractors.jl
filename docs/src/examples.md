@@ -776,7 +776,7 @@ mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurren
 accumulator = StabilityMeasuresAccumulator(mapper, finite_time=50.0, weighting_distribution=MvNormal(zeros(2), 1.0*I))
 ```
 If we call this object on some initial conditions and finalize its values, we receive 
-several different stability measures. Their interpretation can be found in the documentation of `StabilityMeasuresAccumulator`.
+several different stability measures. Their interpretation can be found in the documentation of [`StabilityMeasuresAccumulator`](@ref).
 ```@example MAIN
 A = ics_from_grid(grid)
 for u0 in A
