@@ -203,9 +203,14 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     # Gather convergence time and pace
     ct = convergence_time(accumulator.mapper)
     attractors = extract_attractors(accumulator.mapper)
-    u0_dist = id == -1 ? Inf64 : set_distance(StateSpaceSet([u0]), attractors[id], 
-                                              StateSpaceSets.StrictlyMinimumDistance(true, 
-                                                                        accumulator.metric))
+    u0_dist = id == -1 ? Inf64 : set_distance(
+                                     StateSpaceSet([u0]), 
+                                     attractors[id], 
+                                     StateSpaceSets.StrictlyMinimumDistance(
+                                         true,
+                                         accumulator.metric
+                                     )
+                                 )
     accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? 
       push!(get(accumulator.convergence_times, id, []), ct) : 
       get(accumulator.convergence_times, id, [])
@@ -216,14 +221,18 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     # Update mean and maximal convergence time and pace
     accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) 
                                             + pdf(accumulator.weighting_distribution, u0)*ct
-    accumulator.maximal_convergence_time[id] = pdf(accumulator.weighting_distribution,
-                                                  u0) > 0.0 ? 
+    accumulator.maximal_convergence_time[id] = pdf(
+                                                   accumulator.weighting_distribution,
+                                                   u0
+                                               ) > 0.0 ? 
       max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : 
       get(accumulator.maximal_convergence_time, id, 0.0)
     accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) 
                                     + pdf(accumulator.weighting_distribution, u0)*ct/u0_dist
-    accumulator.maximal_convergence_pace[id] = pdf(accumulator.weighting_distribution, 
-                                                   u0) > 0.0 ? 
+    accumulator.maximal_convergence_pace[id] = pdf(
+                                                   accumulator.weighting_distribution, 
+                                                   u0
+                                               ) > 0.0 ? 
       max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : 
       get(accumulator.maximal_convergence_pace, id, 0.0)
 
@@ -308,10 +317,14 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         maximal_nonfatal_shock_magnitudes[key1] = Inf64
         (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && 
           key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
-        minimal_fatal_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], 
-                                             accumulator.nonzero_measure_basin_points[key2],
-                                             StateSpaceSets.StrictlyMinimumDistance(true,
-                                                                        accumulator.metric))
+        minimal_fatal_shock_magnitudes[key1] = minimum(
+                                                   [set_distance(attractors[key1], 
+                                                   accumulator.nonzero_measure_basin_points[key2],
+                                                   StateSpaceSets.StrictlyMinimumDistance(
+                                                       true,
+                                                       accumulator.metric
+                                                   )
+                                               )
                 for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
         maximal_nonfatal_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for 
                                                            a in attractors[key1] for 

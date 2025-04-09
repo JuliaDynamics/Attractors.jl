@@ -77,10 +77,19 @@ end
 
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
-function stability_measures_along_continuation(ds::DynamicalSystem, attractors_cont, pcurve,
-    ics; ε = nothing, weighting_distribution = EverywhereUniform(), finite_time = 1.0,
-    samples_per_parameter = 1000, metric=Euclidean(), proximity_mapper_options=NamedTuple(), show_progress=true
-    )
+function stability_measures_along_continuation(
+    ds::DynamicalSystem, 
+    attractors_cont, 
+    pcurve,
+    ics; 
+    ε = nothing, 
+    weighting_distribution = EverywhereUniform(), 
+    finite_time = 1.0,
+    samples_per_parameter = 1000, 
+    metric=Euclidean(), 
+    proximity_mapper_options=NamedTuple(), 
+    show_progress=true
+)
     N = samples_per_parameter
     progress = ProgressMeter.Progress(length(pcurve);
                                       desc = "Continuing attractors and stability:",
