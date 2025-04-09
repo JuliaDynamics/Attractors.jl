@@ -751,7 +751,7 @@ edge states also in high-dimensional and chaotic systems where a simple computat
 unstable equilibria becomes infeasible.
 
 ## Non-local and local stability measures
-The mapper type `StabilityMeasuresAccumulator` is showcased in application to the Duffing oscillator.
+The type `StabilityMeasuresAccumulator` is showcased in an application to the Duffing oscillator.
 
 ```@example MAIN
 function duffing(u, p, t)
