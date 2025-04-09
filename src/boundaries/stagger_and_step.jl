@@ -3,10 +3,6 @@ using LinearAlgebra: norm
 using Random
 using ProgressMeter
 
-
-
-
-
 """
     stagger_and_step(ds::DynamicalSystem, x0, N::Int, 
         isinside::Function; kwargs...) -> trajectory
