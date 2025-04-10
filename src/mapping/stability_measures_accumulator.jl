@@ -137,7 +137,8 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims,
     weighting_distribution::Union{EverywhereUniform, Distribution}
     metric::Metric
     function StabilityMeasuresAccumulator(mapper::AttractorMapper; finite_time=1.0, 
-      weighting_distribution=EverywhereUniform(), metric=Euclidean())
+      weighting_distribution=EverywhereUniform(), metric=Euclidean()
+    )
         reset_mapper!(mapper)
         ds = referenced_dynamical_system(mapper)
         Dims = dimension(ds)
@@ -219,16 +220,14 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
       get(accumulator.convergence_paces, id, [])
 
     # Update mean and maximal convergence time and pace
-    accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) 
-                                            + pdf(accumulator.weighting_distribution, u0)*ct
+    accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct
     accumulator.maximal_convergence_time[id] = pdf(
                                                    accumulator.weighting_distribution,
                                                    u0
                                                ) > 0.0 ? 
       max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : 
       get(accumulator.maximal_convergence_time, id, 0.0)
-    accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) 
-                                    + pdf(accumulator.weighting_distribution, u0)*ct/u0_dist
+    accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct/u0_dist
     accumulator.maximal_convergence_pace[id] = pdf(
                                                    accumulator.weighting_distribution, 
                                                    u0
@@ -355,32 +354,34 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     maximal_amplification_time = Dict(k => NaN for k in keys(attractors))
 
     # Calculate linear measures
-    jac = jacobian(ds)
-    for (id, A) in attractors
-        if length(A) > 1
-            characteristic_return_time[id] = NaN
-            reactivity[id] = NaN
-            maximal_amplification[id] = NaN
-            maximal_amplification_time[id] = NaN
-            continue
-        end
-        J = isinplace(ds) ? Array{Float64}(undef, length(A[1]), length(A[1])) :
-            jac(Array(A[1]), initial_parameters(ds), 0)
-        isinplace(ds) && jac(J, Array(A[1]), initial_parameters(ds), 0)
+    if !isdiscretetime(ds)
+      jac = jacobian(ds)
+      for (id, A) in attractors
+          if length(A) > 1
+              characteristic_return_time[id] = NaN
+              reactivity[id] = NaN
+              maximal_amplification[id] = NaN
+              maximal_amplification_time[id] = NaN
+              continue
+          end
+          J = isinplace(ds) ? Array{Float64}(undef, length(A[1]), length(A[1])) :
+              jac(Array(A[1]), initial_parameters(ds), 0)
+          isinplace(ds) && jac(J, Array(A[1]), initial_parameters(ds), 0)
 
-        thisλ = min(0, maximum(real.(eigvals(J))))
-        characteristic_return_time[id] = abs(1 / thisλ)
-        H = (J + J') / 2
-        evs = real.(eigvals(H))
-        reactivity[id] = maximum(evs)
-        if thisλ == 0
-            maximal_amplification[id] = Inf64
-            maximal_amplification_time[id] = Inf64
-        else
-            res = Optim.optimize(t -> (-1) * opnorm(exp(t[1] * J)), [0.0], [Inf64], [1.0])
-            maximal_amplification[id] = (-1) * Optim.minimum(res)
-            maximal_amplification_time[id] = Optim.minimizer(res)[1]
-        end
+          thisλ = min(0, maximum(real.(eigvals(J))))
+          characteristic_return_time[id] = abs(1 / thisλ)
+          H = (J + J') / 2
+          evs = real.(eigvals(H))
+          reactivity[id] = maximum(evs)
+          if thisλ == 0
+              maximal_amplification[id] = Inf64
+              maximal_amplification_time[id] = Inf64
+          else
+              res = Optim.optimize(t -> (-1) * opnorm(exp(t[1] * J)), [0.0], [Inf64], [1.0])
+              maximal_amplification[id] = (-1) * Optim.minimum(res)
+              maximal_amplification_time[id] = Optim.minimizer(res)[1]
+          end
+      end
     end
 
     # Return the final stability measures

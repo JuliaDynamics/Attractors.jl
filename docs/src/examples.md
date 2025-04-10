@@ -751,7 +751,7 @@ edge states also in high-dimensional and chaotic systems where a simple computat
 unstable equilibria becomes infeasible.
 
 ## Non-local and local stability measures
-The type `StabilityMeasuresAccumulator` is showcased in an application to the Duffing oscillator.
+The type [`StabilityMeasuresAccumulator`](@ref) is showcased in an application to the Duffing oscillator.
 
 ```@example MAIN
 function duffing(u, p, t)
@@ -786,7 +786,7 @@ stability_measures = finalize_accumulator(accumulator)
 ```
 
 ## Global Continuation of stability measures
-The above `accumulator` can be passed to `AttractorSeedContinueMatch` just as an ordinary `AttractorsViaRecurrences` mapper. The `global_continuation` function not only outputs the continued attractors but also the continued stability measures.
+The above `accumulator` can be passed to [`AttractorSeedContinueMatch`](@ref) just as an ordinary [`AttractorsViaRecurrences`](@ref) mapper. The [`global_continuation`](@ref) function not only outputs the continued attractors but also the continued stability measures.
 ```@example MAIN
 acam = AttractorSeedContinueMatch(accumulator, MatchBySSSetDistance(), seeding=A->[])
 
@@ -798,8 +798,10 @@ pcurve = [[2 => p] for p in ps]
 
 measures_cont, attractors_cont = global_continuation(acam, pcurve, ics_from_grid(grid))
 ```
-It may be desirable to use an `AttractorsViaProximity` mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an `attractors_cont` result is given, we can use the function `stability_measures_along_continuation` to compute the stability measures based on the `AttractorsViaProximity` mapper related to the continued attractors. For this, we pass the `DynamicalSystem` itself as the first argument.
+It may be desirable to use an [`AttractorsViaProximity`](@ref) mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an `attractors_cont` result is given, we can use the function `stability_measures_along_continuation` to compute the stability measures based on the [`AttractorsViaProximity`](@ref) mapper related to the continued attractors. For this, we pass the [`DynamicalSystem`](@ref) itself as the first argument.
 ```@example MAIN
 proximity_mapper_options = (Ttr=0, Δt=0.01, stop_at_Δt = false, horizon_limit = 1e2, consecutive_lost_steps = 10000)
-measures_cont_proximity = stability_measures_along_continuation(ds, attractors_cont, ics_from_grid(grid), pcurve, ε=0.1, weighting_distribution=distributions, finite_time=50.0, proximity_mapper_options = proximity_mapper_options)
+measures_cont_proximity = stability_measures_along_continuation(
+    ds, attractors_cont, ics_from_grid(grid), pcurve, ε=0.1, weighting_distribution=distributions, finite_time=50.0, proximity_mapper_options = proximity_mapper_options
+)
 ```
