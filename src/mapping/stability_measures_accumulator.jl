@@ -212,28 +212,14 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
                                          true, accumulator.metric
                                      )
                                  )
-    accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? 
-      push!(get(accumulator.convergence_times, id, []), ct) : 
-      get(accumulator.convergence_times, id, [])
-    accumulator.convergence_paces[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? 
-      push!(get(accumulator.convergence_paces, id, []), ct/u0_dist) : 
-      get(accumulator.convergence_paces, id, [])
+    accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_times, id, []), ct) : get(accumulator.convergence_times, id, [])
+    accumulator.convergence_paces[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_paces, id, []), ct/u0_dist) : get(accumulator.convergence_paces, id, [])
 
     # Update mean and maximal convergence time and pace
     accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct
-    accumulator.maximal_convergence_time[id] = pdf(
-                                                   accumulator.weighting_distribution,
-                                                   u0
-                                               ) > 0.0 ? 
-      max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : 
-      get(accumulator.maximal_convergence_time, id, 0.0)
+    accumulator.maximal_convergence_time[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : get(accumulator.maximal_convergence_time, id, 0.0)
     accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct/u0_dist
-    accumulator.maximal_convergence_pace[id] = pdf(
-                                                   accumulator.weighting_distribution, 
-                                                   u0
-                                               ) > 0.0 ? 
-      max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : 
-      get(accumulator.maximal_convergence_pace, id, 0.0)
+    accumulator.maximal_convergence_pace[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : get(accumulator.maximal_convergence_pace, id, 0.0)
 
     # Update finite time basin points
     if ct <= accumulator.finite_time
@@ -270,43 +256,25 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     Datatype = eltype(current_state(ds))
     attractors = extract_attractors(accumulator.mapper)
     bpoints = accumulator.basin_points
-    foreach(key -> !(key in keys(bpoints)) && 
-                    (bpoints[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.finite_time_basin_points)) && 
-                    (accumulator.finite_time_basin_points[key] = StateSpaceSet{Dims, 
-                                                                               Datatype}()),
-            keys(attractors))
-    foreach(key -> !(key in keys(accumulator.nonzero_measure_basin_points)) && 
-                    (accumulator.nonzero_measure_basin_points[key] = StateSpaceSet{Dims, 
-                                                                               Datatype}()), 
-            keys(attractors))
-    normalization = sum(sum(pdf(accumulator.weighting_distribution, point) for point in v) 
-                   for (_, v) in bpoints)
+    foreach(key -> !(key in keys(bpoints)) && (bpoints[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.finite_time_basin_points)) && (accumulator.finite_time_basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.nonzero_measure_basin_points)) && (accumulator.nonzero_measure_basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
+    normalization = sum(sum(pdf(accumulator.weighting_distribution, point) for point in v) for (_, v) in bpoints)
     N = sum(length(v) for (_, v) in bpoints)
 
     # Calculate mean convergence time and pace
-    normalization != 0.0 && foreach(key -> accumulator.mean_convergence_time[key] 
-                                           /= normalization,
-                                    keys(accumulator.mean_convergence_time))
-    normalization != 0.0 && foreach(key -> accumulator.mean_convergence_pace[key]
-                                           /= normalization, 
-                                    keys(accumulator.mean_convergence_pace))
-    foreach(key -> !(key in keys(accumulator.mean_convergence_time)) && 
-                    (accumulator.mean_convergence_time[key] = Inf64), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.maximal_convergence_time)) && 
-                    (accumulator.maximal_convergence_time[key] = Inf64), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && 
-                    (accumulator.mean_convergence_pace[key] = Inf64), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && 
-                    (accumulator.maximal_convergence_pace[key] = Inf64), keys(attractors))
+    normalization != 0.0 && foreach(key -> accumulator.mean_convergence_time[key] /= normalization, keys(accumulator.mean_convergence_time))
+    normalization != 0.0 && foreach(key -> accumulator.mean_convergence_pace[key] /= normalization, keys(accumulator.mean_convergence_pace))
+    foreach(key -> !(key in keys(accumulator.mean_convergence_time)) && (accumulator.mean_convergence_time[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.maximal_convergence_time)) && (accumulator.maximal_convergence_time[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = Inf64), keys(attractors))
 
     # Calculate median convergence time and pace
     median_convergence_time = Dict{Int64, Float64}()
     median_convergence_pace = Dict{Int64, Float64}()
-    foreach(key -> median_convergence_time[key]=median(accumulator.convergence_times[key]),
-            keys(accumulator.convergence_times))
-    foreach(key -> median_convergence_pace[key]=median(accumulator.convergence_paces[key]),
-            keys(accumulator.convergence_paces))
+    foreach(key -> median_convergence_time[key]=median(accumulator.convergence_times[key]), keys(accumulator.convergence_times))
+    foreach(key -> median_convergence_pace[key]=median(accumulator.convergence_paces[key]), keys(accumulator.convergence_paces))
 
     # Calculate minimal fatal shock and maximal non-fatal shock magnitude
     minimal_fatal_shock_magnitudes = Dict{Int64, Float64}()
@@ -314,38 +282,18 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     for key1 in keys(attractors)
         minimal_fatal_shock_magnitudes[key1] = Inf64
         maximal_nonfatal_shock_magnitudes[key1] = Inf64
-        (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && 
-          key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
-        minimal_fatal_shock_magnitudes[key1] = minimum(
-                                                   [set_distance(attractors[key1], 
-                                                   accumulator.nonzero_measure_basin_points[key2],
-                                                   StateSpaceSets.StrictlyMinimumDistance(
-                                                       true, accumulator.metric
-                                                   )
-                                               )
-                for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
-        maximal_nonfatal_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for 
-                                                           a in attractors[key1] for 
-                                       b in accumulator.nonzero_measure_basin_points[key1]])
+        (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
+        minimal_fatal_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
+        maximal_nonfatal_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
     end
 
     # Calculate basin stability and finite time basin stability
     basin_frac = Dict(k => length(v)/N for (k, v) in bpoints)
-    basin_stab = Dict(k => (isempty(v) ? 0.0 : 
-                  sum(pdf(accumulator.weighting_distribution, point) for point in v))
-                  for (k, v) in bpoints)
-    finite_time_basin_stab = Dict(k => (isempty(v) ? 0.0 : 
-                                        sum(pdf(accumulator.weighting_distribution, point) 
-                                        for point in v))
-                                  for (k, v) in accumulator.finite_time_basin_points)
-    normalization != 0.0 && (
-        foreach(k -> basin_stab[k] /= normalization, keys(basin_stab));
-        foreach(k -> finite_time_basin_stab[k] /= normalization, 
-                keys(finite_time_basin_stab))
-    )
+    basin_stab = Dict(k => (isempty(v) ? 0.0 : sum(pdf(accumulator.weighting_distribution, point) for point in v)) for (k, v) in bpoints)
+    finite_time_basin_stab = Dict(k => (isempty(v) ? 0.0 : sum(pdf(accumulator.weighting_distribution, point) for point in v)) for (k, v) in accumulator.finite_time_basin_points)
+    normalization != 0.0 && (foreach(k -> basin_stab[k] /= normalization, keys(basin_stab)); foreach(k -> finite_time_basin_stab[k] /= normalization, keys(finite_time_basin_stab)))
     foreach(k -> !(k in keys(basin_stab)) && (basin_stab[k] = 0.0), keys(attractors))
-    foreach(k -> !(k in keys(finite_time_basin_stab)) && (finite_time_basin_stab[k] = 0.0), 
-            keys(attractors))
+    foreach(k -> !(k in keys(finite_time_basin_stab)) && (finite_time_basin_stab[k] = 0.0), keys(attractors))
 
     # Initialize dictionaries for linear measures
     characteristic_return_time = Dict(k => NaN for k in keys(attractors))
@@ -364,8 +312,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
               maximal_amplification_time[id] = NaN
               continue
           end
-          J = isinplace(ds) ? Array{Float64}(undef, length(A[1]), length(A[1])) :
-              jac(Array(A[1]), initial_parameters(ds), 0)
+          J = isinplace(ds) ? Array{Float64}(undef, length(A[1]), length(A[1])) : jac(Array(A[1]), initial_parameters(ds), 0)
           isinplace(ds) && jac(J, Array(A[1]), initial_parameters(ds), 0)
 
           thisλ = min(0, maximum(real.(eigvals(J))))
