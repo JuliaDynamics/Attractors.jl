@@ -1,4 +1,4 @@
-# [Examples for Attractors.jl](@ref examples)
+# [Examples for Attractors.jl](@id examples)
 
 Note that the examples utilize some convenience plotting functions offered by Attractors.jl which come into scope when using `Makie` (or any of its backends such as `CairoMakie`), see the [visualization utilities](@ref) for more.
 
