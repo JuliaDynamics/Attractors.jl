@@ -1,3 +1,8 @@
+# v1.25
+
+- The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
+  The positional argument version is deprecated.
+
 # v1.24
 
 - Improved `continuation_series`: now it works for any type of input, including attractor continuation info because the default value (now renamed to fill value) is used to deduce the type of the series vectors.

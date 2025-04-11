@@ -185,7 +185,7 @@ function convergence_time(m::AttractorsViaRecurrences)
     else
         x = get(kw, :consecutive_attractor_steps, 2)
     end
-    x = max(i, x) # it cannot be more than i!
+    x = min(i, x) # it cannot be more than i!
     return (i - x + 1)*m.bsn_nfo.Δt
 end
 

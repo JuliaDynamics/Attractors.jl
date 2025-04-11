@@ -1,13 +1,13 @@
 """
-    AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict [, ε]; kwargs...)
+    AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict; kwargs...)
 
 Map initial conditions to attractors based on whether the trajectory reaches `ε`-distance
 close to any of the user-provided `attractors`, which have to be in a form of a dictionary
 mapping attractor labels to `StateSpaceSet`s containing the attractors.
 
 ## Keywords
-
-* `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
+* `ε = nothing`: Distance below which a trajectory has converged to an attractor, see below.
+* `Ttr = 0`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
 * `stop_at_Δt = false`: Third argument given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
@@ -58,9 +58,12 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
     latest_convergence_time::Base.RefValue{T}
 end
 
-function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
-        Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
-        distance = StrictlyMinimumDistance(), stop_at_Δt = false,
+AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
+AttractorsViaProximity(ds, attractors; ε = ε, kw...)
+
+function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
+        Δt=1, Ttr=0, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
+        distance = StrictlyMinimumDistance(), stop_at_Δt = false, ε = nothing,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
         error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
@@ -91,6 +94,8 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
 
     return mapper
 end
+
+reset_mapper!(mapper::AttractorsViaProximity) = nothing # AM can we add this for consistency?
 
 function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1
