@@ -730,7 +730,6 @@ track the basin boundary all the way to the saddle, or edge state.
 ```@example MAIN
 traj1 = trajectory(ds, 2, et.track1[et.bisect_idx[1]], Δt=1e-5)
 traj2 = trajectory(ds, 2, et.track2[et.bisect_idx[1]], Δt=1e-5)
-
 fig = Figure()
 ax = Axis(fig[1,1], xlabel="x", ylabel="y")
 heatmap_basins_attractors!(ax, grid, basins, attractors, add_legend=false, labels=Dict(1=>"Attractor A", 2=>"Attractor B", 3=>"Saddle"))
@@ -749,3 +748,63 @@ In this simple two-dimensional model, we could of course have found the saddle d
 computing the zeroes of the ODE system. However, the edge tracking algorithm allows finding
 edge states also in high-dimensional and chaotic systems where a simple computation of
 unstable equilibria becomes infeasible.
+
+
+## Invariant saddle of a dynamical system 
+
+The stagger-and-step method approximates the invariant 
+non-attracting set governing the chaotic transient dynamics 
+of a system, namely the stable manifold of a chaotic saddle. 
+
+Given the dynamical system `ds` and a initial guess `x0` in a 
+region *with no attractors*, the algorithm provides `N` points 
+close to the  stable manifold that escape from the region 
+after at least `Tm` steps of `ds`. 
+
+We first set the dynamical system, in our case we set up two coupled Hénon map
+that are known to have a chaotic saddle that generates chaotic transients
+before the trajectories escape: 
+ 
+```@example MAIN
+function F!(du, u ,p, n)
+    x,y,u,v = u
+    A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4; 
+    du[1] = A - x^2 + B*y + k*(x-u)
+    du[2] = x
+    du[3] = C - u^2 + D*v + k*(u-x)
+    du[4] = u
+    return 
+end
+ds = DeterministicIteratedMap(F!, zeros(4)) 
+```
+
+Next we define a region in the phase space that should not contain attractors. 
+Using this region we also define a `sampler` and a membership function `isinside`: 
+
+```@example MAIN
+R_min = [-4; -4.; -4.; -4.] 
+R_max = [4.; 4.; 4.; 4.]
+sampler, isinside = statespace_sampler(HRectangle(R_min,R_max))
+```
+
+And we are ready! We can now call the function `stagger_and_step` with an initial 
+condition `x0`: 
+
+```@example MAIN
+x0 = sampler()
+v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
+```
+The `stagger_mode` keyword select the type of search in the 
+phase space to stick close to the saddle at each step. 
+The mode `:adaptive` adapts the radius of the stochastic
+search as a function of the success of the search process. 
+
+Finally we can represent a projection of the chaotic saddle found in this 
+example: 
+
+```@example MAIN
+fig = Figure()
+ax = Axis(fig[1,1], xlabel="x", ylabel="y")
+scatter!(ax, v[:,1], v[:,3]; markersize = 3)
+fig
+```
