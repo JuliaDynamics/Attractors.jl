@@ -802,6 +802,6 @@ It may be desirable to use an [`AttractorsViaProximity`](@ref) mapper for the ac
 ```@example MAIN
 proximity_mapper_options = (Ttr=0, Δt=0.01, stop_at_Δt = false, horizon_limit = 1e2, consecutive_lost_steps = 10000)
 measures_cont_proximity = stability_measures_along_continuation(
-    ds, attractors_cont, ics_from_grid(grid), pcurve, ε=0.1, weighting_distribution=distributions, finite_time=50.0, proximity_mapper_options = proximity_mapper_options
+    ds, attractors_cont, pcurve, ics_from_grid(grid), ε=0.1, weighting_distribution=MvNormal(zeros(2), 1.0*I), finite_time=50.0, proximity_mapper_options = proximity_mapper_options
 )
 ```
