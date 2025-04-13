@@ -72,3 +72,6 @@ end
 
 # TODO: @andreasmorr please add one more test for the **LINEAR** measures by creating a
 # LINEAR dynamical system and estimating the measures for its fixed point.
+
+# TODO: @andreasmorr since the `stability_measures_along_continuation` function is
+# exported and part of the public API it also needs to be tested here!
