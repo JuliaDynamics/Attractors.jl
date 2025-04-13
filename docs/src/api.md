@@ -124,12 +124,6 @@ MFSBlackBoxOptim
 MFSBruteForce
 ```
 
-## Nonlocal Stability
-
-```@docs
-StabilityMeasuresAccumulator
-finalize_accumulator
-```
 
 ## Global continuation
 
@@ -199,6 +193,14 @@ setsofsets_distances
 unique_keys
 swap_dict_keys!
 next_free_id
+```
+
+## Stability measures
+
+```@docs
+StabilityMeasuresAccumulator
+finalize_accumulator
+stability_measures_along_continuation
 ```
 
 ## Visualization utilities

@@ -19,7 +19,7 @@ that implements the `id = mapper(u0)` syntax.
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
 the [`finalize_accumulator`](@ref) function should be called which will return a dictionary
 of all stability measures estimated by the accumulator.
-Each dictionary maps the measure description (`Symbol`) to a dictionary
+Each dictionary maps the measure description (`String`) to a dictionary
 mapping attractor IDs to the measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
 
@@ -34,13 +34,11 @@ now the first return argument of `global_continuation` will be a
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
 of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
 to the corresponding nonlocal stability measure.
-Use `stability_measures_along_continuation` for continuation of stability  measures computed
-on the basis of an `AttractorsViaProximity` mapper. Pass a dynamical system, a parameter
-curve, previously identified continued `attractors_cont` and options for
-`StabilityMeasuresAccumulator` and `AttractorsViaProximity`. For each parameter value,
-the stability measures are computed by ad-hoc StabilityMeasures accumulators based on
-an `AttractorsViaProximity` mapper. Returns the completed continuation of stability measures
-`measures_cont`.
+
+Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
+on the basis of an `AttractorsViaProximity` mapper from already found attractors.
+This is useful to do for measures related to the convergence time, which is defined
+more rirogously and is estimated more accurately for a proximity mapper.
 
 ## Keyword arguments
 

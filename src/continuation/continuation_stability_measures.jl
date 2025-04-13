@@ -1,3 +1,5 @@
+export stability_measures_along_continuation
+
 function global_continuation(
     acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
@@ -80,17 +82,41 @@ end
 
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
+"""
+    stability_measures_along_continuation(
+        ds::DynamicalSystem, attractors_cont, pcurve, ics;
+        kw...
+    )
+
+Perform a global continuation of all stability measures estimated by
+[`StabilityMeasuresAccumulator`](@ref) using the found attractors of
+a previous call to [`global_continuation`](@ref) using the `ds`.
+
+This method is special because it always creates an [`AttractorsViaProximity`](@ref)
+mapper for the attractors at a given point along the global continuation,
+and then estimates the stability measures using [`StabilityMeasuresAccumulator`](@ref)
+and the proximity mapper.
+Realistically you only want to use this method if you are interested in measures
+related to the convergence time, which is defined
+more rirogously and is estimated more accurately for a proximity mapper.
+
+## Keyword arguments
+
+- `ε, metric`: As in `AttractorsViaProximity`.
+- `proximity_mapper_options = NamedTuple()`: extra keywords for `AttractorsViaProximity`.
+- All keywords are propagated to [`StabilityMeasuresAccumulator`](@ref).
+"""
 function stability_measures_along_continuation(
-    ds::DynamicalSystem, 
-    attractors_cont, 
+    ds::DynamicalSystem,
+    attractors_cont,
     pcurve,
-    ics; 
-    ε = nothing, 
-    weighting_distribution = EverywhereUniform(), 
+    ics;
+    ε = nothing,
+    weighting_distribution = EverywhereUniform(),
     finite_time = 1.0,
-    samples_per_parameter = 1000, 
-    metric=Euclidean(), 
-    proximity_mapper_options=NamedTuple(), 
+    samples_per_parameter = 1000,
+    metric=Euclidean(),
+    proximity_mapper_options=NamedTuple(),
     show_progress=true
 )
     N = samples_per_parameter
