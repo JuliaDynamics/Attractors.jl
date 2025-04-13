@@ -62,11 +62,8 @@ results_expected = Dict(
 )
 # Check if the results are as expected
 @testset "Stability Measures Accumulator with dumb map" begin
-    if DO_EXTENSIVE_TESTS
-        # Check if the results are as expected
-        for (key, value) in results_expected
-            @test key in keys(results)
-            @test value ≈ results[key] atol=1e-5
-        end
+    for (key, value) in results_expected
+        @test key in keys(results)
+        @test value ≈ results[key] atol=1e-5
     end
 end
