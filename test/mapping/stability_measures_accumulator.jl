@@ -43,6 +43,8 @@ end
 results = finalize_accumulator(accumulator)
 
 # The expected results are:
+# TODO: @andreasmorr please justify where the values of nonfatal shock and median
+# convergence pace are coming from
 results_expected = Dict(
     "characteristic_return_time"       => Dict(2=>NaN, 1=>NaN),
     "maximal_amplification_time"       => Dict(2=>NaN, 1=>NaN),
@@ -67,3 +69,6 @@ results_expected = Dict(
         @test value ≈ results[key] atol=1e-5
     end
 end
+
+# TODO: @andreasmorr please add one more test for the **LINEAR** measures by creating a
+# LINEAR dynamical system and estimating the measures for its fixed point.

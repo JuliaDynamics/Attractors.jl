@@ -3,7 +3,7 @@ using Optim
 using Distributions
 
 # helper type for not computing any weights for uniform distribution
-struct EverywhereUniform end 
+struct EverywhereUniform end
 
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
@@ -15,7 +15,7 @@ _while_ at the same time calculating many stability measures in the most efficie
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
 that implements the `id = mapper(u0)` syntax.
 
-`StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions 
+`StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
 the [`finalize_accumulator`](@ref) function should be called which will return a dictionary
 of all stability measures estimated by the accumulator.
@@ -33,10 +33,10 @@ now the first return argument of `global_continuation` will be a
 `measures_cont`, a dictionary mapping nonlocal stability measures (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
 of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
-to the corresponding nonlocal stability measure. 
+to the corresponding nonlocal stability measure.
 Use `stability_measures_along_continuation` for continuation of stability  measures computed
-on the basis of an `AttractorsViaProximity` mapper. Pass a dynamical system, a parameter 
-curve, previously identified continued `attractors_cont` and options for 
+on the basis of an `AttractorsViaProximity` mapper. Pass a dynamical system, a parameter
+curve, previously identified continued `attractors_cont` and options for
 `StabilityMeasuresAccumulator` and `AttractorsViaProximity`. For each parameter value,
 the stability measures are computed by ad-hoc StabilityMeasures accumulators based on
 an `AttractorsViaProximity` mapper. Returns the completed continuation of stability measures
@@ -84,17 +84,17 @@ there for example), a value `Inf` is assigned to all measures.
 ### Nonlocal stability measures
 
 These nonlocal stability measures are accumulated while initial conditions are mapped
-to attractors. Afterwards they are averaged according to the probability density 
-`weighting_distribution` when calling `finalize_accumulator!`. The word "distance" here 
+to attractors. Afterwards they are averaged according to the probability density
+`weighting_distribution` when calling `finalize_accumulator!`. The word "distance" here
 refers to the distance established by the `metric` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
   `mapper` using [`convergence_time`](@ref). The mean is computed with respect
   to the `weighting_distribution`.
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
-  to the attractor. Only initial conditions with non-zero probability under 
+  to the attractor. Only initial conditions with non-zero probability under
   `weighting_distribution` are considered.
-* `median_convergence_time`: The median convergence time of initial conditions. 
+* `median_convergence_time`: The median convergence time of initial conditions.
   Only initial conditions with non-zero probability under `weighting_distribution`
   are considered.
 * `mean_convergence_pace`: The mean convergence pace of initial conditions to
@@ -102,23 +102,23 @@ refers to the distance established by the `metric` keyword.
   convergence time is divided by the distance of the respective initial
   condition to the attractor.
 * `maximal_convergence_pace`: The maximal convergence pace of initial conditions
-  to the attractor. Only initial conditions with non-zero probability under 
+  to the attractor. Only initial conditions with non-zero probability under
   `weighting_distribution` are considered.
 * `median_convergence_pace`: The median convergence pace of initial conditions.
   Only initial conditions with non-zero probability under `weighting_distribution`
   are considered.
 * `minimal_fatal_shock_magnitude`: The minimal distance of the attractor to the
-  closest non-zero probability point (under `weighting_distribution`) in a basin of 
+  closest non-zero probability point (under `weighting_distribution`) in a basin of
   attraction of a different attractor.
 * `maximal_nonfatal_shock_magnitude`: The distance of the attractor to the
-  furthest non-zero probability point (under `weighting_distribution`) of its own basin of 
+  furthest non-zero probability point (under `weighting_distribution`) of its own basin of
   attraction.
 * `basin_fraction`: The fraction of initial conditions that converge to the
   attractor.
 * `basin_stability`: The fraction of initial conditions that converge to the
   attractor, weighted by `weighting_distribution`.
 * `finite_time_basin_stability`: The fraction of initial conditions that
-  converge to the attractor within the time horizon `finite_time`, weighted by 
+  converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
 """
 mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims,
@@ -136,7 +136,7 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims,
     finite_time::Float64
     weighting_distribution::Union{EverywhereUniform, Distribution}
     metric::Metric
-    function StabilityMeasuresAccumulator(mapper::AttractorMapper; finite_time=1.0, 
+    function StabilityMeasuresAccumulator(mapper::AttractorMapper; finite_time=1.0,
       weighting_distribution=EverywhereUniform(), metric=Euclidean()
     )
         reset_mapper!(mapper)
@@ -206,8 +206,12 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     ct = convergence_time(accumulator.mapper)
     attractors = extract_attractors(accumulator.mapper)
     u0_dist = id == -1 ? Inf64 : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
-    accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_times, id, []), ct) : get(accumulator.convergence_times, id, [])
-    accumulator.convergence_paces[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_paces, id, []), ct/u0_dist) : get(accumulator.convergence_paces, id, [])
+
+    # TODO: @andreasmorr define a function `accumulate_time!(accumulator, :field, u0, id, value)`
+    # that does this whole business in a nice and readable way. Call it once with `:convergence_times` and `ct`
+    # and once more with `:converegence_paces` and `ct/dist`. Use the function `setfield!`.
+    accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_times, id, Float64[]), ct) : get(accumulator.convergence_times, id, Float64[])
+    accumulator.convergence_paces[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_paces, id, Float64[]), ct/u0_dist) : get(accumulator.convergence_paces, id, Float64[])
 
     # Update mean and maximal convergence time and pace
     accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct
