@@ -121,7 +121,7 @@ function stability_measures_along_continuation(
 )
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
-        length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress
+        length(pcurve); desc = "Continuing stability measures:", enabled=show_progress
     )
     measures_cont = []
     for (i, p) in enumerate(pcurve)

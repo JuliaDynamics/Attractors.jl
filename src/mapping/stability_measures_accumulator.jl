@@ -107,10 +107,11 @@ refers to the distance established by the `metric` keyword.
   are considered.
 * `minimal_fatal_shock_magnitude`: The minimal distance of the attractor to the
   closest non-zero probability point (under `weighting_distribution`) in a basin of
-  attraction of a different attractor.
+  attraction of a different attractor. If only a single attractor exists,
+  the value `Inf` is assigned.
 * `maximal_nonfatal_shock_magnitude`: The distance of the attractor to the
   furthest non-zero probability point (under `weighting_distribution`) of its own basin of
-  attraction.
+  attraction. If only a single attractor exists, the value `Inf` is assigned.
 * `basin_fraction`: The fraction of initial conditions that converge to the
   attractor.
 * `basin_stability`: The fraction of initial conditions that converge to the
@@ -203,7 +204,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     # Gather convergence time and pace
     ct = convergence_time(accumulator.mapper)
     attractors = extract_attractors(accumulator.mapper)
-    u0_dist = id == -1 ? Inf64 : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
+    u0_dist = id == -1 ? Inf : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
 
     # TODO: @andreasmorr define a function `accumulate_time!(accumulator, :field, u0, id, value)`
     # that does this whole business in a nice and readable way. Call it once with `:convergence_times` and `ct`
@@ -288,8 +289,8 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     minimal_fatal_shock_magnitudes = Dict{Int64, Float64}()
     maximal_nonfatal_shock_magnitudes = Dict{Int64, Float64}()
     for key1 in keys(attractors)
-        minimal_fatal_shock_magnitudes[key1] = Inf64
-        maximal_nonfatal_shock_magnitudes[key1] = Inf64
+        minimal_fatal_shock_magnitudes[key1] = Inf
+        maximal_nonfatal_shock_magnitudes[key1] = Inf
         (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
         minimal_fatal_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
         maximal_nonfatal_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
