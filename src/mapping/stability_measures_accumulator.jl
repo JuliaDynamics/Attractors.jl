@@ -204,19 +204,39 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     # Gather convergence time and pace
     ct = convergence_time(accumulator.mapper)
     attractors = extract_attractors(accumulator.mapper)
-    u0_dist = id == -1 ? Inf : set_distance(StateSpaceSet([u0]), attractors[id], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric))
+    if id == -1
+      u0_dist = Inf
+    else
+      u0_dist = set_distance(
+        StateSpaceSet([u0]), attractors[id], 
+        StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)
+      )
+    end
 
-    # TODO: @andreasmorr define a function `accumulate_time!(accumulator, :field, u0, id, value)`
-    # that does this whole business in a nice and readable way. Call it once with `:convergence_times` and `ct`
-    # and once more with `:converegence_paces` and `ct/dist`. Use the function `setfield!`.
-    accumulator.convergence_times[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_times, id, Float64[]), ct) : get(accumulator.convergence_times, id, Float64[])
-    accumulator.convergence_paces[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? push!(get(accumulator.convergence_paces, id, Float64[]), ct/u0_dist) : get(accumulator.convergence_paces, id, Float64[])
+    has_nonzero_measure = pdf(accumulator.weighting_distribution, u0) > 0.0
+    if !(id in keys(accumulator.convergence_times))
+      accumulator.convergence_times[id] = Float64[]
+      accumulator.convergence_paces[id] = Float64[]
+    end
+    has_nonzero_measure && push!(accumulator.convergence_times[id], ct)
+    has_nonzero_measure && push!(accumulator.convergence_paces[id], ct/u0_dist)
 
-    # Update mean and maximal convergence time and pace
-    accumulator.mean_convergence_time[id] = get(accumulator.mean_convergence_time, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct
-    accumulator.maximal_convergence_time[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? max(get(accumulator.maximal_convergence_time, id, 0.0), ct) : get(accumulator.maximal_convergence_time, id, 0.0)
-    accumulator.mean_convergence_pace[id] = get(accumulator.mean_convergence_pace, id, 0.0) + pdf(accumulator.weighting_distribution, u0)*ct/u0_dist
-    accumulator.maximal_convergence_pace[id] = pdf(accumulator.weighting_distribution, u0) > 0.0 ? max(get(accumulator.maximal_convergence_pace, id, 0.0), ct/u0_dist) : get(accumulator.maximal_convergence_pace, id, 0.0)
+    if !(id in keys(accumulator.mean_convergence_time))
+      accumulator.mean_convergence_time[id] = 0.0
+      accumulator.maximal_convergence_time[id] = 0.0
+      accumulator.mean_convergence_pace[id] = 0.0
+      accumulator.maximal_convergence_pace[id] = 0.0
+    end
+    accumulator.mean_convergence_time[id] += pdf(accumulator.weighting_distribution, u0)*ct
+    accumulator.mean_convergence_pace[id] += pdf(accumulator.weighting_distribution, u0)*ct/u0_dist
+    if has_nonzero_measure
+      accumulator.maximal_convergence_time[id] = max(
+        accumulator.maximal_convergence_time[id], ct
+      )
+      accumulator.maximal_convergence_pace[id] = max(
+        accumulator.maximal_convergence_pace[id], ct/u0_dist
+      )
+    end
 
     # Update finite time basin points
     if ct <= accumulator.finite_time
