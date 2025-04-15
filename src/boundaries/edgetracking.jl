@@ -39,41 +39,42 @@ the initial states can be set via keyword arguments `u1`, `u2` (see below). Note
 two initial states must belong to different basins of attraction.
 
 ## Keyword arguments
-* `bisect_thresh = 1e-7`: distance threshold for bisection
-* `diverge_thresh = 1e-6`: distance threshold for parallel integration
-* `u1`: first initial state (defaults to first point in first entry of `attractors`)
-* `u2`: second initial state (defaults to first point in second entry of `attractors`)
-* `maxiter = 100`: maximum number of iterations before the algorithm stops
-* `abstol = 0.0`: distance threshold for convergence of the updated edge state
-* `T_transient = 0.0`: transient time before the algorithm starts saving the edge track
-* `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection 
-* `Δt = 0.01`: time step passed to [`step!`](@ref) when evolving the two trajectories
-* `ϵ_mapper = nothing`: `ϵ` parameter in [`AttractorsViaProximity`](@ref)
-* `show_progress = true`: if true, shows progress bar and information while running
-* `verbose = true`: if false, silences print output and warnings while running
-* `kwargs...`: additional keyword arguments to be passed to [`AttractorsViaProximity`](@ref)
+
+* `bisect_thresh = 1e-7`: distance threshold for bisection.
+* `diverge_thresh = 1e-6`: distance threshold for parallel integration.
+* `u1`: first initial state (defaults to first point in first entry of `attractors`).
+* `u2`: second initial state (defaults to first point in second entry of `attractors`).
+* `maxiter = 100`: maximum number of iterations before the algorithm stops.
+* `abstol = 1e-9`: distance threshold for convergence of the updated edge state.
+* `T_transient = 0.0`: transient time before the algorithm starts saving the edge track.
+* `tmax = Inf`: maximum integration time of parallel trajectories until re-bisection.
+* `Δt = 0.01`: time step passed to [`step!`](@ref) when evolving the two trajectories.
+* `show_progress = true`: if true, shows progress bar and information while running.
+* `verbose = true`: if false, silences print output and warnings while running.
+* `kw...`: additional keyword arguments to be passed to [`AttractorsViaProximity`](@ref).
 
 ## Description
+
 The edge tracking algorithm is a numerical method to find
 an *edge state* or (possibly chaotic) saddle on the boundary between two basins of
 attraction. Introduced by [Battelino1988](@cite) and further described by
 [Skufca2006](@cite), the
 algorithm has been applied to, e.g., the laminar-turbulent boundary in plane Couette
 flow [Schneider2008](@cite), Wada basins [Wagemakers2020](@cite), as well as Melancholia
-states in conceptual [Mehling2023](@cite) and intermediate-complexity [Lucarini2017](@cite) 
-climate models. 
+states in conceptual [Mehling2023](@cite) and intermediate-complexity [Lucarini2017](@cite)
+climate models.
 Relying only on forward integration of the system, it works even in
 high-dimensional systems with complicated fractal basin boundary structures.
 
-The algorithm consists of two main steps: bisection and tracking. First, it iteratively 
+The algorithm consists of two main steps: bisection and tracking. First, it iteratively
 bisects along a straight line in state space between the intial states `u1` and `u2` to find
 the separating basin boundary. The bisection stops when the two updated states are less than
 `bisect_thresh` (Euclidean distance in state space) apart from each other.
 Next, a `ParallelDynamicalSystem` is initialized
 from these two updated states and integrated forward until the two trajectories diverge
 from each other by more than `diverge_thresh` (Euclidean distance). The two final states of
-the parallel integration are then used as new states `u1` and `u2` for a new bisection, and 
-so on, until a stopping criterion is fulfilled. 
+the parallel integration are then used as new states `u1` and `u2` for a new bisection, and
+so on, until a stopping criterion is fulfilled.
 
 Two stopping criteria are implemented via the keyword arguments `maxiter` and `abstol`.
 Either the algorithm stops when the number of iterations reaches `maxiter`, or when the
@@ -85,9 +86,9 @@ never actually converge to a point but (after a transient period) continue popul
 set constituting the edge state by tracking along it.
 
 A central idea behind this algorithm is that basin boundaries are typically the stable
-manifolds of unstable sets, namely edge states or saddles. The flow along the basin boundary 
+manifolds of unstable sets, namely edge states or saddles. The flow along the basin boundary
 will thus lead to these sets, and the iterative bisection neutralizes the unstable
-direction of the flow away from the basin boundary. If the system possesses multiple edge 
+direction of the flow away from the basin boundary. If the system possesses multiple edge
 states, the algorithm will find one of them depending on where the initial bisection locates
 the boundary.
 
@@ -105,42 +106,38 @@ function edgetracking(ds::DynamicalSystem, attractors::Dict;
     u1=collect(values(attractors))[1][1],
     u2=collect(values(attractors))[2][1],
     maxiter=100,
-    abstol=0.0,
+    abstol=1e-9,
     T_transient=0.0,
     tmax=Inf,
     Δt=0.01,
-    ϵ_mapper=nothing,
     show_progress=true,
     verbose=true,
+    ϵ_mapper=nothing, # deprecated keyword
     kwargs...)
-    
+
     pds = ParallelDynamicalSystem(ds, [u1, u2])
-    mapper = AttractorsViaProximity(ds, attractors, ϵ_mapper; kwargs...)
-    
+    mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, kwargs...)
+
     edgetracking(pds, mapper;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
-        show_progress, verbose)
+        show_progress, verbose
+    )
 end
 
-"""
+#=
     edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper; kwargs...)
+
 Low-level function for running the edge tracking algorithm, see [`edgetracking`](@ref)
 for a description, keyword arguments and output type.
 
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
 `AttractorMapper` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
-"""
+=#
 function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
-    bisect_thresh=1e-6,
-    diverge_thresh=1e-5,
-    maxiter=100,
-    abstol=0.0,
-    T_transient=0.0,
-    Δt=0.01,
-    tmax=Inf,
-    show_progress=true,
-    verbose=true)
-    
+        bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
+        show_progress, verbose
+    )
+
     if bisect_thresh >= diverge_thresh
         error("diverge_thresh must be larger than bisect_thresh.")
     end
@@ -155,7 +152,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     time, bisect_idx = Float64[], Int[1]
     progress = ProgressMeter.Progress(maxiter; desc = "Running edge tracking algorithm",
         enabled = show_progress)
-    
+
     # edge track iteration loop
     displacement, counter, T = Inf, 1, 0.0
     while (displacement > abstol) && (maxiter > counter)
@@ -182,20 +179,17 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             track2 = StateSpaceSet(track2)
 
             return EdgeTrackingResults(
-                StateSpaceSet((vec(track1) .+ vec(track2))./2),
+                StateSpaceSet((track1 .+ track2)./2),
                 track1, track2, time, bisect_idx, false)
         end
         T += Δt
         if T >= T_transient
-            push!(track1, current_state(pds, 1))
-            push!(track2, current_state(pds, 2))
-            push!(time, T)
             push!(bisect_idx, length(time))
         end
         displacement = diffnorm(edgestate, (u1 + u2)/2)
         edgestate = (u1 + u2)/2
         counter += 1
-        
+
         ProgressMeter.next!(progress;
             showvalues = [(:Iteration, counter), (:"Edge point", edgestate)])
         if verbose && (counter == maxiter)
@@ -206,17 +200,18 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     if verbose && (counter < maxiter)
         println("Edge-tracking converged after $(counter) iterations.")
     end
-    
+
     track1 = StateSpaceSet(track1)
     track2 = StateSpaceSet(track2)
 
     return EdgeTrackingResults(
-        StateSpaceSet((vec(track1) .+ vec(track2))./2),
+        StateSpaceSet((track1 .+ track2)./2),
         track1,
         track2,
         time,
         bisect_idx,
-        true)
+        true
+    )
 end
 
 """
@@ -265,7 +260,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             return u1, u2, false
         end
     end
-    
+
     distance = diffnorm(u1, u2)
     while distance > bisect_thresh
         u_new = (u1 + u2)/2
