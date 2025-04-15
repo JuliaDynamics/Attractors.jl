@@ -1,7 +1,11 @@
-# v1.25
+# v1.26
 
 - The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
   The positional argument version is deprecated.
+
+# v1.25
+
+- New algorithm `stagger_and_step`: it computes a pseudo trajectory close to the stable invariant manifold of a saddle. The implementation follows the stagger and step algorithm. 
 
 # v1.24
 
