@@ -131,7 +131,7 @@ psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 
 attractors_m = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
 
-mapper_m = AttractorsViaProximity(psys, attractors_m)
+mapper_m = AttractorsViaProximity(psys, attractors_m; Ttr = 100)
 
 xg = yg = range(-4, 4; length = 201)
 grid = (xg, yg)
