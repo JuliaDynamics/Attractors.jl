@@ -43,9 +43,9 @@ end
 results = finalize_accumulator(accumulator)
 
 # The expected results are:
-# maximal_nonfatal_shock of attractor 2 at [1, 1] is computed as the distance between the
+# maximal_noncritical_shock of attractor 2 at [1, 1] is computed as the distance between the
 # that point and the furthest point of its own basin at [0, -1] which is 2.23607. For
-# attractor 1 at [-1, -1] the maximal nonfatal shock is 2.0, which is the distance to the
+# attractor 1 at [-1, -1] the maximal noncritical shock is 2.0, which is the distance to the
 # point [-1, 1] which is the furthest point in its basin.
 # Similarly, the median convergence pace is the constant convergence time 1.0 divided by the
 # distance to the point of median distance in the basin. For attractor 2, there are an even
@@ -54,11 +54,11 @@ results = finalize_accumulator(accumulator)
 # example. 
 results_expected = Dict(
     "mean_convergence_time"            => Dict(2=>1.0, 1=>1.0),
-    "maximal_nonfatal_shock_magnitude" => Dict(2=>2.23607, 1=>2.0),
+    "maximal_noncritical_shock_magnitude" => Dict(2=>2.23607, 1=>2.0),
     "finite_time_basin_stability"      => Dict(2=>0.0, 1=>0.0),
     "median_convergence_pace"          => Dict(2=>0.85355, 1=>1.0),
     "median_convergence_time"          => Dict(2=>1.0, 1=>1.0),
-    "minimal_fatal_shock_magnitude"    => Dict(2=>2.0, 1=>1.0),
+    "minimal_critical_shock_magnitude"    => Dict(2=>2.0, 1=>1.0),
     "basin_stability"                  => Dict(2=>0.66667, 1=>0.33333),
     "maximal_convergence_pace"         => Dict(2=>Inf, 1=>Inf),
     "maximal_convergence_time"         => Dict(2=>1.0, 1=>1.0),
@@ -88,14 +88,14 @@ measures_cont = stability_measures_along_continuation(
 
 measures_cont_expected = Dict(
     "finite_time_basin_stability"      => [Dict(1=>0.0), Dict(2=>0.0, 1=>0.0)],
-    "maximal_nonfatal_shock_magnitude" => [Dict(1=>Inf), Dict(2=>2.0, 1=>2.23607)],
+    "maximal_noncritical_shock_magnitude" => [Dict(1=>Inf), Dict(2=>2.0, 1=>2.23607)],
     "median_convergence_pace"          => [Dict(1=>1.0), Dict(2=>1.0, 1=>0.85355)],
     "basin_stability"                  => [Dict(1=>1.0), Dict(2=>0.33333, 1=>0.66667)],
     "maximal_convergence_pace"         => [Dict(1=>Inf), Dict(2=>Inf, 1=>Inf)],
     "mean_convergence_pace"            => [Dict(1=>Inf), Dict(2=>Inf, 1=>Inf)],
     "basin_fraction"                   => [Dict(1=>1.0), Dict(2=>0.33333, 1=>0.66667)],
     "mean_convergence_time"            => [Dict(1=>1.0), Dict(2=>1.0, 1=>1.0)],
-    "minimal_fatal_shock_magnitude"    => [Dict(1=>Inf), Dict(2=>1.0, 1=>2.0)],
+    "minimal_critical_shock_magnitude"    => [Dict(1=>Inf), Dict(2=>1.0, 1=>2.0)],
     "median_convergence_time"          => [Dict(1=>1.0), Dict(2=>1.0, 1=>1.0)],
     "maximal_convergence_time"         => [Dict(1=>1.0), Dict(2=>1.0, 1=>1.0)],
 )
