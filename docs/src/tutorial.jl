@@ -25,8 +25,8 @@ import Pkg
 
 #nb # Activate an environment in the folder containing the notebook
 #nb Pkg.activate(dirname(@__DIR__))
-#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEqDefault"])
-Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqDefault"])
+#nb Pkg.add(["DynamicalSystems", "CairoMakie", "GLMakie", "OrdinaryDiffEqVerner"])
+Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 
 #nb # ## Attractors.jl summary
 
@@ -433,97 +433,6 @@ fig = plot_attractors_curves(
 # assigned the same ID as the original attractor "1".
 # For more ways of matching attractors see [`IDMatcher`](@ref).
 
-# %% #src
-# ## Enhancing the continuation
-
-# The biggest strength of Attractors.jl is that it is not an isolated software.
-# It is part of **DynamicalSystems.jl**. Here, we will use the full power of
-# **DynamicalSystems.jl** and enrich the above continuation with various other
-# measures of nonlocal stability, in particular Lyapunov exponents and
-# the minimal fatal shock. First, let's plot again the continuation
-# and label some things or clarity
-
-
-fig = plot_basins_attractors_curves(
-	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange; add_legend = false
-)
-
-ax1 = content(fig[2,1])
-
-ax1.ylabel = "min(A₁)"
-
-fig
-
-# First, let's estimate the maximum Lyapunov exponent (MLE) for all attractors,
-# using the `lyapunov` function that comes from the ChaosTools.jl submodule.
-
-using ChaosTools: lyapunov
-
-lis = map(enumerate(prange)) do (i, p) # loop over parameters
-    set_parameter!(ds, pidx, p) # important! We use the dynamical system!
-    attractors = attractors_cont[i]
-    ## Return a dictionary mapping attractor IDs to their MLE
-    Dict(k => lyapunov(ds, 10000.0; u0 = A[1]) for (k, A) in attractors)
-end
-
-# The above `map` loop may be intimidating if you are a beginner, but it is
-# really just a shorter way to write a `for` loop for our example.
-# We iterate over all parameters, and for each we first update the dynamical
-# system with the correct parameter, and then extract the MLE
-# for each attractor. `map` just means that we don't have to pre-allocate a
-# new vector before the loop; it creates it for us.
-
-# We can visualize the LE with the other convenience function [`plot_continuation_curves!`](@ref),
-
-ax2 = Axis(fig[3, 1]; ylabel = "MLE")
-plot_continuation_curves!(ax2, lis, prange; add_legend = false)
-
-fig
-
-# This reveals crucial information for tha attractors, whether they are chaotic or not, that we would otherwise obtain only by visualizing the system dynamics at every single parameter.
-# The story we can see now is that the dynamics start with a limit cycle (0 Lyapunov exponent), go into bi-stability of chaos and limit cycle, then there is only one limit cycle again, and then a chaotic attractor appears again, for a second bistable regime.
-
-# The last piece of information to add is yet another measure of nonlocal stability: the minimal fatal shock (MFS), which is provided by [`minimal_fatal_shock`](@ref).
-# The code to estimate this is similar with the `map` block for the MLE.
-# Here however we re-use the created `mapper`, but now we must not forget to reset it inbetween parameter increments:
-
-using LinearAlgebra: norm
-search_area = collect(extrema.(grid ./ 2)) # smaller search = faster results
-search_algorithm = MFSBlackBoxOptim(max_steps = 1000, guess = ones(3))
-
-mfss = map(enumerate(prange)) do (i, p)
-    set_parameter!(ds, pidx, p)
-    reset_mapper!(mapper) # reset so that we don't have to re-initialize
-    ## We need a special clause here: if there is only 1 attractor,
-    ## then there is no MFS. It is undefined. We set it to `NaN`,
-    ## which conveniently, will result to nothing being plotted by Makie.
-    attractors = attractors_cont[i]
-    if length(attractors) == 1
-        return Dict(k => NaN for (k, A) in attractors)
-    end
-    ## otherwise, compute the actual MFS from the first point of each attractor
-    Dict(k =>
-        norm(minimal_fatal_shock(mapper, A[1], search_area, search_algorithm))
-        for (k, A) in attractors
-    )
-end
-
-# In a real application we wouldn't use the first point of each attractor,
-# as the first point is completely random on the attractor (at least, for the
-# [`AttractorsViaRecurrences`] mapper we use here).
-# We would do this by examining the whole `A` object in the above block
-# instead of just using `A[1]`. But this is a tutorial so we don't care!
-
-# Right, so now we can visualize the MFS with the rest of the other quantities:
-
-ax3 = Axis(fig[4, 1]; ylabel = "MFS", xlabel = "parameter")
-plot_continuation_curves!(ax3, mfss, prange; add_legend = false)
-
-## make the figure prettier
-for ax in (ax1, ax2,); hidexdecorations!(ax; grid = false); end
-resize!(fig, 500, 500)
-fig
-
 # ## Continuation along arbitrary parameter curves
 
 # One of the many advantages of the global continuation is that we can choose
@@ -535,7 +444,8 @@ fig
 #For example, we can probe an elipsoid defined as
 
 params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
-pcurve = params.(range(0, 2π; length = 101))
+θs = range(0, 2π; length = 101)
+pcurve = params.(θs)
 
 # here each component maps the parameter index to its value.
 # We can just give this `pcurve` to the global continuation,
@@ -562,6 +472,93 @@ animate_attractors_continuation(
 # <source src="../curvecont.mp4" type="video/mp4">
 # </video>
 # ```
+
+# %% #src
+# ## Enhancing the continuation with more stability measures or other quantities
+
+# The standard stability measure that is reported during a global continuation
+# is the basin fractions. This is primarily because it is computed automatically
+# as we find the different attractors. There are many more stability measures
+# that could be more useful in different contexts. Attractors.jl offers
+# the unique possibility of estimating _almost all_ known measures of stability in the
+# literature of dynamical systems during a _single_ global continuation pass.
+# This is done with the [`StabilityMeasuresAccumulator`](@ref) data structure.
+# You can visit its documentation string to learn about all different stability measures.
+# If you find some stability measures not included in the [`StabilityMeasuresAccumulator`](@ref)
+# then either open an Issue and tell us about it or even better make a Pull Request and
+# contribute it yourself!
+
+# Using [`StabilityMeasuresAccumulator`](@ref) is very easy. If we have already performed
+# a global continuation then we can utilize the function [`stability_measures_along_continuation`](@ref)
+# to run through it again and estimate now all stability measures.
+
+result = stability_measures_along_continuation(
+    ds, attractors_cont, pcurve, sampler; ε = 0.1
+)
+keys(result)
+
+# The result is a dictionary mapping the stability measure name (as a string) to
+# the continuation of the measure.
+# We can see there are quite a lot of measures that have been estimated!
+# So the values of `result` are the same type as
+# the `fractions_cont` we have computed before. This means it is straightforward to
+# visualize these new stability measures. For example, let's say we want to visualize
+
+chosen = ["median_convergence_pace", "minimal_fatal_shock_magnitude"]
+abbrev = ["MCP", "MFS"]
+
+# then we just use the visualization function `plot_continuation_curves`
+
+ukeys = unique_keys(attractors_cont) # so that we ignore key -1 (divergent orbits)
+fig = plot_attractors_curves(attractors_cont, A -> minimum(A[:, 1]), θs)
+for (i, c) in enumerate(chosen)
+    ax = Axis(fig[1 - i, 1]; ylabel = abbrev[i])
+    measure_cont = result[c]
+    plot_continuation_curves!(ax, measure_cont, θs; ukeys, add_legend = false)
+    hidexdecorations!(ax; grid = false)
+end
+resize!(fig, 600, 500)
+fig
+
+
+# For more specialization on estimating these stability measures,
+# see the documentation of [`StabilityMeasuresAccumulator`](@ref).
+
+
+# One of the biggest strengths of Attractors.jl is that it is not an isolated software.
+# It is part of **DynamicalSystems.jl**. We can straightforwardly use any other
+# functionality of the library to enhance this continuation, even beyond stability measures.
+# Let's also estimate and visualize the maximum Lyapunov exponent for each attractor.
+# We first import the function that estimates the MLE
+
+using ChaosTools: lyapunov
+
+# and then, the estimation itself is rather simple:
+
+lis = map(enumerate(pcurve)) do (i, p) # loop over parameters
+    set_parameters!(ds, p) # important! We use the dynamical system!
+    attractors = attractors_cont[i]
+    ## Return a dictionary mapping attractor IDs to their MLE
+    Dict(k => lyapunov(ds, 10000.0; u0 = A[1]) for (k, A) in attractors)
+end
+
+# The above `map` loop may be intimidating if you are a beginner, but it is
+# really just a shorter way to write a `for` loop for our example.
+# We iterate over all parameters, and for each we first update the dynamical
+# system with the correct parameter, and then extract the MLE
+# for each attractor. `map` just means that we don't have to pre-allocate a
+# new vector before the loop; it creates it for us.
+
+# We now visualize the MLE with the same way as any other quantity over the continuation:
+
+axλ = Axis(fig[-length(chosen), 1]; ylabel = "MLE")
+hidexdecorations!(axλ)
+plot_continuation_curves!(axλ, lis, θs; add_legend = false)
+fig
+
+# This reveals crucial information for tha attractors, whether they are chaotic or not,
+# that we would otherwise obtain only by visualizing the system dynamics at every single
+# point in the continuation parameter.
 
 # ## Conclusion and comparison with traditional local continuation
 
