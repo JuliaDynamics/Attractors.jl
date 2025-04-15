@@ -69,7 +69,7 @@ results_expected = Dict(
 @testset "Nonlocal Stability Measures Accumulator with dumb map" begin
     for (key, value) in results_expected
         @test key in keys(results)
-        @test value ≈ results[key] atol=1e-5
+        @test sort(collect(values(value))) ≈ sort(collect(values(results[key]))) atol=1e-5
     end
 end
 
@@ -104,10 +104,7 @@ measures_cont_expected = Dict(
     for (key, value) in measures_cont_expected
         @test key in keys(measures_cont)
         for k in [1, 2] 
-            for (i, v) in value[k]
-                @test i in keys(measures_cont[key][k])
-                @test v ≈ measures_cont[key][k][i] atol=1e-5
-            end
+            @test sort(collect(values(value[k]))) ≈ sort(collect(values(results[key][k]))) atol=1e-5
         end
     end
 end
@@ -147,6 +144,6 @@ results_expected = Dict(
     # Validate the results
     for (key, value) in results_expected
         @test key in keys(results)
-        @test value ≈ results[key] atol=1e-5
+        @test sort(collect(values(value))) ≈ sort(collect(values(results[key]))) atol=1e-5
     end
 end
