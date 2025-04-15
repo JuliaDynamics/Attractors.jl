@@ -2,10 +2,11 @@
 
 - The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
   The positional argument version is deprecated.
+- The keyword argument `Ttr` for `AttractorsViaProximity` has now the default value 0. This may break code that relied on the default value. We have increased the default value of the lost counter to 10,000 from 1,000 to accommodate for this change in transient time.
 
 # v1.25
 
-- New algorithm `stagger_and_step`: it computes a pseudo trajectory close to the stable invariant manifold of a saddle. The implementation follows the stagger and step algorithm. 
+- New algorithm `stagger_and_step`: it computes a pseudo trajectory close to the stable invariant manifold of a saddle. The implementation follows the stagger and step algorithm.
 
 # v1.24
 
