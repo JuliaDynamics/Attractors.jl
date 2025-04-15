@@ -13,7 +13,7 @@ mapping attractor labels to `StateSpaceSet`s containing the attractors.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
-* `consecutive_lost_steps = 1000`: If the `ds` has been stepped this many times without
+* `consecutive_lost_steps = 10000`: If the `ds` has been stepped this many times without
   coming `ε`-near to any attractor,  it is assumed
   that the trajectory diverged (gets labelled as `-1`).
 * `distance = StrictlyMinimumDistance()`: Distance function for evaluating the distance
@@ -62,7 +62,7 @@ AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
 AttractorsViaProximity(ds, attractors; ε = ε, kw...)
 
 function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
-        Δt=1, Ttr=0, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
+        Δt=1, Ttr=0, consecutive_lost_steps=10000, horizon_limit=1e3, verbose = false,
         distance = StrictlyMinimumDistance(), stop_at_Δt = false, ε = nothing,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
@@ -95,7 +95,7 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
     return mapper
 end
 
-reset_mapper!(mapper::AttractorsViaProximity) = nothing # AM can we add this for consistency?
+reset_mapper!(::AttractorsViaProximity) = nothing
 
 function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1
@@ -139,9 +139,9 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     ds = referenced_dynamical_system(mapper)
     reinit!(ds, u0)
     t0 = current_time(ds)
-    maxdist = zero(eltype(eltype(first(mapper.attractors)[2])))
+    maxdist = zero(eltype(current_state(ds)))
     mapper.latest_convergence_time[] = Inf # default return value
-    mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
+    mapper.Ttr > 0 && step!(ds, mapper.Ttr)
     lost_count = 0
     while lost_count < mapper.consecutive_lost_steps
         step!(ds, mapper.Δt, mapper.stop_at_Δt)

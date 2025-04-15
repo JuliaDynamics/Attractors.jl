@@ -1,4 +1,4 @@
-    using Attractors
+using Attractors
 using Test
 using OrdinaryDiffEqVerner
 using LinearAlgebra
@@ -18,8 +18,7 @@ end
     attrs = Dict([1 => StateSpaceSet([fp]), 2 => StateSpaceSet([-fp])])
     bisect_thresh, diverge_thresh, maxiter, abstol = 1e-8, 1e-7, 100, 1e-9
     edge = edgetracking(ds, attrs; u1=[-1.0, 0.2], u2=[1.0, 0.2],
-        bisect_thresh, diverge_thresh, maxiter, abstol).edge
-    println(edge[end], edge[end-1])
+        bisect_thresh, diverge_thresh, maxiter, abstol, Ttr = 100).edge
     @test sqrt(sum(abs, (edge[end]-zeros(2)).^2)) < 1e-5
 end
 
@@ -50,13 +49,13 @@ end
         _pairs12, _pairs13, _pairs23 = [], [], []
         for j in 1:Int(sqrt(n_sample))
             et12 = edgetracking(ds, attractors;
-                    u1=attractors[1][i], u2=attractors[2][j], bisect_thresh=1e-4,
+                    u1=attractors[1][i], u2=attractors[2][j], bisect_thresh=1e-4, Ttr = 100,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
             et13 = edgetracking(ds, attractors;
-                    u1=attractors[1][i], u2=attractors[3][j], bisect_thresh=1e-4,
+                    u1=attractors[1][i], u2=attractors[3][j], bisect_thresh=1e-4, Ttr = 100,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
             et23 = edgetracking(ds, attractors;
-                    u1=attractors[2][i], u2=attractors[3][j], bisect_thresh=1e-4,
+                    u1=attractors[2][i], u2=attractors[3][j], bisect_thresh=1e-4, Ttr = 100,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
 
             et12.success ? push!(_pairs12, et12.edge[end]) : nothing

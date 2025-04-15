@@ -116,7 +116,7 @@ function edgetracking(ds::DynamicalSystem, attractors::Dict;
     kwargs...)
 
     pds = ParallelDynamicalSystem(ds, [u1, u2])
-    mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, kwargs...)
+    mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
 
     edgetracking(pds, mapper;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
