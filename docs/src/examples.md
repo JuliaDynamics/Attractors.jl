@@ -749,7 +749,8 @@ computing the zeroes of the ODE system. However, the edge tracking algorithm all
 edge states also in high-dimensional and chaotic systems where a simple computation of
 unstable equilibria becomes infeasible.
 
-## Non-local and local stability measures
+## Estimating (almost) all stability measures at a given parameter
+
 The type [`StabilityMeasuresAccumulator`](@ref) is showcased in an application to the Duffing oscillator.
 
 ```@example MAIN
@@ -774,7 +775,7 @@ mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurren
 
 accumulator = StabilityMeasuresAccumulator(mapper, finite_time=50.0, weighting_distribution=MvNormal(zeros(2), 1.0*I))
 ```
-If we call this object on some initial conditions and finalize its values, we receive 
+If we call this object on some initial conditions and finalize its values, we receive
 several different stability measures. Their interpretation can be found in the documentation of [`StabilityMeasuresAccumulator`](@ref).
 ```@example MAIN
 A = ics_from_grid(grid)
@@ -784,78 +785,74 @@ end
 stability_measures = finalize_accumulator(accumulator)
 ```
 
-## Global Continuation of stability measures
+## Global continuation of stability measures
+
 The above `accumulator` can be passed to [`AttractorSeedContinueMatch`](@ref) just as an ordinary [`AttractorsViaRecurrences`](@ref) mapper. The [`global_continuation`](@ref) function not only outputs the continued attractors but also the continued stability measures.
 ```@example MAIN
-acam = AttractorSeedContinueMatch(accumulator, MatchBySSSetDistance(), seeding=A->[])
-
+acam = AttractorSeedContinueMatch(accumulator, MatchBySSSetDistance())
 p_0 = 0.1
 p_T = 0.5
 param_steps = 30
 ps = [p_0*(1-i/(param_steps-1)) + p_T*(i/(param_steps-1)) for i in 0:param_steps-1]
 pcurve = [[2 => p] for p in ps]
-
-measures_cont, attractors_cont = global_continuation(acam, pcurve, ics_from_grid(grid))
-```
-It may be desirable to use an [`AttractorsViaProximity`](@ref) mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an `attractors_cont` result is given, we can use the function `stability_measures_along_continuation` to compute the stability measures based on the [`AttractorsViaProximity`](@ref) mapper related to the continued attractors. For this, we pass the [`DynamicalSystem`](@ref) itself as the first argument.
-```@example MAIN
-proximity_mapper_options = (Ttr=0, Δt=0.01, stop_at_Δt = false, horizon_limit = 1e2, consecutive_lost_steps = 10000)
-measures_cont_proximity = stability_measures_along_continuation(
-    ds, attractors_cont, pcurve, ics_from_grid(grid), ε=0.1, weighting_distribution=MvNormal(zeros(2), 1.0*I), finite_time=50.0, proximity_mapper_options = proximity_mapper_options
-)
+ics = ics_from_grid(grid)
+measures_cont, attractors_cont = global_continuation(acam, pcurve, ics)
 ```
 
-## Invariant saddle of a dynamical system 
+It may be desirable to use an [`AttractorsViaProximity`](@ref) mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an `attractors_cont` result is given, we can use the function `stability_measures_along_continuation` to compute the stability measures based on the [`AttractorsViaProximity`](@ref) mapper related to the continued attractors.
+This usage is illustrated in the main Tutorial.
 
-The stagger-and-step method approximates the invariant 
-non-attracting set governing the chaotic transient dynamics 
-of a system, namely the stable manifold of a chaotic saddle. 
+## Invariant saddle of a dynamical system
 
-Given the dynamical system `ds` and a initial guess `x0` in a 
-region *with no attractors*, the algorithm provides `N` points 
-close to the  stable manifold that escape from the region 
-after at least `Tm` steps of `ds`. 
+The stagger-and-step method approximates the invariant
+non-attracting set governing the chaotic transient dynamics
+of a system, namely the stable manifold of a chaotic saddle.
+
+Given the dynamical system `ds` and a initial guess `x0` in a
+region *with no attractors*, the algorithm provides `N` points
+close to the  stable manifold that escape from the region
+after at least `Tm` steps of `ds`.
 
 We first set the dynamical system, in our case we set up two coupled Hénon map
 that are known to have a chaotic saddle that generates chaotic transients
-before the trajectories escape: 
- 
+before the trajectories escape:
+
 ```@example MAIN
 function F!(du, u ,p, n)
     x,y,u,v = u
-    A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4; 
+    A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4;
     du[1] = A - x^2 + B*y + k*(x-u)
     du[2] = x
     du[3] = C - u^2 + D*v + k*(u-x)
     du[4] = u
-    return 
+    return
 end
-ds = DeterministicIteratedMap(F!, zeros(4)) 
+ds = DeterministicIteratedMap(F!, zeros(4))
 ```
 
-Next we define a region in the phase space that should not contain attractors. 
-Using this region we also define a `sampler` and a membership function `isinside`: 
+Next we define a region in the phase space that should not contain attractors.
+Using this region we also define a `sampler` and a membership function `isinside`:
 
 ```@example MAIN
-R_min = [-4; -4.; -4.; -4.] 
+R_min = [-4; -4.; -4.; -4.]
 R_max = [4.; 4.; 4.; 4.]
 sampler, isinside = statespace_sampler(HRectangle(R_min,R_max))
 ```
 
-And we are ready! We can now call the function `stagger_and_step` with an initial 
-condition `x0`: 
+And we are ready! We can now call the function `stagger_and_step` with an initial
+condition `x0`:
 
 ```@example MAIN
 x0 = sampler()
-v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
+v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.)
 ```
-The `stagger_mode` keyword select the type of search in the 
-phase space to stick close to the saddle at each step. 
+The `stagger_mode` keyword select the type of search in the
+phase space to stick close to the saddle at each step.
 The mode `:adaptive` adapts the radius of the stochastic
-search as a function of the success of the search process. 
+search as a function of the success of the search process.
 
-Finally we can represent a projection of the chaotic saddle found in this 
-example: 
+Finally we can represent a projection of the chaotic saddle found in this
+example:
 
 ```@example MAIN
 fig = Figure()
