@@ -31,7 +31,7 @@ attractor is returned.
 in the state space can be provided.
 
 If an `ε::Real` is not provided by the user, a value is computed
-automatically as half of the minimum distance between all `attractors`.
+automatically as 1/10th of the minimum distance between all `attractors`.
 This operation can be expensive for large `StateSpaceSet`s.
 If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box containing
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
@@ -118,7 +118,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
             end
         end
         verbose && @info("Minimum distance between attractors computed: $(minε)")
-        ε = minε/2
+        ε = minε/10
     else
         attractor = first(attractors)[2] # get the single attractor
         mini, maxi = minmaxima(attractor)

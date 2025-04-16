@@ -2,7 +2,10 @@
 
 - The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
   The positional argument version is deprecated.
-- The keyword argument `Ttr` for `AttractorsViaProximity` has now the default value 0. This may break code that relied on the default value. We have increased the default value of the lost counter to 10,000 from 1,000 to accommodate for this change in transient time.
+- Changes in default keyword values for `AttractorsViaProximity`:
+  - The keyword argument `Ttr` for `AttractorsViaProximity` has now the default value 0.This is the most sensible default value and it was a mistake to have a nonzero default value before. Unfortunately, this may break code that relied on the default value.
+  - The default `ε` is now 1/10 instead of 1/2 of the minimum distance between attractors. This significantly increases default accuracy of the mapper.
+  - Default default value of the lost counter for the proximity mapper has been increased to 10,000 from 1,000 to accommodate for the change in transient time.
 - New option `seed` for the seed of the RNG of `MFSBruteForce`.
 
 # v1.25

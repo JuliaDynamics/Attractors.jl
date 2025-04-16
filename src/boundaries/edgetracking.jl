@@ -52,9 +52,9 @@ two initial states must belong to different basins of attraction.
 * `show_progress = true`: if true, shows progress bar and information while running.
 * `verbose = true`: if false, silences print output and warnings while running.
 * `kw...`: additional keyword arguments to be passed to [`AttractorsViaProximity`](@ref).
-  Because internally a proximity mapper is used, and because we want to converge to
-  the attractors as fast as possible, `Ttr = 100` is given by default. `Δt` is also
-  propagated to the proximity mapper.
+  We strongly recommend to either pass in a high `Ttr`, or a very small `ε`,
+  (smaller than the default estimated by [`AttractorsViaProximity`](@ref)) to avoid
+  transient parts of trajectories wrongly being classified as having converged.
 
 ## Description
 
@@ -119,7 +119,7 @@ function edgetracking(ds::DynamicalSystem, attractors::Dict;
     kwargs...)
 
     pds = ParallelDynamicalSystem(ds, [u1, u2])
-    mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, Δt, Ttr = 100, kwargs...)
+    mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
 
     edgetracking(pds, mapper;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,

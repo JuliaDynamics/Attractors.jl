@@ -7,7 +7,7 @@ using LinearAlgebra
     cubicmap(u, p, n) = SVector{1}(p[1]*u[1] - u[1]^3)
     ds = DeterministicIteratedMap(cubicmap, [1.0], [2.0])
     attrs = Dict(1 => StateSpaceSet([1.0]), 2 => StateSpaceSet([-1.0]))
-    saddle = edgetracking(ds, attrs; Δt=1, abstol=1e-8).edge[end]
+    saddle = edgetracking(ds, attrs; Δt=1, Ttr = 0, abstol=1e-8).edge[end]
     @test saddle[1] < 1e-5
 end
 
@@ -17,9 +17,15 @@ end
     fp = [sqrt(2/3), sqrt(2/27)]
     attrs = Dict([1 => StateSpaceSet([fp]), 2 => StateSpaceSet([-fp])])
     bisect_thresh, diverge_thresh, maxiter, abstol = 1e-8, 1e-7, 100, 1e-9
+    # It is CRUCIAL here that we use a much smaller ε because the attractors are too close
+    # to each other and the transients pass by ε-close giving wrong results if ε is using the
+    # default option!
     edge = edgetracking(ds, attrs; u1=[-1.0, 0.2], u2=[1.0, 0.2],
-        bisect_thresh, diverge_thresh, maxiter, abstol).edge
-    @test sqrt(sum(abs, (edge[end]-zeros(2)).^2)) < 1e-5
+        bisect_thresh, diverge_thresh, maxiter, abstol, ε = 0.001, Ttr = 0,
+    ).edge
+    # The edge state of this system is the sadle at the origin
+    @test abs(edge[end][1]) < 1e-5
+    @test abs(edge[end][2]) < 1e-5
 end
 
 @testset "Thomas' rule" begin
@@ -43,18 +49,20 @@ end
     attractors = extract_attractors(mapper)
 
     # Run edgetracking between pairs of points lying on different attractors
-    n_sample = 25
+    n_sample = 5
     pairs12, pairs13, pairs23 = [], [], []
-    for i in 1:Int(sqrt(n_sample))
+    for i in 1:n_sample
         _pairs12, _pairs13, _pairs23 = [], [], []
-        for j in 1:Int(sqrt(n_sample))
-            et12 = edgetracking(ds, attractors;
+        for j in 1:n_sample
+            # using transient time here for correct convergence
+            # because default `ε` is too large!
+            et12 = edgetracking(ds, attractors; Ttr = 10,
                     u1=attractors[1][i], u2=attractors[2][j], bisect_thresh=1e-4,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
-            et13 = edgetracking(ds, attractors;
+            et13 = edgetracking(ds, attractors; Ttr = 10,
                     u1=attractors[1][i], u2=attractors[3][j], bisect_thresh=1e-4,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
-            et23 = edgetracking(ds, attractors;
+            et23 = edgetracking(ds, attractors; Ttr = 10,
                     u1=attractors[2][i], u2=attractors[3][j], bisect_thresh=1e-4,
                     diverge_thresh=1e-3, maxiter=10000, abstol=1e-5, verbose=false)
 
