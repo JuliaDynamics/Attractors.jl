@@ -44,8 +44,8 @@ end
     xg = yg = yz = range(-6.0, 6.0; length = 101)
     grid = (xg, yg, yz)
     mapper = AttractorsViaRecurrences(ds, grid; consecutive_recurrences = 1000)
-    sampler, = statespace_sampler(grid; show_progress = false)
-    basins_fractions(mapper, sampler)
+    sampler, = statespace_sampler(grid)
+    basins_fractions(mapper, sampler; show_progress = false)
     attractors = extract_attractors(mapper)
 
     # Run edgetracking between pairs of points lying on different attractors

@@ -796,6 +796,7 @@ ps = [p_0*(1-i/(param_steps-1)) + p_T*(i/(param_steps-1)) for i in 0:param_steps
 pcurve = [[2 => p] for p in ps]
 ics = ics_from_grid(grid)
 measures_cont, attractors_cont = global_continuation(acam, pcurve, ics)
+measures_cont
 ```
 
 It may be desirable to use an [`AttractorsViaProximity`](@ref) mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an `attractors_cont` result is given, we can use the function `stability_measures_along_continuation` to compute the stability measures based on the [`AttractorsViaProximity`](@ref) mapper related to the continued attractors.
