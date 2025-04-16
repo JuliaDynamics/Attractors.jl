@@ -129,27 +129,34 @@ ds = magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
 
 psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 
-attractors_m = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
+attractors_dict = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
+attractors = collect(values(attractors_dict))
 
-mapper_m = AttractorsViaProximity(psys, attractors_m; Ttr = 100)
+# CRUCIAL: Because we are using the projected magnetic pendulum, we need to make sure
+# that we have transient time (because it passes above a magnet but with nonzero velocity)
+mapper_m = AttractorsViaProximity(psys, attractors_dict; Ttr = 100)
 
-xg = yg = range(-4, 4; length = 201)
-grid = (xg, yg)
-algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.99)
-algo_bb = Attractors.MFSBlackBoxOptim()
+searchrange =  [(-4, 4), (-4, 4)]
 
-attractor3 = vec((collect(values(attractors_m)))[3])
-attractor2 = vec((collect(values(attractors_m)))[2])
-attractor1 = vec((collect(values(attractors_m)))[1])
+algo_r = MFSBruteForce(sphere_decrease_factor = 0.99, seed = 42, sphere_iterations = 1000, initial_iterations = 1000)
 
-randomised_r = Dict([atr => norm(minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_r))
-                                         for atr in [attractor1[1], attractor2[1], attractor3[1]]])
+randomised_r = [
+    norm(minimal_fatal_shock(mapper_m, A[1], searchrange, algo_r))
+    for A in attractors
+]
 
-blackbox_r = Dict([atr => norm(minimal_fatal_shock(mapper_m, atr, [(-4, 4), (-4, 4)], algo_bb))
-                                            for atr in [attractor1[1], attractor2[1], attractor3[1]]])
+# Due to symmetry, all MCS should be the same, and by plotting the basins
+# you can also see how large they should be.
+@test all(x -> isapprox(x, 0.395; atol = 1e-2), randomised_r)
 
-@test map(x -> (x <= 0.4) && (x) > 0.39, values(randomised_r)) |> all
-@test map(x -> (x <= 0.395) && (x) > 0.39, values(blackbox_r)) |> all
+algo_bb = MFSBlackBoxOptim()
+randomised_bb = [
+    norm(minimal_fatal_shock(mapper_m, A[1], searchrange, algo_bb))
+    for A in attractors
+]
+
+# the black box case is drastically more accurate
+@test all(x -> isapprox(x, 0.3923; atol = 1e-4), randomised_bb)
 
 end
 
@@ -181,8 +188,9 @@ end
 
     algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 50000)
 
-    ux_res = minimal_fatal_shock(mapper_3d, ux, (-6.0,6.0), algo_bb)
-    uy_res = minimal_fatal_shock(mapper_3d, uy, (-6.0,6.0), algo_bb)
+    ux_res = minimal_fatal_shock(mapper_3d, ux, (-6.0, 6.0), algo_bb)
+    uy_res = minimal_fatal_shock(mapper_3d, uy, (-6.0, 6.0), algo_bb)
 
+    # Due to the symmetry of the system, the shocks have to be the same
     @test norm(ux_res) - norm(uy_res) < 0.0001
 end
