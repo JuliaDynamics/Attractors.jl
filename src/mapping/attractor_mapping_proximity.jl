@@ -7,6 +7,7 @@ mapping attractor labels to `StateSpaceSet`s containing the attractors.
 
 ## Keywords
 * `ε = nothing`: Distance below which a trajectory has converged to an attractor, see below.
+  Type `\\varepsilon<TAB>` to input `ε`.
 * `Ttr = 0`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
 * `stop_at_Δt = false`: Third argument given to `step!`.
