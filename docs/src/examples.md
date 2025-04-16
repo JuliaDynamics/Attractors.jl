@@ -67,9 +67,9 @@ shaded_basins_heatmap(grid, basins, attractors, iterations)
 ```
 
 
-## Minimal Fatal Shock
+## Minimal Critical Shock
 
-Here we find the Minimal Fatal Shock (MFS, see [`minimal_critical_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
+Here we find the Minimal Critical Shock (MFS, see [`minimal_critical_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
 ```@example MAIN
 shocks = Dict()
 algo_bb = Attractors.MCSBlackBoxOptim()
@@ -89,6 +89,7 @@ fig
 ```
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
+
 In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `ProjectedDynamicalSystem` to project the 4D system onto a 2D plane, saving a lot of computational time!
 
 ### Computing the basins
