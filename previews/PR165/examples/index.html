@@ -44,8 +44,8 @@ basins</code></pre><pre class="documenter-example-output"><code class="nohighlig
 fig = heatmap_basins_attractors(grid, basins, attractors)</code></pre><img src="f060bee1.png" alt="Example block output"/><p>Instead of computing the full basins, we could get only the fractions of the basins of attractions using <a href="../api/#Attractors.basins_fractions"><code>basins_fractions</code></a>, which is typically the more useful thing to do in a high dimensional system. In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in <a href="../api/#Attractors.basins_of_attraction"><code>basins_of_attraction</code></a>. This is simple to do:</p><pre><code class="language-julia hljs">sampler, = statespace_sampler(grid)
 
 basins = basins_fractions(mapper_newton, sampler)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, Float64} with 2 entries:
-  0 =&gt; 0.332
-  1 =&gt; 0.668</code></pre><p>in this case, to also get the attractors we simply extract them from the underlying storage of the mapper:</p><pre><code class="language-julia hljs">attractors = extract_attractors(mapper_newton)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, StateSpaceSet{2, Float64, SVector{2, Float64}}} with 3 entries:
+  0 =&gt; 0.33
+  1 =&gt; 0.67</code></pre><p>in this case, to also get the attractors we simply extract them from the underlying storage of the mapper:</p><pre><code class="language-julia hljs">attractors = extract_attractors(mapper_newton)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, StateSpaceSet{2, Float64, SVector{2, Float64}}} with 3 entries:
   2 =&gt; 2-dimensional StateSpaceSet{Float64} with 1 points
   3 =&gt; 2-dimensional StateSpaceSet{Float64} with 1 points
   1 =&gt; 2-dimensional StateSpaceSet{Float64} with 1 points</code></pre><h2 id="Shading-basins-according-to-convergence-time"><a class="docs-heading-anchor" href="#Shading-basins-according-to-convergence-time">Shading basins according to convergence time</a><a id="Shading-basins-according-to-convergence-time-1"></a><a class="docs-heading-anchor-permalink" href="#Shading-basins-according-to-convergence-time" title="Permalink"></a></h2><p>Continuing from above, we can utilize the <a href="../api/#Attractors.convergence_and_basins_of_attraction"><code>convergence_and_basins_of_attraction</code></a> function, and the <a href="../api/#Attractors.shaded_basins_heatmap"><code>shaded_basins_heatmap</code></a> plotting utility function, to shade the basins of attraction based on the convergence time, with lighter colors indicating faster convergence to the attractor.</p><pre><code class="language-julia hljs">mapper_newton = AttractorsViaRecurrences(ds, grid;
@@ -56,20 +56,20 @@ basins, attractors, iterations = convergence_and_basins_of_attraction(
     mapper_newton, grid; show_progress = false
 )
 
-shaded_basins_heatmap(grid, basins, attractors, iterations)</code></pre><img src="e7ff726a.png" alt="Example block output"/><h2 id="Minimal-Fatal-Shock"><a class="docs-heading-anchor" href="#Minimal-Fatal-Shock">Minimal Fatal Shock</a><a id="Minimal-Fatal-Shock-1"></a><a class="docs-heading-anchor-permalink" href="#Minimal-Fatal-Shock" title="Permalink"></a></h2><p>Here we find the Minimal Fatal Shock (MFS, see <a href="../api/#Attractors.minimal_fatal_shock"><code>minimal_fatal_shock</code></a>) for the attractors (i.e., fixed points) of Newton&#39;s fractal</p><pre><code class="language-julia hljs">shocks = Dict()
-algo_bb = Attractors.MFSBlackBoxOptim()
+shaded_basins_heatmap(grid, basins, attractors, iterations)</code></pre><img src="e7ff726a.png" alt="Example block output"/><h2 id="Minimal-Fatal-Shock"><a class="docs-heading-anchor" href="#Minimal-Fatal-Shock">Minimal Fatal Shock</a><a id="Minimal-Fatal-Shock-1"></a><a class="docs-heading-anchor-permalink" href="#Minimal-Fatal-Shock" title="Permalink"></a></h2><p>Here we find the Minimal Fatal Shock (MFS, see <a href="../api/#Attractors.minimal_critical_shock"><code>minimal_critical_shock</code></a>) for the attractors (i.e., fixed points) of Newton&#39;s fractal</p><pre><code class="language-julia hljs">shocks = Dict()
+algo_bb = Attractors.MCSBlackBoxOptim()
 for atr in values(attractors)
     u0 = atr[1]
-    shocks[u0] = minimal_fatal_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
+    shocks[u0] = minimal_critical_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
 end
 shocks</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Any, Any} with 3 entries:
-  [-0.5, -0.866025] =&gt; [0.592005, 0.190974]
-  [1.0, 0.0]        =&gt; [-0.46487, -0.413584]
+  [-0.5, -0.866025] =&gt; [-0.101303, 0.614684]
+  [1.0, 0.0]        =&gt; [-0.461391, 0.417204]
   [-0.5, 0.866025]  =&gt; [0.592005, -0.190974]</code></pre><p>To visualize results we can make use of previously defined heatmap</p><pre><code class="language-julia hljs">ax =  content(fig[1,1])
 for (atr, shock) in shocks
     lines!(ax, [atr, atr + shock]; color = :orange, linewidth = 3)
 end
-fig</code></pre><img src="e61ec5cf.png" alt="Example block output"/><h2 id="Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum"><a class="docs-heading-anchor" href="#Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum">Fractality of 2D basins of the (4D) magnetic pendulum</a><a id="Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum-1"></a><a class="docs-heading-anchor-permalink" href="#Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum" title="Permalink"></a></h2><p>In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the <a href="../api/#Attractors.AttractorsViaProximity"><code>AttractorsViaProximity</code></a> which works when we already know where the attractors are. Furthermore we will also use a <code>ProjectedDynamicalSystem</code> to project the 4D system onto a 2D plane, saving a lot of computational time!</p><h3 id="Computing-the-basins"><a class="docs-heading-anchor" href="#Computing-the-basins">Computing the basins</a><a id="Computing-the-basins-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-basins" title="Permalink"></a></h3><p>First we need to load in the magnetic pendulum from the predefined dynamical systems library</p><pre><code class="language-julia hljs">using Attractors, CairoMakie
+fig</code></pre><img src="cb3d174d.png" alt="Example block output"/><h2 id="Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum"><a class="docs-heading-anchor" href="#Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum">Fractality of 2D basins of the (4D) magnetic pendulum</a><a id="Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum-1"></a><a class="docs-heading-anchor-permalink" href="#Fractality-of-2D-basins-of-the-(4D)-magnetic-pendulum" title="Permalink"></a></h2><p>In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the <a href="../api/#Attractors.AttractorsViaProximity"><code>AttractorsViaProximity</code></a> which works when we already know where the attractors are. Furthermore we will also use a <code>ProjectedDynamicalSystem</code> to project the 4D system onto a 2D plane, saving a lot of computational time!</p><h3 id="Computing-the-basins"><a class="docs-heading-anchor" href="#Computing-the-basins">Computing the basins</a><a id="Computing-the-basins-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-basins" title="Permalink"></a></h3><p>First we need to load in the magnetic pendulum from the predefined dynamical systems library</p><pre><code class="language-julia hljs">using Attractors, CairoMakie
 using PredefinedDynamicalSystems
 ds = PredefinedDynamicalSystems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-dimensional CoupledODEs
  deterministic: true
@@ -419,9 +419,9 @@ region = HRectangle([-4, 4], [4, 4])
 sampler, = statespace_sampler(region)
 
 fs = basins_fractions(mapper, sampler; show_progress = false)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, Float64} with 3 entries:
-  2 =&gt; 0.375
-  3 =&gt; 0.251
-  1 =&gt; 0.374</code></pre><p>As expected, the fractions are each about 1/3 due to the system symmetry.</p><h2 id="Featurizing-and-grouping-across-parameters-(MCBB)"><a class="docs-heading-anchor" href="#Featurizing-and-grouping-across-parameters-(MCBB)">Featurizing and grouping across parameters (MCBB)</a><a id="Featurizing-and-grouping-across-parameters-(MCBB)-1"></a><a class="docs-heading-anchor-permalink" href="#Featurizing-and-grouping-across-parameters-(MCBB)" title="Permalink"></a></h2><p>Here we showcase the example of the Monte Carlo Basin Bifurcation publication. For this, we will use <a href="../api/#Attractors.FeaturizeGroupAcrossParameter"><code>FeaturizeGroupAcrossParameter</code></a> while also providing a <code>par_weight = 1</code> keyword. However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI. Instead, we will use &quot;dummy&quot; system which we know analytically the attractors and how they behave versus a parameter.</p><p>the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the <code>featurizer</code> function below).</p><pre><code class="language-julia hljs">using Attractors, Random
+  2 =&gt; 0.384
+  3 =&gt; 0.231
+  1 =&gt; 0.385</code></pre><p>As expected, the fractions are each about 1/3 due to the system symmetry.</p><h2 id="Featurizing-and-grouping-across-parameters-(MCBB)"><a class="docs-heading-anchor" href="#Featurizing-and-grouping-across-parameters-(MCBB)">Featurizing and grouping across parameters (MCBB)</a><a id="Featurizing-and-grouping-across-parameters-(MCBB)-1"></a><a class="docs-heading-anchor-permalink" href="#Featurizing-and-grouping-across-parameters-(MCBB)" title="Permalink"></a></h2><p>Here we showcase the example of the Monte Carlo Basin Bifurcation publication. For this, we will use <a href="../api/#Attractors.FeaturizeGroupAcrossParameter"><code>FeaturizeGroupAcrossParameter</code></a> while also providing a <code>par_weight = 1</code> keyword. However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI. Instead, we will use &quot;dummy&quot; system which we know analytically the attractors and how they behave versus a parameter.</p><p>the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the <code>featurizer</code> function below).</p><pre><code class="language-julia hljs">using Attractors, Random
 
 function dumb_map(dz, z, p, n)
     x, y = z
@@ -463,45 +463,45 @@ fractions_cont, clusters_info = global_continuation(
 )
 fractions_cont</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">21-element Vector{Dict{Int64, Float64}}:
  Dict(1 =&gt; 1.0)
- Dict(2 =&gt; 1.0)
- Dict(3 =&gt; 1.0)
- Dict(4 =&gt; 1.0)
- Dict(5 =&gt; 1.0)
- Dict(6 =&gt; 0.47, 7 =&gt; 0.53)
- Dict(9 =&gt; 0.52, 8 =&gt; 0.48)
- Dict(11 =&gt; 0.44, 10 =&gt; 0.56)
- Dict(13 =&gt; 0.56, 12 =&gt; 0.44)
- Dict(15 =&gt; 0.46, 14 =&gt; 0.54)
+ Dict(1 =&gt; 1.0)
+ Dict(1 =&gt; 1.0)
+ Dict(1 =&gt; 1.0)
+ Dict(1 =&gt; 1.0)
+ Dict(2 =&gt; 0.47, 3 =&gt; 0.53)
+ Dict(5 =&gt; 0.52, 4 =&gt; 0.48)
+ Dict(6 =&gt; 0.56, 7 =&gt; 0.44)
+ Dict(9 =&gt; 0.56, 8 =&gt; 0.44)
+ Dict(11 =&gt; 0.46, 10 =&gt; 0.54)
  ⋮
- Dict(20 =&gt; 0.48, 21 =&gt; 0.52)
- Dict(22 =&gt; 0.54, 23 =&gt; 0.46)
- Dict(25 =&gt; 0.47, 24 =&gt; 0.53)
- Dict(27 =&gt; 0.6, 26 =&gt; 0.4)
- Dict(29 =&gt; 0.51, 28 =&gt; 0.49)
- Dict(31 =&gt; 0.49, 30 =&gt; 0.51)
- Dict(32 =&gt; 0.46, 33 =&gt; 0.54)
- Dict(34 =&gt; 0.45, 35 =&gt; 0.55)
- Dict(36 =&gt; 0.47, 37 =&gt; 0.53)</code></pre><p>Looking at the information of the &quot;attractors&quot; (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:</p><pre><code class="language-julia hljs">clusters_info</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">21-element Vector{Dict{Int64, Vector{Float64}}}:
+ Dict(16 =&gt; 0.48, 17 =&gt; 0.52)
+ Dict(18 =&gt; 0.54, 19 =&gt; 0.46)
+ Dict(20 =&gt; 0.53, 21 =&gt; 0.47)
+ Dict(22 =&gt; 0.4, 23 =&gt; 0.6)
+ Dict(25 =&gt; 0.51, 24 =&gt; 0.49)
+ Dict(27 =&gt; 0.49, 26 =&gt; 0.51)
+ Dict(29 =&gt; 0.54, 28 =&gt; 0.46)
+ Dict(31 =&gt; 0.55, 30 =&gt; 0.45)
+ Dict(32 =&gt; 0.47, 33 =&gt; 0.53)</code></pre><p>Looking at the information of the &quot;attractors&quot; (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:</p><pre><code class="language-julia hljs">clusters_info</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">21-element Vector{Dict{Int64, Vector{Float64}}}:
  Dict(1 =&gt; [0.0, 0.0])
- Dict(2 =&gt; [0.0, 0.0])
- Dict(3 =&gt; [0.0, 0.0])
- Dict(4 =&gt; [0.0, 0.0])
- Dict(5 =&gt; [0.0, 0.0])
- Dict(6 =&gt; [0.5, 0.5], 7 =&gt; [-0.5, -0.5])
- Dict(9 =&gt; [-0.6000000000000006, -0.6000000000000006], 8 =&gt; [0.6000000000000005, 0.6000000000000005])
- Dict(11 =&gt; [0.6999999999999995, 0.6999999999999995], 10 =&gt; [-0.7000000000000002, -0.7000000000000002])
- Dict(13 =&gt; [0.7999999999999995, 0.7999999999999995], 12 =&gt; [-0.8, -0.8])
- Dict(15 =&gt; [0.8999999999999992, 0.8999999999999992], 14 =&gt; [-0.8999999999999991, -0.8999999999999991])
+ Dict(1 =&gt; [0.0, 0.0])
+ Dict(1 =&gt; [0.0, 0.0])
+ Dict(1 =&gt; [0.0, 0.0])
+ Dict(1 =&gt; [0.0, 0.0])
+ Dict(2 =&gt; [0.5, 0.5], 3 =&gt; [-0.5, -0.5])
+ Dict(5 =&gt; [-0.6000000000000006, -0.6000000000000006], 4 =&gt; [0.6000000000000005, 0.6000000000000005])
+ Dict(6 =&gt; [-0.7000000000000002, -0.7000000000000002], 7 =&gt; [0.6999999999999995, 0.6999999999999995])
+ Dict(9 =&gt; [0.7999999999999995, 0.7999999999999995], 8 =&gt; [-0.8, -0.8])
+ Dict(11 =&gt; [0.8999999999999992, 0.8999999999999992], 10 =&gt; [-0.8999999999999991, -0.8999999999999991])
  ⋮
- Dict(20 =&gt; [-1.200000000000001, -1.200000000000001], 21 =&gt; [1.2000000000000013, 1.2000000000000013])
- Dict(22 =&gt; [-1.2999999999999987, -1.2999999999999987], 23 =&gt; [1.299999999999999, 1.299999999999999])
- Dict(25 =&gt; [1.3999999999999992, 1.3999999999999992], 24 =&gt; [-1.4000000000000001, -1.4000000000000001])
- Dict(27 =&gt; [-1.5, -1.5], 26 =&gt; [1.5, 1.5])
- Dict(29 =&gt; [1.5999999999999994, 1.5999999999999994], 28 =&gt; [-1.5999999999999996, -1.5999999999999996])
- Dict(31 =&gt; [-1.7000000000000013, -1.7000000000000013], 30 =&gt; [1.7000000000000015, 1.7000000000000015])
- Dict(32 =&gt; [-1.7999999999999985, -1.7999999999999985], 33 =&gt; [1.7999999999999983, 1.7999999999999983])
- Dict(34 =&gt; [-1.9000000000000006, -1.9000000000000006], 35 =&gt; [1.9000000000000015, 1.9000000000000015])
- Dict(36 =&gt; [-2.0, -2.0], 37 =&gt; [2.0, 2.0])</code></pre><h2 id="Using-histograms-and-histogram-distances-as-features"><a class="docs-heading-anchor" href="#Using-histograms-and-histogram-distances-as-features">Using histograms and histogram distances as features</a><a id="Using-histograms-and-histogram-distances-as-features-1"></a><a class="docs-heading-anchor-permalink" href="#Using-histograms-and-histogram-distances-as-features" title="Permalink"></a></h2><p>One of the aspects discussed in the original MCBB paper and implementation was the usage of histograms of the means of the variables of a dynamical system as the feature vector. This is useful in very high dimensional systems, such as oscillator networks, where the histogram of the means is significantly different in synchronized or unsychronized states.</p><p>This is possible to do with current interface without any modifications, by using two more packages: ComplexityMeasures.jl to compute histograms, and Distances.jl for the Kullback-Leibler divergence (or any other measure of distance in the space of probability distributions you fancy).</p><p>The only code we need to write to achieve this feature is a custom featurizer and providing an alternative distance to <code>GroupViaClustering</code>. The code would look like this:</p><pre><code class="language-julia hljs">using Distances: KLDivergence
+ Dict(16 =&gt; [-1.200000000000001, -1.200000000000001], 17 =&gt; [1.2000000000000013, 1.2000000000000013])
+ Dict(18 =&gt; [-1.2999999999999987, -1.2999999999999987], 19 =&gt; [1.299999999999999, 1.299999999999999])
+ Dict(20 =&gt; [-1.4000000000000001, -1.4000000000000001], 21 =&gt; [1.3999999999999992, 1.3999999999999992])
+ Dict(22 =&gt; [1.5, 1.5], 23 =&gt; [-1.5, -1.5])
+ Dict(25 =&gt; [1.5999999999999994, 1.5999999999999994], 24 =&gt; [-1.5999999999999996, -1.5999999999999996])
+ Dict(27 =&gt; [-1.7000000000000013, -1.7000000000000013], 26 =&gt; [1.7000000000000015, 1.7000000000000015])
+ Dict(29 =&gt; [1.7999999999999983, 1.7999999999999983], 28 =&gt; [-1.7999999999999985, -1.7999999999999985])
+ Dict(31 =&gt; [1.9000000000000015, 1.9000000000000015], 30 =&gt; [-1.9000000000000006, -1.9000000000000006])
+ Dict(32 =&gt; [-2.0, -2.0], 33 =&gt; [2.0, 2.0])</code></pre><h2 id="Using-histograms-and-histogram-distances-as-features"><a class="docs-heading-anchor" href="#Using-histograms-and-histogram-distances-as-features">Using histograms and histogram distances as features</a><a id="Using-histograms-and-histogram-distances-as-features-1"></a><a class="docs-heading-anchor-permalink" href="#Using-histograms-and-histogram-distances-as-features" title="Permalink"></a></h2><p>One of the aspects discussed in the original MCBB paper and implementation was the usage of histograms of the means of the variables of a dynamical system as the feature vector. This is useful in very high dimensional systems, such as oscillator networks, where the histogram of the means is significantly different in synchronized or unsychronized states.</p><p>This is possible to do with current interface without any modifications, by using two more packages: ComplexityMeasures.jl to compute histograms, and Distances.jl for the Kullback-Leibler divergence (or any other measure of distance in the space of probability distributions you fancy).</p><p>The only code we need to write to achieve this feature is a custom featurizer and providing an alternative distance to <code>GroupViaClustering</code>. The code would look like this:</p><pre><code class="language-julia hljs">using Distances: KLDivergence
 using ComplexityMeasures: ValueHistogram, FixedRectangularBinning, probabilities
 
 # you decide the binning for the histogram, but for a valid estimation of
@@ -594,15 +594,15 @@ stability_measures = finalize_accumulator(accumulator)</code></pre><pre class="d
   &quot;characteristic_return_time&quot;          =&gt; Dict(2=&gt;10.0, 3=&gt;Inf, 1=&gt;10.0)
   &quot;maximal_noncritical_shock_magnitude&quot; =&gt; Dict(2=&gt;3.60555, 3=&gt;2.20045, 1=&gt;3.60…
   &quot;maximal_amplification_time&quot;          =&gt; Dict(2=&gt;0.964966, 3=&gt;Inf, 1=&gt;0.96496…
-  &quot;mean_convergence_time&quot;               =&gt; Dict(2=&gt;24.5534, 3=&gt;2.84464, 1=&gt;24.5…
+  &quot;mean_convergence_time&quot;               =&gt; Dict(2=&gt;24.589, 3=&gt;2.84258, 1=&gt;24.58…
   &quot;finite_time_basin_stability&quot;         =&gt; Dict(2=&gt;0.499746, 3=&gt;0.00034244, 1=&gt;…
-  &quot;median_convergence_pace&quot;             =&gt; Dict(2=&gt;17.196, 3=&gt;3.31763, 1=&gt;17.19…
+  &quot;median_convergence_pace&quot;             =&gt; Dict(2=&gt;17.2194, 3=&gt;3.32374, 1=&gt;17.2…
   &quot;reactivity&quot;                          =&gt; Dict(2=&gt;0.409906, 3=&gt;0.904988, 1=&gt;0.…
-  &quot;median_convergence_time&quot;             =&gt; Dict(2=&gt;27.2342, 3=&gt;4.41225, 1=&gt;27.2…
+  &quot;median_convergence_time&quot;             =&gt; Dict(2=&gt;27.2844, 3=&gt;4.42037, 1=&gt;27.2…
   &quot;basin_stability&quot;                     =&gt; Dict(2=&gt;0.499746, 3=&gt;0.00034244, 1=&gt;…
-  &quot;maximal_convergence_pace&quot;            =&gt; Dict(2=&gt;36452.0, 3=&gt;Inf, 1=&gt;38548.5)
-  &quot;maximal_convergence_time&quot;            =&gt; Dict(2=&gt;32.8636, 3=&gt;7.45518, 1=&gt;32.8…
-  &quot;mean_convergence_pace&quot;               =&gt; Dict(2=&gt;31.7812, 3=&gt;Inf, 1=&gt;31.9599)
+  &quot;maximal_convergence_pace&quot;            =&gt; Dict(2=&gt;36519.2, 3=&gt;Inf, 1=&gt;38619.4)
+  &quot;maximal_convergence_time&quot;            =&gt; Dict(2=&gt;32.7717, 3=&gt;7.46891, 1=&gt;32.7…
+  &quot;mean_convergence_pace&quot;               =&gt; Dict(2=&gt;31.8297, 3=&gt;Inf, 1=&gt;32.0087)
   &quot;maximal_amplification&quot;               =&gt; Dict(2=&gt;1.28413, 3=&gt;Inf, 1=&gt;1.28412)
   &quot;basin_fraction&quot;                      =&gt; Dict(2=&gt;0.49979, 3=&gt;0.000297022, 1=&gt;…
   &quot;minimal_critical_shock_magnitude&quot;    =&gt; Dict(2=&gt;0.519999, 3=&gt;0.02, 1=&gt;0.5200…</code></pre><h2 id="Global-continuation-of-stability-measures"><a class="docs-heading-anchor" href="#Global-continuation-of-stability-measures">Global continuation of stability measures</a><a id="Global-continuation-of-stability-measures-1"></a><a class="docs-heading-anchor-permalink" href="#Global-continuation-of-stability-measures" title="Permalink"></a></h2><p>The above <code>accumulator</code> can be passed to <a href="../api/#Attractors.AttractorSeedContinueMatch"><code>AttractorSeedContinueMatch</code></a> just as an ordinary <a href="../api/#Attractors.AttractorsViaRecurrences"><code>AttractorsViaRecurrences</code></a> mapper. The <a href="../api/#Attractors.global_continuation"><code>global_continuation</code></a> function not only outputs the continued attractors but also the continued stability measures.</p><pre><code class="language-julia hljs">acam = AttractorSeedContinueMatch(accumulator, MatchBySSSetDistance())
@@ -617,17 +617,17 @@ measures_cont</code></pre><pre class="documenter-example-output"><code class="no
   &quot;characteristic_return_time&quot;          =&gt; [Dict(2=&gt;10.0, 1=&gt;10.0), Dict(2=&gt;10.…
   &quot;maximal_amplification_time&quot;          =&gt; [Dict(2=&gt;0.986468, 1=&gt;0.929906), Dic…
   &quot;finite_time_basin_stability&quot;         =&gt; [Dict(2=&gt;0.373399, 1=&gt;0.626601), Dic…
-  &quot;median_convergence_pace&quot;             =&gt; [Dict(2=&gt;15.4365, 1=&gt;16.7184), Dict(…
+  &quot;median_convergence_pace&quot;             =&gt; [Dict(2=&gt;15.4433, 1=&gt;16.739), Dict(2…
   &quot;reactivity&quot;                          =&gt; [Dict(2=&gt;0.255732, 1=&gt;0.551041), Dic…
   &quot;basin_stability&quot;                     =&gt; [Dict(2=&gt;0.373399, 1=&gt;0.626601), Dic…
-  &quot;maximal_convergence_pace&quot;            =&gt; [Dict(2=&gt;155.035, 1=&gt;164.394), Dict(…
-  &quot;mean_convergence_pace&quot;               =&gt; [Dict(2=&gt;27.4742, 1=&gt;26.0331), Dict(…
+  &quot;maximal_convergence_pace&quot;            =&gt; [Dict(2=&gt;155.32, 1=&gt;164.697), Dict(2…
+  &quot;mean_convergence_pace&quot;               =&gt; [Dict(2=&gt;27.5186, 1=&gt;26.0682), Dict(…
   &quot;basin_fraction&quot;                      =&gt; [Dict(2=&gt;0.360585, 1=&gt;0.639415), Dic…
   &quot;minimal_critical_shock_magnitude&quot;    =&gt; [Dict(2=&gt;0.461337, 1=&gt;0.573318), Dic…
   &quot;maximal_noncritical_shock_magnitude&quot; =&gt; [Dict(2=&gt;3.54926, 1=&gt;3.64449), Dict(…
-  &quot;mean_convergence_time&quot;               =&gt; [Dict(2=&gt;20.8244, 1=&gt;25.0623), Dict(…
-  &quot;median_convergence_time&quot;             =&gt; [Dict(2=&gt;23.4306, 1=&gt;27.5385), Dict(…
-  &quot;maximal_convergence_time&quot;            =&gt; [Dict(2=&gt;29.5164, 1=&gt;34.233), Dict(2…
+  &quot;mean_convergence_time&quot;               =&gt; [Dict(2=&gt;20.8562, 1=&gt;25.0943), Dict(…
+  &quot;median_convergence_time&quot;             =&gt; [Dict(2=&gt;23.4737, 1=&gt;27.5892), Dict(…
+  &quot;maximal_convergence_time&quot;            =&gt; [Dict(2=&gt;29.5708, 1=&gt;34.296), Dict(2…
   &quot;maximal_amplification&quot;               =&gt; [Dict(2=&gt;1.17536, 1=&gt;1.37788), Dict(…</code></pre><p>It may be desirable to use an <a href="../api/#Attractors.AttractorsViaProximity"><code>AttractorsViaProximity</code></a> mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an <code>attractors_cont</code> result is given, we can use the function <code>stability_measures_along_continuation</code> to compute the stability measures based on the <a href="../api/#Attractors.AttractorsViaProximity"><code>AttractorsViaProximity</code></a> mapper related to the continued attractors. This usage is illustrated in the main Tutorial.</p><h2 id="Invariant-saddle-of-a-dynamical-system"><a class="docs-heading-anchor" href="#Invariant-saddle-of-a-dynamical-system">Invariant saddle of a dynamical system</a><a id="Invariant-saddle-of-a-dynamical-system-1"></a><a class="docs-heading-anchor-permalink" href="#Invariant-saddle-of-a-dynamical-system" title="Permalink"></a></h2><p>The stagger-and-step method approximates the invariant non-attracting set governing the chaotic transient dynamics of a system, namely the stable manifold of a chaotic saddle.</p><p>Given the dynamical system <code>ds</code> and a initial guess <code>x0</code> in a region <em>with no attractors</em>, the algorithm provides <code>N</code> points close to the  stable manifold that escape from the region after at least <code>Tm</code> steps of <code>ds</code>.</p><p>We first set the dynamical system, in our case we set up two coupled Hénon map that are known to have a chaotic saddle that generates chaotic transients before the trajectories escape:</p><pre><code class="language-julia hljs">function F!(du, u ,p, n)
     x,y,u,v = u
     A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4;
@@ -647,28 +647,28 @@ ds = DeterministicIteratedMap(F!, zeros(4))</code></pre><pre class="documenter-e
  state:         [0.0, 0.0, 0.0, 0.0]
 </code></pre><p>Next we define a region in the phase space that should not contain attractors. Using this region we also define a <code>sampler</code> and a membership function <code>isinside</code>:</p><pre><code class="language-julia hljs">R_min = [-4; -4.; -4.; -4.]
 R_max = [4.; 4.; 4.; 4.]
-sampler, isinside = statespace_sampler(HRectangle(R_min,R_max))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(StateSpaceSets.RectangleGenerator{Float64, Vector{Float64}, Random.Xoshiro}([-4.0, -4.0, -4.0, -4.0], [8.0, 8.0, 8.0, 8.0], [[0.0, 0.0, 0.0, 0.0]], Random.Xoshiro(0x8133d2b3f873ba25, 0x2cf7b8ddfe13aab2, 0x35e409815f9061d7, 0x26711c402a990e2d, 0x22a6f295fab006a9)), StateSpaceSets.var&quot;#isinside#61&quot;{Vector{Float64}, Vector{Float64}}([4.0, 4.0, 4.0, 4.0], [-4.0, -4.0, -4.0, -4.0]))</code></pre><p>And we are ready! We can now call the function <code>stagger_and_step</code> with an initial condition <code>x0</code>:</p><pre><code class="language-julia hljs">x0 = sampler()
+sampler, isinside = statespace_sampler(HRectangle(R_min,R_max))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(StateSpaceSets.RectangleGenerator{Float64, Vector{Float64}, Random.Xoshiro}([-4.0, -4.0, -4.0, -4.0], [8.0, 8.0, 8.0, 8.0], [[0.0, 0.0, 0.0, 0.0]], Random.Xoshiro(0xc6cb9b95cae85a61, 0x3f32b8a9a227d6e8, 0x507db1342d9e9fbc, 0xc5954b3a9f18a908, 0x7ded4a31ef259cfd)), StateSpaceSets.var&quot;#isinside#61&quot;{Vector{Float64}, Vector{Float64}}([4.0, 4.0, 4.0, 4.0], [-4.0, -4.0, -4.0, -4.0]))</code></pre><p>And we are ready! We can now call the function <code>stagger_and_step</code> with an initial condition <code>x0</code>:</p><pre><code class="language-julia hljs">x0 = sampler()
 v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">4-dimensional StateSpaceSet{Float64} with 10000 points
- -1.08023     2.22509     1.95683  -1.47917
-  1.28582    -1.08023     1.94192   1.95682
-  0.76031     1.28576     2.07838   1.94193
-  2.28026     0.760337    1.78914   2.07864
- -1.77504     2.28026     2.22611   1.78914
- -1.06715    -1.77504     2.18165   2.22611
-  0.0291507  -1.06715     2.20775   2.18165
-  1.80757     0.0295331   1.65045   2.20804
- -0.195596    1.80757     2.87548   1.6505
-  2.27562    -0.195559   -1.54468   2.87545
-  ⋮                                
- -1.53697     2.47212     1.73306  -1.56892
-  0.0715811  -1.53687     2.83361   1.73316
-  1.42891     0.0712875  -1.40476   2.83366
-  2.11383     1.42856     2.74332  -1.40477
- -1.29028     2.11355    -2.69463   2.74317
-  2.53072    -1.29039    -1.9985   -2.69442
- -1.98883     2.53263    -1.61421  -1.999
- -0.341464   -1.98794     1.94391  -1.61437
-  1.37563    -0.339268    1.65055   1.94392</code></pre><p>The <code>stagger_mode</code> keyword select the type of search in the phase space to stick close to the saddle at each step. The mode <code>:adaptive</code> adapts the radius of the stochastic search as a function of the success of the search process.</p><p>Finally we can represent a projection of the chaotic saddle found in this example:</p><pre><code class="language-julia hljs">fig = Figure()
+ -1.2621    -1.91997    3.12551    2.069
+ -0.924059  -1.26213   -2.39334    3.12556
+  2.35519   -0.924059  -0.378097  -2.39334
+ -1.73078    2.35518    3.04572   -0.378106
+ -1.19965   -1.73078   -2.47922    3.04572
+  1.55335   -1.19968   -0.74416   -2.47913
+  1.14621    1.55335    2.78348   -0.74416
+  1.49712    1.1463    -2.31611    2.78348
+  2.62792    1.49708   -1.05471   -2.31613
+ -1.98379    2.62792    1.71968   -1.05471
+  ⋮                               
+ -0.685713  -2.14231   -1.23087   -2.34607
+  2.10526   -0.68562    2.56329   -1.23078
+ -1.8217     2.10546   -1.75681    2.56333
+  0.288979  -1.8212     2.71052   -1.75624
+  1.40221    0.285489  -1.90156    2.70824
+  2.44077    1.40239    0.872975  -1.90201
+ -1.9097     2.44082    3.04105    0.872433
+ -1.89754   -1.90988   -2.0614     3.05137
+ -1.11603   -1.89954    1.60021   -2.06166</code></pre><p>The <code>stagger_mode</code> keyword select the type of search in the phase space to stick close to the saddle at each step. The mode <code>:adaptive</code> adapts the radius of the stochastic search as a function of the success of the search process.</p><p>Finally we can represent a projection of the chaotic saddle found in this example:</p><pre><code class="language-julia hljs">fig = Figure()
 ax = Axis(fig[1,1], xlabel=&quot;x&quot;, ylabel=&quot;y&quot;)
 scatter!(ax, v[:,1], v[:,3]; markersize = 3)
-fig</code></pre><img src="a4b4fe0c.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../api/">« API</a><a class="docs-footer-nextpage" href="../bfkit_comparison/">Comparison with traditional local continuation and bifurcation analysis software »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Wednesday 16 April 2025 21:26">Wednesday 16 April 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+fig</code></pre><img src="2155b753.png" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../api/">« API</a><a class="docs-footer-nextpage" href="../bfkit_comparison/">Comparison with traditional local continuation and bifurcation analysis software »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Wednesday 16 April 2025 21:30">Wednesday 16 April 2025</span>. Using Julia version 1.11.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
