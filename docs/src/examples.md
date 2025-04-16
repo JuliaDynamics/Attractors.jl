@@ -684,8 +684,7 @@ params = [0.1, 3.0]
 ds = CoupledODEs(fitzhugh_nagumo, ones(2), params, diffeq=(;alg = Vern9(), reltol=1e-11))
 ```
 
-Now, we can use Attractors.jl to compute the fixed points and basins of attraction of the
-FHN model.
+Now we compute the fixed points and basins of attraction of the FHN model.
 
 ```@example MAIN
 xg = yg = range(-1.5, 1.5; length = 201)
