@@ -3,6 +3,7 @@
 - The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
   The positional argument version is deprecated.
 - The keyword argument `Ttr` for `AttractorsViaProximity` has now the default value 0. This may break code that relied on the default value. We have increased the default value of the lost counter to 10,000 from 1,000 to accommodate for this change in transient time.
+- New option `seed` for the seed of the RNG of `MFSBruteForce`.
 
 # v1.25
 

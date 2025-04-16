@@ -111,14 +111,17 @@ Because this algorithm is based on hyperspheres, it assumes the Euclidean norm a
   algorithm.
 - `sphere_iterations = 10000`: number of steps while initializing random points on hypersphere and
   decreasing its radius.
-- `sphere_decrease_factor = 0.999` factor by which the radius of the hypersphere is decreased
+- `sphere_decrease_factor = 0.999`: factor by which the radius of the hypersphere is decreased
   (at each step the radius is multiplied by this number). Number closer to 1 means
-  more refined accuracy
+  more refined accuracy.
+- `seed = rand(1:10000)`: seed for the random number generator used when sampling
+  random perturbations.
 """
 Base.@kwdef struct MFSBruteForce
-    initial_iterations::Int64 = 10000
-    sphere_iterations::Int64 = 10000
+    initial_iterations::Int = 10000
+    sphere_iterations::Int = 10000
     sphere_decrease_factor::Float64 = 0.999
+    seed::Int = rand(1:10000)
 end
 
 function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, _metric)
@@ -126,11 +129,11 @@ function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, _met
     algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
     dim = length(u0)
     best_shock, best_dist = crude_initial_radius(
-        mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations
+        mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations, algorithm.seed
     )
     best_shock, best_dist = mfs_brute_force(
         mapper, u0, best_shock, best_dist, dim, idchecker, metric,
-        algorithm.sphere_iterations, algorithm.sphere_decrease_factor
+        algorithm.sphere_iterations, algorithm.sphere_decrease_factor, algorithm.seed
     )
     return best_shock
 end
@@ -144,10 +147,10 @@ of the perturbation and compares it to the best perturbation found so far.
 If the norm is smaller, it updates the best perturbation found so far.
 It repeats this process total_iterations times and returns the best perturbation found.
 """
-function crude_initial_radius(mapper::AttractorMapper, u0, search_area, idchecker, metric, total_iterations)
+function crude_initial_radius(mapper::AttractorMapper, u0, search_area, idchecker, metric, total_iterations, seed)
     best_dist = Inf
     region = StateSpaceSets.HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
-    generator, _ = statespace_sampler(region)
+    generator, _ = statespace_sampler(region, seed)
     best_shock = copy(generator())
     shock = copy(best_shock)
 
@@ -178,12 +181,12 @@ and returns the best perturbation found.
 """
 function mfs_brute_force(mapper::AttractorMapper, u0,
         best_shock, best_dist, dim, idchecker, metric,
-        total_iterations, sphere_decrease_factor
+        total_iterations, sphere_decrease_factor, seed
     )
 
     temp_dist = best_dist*sphere_decrease_factor
     region = HSphereSurface(temp_dist, dim)
-    generator, = statespace_sampler(region)
+    generator, = statespace_sampler(region, seed)
     i = 0
     new_shock = zeros(dim)
     while i < total_iterations
@@ -254,7 +257,7 @@ Base.@kwdef struct MFSBlackBoxOptim{G, RA, BB}
     max_steps::Int64 = 10_000
     penalty::Float64 = 0.999
     print_info::Bool = false
-    random_algo::RA = MFSBruteForce(100, 100, 0.99)
+    random_algo::RA = MFSBruteForce(100, 100, 0.99, rand(1:10000))
     bbkwargs::BB = NamedTuple()
 end
 
