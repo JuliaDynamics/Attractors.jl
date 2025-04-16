@@ -69,13 +69,13 @@ shaded_basins_heatmap(grid, basins, attractors, iterations)
 
 ## Minimal Fatal Shock
 
-Here we find the Minimal Fatal Shock (MFS, see [`minimal_fatal_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
+Here we find the Minimal Fatal Shock (MFS, see [`minimal_critical_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
 ```@example MAIN
 shocks = Dict()
-algo_bb = Attractors.MFSBlackBoxOptim()
+algo_bb = Attractors.MCSBlackBoxOptim()
 for atr in values(attractors)
     u0 = atr[1]
-    shocks[u0] = minimal_fatal_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
+    shocks[u0] = minimal_critical_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
 end
 shocks
 ```

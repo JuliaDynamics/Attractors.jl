@@ -68,3 +68,7 @@ function match_basins_ids!(b₊::AbstractArray, b₋; threshold = Inf)
     matcher = MatchByBasinOverlap(threshold)
     return matching_map!(b₊, b₋, matcher)
 end
+
+@deprecate minimal_fatal_shock minimal_critical_shock
+@deprecate MFSBlackBoxOptim MCSBlackBoxOptim
+@deprecate MFSBruteForce MCSBruteForce

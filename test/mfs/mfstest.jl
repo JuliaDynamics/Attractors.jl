@@ -21,16 +21,16 @@ using LinearAlgebra
     )
 
     attractors = [[1.0, 0.0], [-0.5, 0.8660254037844386], [-0.5, -0.8660254037844386]]
-    algo_r = Attractors.MFSBruteForce(sphere_decrease_factor = 0.96)
+    algo_r = Attractors.MCSBruteForce(sphere_decrease_factor = 0.96)
 
-    randomised = Dict([atr => minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_r) for atr in attractors])
+    randomised = Dict([atr => minimal_critical_shock(newton, atr, (-1.5, 1.5), algo_r) for atr in attractors])
 
-    algo_bb = Attractors.MFSBlackBoxOptim()
-    blackbox = Dict([atr => (minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_bb)) for atr in attractors])
+    algo_bb = Attractors.MCSBlackBoxOptim()
+    blackbox = Dict([atr => (minimal_critical_shock(newton, atr, (-1.5, 1.5), algo_bb)) for atr in attractors])
 
     random_seed = [[rand([-1,1])*rand()/2, rand([-1,1])*rand()/2] for _ in 1:20]
-    randomised_r = Dict([atr => (minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_r)) for atr in random_seed])
-    blackbox_r = Dict([atr => (minimal_fatal_shock(newton, atr, (-1.5, 1.5), algo_bb)) for atr in random_seed])
+    randomised_r = Dict([atr => (minimal_critical_shock(newton, atr, (-1.5, 1.5), algo_r)) for atr in random_seed])
+    blackbox_r = Dict([atr => (minimal_critical_shock(newton, atr, (-1.5, 1.5), algo_bb)) for atr in random_seed])
 
     test = true
     for i in (keys(randomised))
@@ -67,15 +67,15 @@ using LinearAlgebra
     @testset "target id" begin
         atrdict = Dict(i => StateSpaceSet([a]) for (i, a) in enumerate(attractors))
         mapper = AttractorsViaProximity(ds, atrdict, 0.01)
-        algo_bb = Attractors.MFSBlackBoxOptim()
+        algo_bb = Attractors.MCSBlackBoxOptim()
         # multiple target attractors
         mfs_1 = [
-            i => minimal_fatal_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i]))
+            i => minimal_critical_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i]))
             for (i, a) in enumerate(attractors)
         ]
         # specific target attractors
         mfs_2 = [
-            i => minimal_fatal_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i])[1])
+            i => minimal_critical_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i])[1])
             for (i, a) in enumerate(attractors)
         ]
         # due to the symmetries of the system all mfs should be identical in magnitude
@@ -138,10 +138,10 @@ mapper_m = AttractorsViaProximity(psys, attractors_dict; Ttr = 100)
 
 searchrange =  [(-4, 4), (-4, 4)]
 
-algo_r = MFSBruteForce(sphere_decrease_factor = 0.99, seed = 42, sphere_iterations = 1000, initial_iterations = 1000)
+algo_r = MCSBruteForce(sphere_decrease_factor = 0.99, seed = 42, sphere_iterations = 1000, initial_iterations = 1000)
 
 randomised_r = [
-    norm(minimal_fatal_shock(mapper_m, A[1], searchrange, algo_r))
+    norm(minimal_critical_shock(mapper_m, A[1], searchrange, algo_r))
     for A in attractors
 ]
 
@@ -149,9 +149,9 @@ randomised_r = [
 # you can also see how large they should be.
 @test all(x -> isapprox(x, 0.395; atol = 1e-2), randomised_r)
 
-algo_bb = MFSBlackBoxOptim()
+algo_bb = MCSBlackBoxOptim()
 randomised_bb = [
-    norm(minimal_fatal_shock(mapper_m, A[1], searchrange, algo_bb))
+    norm(minimal_critical_shock(mapper_m, A[1], searchrange, algo_bb))
     for A in attractors
 ]
 
@@ -186,10 +186,10 @@ end
     ux = SVector(1.5, 0, 0)
     uy = SVector(0, 1.5, 0)
 
-    algo_bb = Attractors.MFSBlackBoxOptim(max_steps = 50000)
+    algo_bb = Attractors.MCSBlackBoxOptim(max_steps = 50000)
 
-    ux_res = minimal_fatal_shock(mapper_3d, ux, (-6.0, 6.0), algo_bb)
-    uy_res = minimal_fatal_shock(mapper_3d, uy, (-6.0, 6.0), algo_bb)
+    ux_res = minimal_critical_shock(mapper_3d, ux, (-6.0, 6.0), algo_bb)
+    uy_res = minimal_critical_shock(mapper_3d, uy, (-6.0, 6.0), algo_bb)
 
     # Due to the symmetry of the system, the shocks have to be the same
     @test norm(ux_res) - norm(uy_res) < 0.0001

@@ -7,6 +7,7 @@
   - The default `ε` is now 1/10 instead of 1/2 of the minimum distance between attractors. This significantly increases default accuracy of the mapper.
   - Default default value of the lost counter for the proximity mapper has been increased to 10,000 from 1,000 to accommodate for the change in transient time.
 - New option `seed` for the seed of the RNG of `MFSBruteForce`.
+- Names `minimal_fatal_shock, MFSBlackBoxOptim, MFSBruteForce` have been deprecated for `minimal_critical_shock, MCSBlackBoxOptim, MCSBruteForce`
 
 # v1.25
 
