@@ -504,8 +504,8 @@ keys(result)
 # the `fractions_cont` we have computed before. This means it is straightforward to
 # visualize these new stability measures. For example, let's say we want to visualize
 
-chosen = ["median_convergence_pace", "minimal_fatal_shock_magnitude"]
-abbrev = ["MCP", "MFS"]
+chosen = ["median_convergence_pace", "minimal_critical_shock_magnitude"]
+abbrev = ["MCP", "MCS"]
 
 # then we just use the visualization function `plot_continuation_curves`
 
