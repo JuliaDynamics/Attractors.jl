@@ -11,9 +11,10 @@ Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
     StabilityMeasuresAccumulator(mapper::AttractorMapper; kwargs...)
 
 A special data structure that allows mapping initial conditions to attractors
-_while_ at the same time calculating many stability measures in the most efficient
+while _at the same time_ calculating many stability measures in the most efficient
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
-that implements the `id = mapper(u0)` syntax.
+that implements the `id = mapper(u0)` syntax. This functionality was developed
+as part of [Morr2025](@cite).
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
@@ -208,7 +209,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
       u0_dist = Inf
     else
       u0_dist = set_distance(
-        StateSpaceSet([u0]), attractors[id], 
+        StateSpaceSet([u0]), attractors[id],
         StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)
       )
     end
