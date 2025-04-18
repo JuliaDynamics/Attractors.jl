@@ -3,7 +3,7 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 using Test, Attractors
 using Random
 
-# Test the computation of nonlocal stability measures using the 
+# Test the computation of nonlocal stability measures using the
 # `StabilityMeasuresAccumulator` for a dumb map.
 function dumb_map(z, p, n)
     x, y = z
@@ -50,8 +50,8 @@ results = finalize_accumulator(accumulator)
 # Similarly, the median convergence pace is the constant convergence time 1.0 divided by the
 # distance to the point of median distance in the basin. For attractor 2, there are an even
 # number of basin points, so the median is the mean of the two middle values. Here,
-# 1.0 / 1.41421 = 0.707106 and 1.0 / 1.0, so 0.85355 for the points at [0,0] and [1, 0] for 
-# example. 
+# 1.0 / 1.41421 = 0.707106 and 1.0 / 1.0, so 0.85355 for the points at [0,0] and [1, 0] for
+# example.
 results_expected = Dict(
     "mean_convergence_time"            => Dict(2=>1.0, 1=>1.0),
     "maximal_noncritical_shock_magnitude" => Dict(2=>2.23607, 1=>2.0),
@@ -82,7 +82,7 @@ proximity_mapper_options = (
     Ttr=0, stop_at_Δt = false, horizon_limit = 1e2, consecutive_lost_steps = 10000
 )
 measures_cont = stability_measures_along_continuation(
-    dynamics, attractors_cont, pcurve, ics_from_grid(grid), ε=0.1, finite_time=0.5, 
+    dynamics, attractors_cont, pcurve, ics_from_grid(grid), ε=0.1, finite_time=0.5,
     proximity_mapper_options = proximity_mapper_options
 )
 
@@ -103,14 +103,14 @@ measures_cont_expected = Dict(
     # Validate the results
     for (key, value) in measures_cont_expected
         @test key in keys(measures_cont)
-        for k in [1, 2] 
+        for k in [1, 2]
             @test sort(collect(values(value[k]))) ≈ sort(collect(values(results[key][k]))) atol=1e-5
         end
     end
 end
 
 
-# Now we will test the local stability measures in `StabilityMeasuresAccumulator` in a 
+# Now we will test the local stability measures in `StabilityMeasuresAccumulator` in a
 # linear system.
 function linear_evolution(z, p, n)
     A = [-0.5 0.0; 0.0 -0.5]  # Linear transformation matrix
@@ -145,5 +145,32 @@ results_expected = Dict(
     for (key, value) in results_expected
         @test key in keys(results)
         @test sort(collect(values(value))) ≈ sort(collect(values(results[key]))) atol=1e-5
+    end
+end
+
+@testset "Henon map linear measures" begin
+    henon_rule_alter(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], -p[2]*x[1])
+    μ = 1.05; J = 0.9
+    ds = DeterministicIteratedMap(henon_rule_alter, zeros(2), [μ, J])
+    xg = range(-3.0, 3.0; length = 101)
+    yg = range(-3.0, 4.0; length = 101)
+    grid = (xg, yg)
+
+
+    mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+    accumulator = StabilityMeasuresAccumulator(mapper)
+
+
+    A = ics_from_grid(grid)
+    for u0 in A
+        id = accumulator(u0)
+    end
+    stability_measures = finalize_accumulator(accumulator)
+
+    linear_measures = ["characteristic_return_time", "reactivity", "maximal_amplification", "maximal_amplification_time",]
+
+    @testset "Henon $m" for m in linear_measures
+        measures = collect(values(stability_measures[m]))
+        @test count(!isnan, measures) ≥ 1
     end
 end
