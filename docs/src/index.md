@@ -10,8 +10,7 @@ using CairoMakie, Attractors
 
 ## Latest news
 
-- Global continuation can now be performed across any arbitrary curve
-  in parameter space.
+- Yet another groundbreaking feature has been implemented in Attractors.jl: estimation of extendably-many stability measures of a dynamical system automatically, with a single function call (also works along a globla continuation)
 - See the CHANGELOG.md (at the GitHub repo) for more!
 
 ## Getting started

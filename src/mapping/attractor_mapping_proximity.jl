@@ -1,19 +1,20 @@
 """
-    AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict [, ε]; kwargs...)
+    AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict; kwargs...)
 
 Map initial conditions to attractors based on whether the trajectory reaches `ε`-distance
 close to any of the user-provided `attractors`, which have to be in a form of a dictionary
 mapping attractor labels to `StateSpaceSet`s containing the attractors.
 
 ## Keywords
-
-* `Ttr = 100`: Transient time to first evolve the system for before checking for proximity.
+* `ε = nothing`: Distance below which a trajectory has converged to an attractor, see below.
+  Type `\\varepsilon<TAB>` to input `ε`.
+* `Ttr = 0`: Transient time to first evolve the system for before checking for proximity.
 * `Δt = 1`: Step time given to `step!`.
 * `stop_at_Δt = false`: Third argument given to `step!`.
 * `horizon_limit = 1e3`: If the maximum distance of the trajectory from any of the given
   attractors exceeds this limit, it is assumed
   that the trajectory diverged (gets labelled as `-1`).
-* `consecutive_lost_steps = 1000`: If the `ds` has been stepped this many times without
+* `consecutive_lost_steps = 10000`: If the `ds` has been stepped this many times without
   coming `ε`-near to any attractor,  it is assumed
   that the trajectory diverged (gets labelled as `-1`).
 * `distance = StrictlyMinimumDistance()`: Distance function for evaluating the distance
@@ -31,7 +32,7 @@ attractor is returned.
 in the state space can be provided.
 
 If an `ε::Real` is not provided by the user, a value is computed
-automatically as half of the minimum distance between all `attractors`.
+automatically as 1/10th of the minimum distance between all `attractors`.
 This operation can be expensive for large `StateSpaceSet`s.
 If `length(attractors) == 1`, then `ε` becomes 1/10 of the diagonal of the box containing
 the attractor. If `length(attractors) == 1` and the attractor is a single point,
@@ -58,9 +59,12 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
     latest_convergence_time::Base.RefValue{T}
 end
 
-function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = nothing;
-        Δt=1, Ttr=100, consecutive_lost_steps=1000, horizon_limit=1e3, verbose = false,
-        distance = StrictlyMinimumDistance(), stop_at_Δt = false,
+AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
+AttractorsViaProximity(ds, attractors; ε = ε, kw...)
+
+function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
+        Δt=1, Ttr=0, consecutive_lost_steps=10000, horizon_limit=1e3, verbose = false,
+        distance = StrictlyMinimumDistance(), stop_at_Δt = false, ε = nothing,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
         error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
@@ -92,6 +96,8 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε = noth
     return mapper
 end
 
+reset_mapper!(::AttractorsViaProximity) = nothing
+
 function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1
         verbose && @info("Computing minimum distance between attractors to deduce `ε`...")
@@ -113,7 +119,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
             end
         end
         verbose && @info("Minimum distance between attractors computed: $(minε)")
-        ε = minε/2
+        ε = minε/10
     else
         attractor = first(attractors)[2] # get the single attractor
         mini, maxi = minmaxima(attractor)
@@ -134,9 +140,9 @@ function (mapper::AttractorsViaProximity)(u0; show_progress = false)
     ds = referenced_dynamical_system(mapper)
     reinit!(ds, u0)
     t0 = current_time(ds)
-    maxdist = zero(eltype(eltype(first(mapper.attractors)[2])))
+    maxdist = zero(eltype(current_state(ds)))
     mapper.latest_convergence_time[] = Inf # default return value
-    mapper.Ttr > 0 && step!(mapper.ds, mapper.Ttr)
+    mapper.Ttr > 0 && step!(ds, mapper.Ttr)
     lost_count = 0
     while lost_count < mapper.consecutive_lost_steps
         step!(ds, mapper.Δt, mapper.stop_at_Δt)
