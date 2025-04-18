@@ -14,7 +14,8 @@ A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability measures in the most efficient
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
 that implements the `id = mapper(u0)` syntax. This functionality was developed
-as part of [Morr2025](@cite).
+as part of [Morr2025](@cite). If you use it, cite this paper along with the Attractors.jl
+publication [Datseris2023](@cite).
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
