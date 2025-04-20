@@ -812,7 +812,7 @@ fig
 ## Matching limit cycles and fixed points in a system with heterogeneous state space
 
 This example discusses the situation of a dynamical system that during a global continuation
-it from a fixed point `A` to a limit cycle `B` and then to another fixed point `C` that is far away (in statespace) from `A`.
+it transitions from a fixed point `A` to a limit cycle `B` and then to another fixed point `C` that is far away (in statespace) from `A` but very close to `B`.
 In the context of this scenario, we do NOT want to
 match the fixed points with the limit cycle during the continuation.
 Furthermore, this particular dynamical system has a heterogeneous state space:
