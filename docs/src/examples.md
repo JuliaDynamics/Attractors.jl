@@ -812,8 +812,8 @@ fig
 ## Matching limit cycles and fixed points in a system with heterogeneous state space
 
 This example discusses the situation of a dynamical system that during a global continuation
-transitions from a fixed point to a limit cycle and then to another fixed point that is on
-the other end of the limit cycle. In the context of this scenario, we want to NOT
+it from a fixed point `A` to a limit cycle `B` and then to another fixed point `C` that is far away (in statespace) from `A`.
+In the context of this scenario, we do NOT want to
 match the fixed points with the limit cycle during the continuation.
 Furthermore, this particular dynamical system has a heterogeneous state space:
 the different dynamic variables have wildly different units, and there is no sensible transformation
@@ -825,13 +825,15 @@ special distance function that is given to [`MatchBySSSetDistance`](@ref). This 
 ```@example MAIN
 function centroid_and_length(A, B)
     # first check we are comparing a fixed point and limit cycle. We do this by
-    # checking if there are different lengths and one of the two is 1 (fixed point)
+    # checking if the lengths of attractors A and B are different and if one
+    # the two has length 1 (i.e., it is a fixed point)
     if length(A) != length(B) && any(isequal(1), length.((A, B)))
         return Inf
     end
-    # otherwise we use a weighted centroid distance
-    weights = (300.0, 1.0, 1200.0, 300.0, 10.0)
-    d = maximum(i -> abs( ( mean(A[:, i]) - mean(B[:, i]) )/weights[i] ), 1:5)
+    # otherwise both sets are similar in nature (both limit cycle or fixed points)
+    # in which case we use a weighted centroid distance
+    scales = (300.0, 1.0, 1200.0, 300.0, 10.0)
+    d = maximum(i -> abs( ( mean(A[:, i]) - mean(B[:, i]) )/scales[i] ), 1:5)
     return d
 end
 
@@ -844,8 +846,8 @@ This special `matcher` achieves the following:
 
 - Does not match limit cycles with fixed points no matter what.
 - Matches attractors according to their _weighted centroid difference_.
-  Each dimension of the dynamical system has a typical size
-  that is characteristic for each dimension (`weights` above). Then
+  Each dimension of the dynamical system has a typical scale
+  that is characteristic for each dimension. Then
   the distance between centroids is normalized by this typical size.
 - The maximum of these normalized distances is obtained.
 - The `threshold = 0.2` in essence means that if two attractors have a weighted
