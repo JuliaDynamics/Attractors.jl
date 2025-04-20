@@ -750,57 +750,57 @@ edge states also in high-dimensional and chaotic systems where a simple computat
 unstable equilibria becomes infeasible.
 
 
-## Invariant saddle of a dynamical system 
+## Invariant saddle of a dynamical system
 
-The stagger-and-step method approximates the invariant 
-non-attracting set governing the chaotic transient dynamics 
-of a system, namely the stable manifold of a chaotic saddle. 
+The stagger-and-step method approximates the invariant
+non-attracting set governing the chaotic transient dynamics
+of a system, namely the stable manifold of a chaotic saddle.
 
-Given the dynamical system `ds` and a initial guess `x0` in a 
-region *with no attractors*, the algorithm provides `N` points 
-close to the  stable manifold that escape from the region 
-after at least `Tm` steps of `ds`. 
+Given the dynamical system `ds` and a initial guess `x0` in a
+region *with no attractors*, the algorithm provides `N` points
+close to the  stable manifold that escape from the region
+after at least `Tm` steps of `ds`.
 
 We first set the dynamical system, in our case we set up two coupled Hénon map
 that are known to have a chaotic saddle that generates chaotic transients
-before the trajectories escape: 
- 
+before the trajectories escape:
+
 ```@example MAIN
 function F!(du, u ,p, n)
     x,y,u,v = u
-    A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4; 
+    A = 3; B = 0.3; C = 5.; D = 0.3; k = 0.4;
     du[1] = A - x^2 + B*y + k*(x-u)
     du[2] = x
     du[3] = C - u^2 + D*v + k*(u-x)
     du[4] = u
-    return 
+    return
 end
-ds = DeterministicIteratedMap(F!, zeros(4)) 
+ds = DeterministicIteratedMap(F!, zeros(4))
 ```
 
-Next we define a region in the phase space that should not contain attractors. 
-Using this region we also define a `sampler` and a membership function `isinside`: 
+Next we define a region in the phase space that should not contain attractors.
+Using this region we also define a `sampler` and a membership function `isinside`:
 
 ```@example MAIN
-R_min = [-4; -4.; -4.; -4.] 
+R_min = [-4; -4.; -4.; -4.]
 R_max = [4.; 4.; 4.; 4.]
 sampler, isinside = statespace_sampler(HRectangle(R_min,R_max))
 ```
 
-And we are ready! We can now call the function `stagger_and_step` with an initial 
-condition `x0`: 
+And we are ready! We can now call the function `stagger_and_step` with an initial
+condition `x0`:
 
 ```@example MAIN
 x0 = sampler()
-v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.) 
+v = stagger_and_step(ds, x0, 10000, isinside; stagger_mode = :adaptive, δ = 1e-4, Tm = 10, max_steps = Int(1e5), δ₀ = 2.)
 ```
-The `stagger_mode` keyword select the type of search in the 
-phase space to stick close to the saddle at each step. 
+The `stagger_mode` keyword select the type of search in the
+phase space to stick close to the saddle at each step.
 The mode `:adaptive` adapts the radius of the stochastic
-search as a function of the success of the search process. 
+search as a function of the success of the search process.
 
-Finally we can represent a projection of the chaotic saddle found in this 
-example: 
+Finally we can represent a projection of the chaotic saddle found in this
+example:
 
 ```@example MAIN
 fig = Figure()
@@ -808,3 +808,50 @@ ax = Axis(fig[1,1], xlabel="x", ylabel="y")
 scatter!(ax, v[:,1], v[:,3]; markersize = 3)
 fig
 ```
+
+## Matching limit cycles and fixed points in a system with heterogeneous state space
+
+This example discusses the situation of a dynamical system that during a global continuation
+it transitions from a fixed point `A` to a limit cycle `B` and then to another fixed point `C` that is far away (in statespace) from `A` but very close to `B`.
+In the context of this scenario, we do NOT want to
+match the fixed points with the limit cycle during the continuation.
+Furthermore, this particular dynamical system has a heterogeneous state space:
+the different dynamic variables have wildly different units, and there is no sensible transformation
+that would bring all variables to the same units.
+
+We will showcase how one can achieve match attractors in this system simply by defining a
+special distance function that is given to [`MatchBySSSetDistance`](@ref). This is:
+
+```@example MAIN
+function centroid_and_length(A, B)
+    # first check we are comparing a fixed point and limit cycle. We do this by
+    # checking if the lengths of attractors A and B are different and if one
+    # the two has length 1 (i.e., it is a fixed point)
+    if length(A) != length(B) && any(isequal(1), length.((A, B)))
+        return Inf
+    end
+    # otherwise both sets are similar in nature (both limit cycle or fixed points)
+    # in which case we use a weighted centroid distance
+    scales = (300.0, 1.0, 1200.0, 300.0, 10.0)
+    d = maximum(i -> abs( ( mean(A[:, i]) - mean(B[:, i]) )/scales[i] ), 1:5)
+    return d
+end
+
+matcher = MatchBySSSetDistance(; distance = centroid_and_length, threshold = 0.2)
+```
+
+We then provide this `matcher` to [`AttractorSeedContinueMatch`](@ref)
+and perform a global continuation as illustrated in the main [Tutorial](@ref tutorial).
+This special `matcher` achieves the following:
+
+- Does not match limit cycles with fixed points no matter what.
+- Matches attractors according to their _weighted centroid difference_.
+  Each dimension of the dynamical system has a typical scale
+  that is characteristic for each dimension. Then
+  the distance between centroids is normalized by this typical size.
+- The maximum of these normalized distances is obtained.
+- The `threshold = 0.2` in essence means that if two attractors have a weighted
+  centroid difference of less than 20% of the typical size for each dimension,
+  the attractors are matched!
+
+This was the matching procedure used in the cloud critical transition model of [Datseris2025](@cite).
