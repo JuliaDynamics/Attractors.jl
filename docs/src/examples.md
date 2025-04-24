@@ -751,7 +751,8 @@ unstable equilibria becomes infeasible.
 
 ## Estimating (almost) all stability measures at a given parameter
 
-The type [`StabilityMeasuresAccumulator`](@ref) is showcased in an application to the Duffing oscillator.
+The type [`StabilityMeasuresAccumulator`](@ref) is showcased in an application of
+finding all stability measures for the Duffing oscillator.
 
 ```@example MAIN
 function duffing(u, p, t)
@@ -775,8 +776,10 @@ mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurren
 
 accumulator = StabilityMeasuresAccumulator(mapper, finite_time=50.0, weighting_distribution=MvNormal(zeros(2), 1.0*I))
 ```
+
 If we call this object on some initial conditions and finalize its values, we receive
 several different stability measures. Their interpretation can be found in the documentation of [`StabilityMeasuresAccumulator`](@ref).
+
 ```@example MAIN
 A = ics_from_grid(grid)
 for u0 in A
@@ -784,24 +787,6 @@ for u0 in A
 end
 stability_measures = finalize_accumulator(accumulator)
 ```
-
-## Global continuation of stability measures
-
-The above `accumulator` can be passed to [`AttractorSeedContinueMatch`](@ref) just as an ordinary [`AttractorsViaRecurrences`](@ref) mapper. The [`global_continuation`](@ref) function not only outputs the continued attractors but also the continued stability measures.
-```@example MAIN
-acam = AttractorSeedContinueMatch(accumulator, MatchBySSSetDistance())
-p_0 = 0.1
-p_T = 0.5
-param_steps = 30
-ps = [p_0*(1-i/(param_steps-1)) + p_T*(i/(param_steps-1)) for i in 0:param_steps-1]
-pcurve = [[2 => p] for p in ps]
-ics = ics_from_grid(grid)
-measures_cont, attractors_cont = global_continuation(acam, pcurve, ics)
-measures_cont
-```
-
-It may be desirable to use an [`AttractorsViaProximity`](@ref) mapper for the accumulation of stability measures. This is because convergence times will have a more direct meaning in this case. However, continuation will not be possible with such a mapper. If a continuation of the dynamical system has previously been performed and an `attractors_cont` result is given, we can use the function `stability_measures_along_continuation` to compute the stability measures based on the [`AttractorsViaProximity`](@ref) mapper related to the continued attractors.
-This usage is illustrated in the main Tutorial.
 
 ## Invariant saddle of a dynamical system
 
@@ -861,3 +846,50 @@ ax = Axis(fig[1,1], xlabel="x", ylabel="y")
 scatter!(ax, v[:,1], v[:,3]; markersize = 3)
 fig
 ```
+
+## Matching limit cycles and fixed points in a system with heterogeneous state space
+
+This example discusses the situation of a dynamical system that during a global continuation
+it transitions from a fixed point `A` to a limit cycle `B` and then to another fixed point `C` that is far away (in statespace) from `A` but very close to `B`.
+In the context of this scenario, we do NOT want to
+match the fixed points with the limit cycle during the continuation.
+Furthermore, this particular dynamical system has a heterogeneous state space:
+the different dynamic variables have wildly different units, and there is no sensible transformation
+that would bring all variables to the same units.
+
+We will showcase how one can achieve match attractors in this system simply by defining a
+special distance function that is given to [`MatchBySSSetDistance`](@ref). This is:
+
+```@example MAIN
+function centroid_and_length(A, B)
+    # first check we are comparing a fixed point and limit cycle. We do this by
+    # checking if the lengths of attractors A and B are different and if one
+    # the two has length 1 (i.e., it is a fixed point)
+    if length(A) != length(B) && any(isequal(1), length.((A, B)))
+        return Inf
+    end
+    # otherwise both sets are similar in nature (both limit cycle or fixed points)
+    # in which case we use a weighted centroid distance
+    scales = (300.0, 1.0, 1200.0, 300.0, 10.0)
+    d = maximum(i -> abs( ( mean(A[:, i]) - mean(B[:, i]) )/scales[i] ), 1:5)
+    return d
+end
+
+matcher = MatchBySSSetDistance(; distance = centroid_and_length, threshold = 0.2)
+```
+
+We then provide this `matcher` to [`AttractorSeedContinueMatch`](@ref)
+and perform a global continuation as illustrated in the main [Tutorial](@ref tutorial).
+This special `matcher` achieves the following:
+
+- Does not match limit cycles with fixed points no matter what.
+- Matches attractors according to their _weighted centroid difference_.
+  Each dimension of the dynamical system has a typical scale
+  that is characteristic for each dimension. Then
+  the distance between centroids is normalized by this typical size.
+- The maximum of these normalized distances is obtained.
+- The `threshold = 0.2` in essence means that if two attractors have a weighted
+  centroid difference of less than 20% of the typical size for each dimension,
+  the attractors are matched!
+
+This was the matching procedure used in the cloud critical transition model of [Datseris2025](@cite).
