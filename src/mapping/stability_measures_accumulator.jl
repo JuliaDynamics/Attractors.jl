@@ -112,10 +112,10 @@ refers to the distance established by the `metric` keyword.
   closest non-zero probability point (under `weighting_distribution`) in a basin of
   attraction of a different attractor. If only a single attractor exists,
   the value `Inf` is assigned.
-* `mean_critical_shock_magnitude`: Same as above but the mean instead of minimum.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
   furthest non-zero probability point (under `weighting_distribution`) of its own basin of
   attraction. If only a single attractor exists, the value `Inf` is assigned.
+* `mean_noncritical_shock_magnitude`: same as above but the mean instead of maximum distance.
 * `basin_fraction`: The fraction of initial conditions that converge to the
   attractor.
 * `basin_stability`: The fraction of initial conditions that converge to the
@@ -310,15 +310,15 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     # (non-)critical shocks
     minimal_critical_shock_magnitudes = Dict{Int64, Float64}()
-    mean_critical_shock_magnitudes = Dict{Int64, Float64}()
+    mean_noncritical_shock_magnitudes = Dict{Int64, Float64}()
     maximal_noncritical_shock_magnitudes = Dict{Int64, Float64}()
     for key1 in keys(attractors)
         minimal_critical_shock_magnitudes[key1] = Inf
         maximal_noncritical_shock_magnitudes[key1] = Inf
         (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
         minimal_critical_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
-        mean_critical_shock_magnitudes[key1] = mean([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
         maximal_noncritical_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
+        mean_noncritical_shock_magnitudes[key1] = mean([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
     end
 
     # linear measures
@@ -367,7 +367,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         "maximal_convergence_pace" => accumulator.maximal_convergence_pace,
         "median_convergence_pace" => median_convergence_pace,
         "minimal_critical_shock_magnitude" => minimal_critical_shock_magnitudes,
-        "mean_critical_shock_magnitude" => mean_critical_shock_magnitudes,
+        "mean_noncritical_shock_magnitude" => mean_noncritical_shock_magnitudes,
         "maximal_noncritical_shock_magnitude" => maximal_noncritical_shock_magnitudes,
         "basin_fraction" => basin_frac,
         "basin_stability" => basin_stab,
