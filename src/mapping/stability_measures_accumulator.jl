@@ -71,6 +71,7 @@ These measures apply only to fixed point attractors.
 Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
 there for example), a value `Inf` is assigned to all measures.
+Currently linear measures for discrete time systems are not computed.
 
 * `characteristic_return_time`: The reciprocal of the largest real part of the
   eigenvalues of the Jacobian matrix at the fixed point.
@@ -296,10 +297,10 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         accumulator.mean_convergence_pace[key] /= (normalization*basin_stab[key])
       end
     end
-    foreach(key -> !(key in keys(accumulator.mean_convergence_time)) && (accumulator.mean_convergence_time[key] = Inf64), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.maximal_convergence_time)) && (accumulator.maximal_convergence_time[key] = Inf64), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = Inf64), keys(attractors))
-    foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = Inf64), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.mean_convergence_time)) && (accumulator.mean_convergence_time[key] = Inf), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.maximal_convergence_time)) && (accumulator.maximal_convergence_time[key] = Inf), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.mean_convergence_pace)) && (accumulator.mean_convergence_pace[key] = Inf), keys(attractors))
+    foreach(key -> !(key in keys(accumulator.maximal_convergence_pace)) && (accumulator.maximal_convergence_pace[key] = Inf), keys(attractors))
 
     # Calculate median convergence time and pace
     median_convergence_time = Dict{Int64, Float64}()
@@ -344,10 +345,10 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
           evs = real.(eigvals(H))
           reactivity[id] = maximum(evs)
           if thisλ == 0
-              maximal_amplification[id] = Inf64
-              maximal_amplification_time[id] = Inf64
+              maximal_amplification[id] = Inf
+              maximal_amplification_time[id] = Inf
           else
-              res = Optim.optimize(t -> (-1) * opnorm(exp(t[1] * J)), [0.0], [Inf64], [1.0])
+              res = Optim.optimize(t -> (-1) * opnorm(exp(t[1] * J)), [0.0], [Inf], [1.0])
               maximal_amplification[id] = (-1) * Optim.minimum(res)
               maximal_amplification_time[id] = Optim.minimizer(res)[1]
           end
