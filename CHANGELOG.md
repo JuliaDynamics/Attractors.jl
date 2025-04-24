@@ -1,5 +1,9 @@
 # v1.26
 
+- **Brand new, ground-breaking functionality** for finding (almost) all stability
+  measures of a dynamical system, and continuing them along a global continuation!!!
+  This functionality is offered by the new type `StabilityMeasuresAccumulator`.
+  Read its docs, or the new entry in the Tutorial, for more details.
 - The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
   The positional argument version is deprecated.
 - Changes in default keyword values for `AttractorsViaProximity`:
