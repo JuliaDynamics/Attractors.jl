@@ -49,7 +49,7 @@ end
             2 => StateSpaceSet([0 2.0]; warn = false)
         )
         mapper = AttractorsViaProximity(ds, attractors)
-        @test mapper.ε == 0.5
+        @test mapper.ε == 0.1
     end
     @testset "one attractor, single point (invalid)" begin
         attractors = Dict(

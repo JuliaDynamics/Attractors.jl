@@ -1,5 +1,21 @@
+# v1.26
+
+- **Brand new, ground-breaking functionality** for finding (almost) all stability
+  measures of a dynamical system, and continuing them along a global continuation!!!
+  This functionality is offered by the new type `StabilityMeasuresAccumulator`.
+  Read its docs, or the new entry in the Tutorial, for more details.
+- The argument `ε` for `AttractorsViaProximity` is now a keyword instead.
+  The positional argument version is deprecated.
+- Changes in default keyword values for `AttractorsViaProximity`:
+  - The keyword argument `Ttr` for `AttractorsViaProximity` has now the default value 0.This is the most sensible default value and it was a mistake to have a nonzero default value before. Unfortunately, this may break code that relied on the default value.
+  - The default `ε` is now 1/10 instead of 1/2 of the minimum distance between attractors. This significantly increases default accuracy of the mapper.
+  - Default default value of the lost counter for the proximity mapper has been increased to 10,000 from 1,000 to accommodate for the change in transient time.
+- New option `seed` for the seed of the RNG of `MFSBruteForce`.
+- Names `minimal_fatal_shock, MFSBlackBoxOptim, MFSBruteForce` have been deprecated for `minimal_critical_shock, MCSBlackBoxOptim, MCSBruteForce`
+
 # v1.25
-- New algorithm `stagger_and_step`: it computes a pseudo trajectory close to the stable invariant manifold of a saddle. The implementation follows the stagger and step algorithm. 
+
+- New algorithm `stagger_and_step`: it computes a pseudo trajectory close to the stable invariant manifold of a saddle. The implementation follows the stagger and step algorithm.
 
 # v1.24
 

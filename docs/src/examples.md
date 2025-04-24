@@ -67,15 +67,15 @@ shaded_basins_heatmap(grid, basins, attractors, iterations)
 ```
 
 
-## Minimal Fatal Shock
+## Minimal Critical Shock
 
-Here we find the Minimal Fatal Shock (MFS, see [`minimal_fatal_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
+Here we find the Minimal Critical Shock (MFS, see [`minimal_critical_shock`](@ref)) for the attractors (i.e., fixed points) of Newton's fractal
 ```@example MAIN
 shocks = Dict()
-algo_bb = Attractors.MFSBlackBoxOptim()
+algo_bb = Attractors.MCSBlackBoxOptim()
 for atr in values(attractors)
     u0 = atr[1]
-    shocks[u0] = minimal_fatal_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
+    shocks[u0] = minimal_critical_shock(mapper_newton, u0, (-1.5,1.5), algo_bb)
 end
 shocks
 ```
@@ -89,6 +89,7 @@ fig
 ```
 
 ## Fractality of 2D basins of the (4D) magnetic pendulum
+
 In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the [`AttractorsViaProximity`](@ref) which works when we already know where the attractors are. Furthermore we will also use a `ProjectedDynamicalSystem` to project the 4D system onto a 2D plane, saving a lot of computational time!
 
 ### Computing the basins
@@ -684,8 +685,7 @@ params = [0.1, 3.0]
 ds = CoupledODEs(fitzhugh_nagumo, ones(2), params, diffeq=(;alg = Vern9(), reltol=1e-11))
 ```
 
-Now, we can use Attractors.jl to compute the fixed points and basins of attraction of the
-FHN model.
+Now we compute the fixed points and basins of attraction of the FHN model.
 
 ```@example MAIN
 xg = yg = range(-1.5, 1.5; length = 201)
@@ -749,6 +749,44 @@ computing the zeroes of the ODE system. However, the edge tracking algorithm all
 edge states also in high-dimensional and chaotic systems where a simple computation of
 unstable equilibria becomes infeasible.
 
+## Estimating (almost) all stability measures at a given parameter
+
+The type [`StabilityMeasuresAccumulator`](@ref) is showcased in an application of
+finding all stability measures for the Duffing oscillator.
+
+```@example MAIN
+function duffing(u, p, t)
+    x, y = u
+    α, β = p
+    dx = y
+    dy = x - x^3 - α*y + β
+    return SVector(dx, dy)
+end
+
+import LinearAlgebra: I
+import Distributions: MvNormal
+
+params = [0.2, 0.0]
+ds = CoupledODEs(duffing, ones(2), params, diffeq=(; reltol=1e-11))
+
+n_grid = 201
+grid = (range(-2, 2; length = n_grid),range(-2, 2; length = n_grid),)
+
+mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+
+accumulator = StabilityMeasuresAccumulator(mapper, finite_time=50.0, weighting_distribution=MvNormal(zeros(2), 1.0*I))
+```
+
+If we call this object on some initial conditions and finalize its values, we receive
+several different stability measures. Their interpretation can be found in the documentation of [`StabilityMeasuresAccumulator`](@ref).
+
+```@example MAIN
+A = ics_from_grid(grid)
+for u0 in A
+    id = accumulator(u0)
+end
+stability_measures = finalize_accumulator(accumulator)
+```
 
 ## Invariant saddle of a dynamical system
 

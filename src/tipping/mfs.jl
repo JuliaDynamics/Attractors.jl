@@ -1,21 +1,20 @@
 using BlackBoxOptim: bboptimize, best_candidate
 using Random: GLOBAL_RNG
 import LinearAlgebra
-export minimal_fatal_shock, MFSBruteForce, MFSBlackBoxOptim
+export minimal_critical_shock, MCSBruteForce, MCSBlackBoxOptim
 export excitability_threshold
 
 """
-    minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm; kw...)
+    minimal_critical_shock(mapper::AttractorMapper, u0, search_area, algorithm; kw...)
 
-Return the _minimal fatal shock_ (also known as _excitability threshold_
-or _stability threshold_) for the initial point `u0` according to the
+Return the _minimal critical shock_ for the initial point `u0` according to the
 specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
 (see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
 The output `mfs` is a vector like `u0`.
 
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
-The options for `algorithm` are: [`MFSBruteForce`](@ref) or [`MFSBlackBoxOptim`](@ref).
-For high dimensional systems [`MFSBlackBoxOptim`](@ref) is likely more accurate.
+The options for `algorithm` are: [`MCSBruteForce`](@ref) or [`MCSBlackBoxOptim`](@ref).
+For high dimensional systems [`MCSBlackBoxOptim`](@ref) is likely more accurate.
 
 The `search_area` dictates the state space range for the search of the `mfs`.
 It can be a 2-tuple of (min, max) values, in which case the same values are used
@@ -23,12 +22,13 @@ for each dimension of the system in `mapper`. Otherwise, it can be a vector of 2
 each for each dimension of the system. The search area is defined w.r.t. to `u0`
 (i.e., it is the search area for perturbations of `u0`).
 
-An alias to `minimal_fatal_shock` is `excitability_threshold`.
+An alias to `minimal_critical_shock` is `excitability_threshold`.
+Other names for the concept are or _stability threshold_ or _minimal fatal shock_.
 
 ## Keyword arguments
 
 - `metric = LinearAlgebra.norm`: a metric function that gives the norm of a perturbation vector.
-  This keyword is ignored for the [`MFSBruteForce`](@ref) algorithm.
+  This keyword is ignored for the [`MCSBruteForce`](@ref) algorithm.
 - `target_id = nothing`: when not `nothing`, it should be an integer or a vector of
   integers corresponding to target attractor label(s).
   Then, the MFS is estimated based only on perturbations that lead to the target
@@ -36,11 +36,11 @@ An alias to `minimal_fatal_shock` is `excitability_threshold`.
 
 ## Description
 
-The minimal fatal shock is defined as the smallest-norm perturbation of the initial
+The minimal critical shock is defined as the smallest-norm perturbation of the initial
 point `u0` that will lead it a different basin of attraction than the one it was originally in.
 This alternative basin is not returned, do `mapper(u0 .+ mfs)` if you need the ID.
 
-The minimal fatal shock has many names. Many papers computed this quantity without explicitly
+The minimal critical shock has many names. Many papers computed this quantity without explicitly
 naming it, or naming it something simple like "distance to the threshold".
 The first work that proposed the concept as a nonlocal stability quantifier
 was by [Klinshov2015](@cite) with the name "stability threshold".
@@ -58,7 +58,7 @@ for a perturbation that simply brings us out of the basin, we look for the small
 perturbation that brings us into specified basin(s). This is enabled via the keyword
 `target_id`.
 """
-function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm;
+function minimal_critical_shock(mapper::AttractorMapper, u0, search_area, algorithm;
         metric = LinearAlgebra.norm, target_id = nothing
     )
     dim = length(u0)
@@ -72,7 +72,7 @@ function minimal_fatal_shock(mapper::AttractorMapper, u0, search_area, algorithm
     idchecker = id_check_function(id_u0, target_id)
     return _mfs(algorithm, mapper, u0, search_area, idchecker, metric)
 end
-const excitability_threshold = minimal_fatal_shock
+const excitability_threshold = minimal_critical_shock
 
 id_check_function(id::Int, ::Nothing) = i -> i != id
 function id_check_function(id::Integer, ti::Integer)
@@ -86,9 +86,9 @@ end
 
 
 """
-    MFSBruteForce(; kwargs...)
+    MCSBruteForce(; kwargs...)
 
-The brute force randomized search algorithm used in [`minimal_fatal_shock`](@ref).
+The brute force randomized search algorithm used in [`minimal_critical_shock`](@ref).
 
 It consists of
 two steps: random initialization and sphere radius reduction. On the first step,
@@ -111,26 +111,29 @@ Because this algorithm is based on hyperspheres, it assumes the Euclidean norm a
   algorithm.
 - `sphere_iterations = 10000`: number of steps while initializing random points on hypersphere and
   decreasing its radius.
-- `sphere_decrease_factor = 0.999` factor by which the radius of the hypersphere is decreased
+- `sphere_decrease_factor = 0.999`: factor by which the radius of the hypersphere is decreased
   (at each step the radius is multiplied by this number). Number closer to 1 means
-  more refined accuracy
+  more refined accuracy.
+- `seed = rand(1:10000)`: seed for the random number generator used when sampling
+  random perturbations.
 """
-Base.@kwdef struct MFSBruteForce
-    initial_iterations::Int64 = 10000
-    sphere_iterations::Int64 = 10000
+Base.@kwdef struct MCSBruteForce
+    initial_iterations::Int = 10000
+    sphere_iterations::Int = 10000
     sphere_decrease_factor::Float64 = 0.999
+    seed::Int = rand(1:10000)
 end
 
-function _mfs(algorithm::MFSBruteForce, mapper, u0, search_area, idchecker, _metric)
+function _mfs(algorithm::MCSBruteForce, mapper, u0, search_area, idchecker, _metric)
     metric = LinearAlgebra.norm
     algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
     dim = length(u0)
     best_shock, best_dist = crude_initial_radius(
-        mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations
+        mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations, algorithm.seed
     )
     best_shock, best_dist = mfs_brute_force(
         mapper, u0, best_shock, best_dist, dim, idchecker, metric,
-        algorithm.sphere_iterations, algorithm.sphere_decrease_factor
+        algorithm.sphere_iterations, algorithm.sphere_decrease_factor, algorithm.seed
     )
     return best_shock
 end
@@ -144,10 +147,10 @@ of the perturbation and compares it to the best perturbation found so far.
 If the norm is smaller, it updates the best perturbation found so far.
 It repeats this process total_iterations times and returns the best perturbation found.
 """
-function crude_initial_radius(mapper::AttractorMapper, u0, search_area, idchecker, metric, total_iterations)
+function crude_initial_radius(mapper::AttractorMapper, u0, search_area, idchecker, metric, total_iterations, seed)
     best_dist = Inf
     region = StateSpaceSets.HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
-    generator, _ = statespace_sampler(region)
+    generator, _ = statespace_sampler(region, seed)
     best_shock = copy(generator())
     shock = copy(best_shock)
 
@@ -178,12 +181,12 @@ and returns the best perturbation found.
 """
 function mfs_brute_force(mapper::AttractorMapper, u0,
         best_shock, best_dist, dim, idchecker, metric,
-        total_iterations, sphere_decrease_factor
+        total_iterations, sphere_decrease_factor, seed
     )
 
     temp_dist = best_dist*sphere_decrease_factor
     region = HSphereSurface(temp_dist, dim)
-    generator, = statespace_sampler(region)
+    generator, = statespace_sampler(region, seed)
     i = 0
     new_shock = zeros(dim)
     while i < total_iterations
@@ -207,13 +210,13 @@ end
 
 
 """
-    MFSBlackBoxOptim(; kwargs...)
+    MCSBlackBoxOptim(; kwargs...)
 
-The black box derivative-free optimization algorithm used in [`minimal_fatal_shock`](@ref).
+The black box derivative-free optimization algorithm used in [`minimal_critical_shock`](@ref).
 
 ## Keyword arguments
 
-- `guess = nothing`: a initial guess for the minimal fatal shock given to the
+- `guess = nothing`: a initial guess for the minimal critical shock given to the
   optimization algorithm. If not `nothing`, `random_algo` below is ignored.
 - `max_steps = 10000`: maximum number of steps for the optimization algorithm.
 - `penalty = 1000.0`: penalty value for the objective function for perturbations that do
@@ -222,7 +225,7 @@ The black box derivative-free optimization algorithm used in [`minimal_fatal_sho
   attraction.
 - `print_info`: boolean value, if true, the optimization algorithm will print information on
   the evaluation steps of objective function, `default = false`.
-- `random_algo = MFSBruteForce(100, 100, 0.99)`: an instance of [`MFSBruteForce`](@ref)
+- `random_algo = MCSBruteForce(100, 100, 0.99)`: an instance of [`MCSBruteForce`](@ref)
   that can be used to provide an initial guess.
 - `bbkwargs = NamedTuple()`: additional keyword arguments propagated to
   `BlackBoxOptim.bboptimize` for selecting solver, accuracy, and more.
@@ -245,20 +248,20 @@ function mfs_objective(perturbation, u0, mapper, penalty)
 end
 ```
 Using an initial guess can be beneficial to both performance and accuracy,
-which is why the output of a crude [`MFSBruteForce`](@ref) is used to provide a guess.
+which is why the output of a crude [`MCSBruteForce`](@ref) is used to provide a guess.
 This can be disabled by either passing a `guess` vector explicitly or
 by giving `nothing` as `random_algo`.
 """
-Base.@kwdef struct MFSBlackBoxOptim{G, RA, BB}
+Base.@kwdef struct MCSBlackBoxOptim{G, RA, BB}
     guess::G = nothing
     max_steps::Int64 = 10_000
     penalty::Float64 = 0.999
     print_info::Bool = false
-    random_algo::RA = MFSBruteForce(100, 100, 0.99)
+    random_algo::RA = MCSBruteForce(100, 100, 0.99, rand(1:10000))
     bbkwargs::BB = NamedTuple()
 end
 
-function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, idchecker, metric)
+function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, metric)
     function objective_function(perturbation)
         return mfs_objective(perturbation, u0, idchecker, metric, mapper, algorithm.penalty)
     end
@@ -278,7 +281,7 @@ function _mfs(algorithm::MFSBlackBoxOptim, mapper, u0, search_area, idchecker, m
         if !isnothing(algorithm.guess)
             guess = algorithm.guess
         else
-            guess = minimal_fatal_shock(mapper, u0, search_area, algorithm.random_algo)
+            guess = minimal_critical_shock(mapper, u0, search_area, algorithm.random_algo)
         end
         result = bboptimize(objective_function, guess;
             MaxSteps = algorithm.max_steps,
