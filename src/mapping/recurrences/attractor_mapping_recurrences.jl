@@ -364,7 +364,7 @@ function automatic_Δt_recurrences(ds, grid_nfo::Grid;
     return Δt
 end
 
-automatic_Δt_recurrences(ds, grid; kw...) = automatic_Δt_basins(ds, to_grid_type(grid); kw...)
+automatic_Δt_recurrences(ds, grid; kw...) = automatic_Δt_recurrences(ds, to_grid_type(grid); kw...)
 
 """
     reset_mapper!(mapper::AttractorsMapper)
