@@ -2,7 +2,7 @@
 
 [![docsdev](https://img.shields.io/badge/docs-dev-lightblue.svg)](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/attractors/dev/)
 [![docsstable](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliadynamics.github.io/DynamicalSystemsDocs.jl/attractors/stable/)
-[![Paper](https://img.shields.io/badge/Cite-DOI:10.1063/5.0159675-purple)](https://arxiv.org/abs/2304.12786)
+[![Paper](https://img.shields.io/badge/Cite-DOI:10.1063/5.0159675-purple)](https://doi.org/10.1063/5.0159675)
 [![CI](https://github.com/JuliaDynamics/Attractors.jl/workflows/CI/badge.svg)](https://github.com/JuliaDynamics/Attractors.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/JuliaDynamics/Attractors.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/Attractors.jl)
 [![Package Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Ftotal_downloads%2FAttractors&query=total_requests&label=Downloads)](http://juliapkgstats.com/pkg/Attractors)
