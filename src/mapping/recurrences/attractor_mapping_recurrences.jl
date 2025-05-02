@@ -44,7 +44,7 @@ want to search for attractors in a lower dimensional subspace.
   The keyword `Dt` can also be used instead if `Δ` (`\\Delta`) is not accessible.
   It is `1` for discrete time systems.
   For continuous systems, an automatic value is calculated using
-  [`automatic_Δt_basins`](@ref). For very fine grids, this can become very small,
+  [`automatic_Δt_recurrences`](@ref). For very fine grids, this can become very small,
   much smaller than the typical integrator internal step size in case of adaptive
   integrators. In such cases, use `stop_at_Δt = true`.
 * `stop_at_Δt = false`: Only used if the input dynamical system is `CoupledODEs`.
@@ -134,7 +134,12 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
         Dt = nothing, Δt = Dt, sparse = true,
         force_non_adaptive = false, stop_at_Δt = force_non_adaptive, kwargs...
     )
+    finalgrid = to_grid_type(grid)
+    bsn_nfo = initialize_basin_info(ds, finalgrid, Δt, sparse, stop_at_Δt)
+    return AttractorsViaRecurrences(ds, bsn_nfo, finalgrid, kwargs)
+end
 
+function to_grid_type(grid)
     if grid isa Tuple  # regular or irregular
         if all(t -> t isa AbstractRange, grid) && all(axis -> issorted(axis), grid) # regular
             finalgrid = RegularGrid(grid)
@@ -143,14 +148,12 @@ function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
         else
             error("Incorrect grid specification!")
         end
-    elseif grid isa SubdivisionBasedGrid
+    elseif grid isa Grid
         finalgrid = grid
     else
         error("Incorrect grid specification!")
     end
-
-    bsn_nfo = initialize_basin_info(ds, finalgrid, Δt, sparse, stop_at_Δt)
-    return AttractorsViaRecurrences(ds, bsn_nfo, finalgrid, kwargs)
+    return finalgrid
 end
 
 function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
@@ -266,7 +269,7 @@ end
 
 function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop_at_Δt)
     Δt = if isnothing(Δtt)
-        isdiscretetime(ds) ? 1 : automatic_Δt_basins(ds, grid_nfo)
+        isdiscretetime(ds) ? 1 : automatic_Δt_recurrences(ds, grid_nfo)
     else
         Δtt
     end
@@ -307,23 +310,32 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
 end
 
 
-using LinearAlgebra: norm
+import LinearAlgebra
 
 """
-    automatic_Δt_basins(ds::DynamicalSystem, grid; N = 5000) → Δt
+    automatic_Δt_recurrences(ds::DynamicalSystem, grid; kw...) → Δt
 
-Calculate an optimal `Δt` value for [`basins_of_attraction`](@ref).
+Calculate an optimal `Δt` value for [`AttractorsViaRecurrences`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
 points within the bounding box of the grid.
 The average `f` is then compared with the average diagonal length of a grid
-cell and their ratio provides `Δt`.
+cell and their ratio provides `Δt`, multiplied by `factor`.
 
 Notice that `Δt` should not be too small which happens typically if the grid resolution
 is high. It is okay if the trajectory skips a few cells.
 Also, `Δt` that is smaller than the internal step size of the integrator will cause
 a performance drop.
+
+## Keyword arguments
+
+- `N = 5000`: random samples in the grid to use.
+- `agg = mean`: function used to average `f`. `median` is another option.
+- `factor = 10`: factor multiplying the ratio of diagonal/speed.
+- `norm = LinearAlgebra.norm`: function used to obtain speed from state space velocity.
 """
-function automatic_Δt_basins(ds, grid_nfo::Grid; N = 5000)
+function automatic_Δt_recurrences(ds, grid_nfo::Grid;
+        factor = 10, N = 5000, agg = mean, norm = LinearAlgebra.norm
+    )
     isdiscretetime(ds) && return 1
     if ds isa ProjectedDynamicalSystem
         error("Automatic Δt finding is not implemented for `ProjectedDynamicalSystem`.")
@@ -335,8 +347,8 @@ function automatic_Δt_basins(ds, grid_nfo::Grid; N = 5000)
     # Sample velocity at random points
     f, p, t0 = dynamic_rule(ds), current_parameters(ds), initial_time(ds)
     udummy = copy(current_state(ds))
-    dudt = 0.0
-    for _ in 1:N
+    dudt = zeros(N)
+    for i in 1:N
         point = sampler()
         deriv = if !isinplace(ds)
             f(point, p, t0)
@@ -344,13 +356,15 @@ function automatic_Δt_basins(ds, grid_nfo::Grid; N = 5000)
             f(udummy, point, p, t0)
             udummy
         end
-        dudt += norm(deriv)
+        dudt[i] = norm(deriv)
     end
-
+    u = agg(dudt)
     s = mean_cell_diagonal(grid_nfo)
-    Δt = 10*s*N/dudt
+    Δt = factor*s/u
     return Δt
 end
+
+automatic_Δt_recurrences(ds, grid; kw...) = automatic_Δt_basins(ds, to_grid_type(grid); kw...)
 
 """
     reset_mapper!(mapper::AttractorsMapper)

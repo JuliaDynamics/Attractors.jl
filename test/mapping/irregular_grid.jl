@@ -84,9 +84,9 @@ end
 
     using Attractors: RegularGrid, IrregularGrid
 
-    Dt0 = automatic_Δt_basins(ds, RegularGrid(grid0))
-    Dt1 = automatic_Δt_basins(ds, IrregularGrid(grid1))
-    Dt2 = automatic_Δt_basins(ds, grid2)
+    Dt0 = automatic_Δt_recurrences(ds, RegularGrid(grid0))
+    Dt1 = automatic_Δt_recurrences(ds, IrregularGrid(grid1))
+    Dt2 = automatic_Δt_recurrences(ds, grid2)
 
     @test Dt0 > 0
     @test Dt1 > 0

@@ -72,3 +72,4 @@ end
 @deprecate minimal_fatal_shock minimal_critical_shock
 @deprecate MFSBlackBoxOptim MCSBlackBoxOptim
 @deprecate MFSBruteForce MCSBruteForce
+@deprecate automatic_Δt_basins automatic_Δt_recurrences

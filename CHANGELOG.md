@@ -1,3 +1,9 @@
+# v1.27
+
+- `automatic_Δt_basins` deprecated for `automatic_Δt_recurrences`.
+- More options for `automatic_Δt_recurrences`.
+- `automatic_Δt_recurrences` allows providing the grid as a tuple.
+
 # v1.26
 
 - **Brand new, ground-breaking functionality** for finding (almost) all stability
