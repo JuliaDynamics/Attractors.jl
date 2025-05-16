@@ -102,41 +102,46 @@ more rirogously and is estimated more accurately for a proximity mapper.
 
 ## Keyword arguments
 
-- `ε, metric`: As in `AttractorsViaProximity`.
+Keywords `ε, finite_time, weighting_distribution` are allowed to be `Vector`s
+with the same length as `pcurve` for providing different values for different
+continuation steps.
+
+- `ε = nothing`: given to [`AttractorsViaProximity`](@ref).
 - `proximity_mapper_options = NamedTuple()`: extra keywords for `AttractorsViaProximity`.
-- All keywords are propagated to [`StabilityMeasuresAccumulator`](@ref).
+- `metric, finite_time, weighting_distribution`: given to [`StabilityMeasuresAccumulator`](@ref).
+- `samples_per_parameter = 1000`: how many samples to use when estimating stability measures
+  via [`StabilityMeasuresAccumulator`](@ref). Ignored when `ics` is not a function.
 """
 function stability_measures_along_continuation(
-    ds::DynamicalSystem,
-    attractors_cont,
-    pcurve,
-    ics;
-    ε = nothing,
-    weighting_distribution = EverywhereUniform(),
-    finite_time = 1.0,
-    samples_per_parameter = 1000,
-    metric=Euclidean(),
-    proximity_mapper_options=NamedTuple(),
-    show_progress=true
-)
-    N = samples_per_parameter
+        ds::DynamicalSystem,
+        attractors_cont,
+        pcurve,
+        ics;
+        ε = nothing,
+        weighting_distribution = EverywhereUniform(),
+        finite_time = 1.0,
+        samples_per_parameter = 1000,
+        metric = Euclidean(),
+        proximity_mapper_options = NamedTuple(),
+        show_progress=true
+    )
     progress = ProgressMeter.Progress(
         length(pcurve); desc = "Continuing stability measures:", enabled=show_progress
     )
     measures_cont = []
     for (i, p) in enumerate(pcurve)
         ε_ = ε isa AbstractVector ? ε[i] : ε # if its a vector, get i-th entry
-        weighting_distribution = weighting_distribution isa AbstractVector ?
+        weighting_distribution_ = weighting_distribution isa AbstractVector ?
                                 weighting_distribution[i] : weighting_distribution
-        finite_time = finite_time isa AbstractVector ? finite_time[i] : finite_time
+        finite_time_ = finite_time isa AbstractVector ? finite_time[i] : finite_time
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
         accumulator = StabilityMeasuresAccumulator(
             AttractorsViaProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
-            weighting_distribution=weighting_distribution, finite_time=finite_time,
-            metric=metric
+            weighting_distribution = weighting_distribution_, finite_time = finite_time_,
+            metric = metric
         )
-        N = ics isa Function ? N : length(ics)
+        N = ics isa Function ? samples_per_parameter : length(ics)
         for i ∈ 1:N
             ic = _get_ic(ics, i)
             id = accumulator(ic) # accumulate stability measures for given i.c.
@@ -145,6 +150,7 @@ function stability_measures_along_continuation(
         ProgressMeter.next!(progress)
     end
 
+    # change the measures format to the expected output
     transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
     for measure in measures_cont[1]
         measure_name = measure[1]
