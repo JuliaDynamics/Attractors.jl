@@ -200,7 +200,7 @@ conditions to map to attractors, the method can further utilize found exit and a
 basins, making the computation faster as the grid is processed more and more.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    basins = copy(mapper.bsn_nfo.basins)
+    basins = mapper.bsn_nfo.basins
     if basins isa SparseArray;
         throw(ArgumentError("""
             Sparse version of AttractorsViaRecurrences is incompatible with
@@ -234,10 +234,11 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     end
 
     # remove attractors and rescale from 1 to max number of attractors
+    bas_tmp = copy(basins)
     ind = iseven.(basins)
-    basins[ind] .+= 1
-    basins .= (basins .- 1) .÷ 2
-    return basins, mapper.bsn_nfo.attractors
+    bas_tmp[ind] .+= 1
+    bas_tmp .= (bas_tmp .- 1) .÷ 2
+    return bas_tmp, mapper.bsn_nfo.attractors
 end
 
 #####################################################################################
