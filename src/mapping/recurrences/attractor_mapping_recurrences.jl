@@ -228,7 +228,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         if basins[ind] == 0
             show_progress && ProgressMeter.update!(progress, k)
             y0 = generate_ic_on_grid(grid, ind)
-            basins[ind] = mapper(y0)
+            basins[ind] = mapper(y0; show_progress)
         end
     end
 
