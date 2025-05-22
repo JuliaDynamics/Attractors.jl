@@ -234,10 +234,11 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     end
 
     # remove attractors and rescale from 1 to max number of attractors
+    bas_tmp = copy(basins)
     ind = iseven.(basins)
-    basins[ind] .+= 1
-    basins .= (basins .- 1) .÷ 2
-    return basins, mapper.bsn_nfo.attractors
+    bas_tmp[ind] .+= 1
+    bas_tmp .= (bas_tmp .- 1) .÷ 2
+    return bas_tmp, mapper.bsn_nfo.attractors
 end
 
 #####################################################################################
