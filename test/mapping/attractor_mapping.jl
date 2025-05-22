@@ -72,31 +72,6 @@ function test_basins(ds, u0s, grid, expected_fs_raw, featurizer;
     end
 
 
-    @testset "Basins of Attraction" begin 
-        # The reason of this test is to check whether 
-        # basins_of_attraction does not modify the internal 
-        # state of the mapper changing. (regression bug)
-        function map_3_states(z, p, n)
-            if z[1] < -1
-                return SVector(-2.0, 0.) 
-            elseif -1 ≤ z[1] ≤ 1
-                return SVector(0.0, 0.)
-            else 
-                return SVector(2.0, 0.)
-            end
-        end
-        ds = DiscreteDynamicalSystem(map_3_states, zeros(2)) 
-        xg = yg = range(-3, 3; length = 20) 
-        grid = (xg, yg)
-        mapper = AttractorsViaRecurrences(ds, grid; sparse = false)  
-        basins, atts = basins_of_attraction(mapper; show_progress = false)
-        ics = [ [x,1.0] for x in range(-3,3,length = 20)]
-        fractions, labels = basins_fractions(mapper, ics)
-
-        @test 0 ∉ keys(fractions)
-    end
-
-
 
     @testset "Featurizing, clustering" begin
         optimal_radius_method = "silhouettes_optim"
@@ -355,5 +330,30 @@ if DO_EXTENSIVE_TESTS
 
         test_basins(pmap, u0s, grid, expected_fs_raw, thomas_featurizer; ε = 1.0, ferr=1e-2)
     end
+
+    @testset "Basins of Attraction" begin 
+        # The reason of this test is to check whether 
+        # basins_of_attraction does not modify the internal 
+        # state of the mapper changing. (regression bug)
+        function map_3_states(z, p, n)
+            if z[1] < -1
+                return SVector(-2.0, 0.) 
+            elseif -1 ≤ z[1] ≤ 1
+                return SVector(0.0, 0.)
+            else 
+                return SVector(2.0, 0.)
+            end
+        end
+        ds = DiscreteDynamicalSystem(map_3_states, zeros(2)) 
+        xg = yg = range(-3, 3; length = 20) 
+        grid = (xg, yg)
+        mapper = AttractorsViaRecurrences(ds, grid; sparse = false)  
+        basins, atts = basins_of_attraction(mapper; show_progress = false)
+        ics = [ [x,1.0] for x in range(-3,3,length = 20)]
+        fractions, labels = basins_fractions(mapper, ics)
+
+        @test 0 ∉ keys(fractions)
+    end
+
 
 end
