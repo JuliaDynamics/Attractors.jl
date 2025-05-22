@@ -200,8 +200,7 @@ conditions to map to attractors, the method can further utilize found exit and a
 basins, making the computation faster as the grid is processed more and more.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    basins = mapper.bsn_nfo.basins
-    if basins isa SparseArray;
+    if mapper.bsn_nfo.basins isa SparseArray;
         throw(ArgumentError("""
             Sparse version of AttractorsViaRecurrences is incompatible with
             `basins_of_attraction(mapper)`."""
@@ -213,6 +212,8 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
     else
         grid = mapper.grid.grid
     end
+
+    basins = zero(mapper.bsn_nfo.basins)
 
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
@@ -227,18 +228,11 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         if basins[ind] == 0
             show_progress && ProgressMeter.update!(progress, k)
             y0 = generate_ic_on_grid(grid, ind)
-            basins[ind] = recurrences_map_to_label!(
-                mapper.bsn_nfo, mapper.ds, y0; show_progress, mapper.kwargs...
-            )
+            basins[ind] = mapper(y0)
         end
     end
 
-    # remove attractors and rescale from 1 to max number of attractors
-    bas_tmp = copy(basins)
-    ind = iseven.(basins)
-    bas_tmp[ind] .+= 1
-    bas_tmp .= (bas_tmp .- 1) .÷ 2
-    return bas_tmp, mapper.bsn_nfo.attractors
+    return basins, extract_attractors(mapper)
 end
 
 #####################################################################################
