@@ -28,6 +28,13 @@ pages = [
     Documenter.hide("recurrences_animation.md"),
 ]
 
+size_threshold_ignore = [
+    "tutorial.md",
+    "api.md",
+    "examples.md",
+    "references.md",
+]
+
 import Downloads
 Downloads.download(
     "https://raw.githubusercontent.com/JuliaDynamics/doctheme/master/build_docs_with_style.jl",
@@ -44,4 +51,5 @@ bib = CitationBibliography(
 
 build_docs_with_style(pages, Attractors, StateSpaceSets;
     expandfirst = ["index.md"], bib, warnonly = [:doctest, :missing_docs, :cross_references],
+    htmlkw = (;size_threshold_ignore)
 )
