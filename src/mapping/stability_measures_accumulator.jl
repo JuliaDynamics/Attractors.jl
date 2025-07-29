@@ -136,7 +136,7 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype}
     maximal_convergence_pace::Dict{Int, Float64}
     convergence_times::Dict{Int, Vector{Float64}}
     convergence_paces::Dict{Int, Vector{Float64}}
-    finite_time::Float64
+    finite_time::Float64 # Discussed that this should be F and metric::M but this leads to errors...
     weighting_distribution::Union{EverywhereUniform, Distribution}
     metric::Metric
 end
@@ -197,7 +197,11 @@ end
 # Function to update the accumulator with a new state
 function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     id = accumulator.mapper(u0)
-
+    if (isa(accumulator.mapper, AttractorsViaProximity) && accumulator.mapper.ε != nothing)
+      ε = accumulator.mapper.ε
+    else
+      ε = 0.0
+    end
     # Update basin points
     if !(id in keys(accumulator.basin_points))
         accumulator.basin_points[id] = StateSpaceSet([u0])
@@ -216,6 +220,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
         StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)
       )
     end
+    ct = u0_dist > ε ? ct : 0
 
     has_nonzero_measure = pdf(accumulator.weighting_distribution, u0) > 0.0
     if !(id in keys(accumulator.convergence_times))
@@ -279,7 +284,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     foreach(key -> !(key in keys(bpoints)) && (bpoints[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
     foreach(key -> !(key in keys(accumulator.finite_time_basin_points)) && (accumulator.finite_time_basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
     foreach(key -> !(key in keys(accumulator.nonzero_measure_basin_points)) && (accumulator.nonzero_measure_basin_points[key] = StateSpaceSet{Dims, Datatype}()), keys(attractors))
-    normalization = sum(sum(pdf(accumulator.weighting_distribution, point) for point in v) for v in values(bpoints))
+    normalization = sum(sum(pdf(accumulator.weighting_distribution, point) for point in v) for v in values(bpoints) if !isempty(v))
     N = sum(length(v) for v in values(bpoints))
 
     # basin stability and finite time basin stability
@@ -317,9 +322,11 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         maximal_noncritical_shock_magnitudes[key1] = Inf
         (length(keys(accumulator.nonzero_measure_basin_points)) == 1 && key1 in keys(accumulator.nonzero_measure_basin_points)) && continue
         minimal_critical_shock_magnitudes[key1] = minimum([set_distance(attractors[key1], accumulator.nonzero_measure_basin_points[key2], StateSpaceSets.StrictlyMinimumDistance(true, accumulator.metric)) for key2 in keys(accumulator.nonzero_measure_basin_points) if key1 != key2])
-        maximal_noncritical_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
-        mean_noncritical_shock_magnitudes[key1] = mean([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
-    end
+        if !isempty(attractors[key1]) && !isempty(accumulator.nonzero_measure_basin_points[key1])
+          maximal_noncritical_shock_magnitudes[key1] = maximum([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
+          mean_noncritical_shock_magnitudes[key1] = mean([accumulator.metric(a, b) for a in attractors[key1] for b in accumulator.nonzero_measure_basin_points[key1]])
+        end
+      end
 
     # linear measures
     characteristic_return_time = Dict(k => NaN for k in keys(attractors))
