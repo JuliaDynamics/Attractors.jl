@@ -64,7 +64,7 @@ attraction. Introduced by [Battelino1988](@cite) and further described by
 [Skufca2006](@cite), the
 algorithm has been applied to, e.g., the laminar-turbulent boundary in plane Couette
 flow [Schneider2008](@cite), Wada basins [Wagemakers2020](@cite), as well as Melancholia
-states in conceptual [Mehling2023](@cite) and intermediate-complexity [Lucarini2017](@cite)
+states in conceptual [Mehling2024](@cite) and intermediate-complexity [Lucarini2017](@cite)
 climate models.
 Relying only on forward integration of the system, it works even in
 high-dimensional systems with complicated fractal basin boundary structures.
