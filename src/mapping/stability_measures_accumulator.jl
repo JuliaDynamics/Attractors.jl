@@ -209,6 +209,36 @@ end
 # Function to update the accumulator with a new state
 function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     id = accumulator.mapper(u0)
+
+    push!(accumulator.u0s, u0)
+    push!(accumulator.basins, id)
+    push!(accumulator.times, convergence_time(accumulator.mapper))
+
+end
+
+function finalize yada yada
+    # first step is to compute the d_{i,j} "matrix"
+    attractors = extract_attractors(accumulator.mapper)
+    ids = keys(attractors)
+    js = 1:length(keys)
+    # create inverse
+    ids_to_js = [somehow estimate this]
+
+
+    id = ids[j]
+
+    d = zeros(length(u0s), length(js))
+    for j in js
+      for i in 1:length(u0s)
+        d[i, j] = set_distance(u0, attractors[ids[j]])
+      end
+    end
+
+
+
+    # DELETE EVERYTHING BELOW THIS LINE!
+
+
     if (isa(accumulator.mapper, AttractorsViaProximity) && accumulator.mapper.ε != nothing)
       ε = accumulator.mapper.ε
     else
@@ -280,7 +310,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
             push!(accumulator.nonzero_measure_basin_points[id], u0)
         end
 
-        for id2 in keys(attractors) 
+        for id2 in keys(attractors)
           if id2 != id
             thisdist = set_distance(
                 StateSpaceSet([u0]), attractors[id2],
@@ -313,7 +343,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
             )
         end
 
-        
+
     end
 
     return id
