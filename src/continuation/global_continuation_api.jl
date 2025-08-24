@@ -1,4 +1,5 @@
 export global_continuation, GlobalContinuationAlgorithm, continuation_series, stability_measures_along_continuation
+export PerParameterInitialConditions
 
 """
     GlobalContinuationAlgorithm
@@ -17,8 +18,21 @@ abstract type GlobalContinuationAlgorithm end
     global_continuation(gca::GlobalContinuationAlgorithm, pcurve, ics; kwargs...)
 
 Find and continue attractors (or representations of attractors)
-and the fractions of their basins of attraction across a parameter range `pcurve`
+and the fractions of their basins of attraction across a parameter curve `pcurve`
 by sampling given initial conditions `ics` according to algorithm `gca`.
+
+Possible subtypes of a `GlobalContinuationAlgorithm` are:
+
+- [`AttractorSeedContinueMatch`](@ref)
+- [`FeaturizeGroupAcrossParameter`](@ref)
+
+`ics` are the initial conditions to use when sampling the state space.
+They can be specified in one of three ways:
+
+1. A set vector of initial conditions (vector of vectors).
+2. A 0-argument function that generates random initial conditions.
+3. The special type [`PerParameterInitialConditions`](@ref) that allows
+   different initial conditions for different parameter values.
 
 Return:
 
@@ -57,25 +71,29 @@ across the parameter range `prange`, for the parameter of the system with index 
 traditional continuation (see online Tutorial for a comparison), global continuation
 can be performed over arbitrary user-defined curves in parameter space.
 The second call signature with `pcurve` allows for this possibility. In this case
-`pcurve` is a vector of iterables, where each itereable maps parameter indices
+`pcurve` is a vector of iterables, where each iterable maps parameter indices
 to parameter values. These iterables can be dictionaries, named tuples, `Vector{Pair}`,
-etc., and the sequence of the iterables defines a curve in parameter space.
+anything that can be given in `set_parameters!`.
+The sequence of the iterables defines a curve in parameter space.
 In fact, the version with `prange, pidx` simply defines
 `pcurve = [[pidx => p] for p in prange]` and calls the second method.
-
-`ics` are the initial conditions to use when globally sampling the state space.
-Like in [`basins_fractions`](@ref) it can be either a set vector of initial conditions,
-or a 0-argument function that generates random initial conditions.
-
-Possible subtypes of `GlobalContinuationAlgorithm` are:
-
-- [`AttractorSeedContinueMatch`](@ref)
-- [`FeaturizeGroupAcrossParameter`](@ref)
 """
 function global_continuation(alg::GlobalContinuationAlgorithm, prange::AbstractVector, pidx, sampler; kw...)
     # everything is propagated to the curve setting
     pcurve = [[pidx => p] for p in prange]
     return global_continuation(alg, pcurve, sampler; kw...)
+end
+
+"""
+    PerParameterInitialConditions(generator)
+
+Wrapper around a function `generator`, to be called as
+`generator(parameter_pairs, N::Int)`.
+It inputs the current parameter(s) of a [`global_continuation`](@ref)
+(elements of `pcurve`), and generates a vector of `N` initial conditions.
+"""
+struct PerParameterInitialConditions{F}
+    generator::F
 end
 
 
