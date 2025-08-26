@@ -125,9 +125,9 @@ refers to the distance established by the `metric` keyword.
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype, V<:AbstractVector} <: AttractorMapper
     mapper::AM
-    u0s::Vector{StateSpaceSet{Dims, Datatype}}
+    u0s::Vector{V}
     bs::Vector{Int}
     cts::Vector{Float64}
     finite_time::Float64 # Discussed that this should be F and metric::M but this leads to errors...
@@ -140,12 +140,13 @@ function StabilityMeasuresAccumulator(mapper::AttractorMapper;
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
+    AM = typeof(mapper)
     Dims = dimension(ds)
     Datatype = eltype(current_state(ds))
-    AM = typeof(mapper)
-    StabilityMeasuresAccumulator{AM, Dims, Datatype}(
+    V = typeof(current_state(ds))
+    StabilityMeasuresAccumulator{AM, Dims, Datatype, V}(
         mapper,
-        Vector{StateSpaceSet{Dims, Datatype}}(),
+        Vector{V}(),
         Vector{Int}(),
         Vector{Float64}(),
         finite_time,
@@ -160,7 +161,8 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     ds = referenced_dynamical_system(a.mapper)
     Dims = dimension(ds)
     Datatype = eltype(current_state(ds))
-    a.u0s = Vector{StateSpaceSet{Dims,Datatype}}()
+    V = typeof(current_state(ds))
+    a.u0s = Vector{V}()
     a.bs = Vector{Int}()
     a.cts = Vector{Float64}()
 end
@@ -180,7 +182,7 @@ end
 function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     id = accumulator.mapper(u0)
 
-    push!(accumulator.u0s, StateSpaceSet([u0]))
+    push!(accumulator.u0s, u0)
     push!(accumulator.bs, id)
     push!(accumulator.cts, convergence_time(accumulator.mapper))
 
@@ -210,7 +212,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
 
 
-    ws = [pdf(accumulator.weighting_distribution, u0[1]) for u0 in u0s]
+    ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
 
     d = zeros(length(u0s), length(js))
     for i in 1:length(u0s)
@@ -218,7 +220,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
             if ids[j] == -1
               d[i, j] = Inf
             else
-              d[i, j] = set_distance(u0s[i], attractors[ids[j]])
+              d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]])
             end
         end
     end
@@ -242,7 +244,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     basin_frac = Dict(id => 0.0 for id in ids)
     basin_stab = Dict(id => 0.0 for id in ids)
-    finite_time_basin_stab = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
+    finite_time_basin_stab = Dict(id => 0.0 for id in ids)
     mean_convergence_time = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
     mean_convergence_pace = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
     maximal_convergence_time = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
@@ -252,7 +254,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     mean_noncritical_shock_magnitude = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
     maximal_noncritical_shock_magnitude = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
 
-    for (i, u0) in enumerate(u0s)
+    for i in 1:length(u0s)
       id = bs[i]
       j = ids_to_js[id]
       w = ws[i]
