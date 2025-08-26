@@ -206,6 +206,9 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     bs = accumulator.bs
     cts = accumulator.cts
     N = length(u0s)
+    N == 0 && error("No initial conditions have been processed. Cannot finalize accumulator.")
+
+
 
     ws = [pdf(accumulator.weighting_distribution, u0[1]) for u0 in u0s]
 
@@ -301,9 +304,13 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         median_convergence_pace[id] = weighted_median(cps_id, ws_id)
     end
 
-    minimal_critical_shock_magnitude = Dict(id => minimum(
-        d[i, ids_to_js[id]] for i in 1:length(accumulator.bs) 
-        if (accumulator.bs[i] != id && ws[i] > 0)) for id in ids
+    minimal_critical_shock_magnitude = Dict(
+        id => minimum(
+            (d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
+            if accumulator.bs[i] != id && ws[i] > 0);
+            init = Inf,
+        )
+        for id in ids
     )
     minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
 
