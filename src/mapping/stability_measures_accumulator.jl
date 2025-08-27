@@ -125,14 +125,14 @@ refers to the distance established by the `metric` keyword.
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, Dims, Datatype, V<:AbstractVector} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, V<:AbstractVector, F, M} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int}
     cts::Vector{Float64}
-    finite_time::Float64 # Discussed that this should be F and metric::M but this leads to errors...
+    finite_time::F
     weighting_distribution::Union{EverywhereUniform, Distribution}
-    metric::Metric
+    metric::M
 end
 
 function StabilityMeasuresAccumulator(mapper::AttractorMapper;
@@ -141,10 +141,10 @@ function StabilityMeasuresAccumulator(mapper::AttractorMapper;
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
     AM = typeof(mapper)
-    Dims = dimension(ds)
-    Datatype = eltype(current_state(ds))
     V = typeof(current_state(ds))
-    StabilityMeasuresAccumulator{AM, Dims, Datatype, V}(
+    F = typeof(finite_time)
+    M = typeof(metric)
+    StabilityMeasuresAccumulator{AM, V, F, M}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
@@ -159,8 +159,6 @@ end
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     ds = referenced_dynamical_system(a.mapper)
-    Dims = dimension(ds)
-    Datatype = eltype(current_state(ds))
     V = typeof(current_state(ds))
     a.u0s = Vector{V}()
     a.bs = Vector{Int}()

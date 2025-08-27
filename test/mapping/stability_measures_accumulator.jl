@@ -47,9 +47,6 @@ results = finalize_accumulator(accumulator)
 # that point and the furthest point of its own basin at [0, -1] which is 2.23607. For
 # attractor 1 at [-1, -1] the maximal noncritical shock is 2.0, which is the distance to the
 # point [-1, 1] which is the furthest point in its basin.
-# Keep in mind that initial conditions that are the attractor itself have a convergence time
-# of 0.0. Medians are computed as the mean between the two middle values if the number of
-# values is even.
 
 results_expected = Dict(
     "mean_convergence_time"            => Dict(2=>0.22222, 1=>0.55555, -1=>NaN),
