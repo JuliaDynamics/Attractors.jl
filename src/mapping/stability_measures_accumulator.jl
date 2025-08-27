@@ -84,10 +84,10 @@ Currently linear measures for discrete time systems are not computed.
 
 ### Nonlocal stability measures
 
-These nonlocal stability measures are accumulated while initial conditions are mapped
-to attractors. Afterwards they are averaged according to the probability density
-`weighting_distribution` when calling `finalize_accumulator!`. The word "distance" here
-refers to the distance established by the `metric` keyword.
+The information for these nonlocal stability measures is accumulated while initial
+conditions are mapped to attractors. Afterwards it is aggregated according to the
+probability density `weighting_distribution` when calling `finalize_accumulator!`. The word
+"distance" here refers to the distance established by the `metric` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
   `mapper` using [`convergence_time`](@ref). The mean is computed with respect
@@ -95,9 +95,8 @@ refers to the distance established by the `metric` keyword.
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
   to the attractor. Only initial conditions with non-zero probability under
   `weighting_distribution` are considered.
-* `median_convergence_time`: The median convergence time of initial conditions.
-  Only initial conditions with non-zero probability under `weighting_distribution`
-  are considered.
+* `median_convergence_time`: The median convergence time of initial conditions under the
+  `weighting_distribution`.
 * `mean_convergence_pace`: The mean convergence pace of initial conditions to
   the attractor. Similar to the mean convergence time, except that each
   convergence time is divided by the distance of the respective initial
@@ -105,9 +104,8 @@ refers to the distance established by the `metric` keyword.
 * `maximal_convergence_pace`: The maximal convergence pace of initial conditions
   to the attractor. Only initial conditions with non-zero probability under
   `weighting_distribution` are considered.
-* `median_convergence_pace`: The median convergence pace of initial conditions.
-  Only initial conditions with non-zero probability under `weighting_distribution`
-  are considered.
+* `median_convergence_pace`: The median convergence pace of initial conditions under the
+  `weighting_distribution`.
 * `minimal_critical_shock_magnitude`: The minimal distance of the attractor to the
   closest non-zero probability point (under `weighting_distribution`) in a basin of
   attraction of a different attractor. If only a single attractor exists,
@@ -115,7 +113,8 @@ refers to the distance established by the `metric` keyword.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
   furthest non-zero probability point (under `weighting_distribution`) of its own basin of
   attraction. If only a single attractor exists, the value `Inf` is assigned.
-* `mean_noncritical_shock_magnitude`: same as above but the mean instead of maximum distance.
+* `mean_noncritical_shock_magnitude`: same as above but computing the mean under
+  `weighting_distribution` instead of maximum distance.
 * `basin_fraction`: The fraction of initial conditions that converge to the
   attractor.
 * `basin_stability`: The fraction of initial conditions that converge to the
