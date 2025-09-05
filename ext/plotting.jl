@@ -301,6 +301,10 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
     )
 
     series = continuation_series(continuation_info, NaN, ukeys)
+    for (k, v) in series
+        v[isinf.(v)] .= NaN
+    end
+    
     for k in ukeys
         scatterlines!(ax, prange, series[k];
             color = colors[k], label = "$(labels[k])", marker = markers[k],
