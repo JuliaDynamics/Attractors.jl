@@ -87,7 +87,12 @@ function _get_features_pcurve(mapper::AttractorsViaFeaturizing, ics, n, spp, pcu
     # Collect features
     for (i, p) in enumerate(pcurve)
         set_parameters!(mapper.ds, p)
-        current_features = extract_features(mapper, ics; show_progress, N = spp)
+        if ics isa PerParameterInitialConditions
+            u0s = ics.generator(p, spp)
+        else
+            u0s = ics
+        end
+        current_features = extract_features(mapper, u0s; show_progress, N = spp)
         features[((i - 1)*spp + 1):i*spp] .= current_features
         ProgressMeter.next!(progress)
     end

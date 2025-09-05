@@ -128,7 +128,10 @@ function global_continuation(acam::AttractorSeedContinueMatch, pcurve, ics;
     # first parameter is run in isolation, as it has no prior to seed from
     set_parameters!(referenced_dynamical_system(mapper), pcurve[1])
     if ics isa Function
-        fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
+        fs = basins_fractions(mapper, ics; show_progress = false, N)
+    elseif ics isa PerParameterInitialConditions
+        u0s = ics.generator(pcurve[1], N)
+        fs, = basins_fractions(mapper, u0s; show_progress = false)
     else # we ignore labels in this continuation algorithm
         fs, = basins_fractions(mapper, ics; show_progress = false)
     end
@@ -152,7 +155,7 @@ function global_continuation(acam::AttractorSeedContinueMatch, pcurve, ics;
         fs = if allows_mapper_u0(mapper)
             seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, acam.seeding)
         else
-            seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding)
+            seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding, p)
         end
         current_attractors = deepcopy(extract_attractors(mapper))
         # we don't match attractors here, this happens directly at the end.
@@ -196,7 +199,7 @@ function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N
     return fs
 end
 
-function seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, seeding)
+function seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, seeding, parameters)
     # what makes this version different is that we can't just use `mapper(u0)`,
     # so we need to store the seeded initial conditions and then combine them with
     # the the ones generated from `ics`.
@@ -212,6 +215,8 @@ function seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, s
         for _ in 1:N
             push!(u0s, copy(ics()))
         end
+    elseif ics isa PerParameterInitialConditions
+        append!(u0s, ics.generator(parameters, N))
     else
         append!(u0s, vec(ics))
     end
