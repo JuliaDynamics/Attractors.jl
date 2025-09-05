@@ -21,8 +21,8 @@ publication [Datseris2023](@cite).
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
 the [`finalize_accumulator`](@ref) function should be called which will return a dictionary
 of all stability measures estimated by the accumulator.
-Each dictionary maps the measure description (`String`) to a dictionary
-mapping attractor IDs to the measure value.
+Each dictionary maps the stability measure description (`String`) to a dictionary
+mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
 
 **Using with [`global_continuation`](@ref)**:
@@ -30,9 +30,9 @@ Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `mapper` input
 to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation` as normal.
 The only difference now is that `global_continuation` will not return just one
-measure of nonlocal stability (the basin fraction). Rather,
+measure of stability (the basin fraction). Rather,
 now the first return argument of `global_continuation` will be a
-`measures_cont`, a dictionary mapping nonlocal stability measures (strings)
+`measures_cont`, a dictionary mapping stability measures (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
 of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
 to the corresponding nonlocal stability measure.
@@ -50,7 +50,9 @@ more rirogously and is estimated more accurately for a proximity mapper.
   Convergence time is determined by the `mapper`.
 * `weighting_distribution::Distribution`: Distribution of uncertain initial conditions
   used for example in the computation of `basin_stability`. By default it is a uniform
-  distribution everywhere in the state space.
+  distribution everywhere in the state space.\
+* `distance = Centroid()`: How to compute the distance between an initial condition `u0`
+  and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
 
 ## Description
 
@@ -86,8 +88,9 @@ Currently linear measures for discrete time systems are not computed.
 
 The information for these nonlocal stability measures is accumulated while initial
 conditions are mapped to attractors. Afterwards it is aggregated according to the
-probability density `weighting_distribution` when calling `finalize_accumulator!`. The word
-"distance" here refers to the distance established by the `metric` keyword.
+probability density `weighting_distribution` when calling `finalize_accumulator!`.
+
+The word "distance" here refers to the distance established by the `distance` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
   `mapper` using [`convergence_time`](@ref). The mean is computed with respect
@@ -124,33 +127,33 @@ probability density `weighting_distribution` when calling `finalize_accumulator!
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, V<:AbstractVector, F, M} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, V<:AbstractVector, F, M, W} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int}
     cts::Vector{Float64}
     finite_time::F
-    weighting_distribution::Union{EverywhereUniform, Distribution}
-    metric::M
+    weighting_distribution::W
+    distance::M
 end
 
 function StabilityMeasuresAccumulator(mapper::AttractorMapper;
-        finite_time=1.0, weighting_distribution=EverywhereUniform(), metric=Euclidean()
+        finite_time=1.0, weighting_distribution=EverywhereUniform(), distance=Centroid()
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
     AM = typeof(mapper)
     V = typeof(current_state(ds))
     F = typeof(finite_time)
-    M = typeof(metric)
-    StabilityMeasuresAccumulator{AM, V, F, M}(
+    M = typeof(distance)
+    StabilityMeasuresAccumulator{AM, V, F, M, typeof(weighting_distribution)}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
         Vector{Float64}(),
         finite_time,
         weighting_distribution,
-        metric
+        distance
     )
 end
 
@@ -162,6 +165,7 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     a.u0s = Vector{V}()
     a.bs = Vector{Int}()
     a.cts = Vector{Float64}()
+    return
 end
 
 # extensions
@@ -178,14 +182,12 @@ end
 # Function to update the accumulator with a new state
 function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
     id = accumulator.mapper(u0)
-
     push!(accumulator.u0s, u0)
     push!(accumulator.bs, id)
     push!(accumulator.cts, convergence_time(accumulator.mapper))
-
     return id
-
 end
+
 """
     finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
@@ -195,8 +197,6 @@ See [`StabilityMeasuresAccumulator`](@ref) for more.
 """
 function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ds = referenced_dynamical_system(accumulator)
-    Dims = dimension(ds)
-    Datatype = eltype(current_state(ds))
     attractors = extract_attractors(accumulator.mapper)
     ids = vcat(collect(keys(attractors)), -1)
     js = 1:length(ids)
@@ -207,17 +207,13 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     N = length(u0s)
     N == 0 && error("No initial conditions have been processed. Cannot finalize accumulator.")
 
-
-
-    ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
-
     d = zeros(length(u0s), length(js))
     for i in 1:length(u0s)
         for j in js
             if ids[j] == -1
               d[i, j] = Inf
             else
-              d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]])
+              d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]], accumulator.distance)
             end
         end
     end
@@ -251,6 +247,8 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     mean_noncritical_shock_magnitude = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
     maximal_noncritical_shock_magnitude = Dict(id => (id == -1 ? NaN : 0.0) for id in ids)
 
+    ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
+
     for i in 1:length(u0s)
       id = bs[i]
       j = ids_to_js[id]
@@ -276,7 +274,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         maximal_noncritical_shock_magnitude[id] = max(
             maximal_noncritical_shock_magnitude[id], d[i, j]
         )
-        
+
         maximal_convergence_pace[id] = max(
             maximal_convergence_pace[id], cp
         )
