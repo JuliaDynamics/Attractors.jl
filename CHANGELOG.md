@@ -1,3 +1,7 @@
+# v1.27
+
+- It is now possible to specify initial conditions that depend on the parameters during a global continuation. See `PerParameterInitialConditions`.
+
 # v1.26
 
 - **Brand new, ground-breaking functionality** for finding (almost) all stability
