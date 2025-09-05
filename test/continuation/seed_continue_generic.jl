@@ -86,3 +86,52 @@ using Random
     end
 
 end
+
+@testset "parameter dependent ic" begin
+    # fake map with two equlibria at (-r, r) and (r, r)
+    function dumb_map2(dz, z, p, n)
+        x, y = z
+        r = p[1]
+
+        if y < r - 1
+            dz[1] = dz[2] = 0.0
+        else
+            if x < 0.0
+                dz[1] = -1.0
+                dz[2] = r
+            else
+                dz[1] = 1.0
+                dz[2] = r
+            end
+        end
+        return nothing
+    end
+
+    rs = [0, 2.0, 4.0]
+    ds = DeterministicIteratedMap(dumb_map2, [0., 0.], [1.0])
+    N = 5
+
+    function make_ics(parameters, n)
+        I = parameters[1].second
+        @show I
+        N = round(Int, sqrt(n))
+        grid = (range(-1.0, 1.0; length = N), range(-0.5, 0.5; length = N))
+        ics = [SVector(v, w + I) for w in grid[2] for v in grid[1]]
+        return ics
+    end
+    icsgen = PerParameterInitialConditions(make_ics)
+
+    featurizer(A, t) = A[end]
+    gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)
+    mapper = AttractorsViaFeaturizing(ds, featurizer, gconfig; Ttr = 1, T = 1)
+    gca = AttractorSeedContinueMatch(mapper; seeding = A -> [])
+
+    pcurve = [[1 => r] for r in rs]
+    fractions_cont, attractors_cont = global_continuation(gca, pcurve, icsgen; samples_per_parameter = 25)
+
+    # all times 2 attractors, never the 0.0 attractor
+    @test all(A -> length(A) == 2, attractors_cont)
+    for attractors in attractors_cont
+        @test all(A -> A[end][1] != 0, values(attractors))
+    end
+end
