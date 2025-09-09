@@ -169,7 +169,7 @@ function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     return
 end
 
-extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
+_extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
 
 function convergence_time(m::AttractorsViaRecurrences)
     i = m.bsn_nfo.safety_counter
