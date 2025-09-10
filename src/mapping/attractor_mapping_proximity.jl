@@ -69,6 +69,9 @@ function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
     if !(valtype(attractors) <: AbstractStateSpaceSet)
         error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
     end
+    if isempty(attractors)
+        error("The input attractors cannot be an empty dictionary.")
+    end
     if dimension(ds) ≠ dimension(first(attractors)[2])
         error("Dimension of the dynamical system and candidate attractors must match.")
     end

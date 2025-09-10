@@ -130,16 +130,34 @@ function stability_measures_along_continuation(
     )
     measures_cont = []
     for (i, p) in enumerate(pcurve)
-        ε_ = ε isa AbstractVector ? ε[i] : ε # if its a vector, get i-th entry
-        weighting_distribution_ = weighting_distribution isa AbstractVector ?
-                                weighting_distribution[i] : weighting_distribution
-        finite_time_ = finite_time isa AbstractVector ? finite_time[i] : finite_time
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
+        if ε isa AbstractVector
+            ε_ = ε[i]
+        elseif ε isa Function
+            ε_ = ε(p, attractors)
+        else
+            ε_ = ε
+        end
+        if weighting_distribution isa AbstractVector
+            wd = weighting_distribution[i]
+        elseif weighting_distribution isa Function
+            wd = weighting_distribution(p, attractors)
+        else
+            wd = weighting_distribution
+        end
+        if finite_time isa AbstractVector
+            ft = finite_time[i]
+        elseif finite_time isa Function
+            ft = finite_time(p, attractors)
+        else
+            ft = finite_time
+        end
+        
         accumulator = StabilityMeasuresAccumulator(
             AttractorsViaProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
-            weighting_distribution = weighting_distribution_, finite_time = finite_time_,
-            metric = metric
+            weighting_distribution=wd, finite_time=ft,
+            metric=metric
         )
         N = ics isa Function ? samples_per_parameter : length(ics)
         for i ∈ 1:N
