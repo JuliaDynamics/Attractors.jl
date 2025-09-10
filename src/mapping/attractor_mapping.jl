@@ -161,11 +161,19 @@ Return a dictionary mapping label IDs to attractors found by the `mapper`.
 This function should be called after calling [`basins_fractions`](@ref)
 with the given `mapper` so that the attractors have actually been found first.
 
-For `AttractorsViaFeaturizing`, the attractors are only stored if
-the mapper was called with pre-defined initial conditions rather than
-a sampler (function returning initial conditions).
+For developing a new mapper: extend the internal function `_extract_attractors`.
 """
-extract_attractors(::AttractorMapper) = error("not implemented")
+function extract_attractors(mapper::AttractorMapper)
+    attractors = _extract_attractors(mapper)
+    ds = referenced_dynamical_system(mapper)
+    # name attractor variables if possible
+    isnothing(referrenced_sciml_model(ds)) && return attractors
+    names = named_variables(ds)
+    for (k, A) in attractors
+        attractors[k] = StateSpaceSet(A; names)
+    end
+    return attractors
+end
 
 
 """
