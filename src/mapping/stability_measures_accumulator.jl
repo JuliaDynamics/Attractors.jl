@@ -57,11 +57,17 @@ more rirogously and is estimated more accurately for a proximity mapper.
 ## Description
 
 `StabilityMeasuresAccumulator` efficiently uses a single `id = mapper(u0)` call
-to accumulate information for many differnt stability measures corresponding
+to accumulate information for many different stability measures corresponding
 to each attractor of the dynamical system.
 It accumulates all these different measures when different initial conditions
 are mapped through it. After enough `u0`s have been given to the accumulator, they
 can be finalized (comput maxima or averages) using `finalize!(accumulator)`.
+
+You can extent this functionality by adding new stability measures as long as their
+estimation can be done on the basis of the three quantities accumulated:
+the basin dictionary mapping initial conditions to attractors,
+the distance of each initial condition to each attractor,
+and the convergence time of each initial condition.
 
 The following stability measures are estimated for each attractor
 (and the returned dictionary maps strings with the names of the measures
