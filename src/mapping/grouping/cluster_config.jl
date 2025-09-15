@@ -220,7 +220,7 @@ _rescale_to_01(features::Vector{<:AbstractVector}) = _rescale_to_01(StateSpaceSe
 function _rescale_to_01(features::AbstractStateSpaceSet)
     mini, maxi = minmaxima(features)
     rescaled = map(f -> (f .- mini) ./ (maxi .- mini), features)
-    return typeof(features)(rescaled) # ensure it stays the same type
+    return StateSpaceSet(rescaled)
 end
 
 #####################################################################################

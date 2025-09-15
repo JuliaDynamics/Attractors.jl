@@ -202,4 +202,4 @@ function extract_attractors!(mapper::AttractorsViaFeaturizing, labels, ics)
     return
 end
 
-extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors
+_extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors

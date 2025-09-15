@@ -185,6 +185,6 @@ function Base.show(io::IO, mapper::AttractorsViaProximity)
     return
 end
 
-extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
+_extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
 
 convergence_time(mapper::AttractorsViaProximity) = mapper.latest_convergence_time[]
