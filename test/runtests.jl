@@ -18,6 +18,7 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("mapping/basins_of_attraction.jl")
         testfile("mapping/histogram_grouping.jl")
         testfile("mapping/irregular_grid.jl")
+        testfile("mapping/stability_measures_accumulator.jl")
     end
 
     @testset "basins analysis" begin
