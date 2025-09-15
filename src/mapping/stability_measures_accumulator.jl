@@ -146,7 +146,8 @@ function StabilityMeasuresAccumulator(mapper::AttractorMapper;
     V = typeof(current_state(ds))
     F = typeof(finite_time)
     M = typeof(distance)
-    StabilityMeasuresAccumulator{AM, V, F, M, typeof(weighting_distribution)}(
+    W = typeof(weighting_distribution)
+    StabilityMeasuresAccumulator{AM, V, F, M, W}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
