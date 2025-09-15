@@ -1,3 +1,9 @@
+# v1.29
+
+- Keyword `metric` of `StabilityMeasuresAccumulator` is no longer used as it was incorrect.
+- New keyword `distance` for `StabilityMeasuresAccumulator`.
+- Source code of `StabilityMeasuresAccumulator` has been drastically simplified, and instructions for how to extent its functionality were added.
+
 # v1.28
 
 - `extract_attractors` will now automatically name the dimensions of the attractors for MTK-derived systems.
