@@ -251,7 +251,7 @@ function Attractors.plot_basins_curves!(ax, fractions_cont, prange = 1:length(fr
                 color = colors[k], label = "$(labels[k])", series_kwargs...
             )
             if separatorwidth > 0 && j < length(ukeys)
-                lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth)
+                lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth, linestyle = :solid)
             end
         end
         ylims!(ax, 0, 1)
@@ -304,7 +304,7 @@ function Attractors.plot_continuation_curves!(ax, continuation_info, prange = 1:
     for (k, v) in series
         v[isinf.(v)] .= NaN
     end
-    
+
     for k in ukeys
         scatterlines!(ax, prange, series[k];
             color = colors[k], label = "$(labels[k])", marker = markers[k],
