@@ -359,7 +359,7 @@ function Attractors.plot_basins_attractors_curves(
     plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, kwargs...)
     for (axa, a2r) in zip(axs, a2rs)
         plot_attractors_curves!(axa, attractors_cont, a2r, prange;
-            ukeys, colors, markers, add_legend = false, # coz its true for fractions
+            ukeys, colors, markers, kwargs..., add_legend = false, # can be true for fractions
         )
     end
     return fig
