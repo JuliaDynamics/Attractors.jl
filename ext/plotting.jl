@@ -338,6 +338,7 @@ function Attractors.plot_basins_attractors_curves(
         colors = colors_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         markers = markers_from_keys(ukeys),
+        style = :band,
         kwargs...
     )
     # generate figure and axes; add labels and stuff
@@ -356,7 +357,7 @@ function Attractors.plot_basins_attractors_curves(
         hidexdecorations!(axs[i]; grid = false)
     end
     # plot basins and attractors
-    plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, kwargs...)
+    plot_basins_curves!(axb, fractions_cont, prange; ukeys, colors, labels, style, kwargs...)
     for (axa, a2r) in zip(axs, a2rs)
         plot_attractors_curves!(axa, attractors_cont, a2r, prange;
             ukeys, colors, markers, kwargs..., add_legend = false, # can be true for fractions
