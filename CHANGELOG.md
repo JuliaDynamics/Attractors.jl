@@ -1,3 +1,9 @@
+# v1.30
+
+- `animate_attractors_continuation` has been enhanced to allow animating a
+  sliding `vline` over a standard continuation plot in addition to animating
+  the attractors. Now used in the main tutorial as well.
+
 # v1.29
 
 - Keyword `metric` of `StabilityMeasuresAccumulator` is no longer used as it was incorrect.
