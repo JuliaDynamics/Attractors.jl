@@ -51,9 +51,9 @@ function Attractors.animate_attractors_continuation(
     barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = barcolors)
 
     # add additional attractor series plots if chosen
+    vline_obs = Observable(prange[1])
     if !isnothing(a2rs)
         a2rs isa Vector || error("`a2rs` must be a `Vector`.")
-        vline_obs = Observable(prange[1])
         n = length(a2rs)
         extra_axs = [Axis(fig[2,:][i, :]) for i in 1:n]
         extra_axs[1].title = "global continuation: features"
