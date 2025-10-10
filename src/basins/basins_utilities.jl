@@ -101,7 +101,7 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
     end
     basins = zeros(length.(grid))
     ds = referenced_dynamical_system(mapper)
-    iterations = zeros(typeof(current_time(ds)), length.(grid))
+    iterations = zeros(Float64, length.(grid))
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
         length(basins); desc = "Basins and convergence: ", dt = 1.0
@@ -141,7 +141,7 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS
     )
     fs = Dict{Int, Int}()
     labels = Vector{Int}(undef, N)
-    iterations = Vector{typeof(current_time(mapper.ds))}(undef, N)
+    iterations = Vector{Float64}(undef, N)
 
     for i ∈ 1:N
         ic = _get_ic(ics, i)
