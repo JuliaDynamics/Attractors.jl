@@ -211,6 +211,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
+    Δt = accumulator.mapper.Δt
     N = length(u0s)
     N == 0 && error("No initial conditions have been processed. Cannot finalize accumulator.")
 
@@ -262,6 +263,9 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
       w = ws[i]
       ct = cts[i]
       cp = cps[i]
+      if isdiscretetime(ds)
+          ct *= Δt
+      end
 
       basin_frac[id] += 1 / N
       basin_stab[id] += w / N
@@ -317,50 +321,55 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         for id in ids
     )
     minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
-
+    
     # linear measures
     characteristic_return_time = Dict(id => NaN for id in ids)
     reactivity = Dict(id => NaN for id in ids)
     maximal_amplification = Dict(id => NaN for id in ids)
     maximal_amplification_time = Dict(id => NaN for id in ids)
-    if !isdiscretetime(ds)
-        jac = jacobian(ds)
-        for (id, A) in attractors
-            if length(A) > 1
-                continue
-            end
-            # Get the Jacobian matrix at the fixed point
-            if isinplace(ds)
-              # For in-place systems, pre-allocate J and then compute it
-              J = Array{Float64}(undef, length(A[1]), length(A[1]))
-              jac(J, Array(A[1]), initial_parameters(ds), 0)
-            else
-              # For out-of-place systems, compute J directly
-              J = jac(Array(A[1]), initial_parameters(ds), 0)
-            end
-
-            λ = min(0, maximum(real.(eigvals(J))))
-            characteristic_return_time[id] = abs(1 / λ)
-            H = (J + J') / 2
-            evs = real.(eigvals(H))
-            reactivity[id] = maximum(evs)
-            if λ == 0
-                maximal_amplification[id] = Inf
-                maximal_amplification_time[id] = Inf
-            else
-                f(t) = -opnorm(exp(t*J))
-                T = range(0.0, 10*characteristic_return_time[id], length=20001)
-                step_length = T[2] - T[1]
-                t0 = T[argmin(f.(T))]
-                if t0 == 10*characteristic_return_time[id] # maximum is at the end
-                  res = Optim.optimize(f, t0, t0 + 100*characteristic_return_time[id], Brent())
-                else
-                  res = Optim.optimize(f, max(0.0, t0-step_length), t0+step_length, Brent())
-                end
-                maximal_amplification[id] = (-1) * Optim.minimum(res)
-                maximal_amplification_time[id] = Optim.minimizer(res)[1]
-            end
-        end
+    jac = jacobian(ds)
+    for (id, A) in attractors
+      if length(A) > 1
+          continue
+      end
+      if isinplace(ds)
+            # For in-place systems, pre-allocate J and then compute it
+            J = Array{Float64}(undef, length(A[1]), length(A[1]))
+            jac(J, Array(A[1]), initial_parameters(ds), 0)
+      else
+            # For out-of-place systems, compute J directly
+            J = jac(Array(A[1]), initial_parameters(ds), 0)
+      end
+      if isdiscretetime(ds)
+          try
+              J = log(J)/Δt
+          catch
+              J = (J - I)/Δt
+          end
+      end
+      λ = min(0, maximum(real.(eigvals(J))))
+      if λ == 0
+          characteristic_return_time[id] = Inf
+          reactivity[id] = Inf
+          maximal_amplification[id] = Inf
+          maximal_amplification_time[id] = Inf
+      else
+          characteristic_return_time[id] = abs(1 / λ)
+          H = (J + J') / 2
+          evs = real.(eigvals(H))
+          reactivity[id] = maximum(evs)
+          f(t) = -opnorm(exp(t*J))
+          T = range(0.0, 10*characteristic_return_time[id], length=20001)
+          step_length = T[2] - T[1]
+          t0 = T[argmin(f.(T))]
+          if t0 == 10*characteristic_return_time[id] # maximum is at the end
+            res = Optim.optimize(f, t0, t0 + 100*characteristic_return_time[id], Brent())
+          else
+            res = Optim.optimize(f, max(0.0, t0-step_length), t0+step_length, Brent())
+          end
+          maximal_amplification[id] = (-1) * Optim.minimum(res)
+          maximal_amplification_time[id] = Optim.minimizer(res)[1]
+      end
     end
 
     return Dict(
