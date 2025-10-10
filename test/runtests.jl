@@ -18,7 +18,6 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("mapping/basins_of_attraction.jl")
         testfile("mapping/histogram_grouping.jl")
         testfile("mapping/irregular_grid.jl")
-        testfile("mapping/stability_measures_accumulator.jl")
     end
 
     @testset "basins analysis" begin
@@ -35,8 +34,9 @@ testfile(file, testname=defaultname(file)) = @testset "$testname" begin; include
         testfile("continuation/seed_continue_generic.jl")
     end
 
-    @testset "mfs" begin
-        testfile("mfs/mfstest.jl")
+    @testset "nonlocal stab" begin
+        testfile("nonlocal/mfstest.jl")
+        testfile("mapping/stability_measures_accumulator.jl")
     end
 
     @testset "boundaries" begin
