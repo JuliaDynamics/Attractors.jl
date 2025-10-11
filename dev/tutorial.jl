@@ -2,7 +2,7 @@
 
 # ```@raw html
 # <video width="auto" controls loop>
-# <source src="../attracont.mp4" type="video/mp4">
+# <source src="../attracont_extra.mp4" type="video/mp4">
 # </video>
 # ```
 
@@ -382,9 +382,33 @@ fig = plot_basins_attractors_curves(
 )
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
-# Bottom panel is a visualization of the tracked attractors.
+# Bottom panel is a visualization of some feature(s) of the tracked attractors.
 # The argument `A -> minimum(A[:, 1])` is simply a function that maps
-# an attractor into a real number for plotting.
+# an attractor into a real number for plotting. A vector of such functions can be
+# given instead.
+
+# Moreover, you can combine the animation we created above with this continuation plot
+# so you can see both the attractors in state space as well as some chosen feature(s).
+# This is done by calling [`animate_attractors_continuation`](@ref) again with additional
+# keyword arguments like so:
+
+fig = animate_attractors_continuation(
+    ds, attractors_cont, fractions_cont, prange, pidx;
+    figure = (size = (600, 700),),
+    axis = (ylabel = "y", xlabel = "x"),
+    savename = "attracont_extra.mp4",
+    add_legend = false,
+    a2rs = [A -> minimum(A[:, 1]), A -> maximum(A[:, 2])],
+    a2rs_ylabels = ["x-min", "y-max"],
+    a2rs_ratio = 0.33,
+    vline_kwargs = (linestyle = :dash, linewidth = 3, color = "red"),
+)
+
+# ```@raw html
+# <video width="auto" controls loop>
+# <source src="../attracont_extra.mp4" type="video/mp4">
+# </video>
+# ```
 
 # ## Different matching procedures
 
