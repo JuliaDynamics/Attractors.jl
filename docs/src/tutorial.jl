@@ -394,7 +394,7 @@ fig = plot_basins_attractors_curves(
 
 fig = animate_attractors_continuation(
     ds, attractors_cont, fractions_cont, prange, pidx;
-    figure = (size = (figwidth÷2, 2figheight),),
+    figure = (size = (600, 700),),
     axis = (ylabel = "y", xlabel = "x"),
     savename = "attracont_extra.mp4",
     add_legend = false,
