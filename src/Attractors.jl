@@ -14,8 +14,10 @@ using Reexport
 
 # main files that import other files
 include("dict_utils.jl")
-include("mapping/attractor_mapping.jl")
+include("mapping/recurrences/grids.jl")
 include("basins/basins.jl")
+include("mapping/attractor_mapping.jl")
+include("basins/basins_utilities.jl")
 include("continuation/global_continuation_api.jl")
 include("matching/matching_interface.jl")
 include("boundaries/edgetracking.jl")

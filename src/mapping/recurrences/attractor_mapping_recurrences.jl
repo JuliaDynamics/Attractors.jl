@@ -162,6 +162,11 @@ function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
 
+# Array Basin of Attraction from recurrences mapper
+function ArrayBasinsOfAttraction(basins::B, mapper::AttractorsViaRecurrences) where {ID, B <: AbstractArray{ID}}
+    ArrayBasinsOfAttraction(basins, extract_attractors(mapper), mapper.grid)
+end
+
 function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     ps = generic_mapper_print(io, mapper)
     println(io, rpad(" grid: ", ps), mapper.grid)
@@ -240,7 +245,6 @@ end
 #####################################################################################
 # we need the abstract grid type because of the type parameterization in `BasinsInfo`
 # the grid subtypes are in the grids file.
-abstract type Grid end
 
 mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
     basins::A # sparse or dense
@@ -372,4 +376,3 @@ end
 
 include("sparse_arrays.jl")
 include("finite_state_machine.jl")
-include("grids.jl")
