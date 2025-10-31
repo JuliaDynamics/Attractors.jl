@@ -79,7 +79,7 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
     return fs
 end
 
-basins_fractions(BoA::ArrayBasinsOfAttraction, ids = unique(BoA.basins)) = basins_fractions(BoA.basins, ids)
+basins_fractions(BoA::BasinsOfAttraction, ids = unique(BoA.basins)) = basins_fractions(BoA.basins, ids)
 
 """
     convergence_and_basins_of_attraction(mapper::AttractorMapper, grid)

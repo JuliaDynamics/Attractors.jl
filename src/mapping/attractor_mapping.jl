@@ -179,6 +179,28 @@ function extract_attractors(mapper::AttractorMapper)
 end
 
 
+
+
+function SampledBasinsOfAttraction(mapper::AttractorMapper, ics::ValidICS; show_progress = true, N = 1000)
+    used_container = ics isa AbstractVector
+    N = used_container ? length(ics) : N
+    progress = ProgressMeter.Progress(N;
+        desc="Mapping initial conditions to attractors:", enabled = show_progress
+    )
+
+    used_container && (labels = Vector{Int}(undef, N))
+    sampled_points = Vector{typeof(_get_ic(ics, 1))}(undef, N)
+    
+    for i ∈ 1:N
+        sampled_points[i] = _get_ic(ics, i)
+        label = mapper(sampled_points[i]; show_progress)
+        used_container && (labels[i] = label)
+        show_progress && ProgressMeter.next!(progress)
+    end
+    return SampledBasinsOfAttraction(labels, extract_attractors(mapper), sampled_points)
+end
+
+
 """
     convergence_time(mapper::AttractorMapper) → t
 
