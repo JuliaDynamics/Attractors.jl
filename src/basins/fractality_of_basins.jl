@@ -44,6 +44,11 @@ function basin_entropy(basins::AbstractArray{<:Integer, D}, ε::Integer = size(b
     return basin_entropy(basins, es)
 end
 
+function basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, ε::Integer = size(BoA, 1)÷10) 
+    es = ntuple(i -> ε, Val(ndims(BoA.basins)))
+    return basin_entropy(BoA,es) 
+end
+
 function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Integer}) where {D}
     if size(basins) .% es ≠ ntuple(i -> 0, D)
         throw(ArgumentError("The basins are not fully divisible by the sizes `ε`"))
@@ -64,6 +69,9 @@ function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Int
     end
     return Sb/length(box_iterator), Sb/Nb
 end
+
+basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer},
+     es::NTuple{D, <: Integer}) where {D} = basin_entropy(BoA.basins, es)
 
 function _box_entropy(box_values, unique_vals = unique(box_values))
     h = 0.0
@@ -161,6 +169,8 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     return tst_res, Ŝbb
 end
 
+basins_fractal_test(BoA::ArrayBasinsOfAttraction{<:Integer}, ε = 20, Ntotal = 1000) = basins_fractal_test(BoA.basins, ε, Ntotal)
+
 # as suggested in https://github.com/JuliaStats/StatsBase.jl/issues/398#issuecomment-417875619
 linreg(x, y) = hcat(fill!(similar(x), 1), x) \ y
 
@@ -225,6 +235,7 @@ function basins_fractal_dimension(basins::AbstractArray; range_ε = 3:maximum(si
     return V_ε, N_ε, d
 end
 
+basins_fractal_dimension(BoA::ArrayBasinsOfAttraction; range_ε = 3:maximum(size(BoA))÷20) = basins_fractal_dimension(BoA.basins; range_ε=range_ε)
 """
     uncertainty_exponent(basins; kwargs...) -> ε, N_ε, α
 
@@ -264,3 +275,5 @@ function uncertainty_exponent(basins::AbstractArray; range_ε = 2:maximum(size(b
     V_ε, N_ε, d = basins_fractal_dimension(basins; range_ε)
     return V_ε, N_ε, length(size(basins)) - d
 end
+
+uncertainty_exponent(BoA::ArrayBasinsOfAttraction; range_ε = 2:maximum(size(BoA))÷20) = uncertainty_exponent(BoA.basins, range_ε = range_ε)

@@ -237,7 +237,7 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         end
     end
 
-    return basins, extract_attractors(mapper)
+    return ArrayBasinsOfAttraction(basins, extract_attractors(mapper), grid)
 end
 
 #####################################################################################

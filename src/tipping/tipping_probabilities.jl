@@ -57,3 +57,7 @@ function put_minus_1_at_end!(bid)
         push!(bid, -1)
     end
 end
+
+
+tipping_probabilities(BoA_before::ArrayBasinsOfAttraction, 
+    BoA_after::ArrayBasinsOfAttraction) = tipping_probabilities(BoA_before.basins, BoA_after.basins)

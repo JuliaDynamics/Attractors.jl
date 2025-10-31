@@ -55,11 +55,17 @@ function matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchBy
     matching_map(a₊, a₋, matcher; kw...)
 end
 
+matching_map(BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction, 
+    matcher::MatchByBasinOverlap; kw...) = matching_map(BoA₊.basins, BoA₋.basins, matcher; kw...)
+
 function matching_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; kw...)
     rmap = matching_map(b₊, b₋, matcher; kw...)
     replace!(b₊, rmap...)
     return rmap
 end
+
+matching_map!(BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction, 
+    matcher::MatchByBasinOverlap; kw...) = matching_map!(BoA₊.basins, BoA₋.basins, matcher; kw...)
 
 # actual implementation
 function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap; kw...)

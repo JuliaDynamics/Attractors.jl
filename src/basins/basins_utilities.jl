@@ -30,7 +30,7 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     fs, labels = basins_fractions(mapper, A; kwargs...)
     attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
-    return basins, attractors
+    return ArrayBasinsOfAttraction(basins, attractors, grid)
 end
 
 """
@@ -78,6 +78,8 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
     end
     return fs
 end
+
+basins_fractions(BoA::ArrayBasinsOfAttraction, ids = unique(BoA.basins)) = basins_fractions(BoA.basins, ids)
 
 """
     convergence_and_basins_of_attraction(mapper::AttractorMapper, grid)

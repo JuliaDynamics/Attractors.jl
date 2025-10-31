@@ -44,6 +44,8 @@ function test_wada_merge(basins,r)
     return maximum(v)
 end
 
+test_wada_merge(BoA::ArrayBasinsOfAttraction,r) = test_wada_merge(BoA.basins,r)
+
 """
     haussdorff_distance(M1, M2) -> hd
 
