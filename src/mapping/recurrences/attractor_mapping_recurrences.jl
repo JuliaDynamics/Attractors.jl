@@ -162,10 +162,6 @@ function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
 
-# Array Basin of Attraction from recurrences mapper
-function ArrayBasinsOfAttraction(basins::B, mapper::AttractorsViaRecurrences) where {ID, B <: AbstractArray{ID}}
-    ArrayBasinsOfAttraction(basins, extract_attractors(mapper), mapper.grid)
-end
 
 function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     ps = generic_mapper_print(io, mapper)
@@ -195,14 +191,19 @@ function convergence_time(m::AttractorsViaRecurrences)
 end
 
 
+
+
 """
-    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
+    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true) → array_basins_of_attraction
 
 This is a special method of `basins_of_attraction` that using recurrences does
 _exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@cite).
 By enforcing that the internal grid of `mapper` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
+
+The return has type `ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = array_basins_of_attraction`
+ensuring backwards compatibility with the previous return format.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
     if mapper.bsn_nfo.BoA.basins isa SparseArray;
@@ -243,8 +244,6 @@ end
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-# we need the abstract grid type because of the type parameterization in `BasinsInfo`
-# the grid subtypes are in the grids file.
 
 mutable struct BasinsInfo{D, Δ, T, V, G<:Grid, B <: AbstractArray{Int,D},
                                 A <: ArrayBasinsOfAttraction{Int, D, B, T, V, G}}

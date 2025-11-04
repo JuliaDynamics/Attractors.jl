@@ -22,9 +22,13 @@ export plot_attractors, plot_attractors!
 ##########################################################################################
 """
     heatmap_basins_attractors(grid, basins, attractors; kwargs...)
+    heatmap_basins_attractors(BoA::ArrayBasinsOfAttraction; kwargs...) 
 
 Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 `attractors`, i.e., the output of [`basins_of_attraction`](@ref).
+
+The second function signature is a simple wrapper of the first signature 
+allowing compatibility with the [`ArrayBasinsOfAttraction`](@ref) type
 
 ## Keyword arguments
 
@@ -37,6 +41,7 @@ export heatmap_basins_attractors, heatmap_basins_attractors!
 
 """
     shaded_basins_heatmap(grid, basins, attractors, iterations; kwargs...)
+    shaded_basins_heatmap(BoA::ArrayBasinsOfAttraction, iterations; kwargs...)
 
 Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 `attractors`. A matrix `iterations` with the same size of `basins` must be provided
@@ -44,6 +49,9 @@ to shade the color according to the value of this matrix. A small value correspo
 to a light color and a large value to a darker tone. This is useful to represent
 the number of iterations taken for each initial condition to converge. See also
 [`convergence_time`](@ref) to store this iteration number.
+
+The second function signature is a simple wrapper of the first signature 
+allowing compatibility with the [`ArrayBasinsOfAttraction`](@ref) type
 
 ## Keyword arguments
 

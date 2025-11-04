@@ -2,11 +2,12 @@ export ics_from_grid
 
 # It works for all mappers that define a `basins_fractions` method.
 """
-    basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → basins, attractors
+    basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → array_basins_of_attraction
 
 Compute the full basins of attraction as identified by the given `mapper`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
-along with (perhaps approximated) found attractors.
+along with (perhaps approximated) found attractors contained within the 
+[`ArrayBasinsOfAttraction`](@ref) structure. 
 
 `grid` is a tuple of ranges defining the grid of initial conditions that partition
 the state space into boxes with size the step size of each range.
@@ -22,6 +23,9 @@ the partitioning happens directly on the hyperplane the Poincaré map operates o
 `labels` returned by [`basins_fractions`](@ref) and simply assigns them to a full array
 corresponding to the state space partitioning indicated by `grid`.
 
+Note that, to ensure backwards compatibility the return type can be decomposed such that 
+`basins, attractors = array_basins_of_attraction`.
+
 See also [`convergence_and_basins_of_attraction`](@ref).
 """
 function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
@@ -31,6 +35,31 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
     attractors = extract_attractors(mapper)
     vec(basins) .= vec(labels)
     return ArrayBasinsOfAttraction(basins, attractors, grid)
+end
+
+"""
+    basins_of_attraction(mapper::AttractorMapper, ics; kwargs...) → sampled_basin_of_attraction
+
+Compute the full basins of attraction as identified by the given `mapper`,
+which includes a reference to a [`DynamicalSystem`](@ref) and return them
+along with (perhaps approximated) found attractors contained within the 
+[`SampledBasinsOfAttraction`](@ref) structure.
+
+The initial conditions `ics`, and the keyword arguments `kwargs` are the same
+as in [`basins_fractions`](@ref) with the same function signature. This function
+is a small convenience wrapper which uses the sampled initial conditions and their 
+corresponding labels, from `basins_fractions`, to construct a `SampledBasinsOfAttraction`
+
+Note that, as with the other `basins_of_attraction` function, the return can be decomposed: 
+`basins, attractors = array_basins_of_attraction`.
+
+"""
+function basins_of_attraction(mapper::AttractorMapper, ics::ValidICS; show_progress = true, N = 1000)
+    used_container = ics isa AbstractVector
+    ics_vec = used_container ? ics : [ics() for _ in 1:N]
+    _, labels = basins_fractions(mapper, ics_vec, show_progress=show_progress)
+    attractors = extract_attractors(mapper)
+    return SampledBasinsOfAttraction(labels, attractors, ics_vec)
 end
 
 """
@@ -57,6 +86,7 @@ end
 
 """
     basins_fractions(basins::AbstractArray [,ids]) → fs::Dict
+    basins_fractions(BoA::BasinsOfAttraction [,ids]) → fs::Dict
 
 Calculate the state space fraction of the basins of attraction encoded in `basins`.
 The elements of `basins` are integers, enumerating the attractor that the entry of
@@ -64,6 +94,9 @@ The elements of `basins` are integers, enumerating the attractor that the entry 
 Return a dictionary that maps attractor IDs to their relative fractions.
 Optionally you may give a vector of `ids` to calculate the fractions of only
 the chosen ids (by default `ids = unique(basins)`).
+
+The second function signature is a simple wrapper of the first signature 
+allowing compatibility with the [`BasinsOfAttraction`](@ref) type
 
 In [Menck2013](@cite) the authors use these fractions to quantify the stability of a basin of
 attraction, and specifically how it changes when a parameter is changed.
@@ -79,7 +112,7 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
     return fs
 end
 
-basins_fractions(BoA::BasinsOfAttraction, ids = unique(BoA.basins)) = basins_fractions(BoA.basins, ids)
+basins_fractions(BoA::BasinsOfAttraction, ids = unique(extract_basins(BoA))) = basins_fractions(extract_basins(BoA), ids)
 
 """
     convergence_and_basins_of_attraction(mapper::AttractorMapper, grid)
@@ -91,7 +124,10 @@ as `basins`. It contains the time each initial condition took
 to converge to its attractor.
 It is useful to give to [`shaded_basins_heatmap`](@ref).
 
-See also [`convergence_time`](@ref).
+See also [`convergence_time`](@ref). Note that this function is not able to
+be updated with a [`BasinsOfAttraction`](@ref) return type as the return is
+an iterable also contains `iterations`, but `array_basins, iterations` breaks
+backwards compatibility.
 
 # Keyword arguments
 

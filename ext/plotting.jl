@@ -114,7 +114,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
 end
 
 function Attractors.heatmap_basins_attractors!(ax, BoA::ArrayBasinsOfAttraction;
-        ukeys = unique(basins), # internal argument just for other keywords
+        ukeys = unique(BoA.basins), # internal argument just for other keywords
         colors = colors_from_keys(ukeys),
         markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
