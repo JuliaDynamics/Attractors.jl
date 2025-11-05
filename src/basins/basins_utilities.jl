@@ -1,4 +1,5 @@
-export ics_from_grid
+using Neighborhood
+export ics_from_grid, map_to_basin
 
 # It works for all mappers that define a `basins_fractions` method.
 """
@@ -192,4 +193,33 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS
     # Transform count into fraction
     ffs = Dict(k => v/N for (k, v) in fs)
     return ffs, labels, iterations
+end
+
+"""
+    map_to_basin(BoA::BasinOfAttraction, point; kwargs...) → id
+
+Given a `point`, `map_to_basin` interpolates to which basin it should belong.
+
+For `ArrayBasinsOfAttraction` this finds the label of the closest grid cell. 
+
+For `SampledBasinsOfAttraction` this finds the label corresponding to the 
+nearest neighbor using `Neighborhood.jl`, in which case the keyword arguments are:
+* `tree`: search tree constructor (e.g. `KDTree`, `BallTree`)
+* `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`)
+* `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`
+
+For developing a new `BasinOfAttraction` subtype extend the internal function `map_to_domain`
+
+"""
+function map_to_basin(BoA::BasinsOfAttraction, point; kwargs...)
+    n = map_to_domain(BoA, point; kwargs...)
+    return BoA.basins[n]
+end
+
+# Map point to index of the nearest member of the domain of the basin of attraction
+map_to_domain(BoA::ArrayBasinsOfAttraction, point) = basin_cell_index(point, BoA.grid) # Nearest grid cell
+function map_to_domain(BoA::SampledBasinsOfAttraction, point; tree = KDTree, metric = Euclidean(), ss_kwargs...) 
+    ss = searchstructure(tree, BoA.sampled_points, metric, ss_kwargs...) # Nearest sampled point
+    idx, _ = nn(ss, point, args...; kwargs...)
+    return idx
 end
