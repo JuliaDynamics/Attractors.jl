@@ -195,6 +195,11 @@ function convergence_time end
 #########################################################################################
 # Includes
 #########################################################################################
+# Instantiate Grid type so that BasinsOfAttraction subtype ArrayBasinsOfAttraction 
+# may be loaded which allows attractor_mapping_recurrences.jl to be loaded
+abstract type Grid end 
+
+include("../basins/basins_types.jl")
 include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")

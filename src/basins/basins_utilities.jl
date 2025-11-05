@@ -1,7 +1,33 @@
 using Neighborhood
 export ics_from_grid, map_to_basin
 
-# It works for all mappers that define a `basins_fractions` method.
+#########################################################################################
+# Basins of Attraction Constructors - from pre-computed data - docs in basin_types.jl
+######################################################################################### 
+# ArrayBasinsOfAttraction with grid as tuple
+function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, S <: AbstractStateSpaceSet, AK}
+    size(basins) != length.(grid_tup) && error("The size of the grid must be equal to the size of the basins array")
+    if all(t -> t isa AbstractRange, grid_tup) && all(axis -> issorted(axis), grid_tup) # regular
+        grid = RegularGrid(grid_tup)
+    elseif any(t -> t isa AbstractVector, grid_tup) && all(axis -> issorted(axis), grid_tup) # irregular
+        grid = IrregularGrid(grid_tup)
+    else
+        error("Incorrect grid specification!")
+    end
+    ArrayBasinsOfAttraction(basins, attractors, grid)
+end
+# Sampled Basin of Attraction with sampled points as a vector of vectors
+function SampledBasinsOfAttraction(points_ids::Vector{ID}, attractors::Dict{AK, StateSpaceSet{D, T, V}}, 
+                                        sampled_points::Vector{U}) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK}
+    S = StateSpaceSet(sampled_points)
+    eltype(S) != V && error("The attractor points and sampled points must be represented " * 
+    "by the same type of vector, that is they must have the same element type and length")
+    SampledBasinsOfAttraction(points_ids, attractors, S)
+end
+
+#########################################################################################
+# Basins of Attraction Constructors
+######################################################################################### 
 """
     basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → array_basins_of_attraction
 
@@ -208,12 +234,13 @@ nearest neighbor using `Neighborhood.jl`, in which case the keyword arguments ar
 * `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`)
 * `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`
 
-For developing a new `BasinOfAttraction` subtype extend the internal function `map_to_domain`
+For developing a new `BasinOfAttraction` subtype extend the internal function `map_to_domain`,
+and ensure that the basins can be indexed by the returned value.
 
 """
 function map_to_basin(BoA::BasinsOfAttraction, point; kwargs...)
     n = map_to_domain(BoA, point; kwargs...)
-    return BoA.basins[n]
+    return extract_basins(BoA)[n]
 end
 
 # Map point to index of the nearest member of the domain of the basin of attraction

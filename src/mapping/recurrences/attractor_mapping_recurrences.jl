@@ -371,5 +371,6 @@ function reset_mapper!(mapper::AttractorsViaRecurrences)
     return
 end
 
+include("grids.jl")
 include("sparse_arrays.jl")
 include("finite_state_machine.jl")
