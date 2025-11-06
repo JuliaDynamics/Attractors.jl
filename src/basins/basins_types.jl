@@ -15,8 +15,8 @@ A subtype of `BasinsOfAttraction` is a convenient structure that stores a repres
 of the `basins` of attraction, their associated `attractors`, and a representation of the `domain` 
 over which the basin is defined. For example, this domain could be a `Grid` subtype matching
 the size of the basins as an array or a set of points sampled from the state space. These fields 
-can be accessed using the [`extract_basins`](@ref), [`extract_attractors`](@ref), 
-and [`extract_domain`](@ref) functions respectively
+can be accessed using the `extract_basins`, `extract_attractors`,
+and `extract_domain` functions respectively.
 
 The type parameter `ID` specifies the type of values stored in the basins. Typically,
 this would be `Int`, corresponding to integer valued attractor labels.
@@ -35,8 +35,8 @@ was done to ensure backwards compatibility for functions whose original return f
 ## For developers
 
 `BasinsOfAttraction{ID}` defines an extendable interface. A new type needs to subtype
-`BasinsOfAttraction{ID}` and implement [`extract_basins`](@ref), [`extract_attractors`](@ref),
-and [`extract_domain`](@ref).
+`BasinsOfAttraction{ID}` and implement `extract_basins`, `extract_attractors`,
+and `extract_domain`.
 """
 abstract type BasinsOfAttraction{ID} end
 

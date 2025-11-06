@@ -202,7 +202,7 @@ By enforcing that the internal grid of `mapper` is the same as the grid of initi
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
 
-The return has type `ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = array_basins_of_attraction`
+The return has type [`ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = array_basins_of_attraction`
 ensuring backwards compatibility with the previous return format.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
