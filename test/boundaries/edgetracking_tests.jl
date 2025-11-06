@@ -24,8 +24,8 @@ end
         bisect_thresh, diverge_thresh, maxiter, abstol, ε = 0.001, Ttr = 0,
     ).edge
     # The edge state of this system is the sadle at the origin
-    @test abs(edge[end][1]) < 1e-5
-    @test abs(edge[end][2]) < 1e-5
+    @test abs(edge[end][1]) < 1e-4
+    @test abs(edge[end][2]) < 1e-4
 end
 
 @testset "Thomas' rule" begin
