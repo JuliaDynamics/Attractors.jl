@@ -57,9 +57,9 @@ and then calls the second constructor. This `grid` tuple is a tuple of ranges de
 of initial conditions that partition the state space. The `grid` has to be of the same dimensionality
 as the points representing the attractors and of the `basins`. 
 """
-struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID,D}, T, V, G <: Grid, AK} <: BasinsOfAttraction{ID}
+struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID,D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}} <: BasinsOfAttraction{ID}
     basins::B 
-    attractors::Dict{AK, StateSpaceSet{D, T, V}}
+    attractors::Dict{AK, S}
     grid::G
 end
 # The definition of the first constructor can be found in `basins/basins_utilities.jl`.
@@ -81,10 +81,10 @@ The first constructor converts a vector of vectors into a `StateSpaceSet`, then 
 That is, assuming each has the same dimensionality `D`, and the same element type as the `StateSpaceSet`'s 
 representing the attractors.
 """
-struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK} <: BasinsOfAttraction{ID}
+struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}} <: BasinsOfAttraction{ID}
     points_ids::Vector{ID}
-    attractors::Dict{AK, StateSpaceSet{D, T, V}}
-    sampled_points::StateSpaceSet{D, T, V}
+    attractors::Dict{AK, S}
+    sampled_points::S
 end
 # The definition of the first constructor can be found in `basins/basins_utilities.jl`.
 

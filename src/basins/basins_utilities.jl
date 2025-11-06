@@ -17,12 +17,12 @@ function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::T
     ArrayBasinsOfAttraction(basins, attractors, grid)
 end
 # Sampled Basin of Attraction with sampled points as a vector of vectors
-function SampledBasinsOfAttraction(points_ids::Vector{ID}, attractors::Dict{AK, StateSpaceSet{D, T, V}}, 
-                                        sampled_points::Vector{U}) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK}
-    S = StateSpaceSet(sampled_points)
+function SampledBasinsOfAttraction(points_ids::Vector{ID}, attractors::Dict{AK, S}, 
+                                        sampled_points::Vector{U}) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+    sampled_set = StateSpaceSet(sampled_points)
     eltype(S) != V && error("The attractor points and sampled points must be represented " * 
     "by the same type of vector, that is they must have the same element type and length")
-    SampledBasinsOfAttraction(points_ids, attractors, S)
+    SampledBasinsOfAttraction(points_ids, attractors, sampled_set)
 end
 
 #########################################################################################
