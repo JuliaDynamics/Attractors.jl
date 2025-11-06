@@ -209,7 +209,7 @@ plot_attractors(attractors)
 # each attractors attracts. The search is probabilistic, so "all" attractors means those
 # that at least one initial condition converged to.
 
-# We can provide explicitly initial conditions to [`basins_fraction`](@ref),
+# We can provide explicitly initial conditions to [`basins_fractions`](@ref),
 # however it is typically simpler to provide it with with a state space sampler instead:
 # a function that generates random initial conditions in the region of the
 # state space that we are interested in. Here this region coincides with `grid`,

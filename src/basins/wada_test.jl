@@ -4,10 +4,14 @@ export test_wada_merge, haussdorff_distance
 
 """
     test_wada_merge(basins, r) -> p
+    test_wada_merge(BoA::ArrayBasinsOfAttraction,r) -> p
 
 Test if the 2D array `basins` has the [Wada
 property](https://en.wikipedia.org/wiki/Lakes_of_Wada)
 using the merging technique of [Daza2018](@cite).
+
+The second function signature is a simple wrapper of the first allowing compatibility with 
+the [`ArrayBasinsOfAttraction`](@ref) type 
 
 ## Description
 
@@ -43,6 +47,8 @@ function test_wada_merge(basins,r)
     end
     return maximum(v)
 end
+
+test_wada_merge(BoA::ArrayBasinsOfAttraction,r) = test_wada_merge(BoA.basins,r)
 
 """
     haussdorff_distance(M1, M2) -> hd

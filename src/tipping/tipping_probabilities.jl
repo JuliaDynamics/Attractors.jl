@@ -2,12 +2,16 @@ export tipping_probabilities
 
 """
     tipping_probabilities(basins_before, basins_after) → P
+    tipping_probabilities(BoA_before::ArrayBasinsOfAttraction, BoA_after::ArrayBasinsOfAttraction) → P
 
 Return the tipping probabilities of the computed basins before and after a change
 in the system parameters (or time forcing), according to the definition of [Kaszas2019](@cite).
 
 The input `basins` are integer-valued arrays, where the integers enumerate the attractor,
 e.g. the output of [`basins_of_attraction`](@ref).
+
+The second function signature is a simple wrapper of the first allowing compatibility 
+with the [`ArrayBasinsOfAttraction`](@ref) type 
 
 ## Description
 Let ``\\mathcal{B}_i(p)`` denote the basin of attraction of attractor ``A_i`` at
@@ -57,3 +61,7 @@ function put_minus_1_at_end!(bid)
         push!(bid, -1)
     end
 end
+
+
+tipping_probabilities(BoA_before::ArrayBasinsOfAttraction, 
+    BoA_after::ArrayBasinsOfAttraction) = tipping_probabilities(BoA_before.basins, BoA_after.basins)
