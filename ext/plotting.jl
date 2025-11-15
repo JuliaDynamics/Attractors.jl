@@ -47,6 +47,7 @@ function Attractors.plot_attractors!(ax, attractors;
         markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
+        axislegend_kwargs = (position = :lt,),
         access = SVector(1, 2),
         sckwargs = (strokewidth = 0.5, strokecolor = :black,)
     )
@@ -60,7 +61,7 @@ function Attractors.plot_attractors!(ax, attractors;
             sckwargs...
         )
     end
-    add_legend && axislegend(ax)
+    add_legend && axislegend(ax; axislegend_kwargs...)
     return
 end
 
@@ -139,7 +140,8 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
     cmap, colors = custom_colormap_shaded(ukeys)
     markers = markers_from_keys(ukeys)
     labels = Dict(ukeys .=> ukeys)
-    add_legend = length(ukeys) < 7
+    add_legend = length(ukeys) < 7,
+    axislegend_kwargs = (position = :lt,),
 
     it = findall(iterations .> maxit)
     iterations[it] .= maxit
@@ -173,7 +175,7 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
             )
         end
         # Add legend using colors only
-        add_legend && axislegend(ax)
+        add_legend && axislegend(ax, axislegend_kwargs...)
     end
   return ax
 end
