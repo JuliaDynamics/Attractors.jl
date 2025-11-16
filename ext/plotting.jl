@@ -47,6 +47,7 @@ function Attractors.plot_attractors!(ax, attractors;
         markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
+        axislegend_kwargs = NamedTuple(),
         access = SVector(1, 2),
         sckwargs = (strokewidth = 0.5, strokecolor = :black,)
     )
@@ -60,7 +61,7 @@ function Attractors.plot_attractors!(ax, attractors;
             sckwargs...
         )
     end
-    add_legend && axislegend(ax)
+    add_legend && axislegend(ax; axislegend_kwargs...)
     return
 end
 
