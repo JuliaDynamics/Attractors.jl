@@ -43,15 +43,14 @@ MatchByBasinOverlap() = MatchByBasinOverlap(Inf)
 
 
 """
-    matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap)
     matching_map(BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction, matcher::MatchByBasinOverlap)
+    matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap)
 
 Special case of `matching_map` where instead of having as input dictionaries
 mapping IDs to values, we have `Array`s which represent basins of
 attraction and whose elements are the IDs.
 
-The second function signature is a simple wrapper of the first allowing compatibility 
-with the [`ArrayBasinsOfAttraction`](@ref) type 
+The second function signature exists for backwards compatibility. 
 
 See [`MatchByBasinOverlap`](@ref) for how matching works.
 """

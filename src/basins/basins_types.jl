@@ -1,3 +1,4 @@
+using Neighborhood
 export BasinsOfAttraction, 
     ArrayBasinsOfAttraction, 
     SampledBasinsOfAttraction,
@@ -9,17 +10,14 @@ export BasinsOfAttraction,
 # Basins of Attraction structure definition
 #########################################################################################
 """
-    BasinsOfAttraction{ID}
+    BasinsOfAttraction
 
 A subtype of `BasinsOfAttraction` is a convenient structure that stores a representation
-of the `basins` of attraction, their associated `attractors`, and a representation of the `domain` 
+of the `basins` of attraction, their associated `attractors`, and a representation of the domain
 over which the basin is defined. For example, this domain could be a `Grid` subtype matching
 the size of the basins as an array or a set of points sampled from the state space. These fields 
-can be accessed using the `extract_basins`, `extract_attractors`,
-and `extract_domain` functions respectively.
-
-The type parameter `ID` specifies the type of values stored in the basins. Typically,
-this would be `Int`, corresponding to integer valued attractor labels.
+can be accessed using the [`extract_basins`](@ref), [`extract_attractors`](@ref),
+and [`extract_domain`](@ref) functions respectively.
 
 Currently available subtypes:
 
@@ -32,61 +30,77 @@ that the basins are represented as subtypes of `AbstractArray`. Additionally, al
 was done to ensure backwards compatibility for functions whose original return format was
 `basins, attractors` but has since been replaced with a `BasinsOfAttraction` type.
 
+The [`map_to_basin`](@ref) function provides simple interpolation of a point in state space 
+to determine which basin of attraction it is likely to belong to.
+
 ## For developers
 
-`BasinsOfAttraction{ID}` defines an extendable interface. A new type needs to subtype
-`BasinsOfAttraction{ID}` and implement `extract_basins`, `extract_attractors`,
-and `extract_domain`.
+`BasinsOfAttraction` defines an extendable interface. A new type needs to subtype
+`BasinsOfAttraction` and implement `extract_basins`, `extract_attractors`,
+and `extract_domain`. To use the [`map_to_basin`](@ref) function, the internal
+function `map_to_domain` must be implemented
 """
 abstract type BasinsOfAttraction{ID} end
 
 
 """
-    ArrayBasinsOfAttraction{ID, D} <: BasinsOfAttraction{ID}
-    ArrayBasinsOfAttraction(basins, attractors, grid::Tuple)
-    ArrayBasinsOfAttraction(basins, attractors, grid::Grid)
+    ArrayBasinsOfAttraction(basins, attractors, grid)
 
-A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by an array, 
-or more specifically a subtype of `AbstractArray` whose values have type `ID` and has `D` 
-number of dimensions. The `attractors` take the form of a dictionary mapping attractor labels
-to `StateSpaceSet`'s with the points of each set being of length `D`. The domain here is `grid`
-and has type `Grid`, each grid "cell" has a unique corresponding entry in the basins. 
+A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by an 
+`array::AbstractArray`, that has `D` number of dimensions. The `attractors` take the form of a 
+dictionary mapping attractor labels to `StateSpaceSet`'s with the points of each set being of 
+length `D`. The `grid` represents the spatial domain, and can be anything given to [`AttractorsViaRecurrences`](@ref)
+as a grid, i.e., a tuple of ranges or a `Grid` type.
 
-The first constructor simply converts the tuple representation of the grid into type `Grid`, 
-and then calls the second constructor. This `grid` tuple is a tuple of ranges defining the grid 
-of initial conditions that partition the state space. The `grid` has to be of the same dimensionality
-as the points representing the attractors and of the `basins`. 
 """
 struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID,D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}} <: BasinsOfAttraction{ID}
     basins::B 
     attractors::Dict{AK, S}
     grid::G
+
+    function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid::G) where {ID, D, B <: AbstractArray{ID,D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}}
+        # Dimensionality checks
+        length(grid.grid) != ndims(basins) && error("The basins and the grid must have the same number of dimensions")
+        # Attractor state space sets have the same type so same dimensions, can compare grid with any of them 
+        if !isempty(attractors) # 
+            length(grid.grid) != length(valtype(collect(values(attractors))[1])) && error("The attractor points and the grid must have the same number of dimensions")
+        end
+        new{ID,D,B,T,V,G,AK,S}(basins, attractors, grid)
+    end
 end
-# The definition of the first constructor can be found in `basins/basins_utilities.jl`.
+# The definition of other constructors can be found in `basins/basins_utilities.jl`.
 
 """
-    SampledBasinsOfAttraction{ID, D} <: BasinsOfAttraction{ID}
-    SampledBasinsOfAttraction(basins, attractors, sampled_points::Vector{U}) where {U <: AbstractVector}
-    SampledBasinsOfAttraction(basins, attractors, sampled_points::S) where {S <: AbstractStateSpaceSet}
+    SampledBasinsOfAttraction(basins, attractors, sampled_points)
 
-A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by a vector
-whose values are of type `ID`. The `attractors` take the form of a dictionary mapping attractor 
-labels to `StateSpaceSet`'s with the points of each set being of length `D`. The domain of this 
-basin type is `sampled_points` which is also a `StateSpaceSet` with the same dimensionality `D`, 
-element type, and vector type as those used to represent the attractors. Each sampled point has a 
-unique corresponding entry in the `basins` vector. The length of `basins` and `sampled_points` must
-be equal.
+A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by a `vector::AbstractVector`. 
+The `attractors` take the form of a dictionary mapping attractor labels to `StateSpaceSet`'s with 
+the points of each set being of equal length. The spatial domain of this basin type is `sampled_points` which 
+can be a `StateSpaceSet` with the same dimensionality, element type, and vector type as those 
+used to represent the attractors or alternatively a vector of points with the aforementioned requirements. 
 
-The first constructor converts a vector of vectors into a `StateSpaceSet`, then calls the second constructor.
-That is, assuming each has the same dimensionality `D`, and the same element type as the `StateSpaceSet`'s 
-representing the attractors.
+Additional keyword arguments may be specified for use in the construction of a search structure which [`map_to_basin`](@ref)
+uses to interpolate state space points to their nearest basin. These arguments are:
+
+* `tree`: search tree constructor (e.g. `KDTree`, `BallTree`)
+* `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`)
+* `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`
 """
-struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}} <: BasinsOfAttraction{ID}
+struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}, ss <: Neighborhood.SearchType} <: BasinsOfAttraction{ID}
     points_ids::Vector{ID}
     attractors::Dict{AK, S}
     sampled_points::S
+    search_struct::ss
+
+    function SampledBasinsOfAttraction(basins::Vector{ID}, attractors::Dict{AK, S}, sampled_points::S; tree = KDTree, metric = Euclidean(), ss_kwargs...) where 
+                    {ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+        # Dimensionality checks
+        length(basins) != sampled_points && error("The basins and the sampled points must have equal length")
+        search_struct = searchstructure(tree, BoA.sampled_points, metric, ss_kwargs...)
+        new{ID,D,T,V,AK,S,typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
+    end
 end
-# The definition of the first constructor can be found in `basins/basins_utilities.jl`.
+# The definition of other constructors can be found in `basins/basins_utilities.jl`.
 
 #########################################################################################
 # Basins of Attraction Convenience functions
@@ -96,8 +110,7 @@ Base.iterate(BoA::BasinsOfAttraction, state=1) = state == 1 ? (extract_basins(Bo
 """
     extract_basins(BoA::BasinsOfAttraction) → basins
 
-Returns the basins component of a `BasinsOfAttraction`. For developing a new basin subtype
-this function should be extended.
+Returns the basins component of a `BasinsOfAttraction` object.
 """
 extract_basins(BoA::ArrayBasinsOfAttraction) = BoA.basins
 extract_basins(BoA::SampledBasinsOfAttraction) = BoA.points_ids
@@ -105,11 +118,8 @@ extract_basins(BoA::SampledBasinsOfAttraction) = BoA.points_ids
 """
     extract_attractors(BoA::BasinsOfAttraction) → attractors
 
-Returns the attractors component of a `BasinsOfAttraction`. Which is a dictionary mapping
+Returns the attractors component of a `BasinsOfAttraction` object. Which is a dictionary mapping
 attractor labels to attractors represented as `StateSpaceSet`'s.
-
-For developing a new basin subtype
-this function should be extended.
 """
 extract_attractors(BoA::ArrayBasinsOfAttraction) = BoA.attractors
 extract_attractors(BoA::SampledBasinsOfAttraction) = BoA.attractors
@@ -117,8 +127,7 @@ extract_attractors(BoA::SampledBasinsOfAttraction) = BoA.attractors
 """
     extract_domain(BoA::BasinsOfAttraction) → domain 
 
-Returns the domain component of a `BasinsOfAttraction`. For developing a new basin subtype
-this function should be extended.
+Returns the domain component of a `BasinsOfAttraction` object.
 """
 extract_domain(BoA::SampledBasinsOfAttraction) = BoA.sampled_points
 extract_domain(BoA::ArrayBasinsOfAttraction) = BoA.grid

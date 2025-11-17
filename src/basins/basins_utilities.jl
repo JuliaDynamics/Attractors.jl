@@ -2,10 +2,10 @@ using Neighborhood
 export ics_from_grid, map_to_basin
 
 #########################################################################################
-# Basins of Attraction Constructors - from pre-computed data - docs in basin_types.jl
+# Basins of Attraction Constructors - docs in basin_types.jl
 ######################################################################################### 
 # ArrayBasinsOfAttraction with grid as tuple
-function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, S <: AbstractStateSpaceSet, AK}
+function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, AK, S <: AbstractStateSpaceSet}
     size(basins) != length.(grid_tup) && error("The size of the grid must be equal to the size of the basins array")
     if all(t -> t isa AbstractRange, grid_tup) && all(axis -> issorted(axis), grid_tup) # regular
         grid = RegularGrid(grid_tup)
@@ -17,19 +17,19 @@ function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::T
     ArrayBasinsOfAttraction(basins, attractors, grid)
 end
 # Sampled Basin of Attraction with sampled points as a vector of vectors
-function SampledBasinsOfAttraction(points_ids::Vector{ID}, attractors::Dict{AK, S}, 
-                                        sampled_points::Vector{U}) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+function SampledBasinsOfAttraction(points_ids::Vector{ID}, attractors::Dict{AK, S}, sampled_points::Vector{U};
+            tree = KDTree, metric = Euclidean(), ss_kwargs...) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
     sampled_set = StateSpaceSet(sampled_points)
     eltype(S) != V && error("The attractor points and sampled points must be represented " * 
     "by the same type of vector, that is they must have the same element type and length")
-    SampledBasinsOfAttraction(points_ids, attractors, sampled_set)
+    SampledBasinsOfAttraction(points_ids, attractors, sampled_set; tree = tree, metric = metric, ss_kwargs=ss_kwargs)
 end
 
 #########################################################################################
-# Basins of Attraction Constructors
+# Other utilities
 ######################################################################################### 
 """
-    basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → array_basins_of_attraction
+    basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → boa
 
 Compute the full basins of attraction as identified by the given `mapper`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
@@ -51,7 +51,7 @@ the partitioning happens directly on the hyperplane the Poincaré map operates o
 corresponding to the state space partitioning indicated by `grid`.
 
 Note that, to ensure backwards compatibility the return type can be decomposed such that 
-`basins, attractors = array_basins_of_attraction`.
+`basins, attractors = boa`.
 
 See also [`convergence_and_basins_of_attraction`](@ref).
 """
@@ -65,20 +65,20 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
 end
 
 """
-    basins_of_attraction(mapper::AttractorMapper, ics; kwargs...) → sampled_basin_of_attraction
+    basins_of_attraction(mapper::AttractorMapper, ics; kwargs...) → boa
 
 Compute the full basins of attraction as identified by the given `mapper`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
-along with (perhaps approximated) found attractors contained within the 
-[`SampledBasinsOfAttraction`](@ref) structure.
+along with (perhaps approximated) found attractors contained within a 
+[`SampledBasinsOfAttraction`](@ref) object.
 
 The initial conditions `ics`, and the keyword arguments `kwargs` are the same
 as in [`basins_fractions`](@ref) with the same function signature. This function
 is a small convenience wrapper which uses the sampled initial conditions and their 
-corresponding labels, from `basins_fractions`, to construct a `SampledBasinsOfAttraction`
+corresponding labels, from `basins_fractions`, to construct a [`SampledBasinsOfAttraction`](@ref)
 
 Note that, as with the other `basins_of_attraction` function, the return can be decomposed: 
-`basins, attractors = array_basins_of_attraction`.
+`basins, attractors = boa`.
 
 """
 function basins_of_attraction(mapper::AttractorMapper, ics::ValidICS; show_progress = true, N = 1000)
@@ -112,8 +112,8 @@ end
 end
 
 """
-    basins_fractions(basins::AbstractArray [,ids]) → fs::Dict
     basins_fractions(BoA::BasinsOfAttraction [,ids]) → fs::Dict
+    basins_fractions(basins::AbstractArray [,ids]) → fs::Dict
 
 Calculate the state space fraction of the basins of attraction encoded in `basins`.
 The elements of `basins` are integers, enumerating the attractor that the entry of
@@ -122,8 +122,7 @@ Return a dictionary that maps attractor IDs to their relative fractions.
 Optionally you may give a vector of `ids` to calculate the fractions of only
 the chosen ids (by default `ids = unique(basins)`).
 
-The second function signature is a simple wrapper of the first signature 
-allowing compatibility with the [`BasinsOfAttraction`](@ref) type
+The second function signature exists for backwards compatibility. 
 
 In [Menck2013](@cite) the authors use these fractions to quantify the stability of a basin of
 attraction, and specifically how it changes when a parameter is changed.
@@ -226,17 +225,13 @@ end
 
 Given a `point`, `map_to_basin` interpolates to which basin it should belong.
 
-For `ArrayBasinsOfAttraction` this finds the label of the closest grid cell. 
+For [`ArrayBasinsOfAttraction`](@ref) this finds the label of the closest grid cell. 
 
-For `SampledBasinsOfAttraction` this finds the label corresponding to the 
-nearest neighbor using `Neighborhood.jl`, in which case the keyword arguments are:
-* `tree`: search tree constructor (e.g. `KDTree`, `BallTree`)
-* `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`)
-* `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`
+For [`SampledBasinsOfAttraction`](@ref) this finds the label corresponding to the 
+nearest neighbor using `Neighborhood.jl`
 
 For developing a new `BasinOfAttraction` subtype extend the internal function `map_to_domain`,
 and ensure that the basins can be indexed by the returned value.
-
 """
 function map_to_basin(BoA::BasinsOfAttraction, point; kwargs...)
     n = map_to_domain(BoA, point; kwargs...)
@@ -246,7 +241,6 @@ end
 # Map point to index of the nearest member of the domain of the basin of attraction
 map_to_domain(BoA::ArrayBasinsOfAttraction, point) = basin_cell_index(point, BoA.grid) # Nearest grid cell
 function map_to_domain(BoA::SampledBasinsOfAttraction, point; tree = KDTree, metric = Euclidean(), ss_kwargs...) 
-    ss = searchstructure(tree, BoA.sampled_points, metric, ss_kwargs...) # Nearest sampled point
-    idx, _ = nn(ss, point, args...; kwargs...)
+    idx, _ = nn(BoA.search_struct, point, args...; kwargs...)
     return idx
 end

@@ -1,14 +1,13 @@
 export uncertainty_exponent, basins_fractal_dimension, basins_fractal_test, basin_entropy
 
 """
-    basin_entropy(basins::Array{Integer}, ε = size(basins, 1)÷10) -> Sb, Sbb
     basin_entropy(BoA::ArrayBasinsOfAttraction{Integer}, ε = size(BoA.basins, 1)÷10) -> Sb, Sbb
+    basin_entropy(basins::Array{Integer}, ε = size(basins, 1)÷10) -> Sb, Sbb
 
 Return the basin entropy [Daza2016](@cite) `Sb` and basin boundary entropy `Sbb`
 of the given `basins` of attraction by considering `ε`-sized boxes along each dimension.
 
-The second function signature is a simple wrapper of the first allowing compatibility with 
-the [`ArrayBasinsOfAttraction`](@ref) type 
+The second function signature exists for backwards compatibility. 
 
 ## Description
 
@@ -88,15 +87,14 @@ end
 
 
 """
+    basin_entropy(BoA::ArrayBasinsOfAttraction, ε = 20, Ntotal = 1000) -> test_res, Sbb
     basins_fractal_test(basins; ε = 20, Ntotal = 1000) -> test_res, Sbb
-    basin_entropy(BoA, ε = 20, Ntotal = 1000) -> test_res, Sbb
 
 Perform an automated test to decide if the boundary of the basins has fractal structures
 based on the method of Puy et al. [Puy2021](@cite).
 Return `test_res` (`:fractal` or `:smooth`) and the mean basin boundary entropy.
 
-The second function signature is a simple wrapper of the first allowing compatibility with 
-the [`ArrayBasinsOfAttraction`](@ref) type 
+The second function signature exists for backwards compatibility. 
 
 ## Keyword arguments
 
@@ -182,14 +180,13 @@ basins_fractal_test(BoA::ArrayBasinsOfAttraction{<:Integer}, ε = 20, Ntotal = 1
 linreg(x, y) = hcat(fill!(similar(x), 1), x) \ y
 
 """
-    basins_fractal_dimension(basins; kwargs...) -> V_ε, N_ε, d
     basins_fractal_dimension(BoA::ArrayBasinsOfAttraction; kwargs...) -> V_ε, N_ε, d
+    basins_fractal_dimension(basins; kwargs...) -> V_ε, N_ε, d
 
 Estimate the fractal dimension `d` of the boundary between basins of attraction using
 a box-counting algorithm for the boxes that contain at least two different basin IDs.
 
-The second function signature is a simple wrapper of the first allowing compatibility with 
-the [`ArrayBasinsOfAttraction`](@ref) type 
+The second function signature exists for backwards compatibility. 
 
 ## Keyword arguments
 
@@ -248,8 +245,8 @@ end
 
 basins_fractal_dimension(BoA::ArrayBasinsOfAttraction; range_ε = 3:maximum(size(BoA.basins))÷20) = basins_fractal_dimension(BoA.basins; range_ε=range_ε)
 """
-    uncertainty_exponent(basins; kwargs...) -> ε, N_ε, α
     uncertainty_exponent(BoA::ArrayBasinsOfAttraction; kwargs...) -> ε, N_ε, α
+    uncertainty_exponent(basins; kwargs...) -> ε, N_ε, α
 
 Estimate the uncertainty exponent[Grebogi1983](@cite) of the basins of attraction. This exponent
 is related to the final state sensitivity of the trajectories in the phase space.
@@ -262,8 +259,7 @@ The output `α` is the estimation of the uncertainty exponent using the box-coun
 dimension of the boundary by fitting a line in the `log.(N_ε)` vs `log.(1/ε)` curve.
 However it is recommended to analyze the curve directly for more accuracy.
 
-The second function signature is a simple wrapper of the first allowing compatibility with 
-the [`ArrayBasinsOfAttraction`](@ref) type 
+The second function signature exists for backwards compatibility. 
 
 ## Keyword arguments
 * `range_ε = 2:maximum(size(basins))÷20` is the range of sizes of the ball to
