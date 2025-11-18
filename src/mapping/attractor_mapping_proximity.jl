@@ -115,7 +115,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
                 k == m && continue
                 for p in A # iterate over all points of attractor
                     Neighborhood.NearestNeighbors.knn_point!(
-                        tree, p, false, dist, idx, Neighborhood.NearestNeighbors.always_false
+                        tree, p, false, dist, idx, Returns(false)
                     )
                     dist[1] < minε && (minε = dist[1])
                 end
