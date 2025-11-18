@@ -49,7 +49,7 @@ end
 # has the same performance!
 @inbounds function feature_to_group(feature, config::GroupViaNearestFeature)
     (; tree, max_distance, dummy_idxs, dummy_dist) = config
-    skip = Neighborhood.NearestNeighbors.always_false
+    skip = Returns(false)
     sort_result = false
     Neighborhood.NearestNeighbors.knn_point!(
         tree, feature, sort_result, dummy_dist, dummy_idxs, skip

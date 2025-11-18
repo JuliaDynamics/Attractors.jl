@@ -74,6 +74,13 @@ ArrayBasinsOfAttraction
 SampledBasinsOfAttraction
 ```
 
+The `map_to_basin` function provides simple interpolation of a point in state space to determine which basin of attraction it
+is likely to belong to:
+
+```@docs
+map_to_basin
+```
+
 Calculating basins of attraction, or their state space fractions, can be done with the functions:
 - [`basins_fractions`](@ref)
 - [`basins_of_attraction`](@ref)

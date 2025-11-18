@@ -32,13 +32,6 @@ was done to ensure backwards compatibility for functions whose original return f
 
 The [`map_to_basin`](@ref) function provides simple interpolation of a point in state space 
 to determine which basin of attraction it is likely to belong to.
-
-## For developers
-
-`BasinsOfAttraction` defines an extendable interface. A new type needs to subtype
-`BasinsOfAttraction` and implement `extract_basins`, `extract_attractors`,
-and `extract_domain`. To use the [`map_to_basin`](@ref) function, the internal
-function `map_to_domain` must be implemented
 """
 abstract type BasinsOfAttraction{ID} end
 
