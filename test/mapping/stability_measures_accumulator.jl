@@ -131,12 +131,16 @@ end
 # Now we will test the local stability measures in `StabilityMeasuresAccumulator` in a
 # linear system.
 function linear_evolution(z, p, n)
-    A = [-0.5 0.0; 0.0 -0.5]  # Linear transformation matrix
+    if p[1] < 0.0
+        A = [1.0 0.0; 0.0 1.0]  # Linear transformation matrix
+    else
+        A = [-0.5 0.0; 0.0 -0.5]  # Linear transformation matrix
+    end
     return SVector(A * [z[1], z[2]]...)  # Convert matrix multiplication result to SVector
 end
 
 # Create the dynamical system
-dynamics = CoupledODEs(linear_evolution, [1.0, 1.0], [0.0])
+dynamics = CoupledODEs(linear_evolution, [1.0, 1.0], [1.0])
 
 # Define a grid for initial conditions
 grid = ([-1.0, -0.1, 0.3, 1.0], [-1.0, -0.3, 0.1, 1.0])
