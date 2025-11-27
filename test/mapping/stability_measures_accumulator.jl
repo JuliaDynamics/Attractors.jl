@@ -171,6 +171,41 @@ results_expected = Dict(
     end
 end
 
+# Now we test the continuation of local stability measures using the linear map.
+pcurve_local = [[1 => p] for p in [-1.0, 1.0]]
+attractors_cont_local = [
+    Dict(1 => StateSpaceSet([SVector(0.0, 0.0)])),
+    Dict(1 => StateSpaceSet([SVector(0.0, 0.0)]))
+]
+
+proximity_mapper_options_local = (
+    Ttr=0, stop_at_Δt = false, horizon_limit = 1e2, consecutive_lost_steps = 10000
+)
+measures_cont_local = stability_measures_along_continuation(
+    dynamics, attractors_cont_local, pcurve_local, ics_from_grid(grid), ε=0.1, finite_time=0.5,
+    proximity_mapper_options = proximity_mapper_options_local
+)
+
+measures_cont_local_expected = Dict(
+    "characteristic_return_time" => [Dict(1 => Inf, -1 => NaN), Dict(1 => 2.0, -1 => NaN)],
+    "reactivity"       => [Dict(1 => 1.0, -1 => NaN), Dict(1 => -0.5, -1 => NaN)],
+    "maximal_amplification" => [Dict(1 => Inf, -1 => NaN), Dict(1 => 1.0, -1 => NaN)],
+    "maximal_amplification_time" => [Dict(1 => Inf, -1 => NaN), Dict(1 => 0.0, -1 => NaN)]
+)
+@testset "Local Stability Measures Continuation" begin
+    # Validate the results
+    for (key, value) in measures_cont_local_expected
+        @test key in keys(measures_cont_local)
+        for k in [1, 2]
+            @test isapprox(
+                sort(collect(values(value[k]))),
+                sort(collect(values(measures_cont_local[key][k]))),
+                atol = 1e-5,
+                nans = true,
+            )
+        end
+    end
+end
 
 @testset "Discrete time" begin
     # For these parameters the map has 1 fixed point and one period 3 orbit.
