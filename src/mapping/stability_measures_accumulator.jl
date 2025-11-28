@@ -335,10 +335,10 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
       if isinplace(ds)
             # For in-place systems, pre-allocate J and then compute it
             J = Array{Float64}(undef, length(A[1]), length(A[1]))
-            jac(J, Array(A[1]), initial_parameters(ds), 0)
+            jac(J, Array(A[1]), current_parameters(ds), 0)
       else
             # For out-of-place systems, compute J directly
-            J = jac(Array(A[1]), initial_parameters(ds), 0)
+            J = jac(Array(A[1]), current_parameters(ds), 0)
       end
       if isdiscretetime(ds)
           try
