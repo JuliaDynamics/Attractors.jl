@@ -162,14 +162,15 @@ function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
 
+
 function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     ps = generic_mapper_print(io, mapper)
     println(io, rpad(" grid: ", ps), mapper.grid)
-    println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.attractors)
+    println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.BoA.attractors)
     return
 end
 
-_extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
+_extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.BoA.attractors
 
 function convergence_time(m::AttractorsViaRecurrences)
     i = m.bsn_nfo.safety_counter
@@ -190,30 +191,35 @@ function convergence_time(m::AttractorsViaRecurrences)
 end
 
 
+
+
 """
-    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
+    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true) → boa
 
 This is a special method of `basins_of_attraction` that using recurrences does
 _exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@cite).
 By enforcing that the internal grid of `mapper` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
+
+The return has type [`ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = boa`
+ensuring backwards compatibility with the previous return format.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    if mapper.bsn_nfo.basins isa SparseArray;
+    if mapper.bsn_nfo.BoA.basins isa SparseArray;
         throw(ArgumentError("""
             Sparse version of AttractorsViaRecurrences is incompatible with
             `basins_of_attraction(mapper)`."""
         ))
     end
 
-    if (mapper.bsn_nfo.grid_nfo isa SubdivisionBasedGrid)
+    if (mapper.bsn_nfo.BoA.grid isa SubdivisionBasedGrid)
         grid = mapper.grid.max_grid
     else
         grid = mapper.grid.grid
     end
 
-    basins = zero(mapper.bsn_nfo.basins)
+    basins = zero(mapper.bsn_nfo.BoA.basins)
 
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
@@ -232,19 +238,16 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         end
     end
 
-    return basins, extract_attractors(mapper)
+    return ArrayBasinsOfAttraction(basins, extract_attractors(mapper), grid)
 end
 
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-# we need the abstract grid type because of the type parameterization in `BasinsInfo`
-# the grid subtypes are in the grids file.
-abstract type Grid end
 
-mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
-    basins::A # sparse or dense
-    grid_nfo::G
+mutable struct BasinsInfo{D, Δ, T, V, G<:Grid, B <: AbstractArray{Int,D},
+                                A <: ArrayBasinsOfAttraction{Int, D, B, T, V, G}}
+    BoA::A # sparse or dense
     Δt::Δ
     state::Symbol
     current_att_label::Int
@@ -253,7 +256,6 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    attractors::Dict{Int, StateSpaceSet{D, T, V}}
     visited_cells::Vector{CartesianIndex{D}}
     return_code::Symbol
     stop_at_Δt::Bool
@@ -285,13 +287,12 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
         zeros(Int, (map(length, grid).*(2^multiplier))...)
     end
     V = SVector{G, T}
+    array_BoA = ArrayBasinsOfAttraction(basins_array, Dict{Int, StateSpaceSet{G, T, V}}(), grid_nfo)
     bsn_nfo = BasinsInfo(
-        basins_array,
-        grid_nfo,
+        array_BoA,
         Δt,
         :att_search,
         2,4,0,1,0,0,
-        Dict{Int, StateSpaceSet{G, T, V}}(),
         Vector{CartesianIndex{G}}(),
         :search,
         stop_at_Δt,
@@ -355,11 +356,11 @@ as if it has just been initialized. Useful in `for` loops
 that loop over a parameter of the dynamical system stored in `mapper`.
 """
 function reset_mapper!(mapper::AttractorsViaRecurrences)
-    empty!(mapper.bsn_nfo.attractors)
-    if mapper.bsn_nfo.basins isa Array
-        mapper.bsn_nfo.basins .= 0
+    empty!(mapper.bsn_nfo.BoA.attractors)
+    if mapper.bsn_nfo.BoA.basins isa Array
+        mapper.bsn_nfo.BoA.basins .= 0
     else
-        empty!(mapper.bsn_nfo.basins)
+        empty!(mapper.bsn_nfo.BoA.basins)
     end
     mapper.bsn_nfo.state = :att_search
     mapper.bsn_nfo.consecutive_match = 0
@@ -370,6 +371,6 @@ function reset_mapper!(mapper::AttractorsViaRecurrences)
     return
 end
 
+include("grids.jl")
 include("sparse_arrays.jl")
 include("finite_state_machine.jl")
-include("grids.jl")

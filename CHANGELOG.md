@@ -1,3 +1,10 @@
+# v1.31
+
+- New `BasinsOfAttraction` type and subtypes, containing "basins" as an array or vector, attractors, and a "spatial domain" i.e. a `Grid` or sampled points.
+- All functions using "basins" can now also be called with these new types. 
+- Type is decomposible such that `basins, attractors = boa` which ensures backwards compatibility.
+- `map_to_basin` function allows interpolating points to basins.
+
 # v1.30
 
 - `animate_attractors_continuation` has been enhanced to allow animating a

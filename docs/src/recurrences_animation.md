@@ -51,7 +51,7 @@ function animate_attractors_via_recurrences(
         filename = "recurrence_algorithm.mp4",
     )
 
-    grid_nfo = mapper.bsn_nfo.grid_nfo
+    grid_nfo = mapper.bsn_nfo.BoA.grid
 
     fig = Figure()
     ax = Axis(fig[1,1])
@@ -170,7 +170,7 @@ function animate_attractors_via_recurrences(
                 u = current_state(ds)
 
                 # update FSM
-                n = Attractors.basin_cell_index(u, bsn_nfo.grid_nfo)
+                n = Attractors.basin_cell_index(u, bsn_nfo.BoA.grid)
                 cell_label = Attractors.finite_state_machine!(bsn_nfo, n, u; mapper.kwargs...)
 
                 state = bsn_nfo.state
@@ -180,7 +180,7 @@ function animate_attractors_via_recurrences(
 
                     # color-code initial condition if we converged to attractor
                     # or to basin (even or odd cell label)
-                    u0n = Attractors.basin_cell_index(u0, bsn_nfo.grid_nfo)
+                    u0n = Attractors.basin_cell_index(u0, bsn_nfo.BoA.grid)
 
                     basidx = (cell_label - 1)
                     color_obs[u0n][] = COLORS[3+basidx]

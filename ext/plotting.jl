@@ -47,6 +47,7 @@ function Attractors.plot_attractors!(ax, attractors;
         markers = markers_from_keys(ukeys),
         labels = Dict(ukeys .=> ukeys),
         add_legend = length(ukeys) < 7,
+        axislegend_kwargs = NamedTuple(),
         access = SVector(1, 2),
         sckwargs = (strokewidth = 0.5, strokecolor = :black,)
     )
@@ -60,7 +61,7 @@ function Attractors.plot_attractors!(ax, attractors;
             sckwargs...
         )
     end
-    add_legend && axislegend(ax)
+    add_legend && axislegend(ax; axislegend_kwargs...)
     return
 end
 
@@ -76,6 +77,10 @@ function Attractors.heatmap_basins_attractors(grid, basins::AbstractArray, attra
     ax = Axis(fig[1,1])
     heatmap_basins_attractors!(ax, grid, basins, attractors; kwargs...)
     return fig
+end
+
+function Attractors.heatmap_basins_attractors(BoA::ArrayBasinsOfAttraction; kwargs...) 
+    return Attractors.heatmap_basins_attractors(BoA.grid, BoA.basins, BoA.attractors; kwargs...)
 end
 
 function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
@@ -109,6 +114,25 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     return ax
 end
 
+function Attractors.heatmap_basins_attractors!(ax, BoA::ArrayBasinsOfAttraction;
+        ukeys = unique(BoA.basins), # internal argument just for other keywords
+        colors = colors_from_keys(ukeys),
+        markers = markers_from_keys(ukeys),
+        labels = Dict(ukeys .=> ukeys),
+        add_legend = length(ukeys) < 7,
+        access = SVector(1, 2),
+        sckwargs = (strokewidth = 1.5, strokecolor = :white,)
+    )
+    return Attractors.heatmap_basins_attractors!(ax, BoA.grid, BoA.basins, BoA.attractors;
+        ukeys = ukeys, # internal argument just for other keywords
+        colors = colors,
+        markers = markers,
+        labels = labels,
+        add_legend = add_legend,
+        access = access,
+        sckwargs = sckwargs
+    )
+end
 ##########################################################################################
 # Shaded basins
 ##########################################################################################
@@ -123,6 +147,15 @@ function Attractors.shaded_basins_heatmap(grid, basins::AbstractArray, attractor
     ax = Axis(fig[1,1]; kwargs...)
     shaded_basins_heatmap!(ax, grid, basins, iterations, attractors; maxit, show_attractors)
     return fig
+end
+
+function Attractors.shaded_basins_heatmap(BoA::ArrayBasinsOfAttraction, iterations;
+    show_attractors = true,
+    maxit = maximum(iterations),
+    kwargs...
+    )
+    return Attractors.shaded_basins_heatmap(BoA.grid, BoA.basins, BoA.attractors, iterations;
+    show_attractors = show_attractors, maxit = maxit, kwargs...)
 end
 
 function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attractors;
@@ -175,7 +208,13 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
         # Add legend using colors only
         add_legend && axislegend(ax)
     end
-  return ax
+    return ax
+end
+
+function Attractors.shaded_basins_heatmap!(ax, BoA::ArrayBasinsOfAttraction, iterations;
+    ukeys = unique(basins), show_attractors = true, maxit = maximum(iterations))
+    return Attractors.shaded_basins_heatmap!(ax, BoA.grid, BoA.basins, iterations, BoA.attractors;
+        ukeys = ukeys, show_attractors = show_attractors, maxit = maxit)
 end
 
 function custom_colormap_shaded(ukeys)

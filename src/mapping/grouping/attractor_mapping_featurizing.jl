@@ -172,16 +172,18 @@ end
 # TODO: We need an alternative to deep copying integrators that efficiently
 # initializes integrators for any given kind of system. But that can be done
 # later in the DynamicalSystems.jl 3.0 rework.
+
+using OhMyThreads: @tasks, @local
 function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
     N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs
-    systems = [deepcopy(mapper.ds) for _ in 1:(Threads.nthreads() - 1)]
-    pushfirst!(systems, mapper.ds)
+    # systems = [deepcopy(mapper.ds) for _ in 1:(Threads.nthreads() - 1)]
+    # pushfirst!(systems, mapper.ds)
     first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
     feature_vector[1] = first_feature
     progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled=show_progress)
-    Threads.@threads for i ∈ 2:N
-        ds = systems[Threads.threadid()]
+    @tasks for i ∈ 2:N
+        @local ds = deepcopy(referenced_dynamical_system(mapper))
         ic = _get_ic(ics, i)
         feature_vector[i] = extract_feature(ds, ic, mapper)
         ProgressMeter.next!(progress)
