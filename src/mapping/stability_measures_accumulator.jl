@@ -202,7 +202,7 @@ Return a dictionary mapping stability measures (strings) to dictionaries
 mapping attractor IDs to corresponding measure values.
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 """
-function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discrete_time_Δt = 1.0, probability_cutoff = 0.0)
     ds = referenced_dynamical_system(accumulator)
     attractors = extract_attractors(accumulator.mapper)
     ids = vcat(collect(keys(attractors)), -1)
@@ -211,7 +211,6 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
-    Δt = accumulator.mapper.Δt
     N = length(u0s)
     N == 0 && error("No initial conditions have been processed. Cannot finalize accumulator.")
 
@@ -242,6 +241,10 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
           cps[i] = 0.0
       end
     end
+    if isdiscretetime(ds)
+      cts .*= discrete_time_Δt
+      cps .*= discrete_time_Δt
+    end
 
     basin_frac = Dict(id => 0.0 for id in ids)
     basin_stab = Dict(id => 0.0 for id in ids)
@@ -260,12 +263,9 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     for i in 1:length(u0s)
       id = bs[i]
       j = ids_to_js[id]
-      w = ws[i]
+      w = ws[i] > probability_cutoff ? ws[i] : 0.0
       ct = cts[i]
       cp = cps[i]
-      if isdiscretetime(ds)
-          ct *= Δt
-      end
 
       basin_frac[id] += 1 / N
       basin_stab[id] += w / N
@@ -301,6 +301,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     for id in ids
         basin_stab[id] /= normalization
+        finite_time_basin_stab[id] /= normalization
         mean_convergence_time[id] /= normalization
         mean_convergence_pace[id] /= normalization
         mean_noncritical_shock_magnitude[id] /= normalization
@@ -342,9 +343,9 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
       end
       if isdiscretetime(ds)
           try
-              J = log(J)/Δt
+              J = log(J)/discrete_time_Δt
           catch
-              J = (J - I)/Δt
+              J = (J - I)/discrete_time_Δt
           end
       end
       λ = min(0, maximum(real.(eigvals(J))))
