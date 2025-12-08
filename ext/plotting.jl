@@ -93,6 +93,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
         sckwargs = (strokewidth = 1.5, strokecolor = :white,)
     )
 
+    grid = hasfield(typeof(grid), :grid) ? grid.grid : grid
     sort!(ukeys) # necessary because colormap is ordered
     # Set up the (categorical) color map and colormap values
     cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
@@ -102,7 +103,7 @@ function Attractors.heatmap_basins_attractors!(ax, grid, basins, attractors;
     ids = 1:length(ukeys)
     replace_dict = Dict(k => i for (i, k) in enumerate(ukeys))
     basins_to_plot = replace(basins, replace_dict...)
-    heatmap!(ax, grid.grid..., basins_to_plot;
+    heatmap!(ax, grid..., basins_to_plot;
         colormap = cmap,
         colorrange = (ids[1]-0.5, ids[end]+0.5),
     )
@@ -163,6 +164,7 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
     show_attractors = true,
     maxit = maximum(iterations))
 
+    grid = hasfield(typeof(grid), :grid) ? grid.grid : grid
     sort!(ukeys) # necessary because colormap is ordered
     ids = 1:length(ukeys)
     replace_dict = Dict(k => i for (i, k) in enumerate(ukeys))
@@ -188,7 +190,7 @@ function Attractors.shaded_basins_heatmap!(ax, grid, basins, iterations, attract
     # Each id has a specific color associated and the gradient goes from
     # light color (value id) to dark color (value id+0.99). It produces
     # a shading proportional to a value associated to a specific pixel.
-    heatmap!(ax, grid.grid..., basins_to_plot;
+    heatmap!(ax, grid..., basins_to_plot;
         colormap = cmap,
         colorrange = (ids[1], ids[end]+1),
     )
