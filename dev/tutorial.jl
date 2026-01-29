@@ -115,14 +115,14 @@ using OrdinaryDiffEqVerner # for accessing advanced ODE Solvers
 function modified_lorenz_rule(u, p, t)
     x, y, z = u; a, b = p
     dx = y - x
-    dy = - x*z + b*abs(z)
-    dz = x*y - a
+    dy = - x * z + b * abs(z)
+    dz = x * y - a
     return SVector(dx, dy, dz)
 end
 
 p0 = [5.0, 0.1] # parameters
 u0 = [-4.0, 5, 0] # state
-diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
+diffeq = (alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9, dt = 0.01) # solver options
 ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
 # ## Finding attractors
@@ -151,7 +151,8 @@ grid = (
     range(-15.0, 15.0; length = 150), # z
 )
 
-mapper = AttractorsViaRecurrences(ds, grid;
+mapper = AttractorsViaRecurrences(
+    ds, grid;
     consecutive_recurrences = 1000, attractor_locate_steps = 1000,
     consecutive_lost_steps = 100,
 )
@@ -343,7 +344,7 @@ ascm = AttractorSeedContinueMatch(mapper)
 # and call
 
 fractions_cont, attractors_cont = global_continuation(
-	ascm, prange, pidx, sampler; samples_per_parameter = 1_000
+    ascm, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
 # the output is given as two vectors. Each vector is a dictionary
@@ -360,7 +361,7 @@ attractors_cont[34]
 # already defined:
 
 animate_attractors_continuation(
-    ds, attractors_cont, fractions_cont, prange, pidx;
+    ds, attractors_cont, fractions_cont, prange, pidx
 );
 
 # ```@raw html
@@ -378,7 +379,7 @@ animate_attractors_continuation(
 # parameter axis. We can do this with the convenience function:
 
 fig = plot_basins_attractors_curves(
-	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange,
+    fractions_cont, attractors_cont, A -> minimum(A[:, 1]), prange,
 )
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
@@ -450,7 +451,7 @@ attractors_cont2 = deepcopy(attractors_cont)
 match_sequentially!(attractors_cont2, matcher)
 
 fig = plot_attractors_curves(
-	attractors_cont2, A -> minimum(A[:, 1]), prange,
+    attractors_cont2, A -> minimum(A[:, 1]), prange,
 )
 
 # and as we can see, the new attractor at the end of the parameter range got
@@ -482,7 +483,7 @@ matcher = MatchBySSSetDistance(use_vanished = true)
 ascm = AttractorSeedContinueMatch(mapper, matcher)
 
 fractions_cont, attractors_cont = global_continuation(
-	ascm, pcurve, sampler; samples_per_parameter = 1_000
+    ascm, pcurve, sampler; samples_per_parameter = 1_000
 )
 
 # and animate the result

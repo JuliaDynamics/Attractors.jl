@@ -3,8 +3,8 @@
 function modified_lorenz_rule!(du, u, p, t = 0)
     x, y, z = u; a, b = p
     du[1] = y - x
-    du[2] = - x*z + b*abs(z)
-    du[3] = x*y - a
+    du[2] = - x * z + b * abs(z)
+    du[3] = x * y - a
     return du
 end
 prange = 4.7:0.02:6
@@ -19,7 +19,7 @@ using CairoMakie
 
 bf_prob = BK.BifurcationProblem(
     modified_lorenz_rule!, u0, p0, (BK.@optic _[pidx])
-)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌─ Bifurcation Problem with uType <span class="sgr36"><span class="sgr1">Vector{Float64}</span></span>
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌─ Bifurcation problem with uType <span class="sgr36"><span class="sgr1">Vector{Float64}</span></span>
 ├─ Inplace: <span class="sgr36"><span class="sgr1">false</span></span>
 ├─ Dimension: <span class="sgr36"><span class="sgr1">3</span></span>
 ├─ Symmetric: <span class="sgr36"><span class="sgr1">false</span></span>
@@ -31,16 +31,16 @@ point_on_lc = [
 ]
 
 ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 50.0), p0)
-sol = OrdinaryDiffEqVerner.solve(ode_prob; alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
-j = length(sol)÷2
+sol = OrdinaryDiffEqVerner.solve(ode_prob; alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9)
+j = length(sol) ÷ 2
 fig, ax = lines(sol.t[j:end], sol[1, j:end])
 lines!(ax, sol.t[j:end], sol[2, j:end])
 lines!(ax, sol.t[j:end], sol[3, j:end])
 fig</code></pre><img src="f5737149.png" alt="Example block output"/><p>We need an estimate of the period besides providing the full DifferentialEquations.jl solution. From the figure this appears to be around 20.0 (note: the periodic orbit wraps around four times before repeating exactly).</p><p>Right, and lastly we need a continuation parameter container, which has some options regarding convergence and stability that one would need to fine tune to the problem at hand.</p><pre><code class="language-julia hljs">opts_br = BK.ContinuationPar(
     p_min = prange[1], p_max = prange[end],
-    ds = 0.002, dsmax = 0.01, dsmin = 1e-6, n_inversion = 6,
+    ds = 0.002, dsmax = 0.01, dsmin = 1.0e-6, n_inversion = 6,
     detect_bifurcation = 3, max_bisection_steps = 50, nev = 4,
-    max_steps = 2000, tol_stability = 1e-3,
+    max_steps = 2000, tol_stability = 1.0e-3,
 )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BifurcationKit.ContinuationPar{Float64, BifurcationKit.DefaultLS, BifurcationKit.DefaultEig{typeof(real)}}
   dsmin: Float64 1.0e-6
   dsmax: Float64 0.01
@@ -89,20 +89,24 @@ fig</code></pre><img src="f5737149.png" alt="Example block output"/><p>We need a
 ├─ jacobian           : BifurcationKit.DenseAnalyticalInplace()
 ├─ mesh adaptation    : false
 └─ # unknowns (without phase condition) : 483
-, [-1.622956992666447, -4.527917984019188, -5.178825669659272, -1.9956767173621606, -5.5118753488592604, -4.706284366608484, -2.4400965192472053, -6.555318679124743, -3.731114021104332, -2.9442814228906706  …  -1.0433693396242911, -3.025602252523616, -5.072664120850538, -1.2950909301494282, -3.664046532764437, -5.2010493840600605, -1.598669948532075, -4.4708860215171615, -5.100420067247113, 18.598994974874373])</code></pre><p>To call the continuation we need to also tell it what aspects of the periodic orbit to record, so we define</p><pre><code class="language-julia hljs">argspo = (record_from_solution = (x, p; k...) -&gt; begin
-		xtt = BK.get_periodic_orbit(p.prob, x, p.p)
-		return (max = maximum(xtt[1,:]),
-				min = minimum(xtt[1,:]),
-				period = BK.getperiod(p.prob, x, p.p),
-                p = p.p,)
-	end,
-)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(record_from_solution = Main.var&quot;#1#3&quot;(),)</code></pre><p>we also define the predictor</p><pre><code class="language-julia hljs">predictor = BK.PALC(tangent = BK.Bordered())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BifurcationKit.PALC{BifurcationKit.Bordered, BifurcationKit.MatrixBLS{Nothing}, Float64, BifurcationKit.DotTheta{BifurcationKit.var&quot;#339#341&quot;, BifurcationKit.var&quot;#340#342&quot;}}
+, [-1.622956992666447, -4.527917984019188, -5.178825669659272, -1.9956767173621606, -5.5118753488592604, -4.706284366608484, -2.4400965192472053, -6.555318679124743, -3.731114021104332, -2.9442814228906706  …  -1.0433693396242911, -3.025602252523616, -5.072664120850538, -1.2950909301494282, -3.664046532764437, -5.2010493840600605, -1.598669948532075, -4.4708860215171615, -5.100420067247113, 18.598994974874373])</code></pre><p>To call the continuation we need to also tell it what aspects of the periodic orbit to record, so we define</p><pre><code class="language-julia hljs">argspo = (
+    record_from_solution = (x, p; k...) -&gt; begin
+        xtt = BK.get_periodic_orbit(p.prob, x, p.p)
+        return (
+            max = maximum(xtt[1, :]),
+            min = minimum(xtt[1, :]),
+            period = BK.getperiod(p.prob, x, p.p),
+            p = p.p,
+        )
+    end,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(record_from_solution = Main.var&quot;#1#3&quot;(),)</code></pre><p>we also define the predictor</p><pre><code class="language-julia hljs">predictor = BK.PALC(tangent = BK.Bordered())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BifurcationKit.PALC{BifurcationKit.Bordered, BifurcationKit.MatrixBLS{Nothing}, Float64, BifurcationKit.DotTheta{BifurcationKit.var&quot;#344#346&quot;, BifurcationKit.var&quot;#345#347&quot;}}
   tangent: BifurcationKit.Bordered BifurcationKit.Bordered()
   θ: Float64 0.5
   _bothside: Bool false
   bls: BifurcationKit.MatrixBLS{Nothing}
-  dotθ: BifurcationKit.DotTheta{BifurcationKit.var&quot;#339#341&quot;, BifurcationKit.var&quot;#340#342&quot;}
-</code></pre><p>and <em>finally</em> call the continuation from BK</p><pre><code class="language-julia hljs">@time branch = BK.continuation(probpo, cish, predictor, opts_br;
+  dotθ: BifurcationKit.DotTheta{BifurcationKit.var&quot;#344#346&quot;, BifurcationKit.var&quot;#345#347&quot;}
+</code></pre><p>and <em>finally</em> call the continuation from BK</p><pre><code class="language-julia hljs">@time branch = BK.continuation(
+    probpo, cish, predictor, opts_br;
     verbosity = 0, plot = false,
     linear_algo = BK.COPBLS(), # faster linear solver
     argspo...,
@@ -111,7 +115,7 @@ fig</code></pre><img src="f5737149.png" alt="Example block output"/><p>We need a
  ├─ Number of points: 207
  ├─ Type of vectors: <span class="sgr36"><span class="sgr1">Vector{Float64}</span></span>
  ├─ Parameter <span class="sgr36"><span class="sgr1">p1</span></span> starts at 4.7, ends at 4.7
- ├─ Algo: <span class="sgr36"><span class="sgr1">PALC</span></span>
+ ├─ Algo: <span class="sgr36"><span class="sgr1">PALC [Bordered]</span></span>
  └─ Special points:
 
 - #  1, <span class="sgr1">endpoint</span> at p1 ≈ +4.70000000,                                                                     step =   0
@@ -133,8 +137,9 @@ scatter!(
 )
 axislegend(ax)
 fig</code></pre><img src="2176a6d7.png" alt="Example block output"/><p>Even the previous version that did work, did not find a stable limit cycle for parameter less than 5.0, In the main Tutorial we see that there is a limit cycle for parameter value down to 4.7. Here we see that the limit cycle is actually unstable. So the attractor found in the main Tutorial could be a weakly chaotic attractor with MLE almost 0. Or maybe it is a quasiperiodic attractor. Or maybe it is an alternative limit cycle close to the one tracked here by BifurcationKit.jl. One needs to analyze further!</p><h2 id="Attractors.jl-version"><a class="docs-heading-anchor" href="#Attractors.jl-version">Attractors.jl version</a><a id="Attractors.jl-version-1"></a><a class="docs-heading-anchor-permalink" href="#Attractors.jl-version" title="Permalink"></a></h2><p>We have already seen the code for this version in the main <a href="../tutorial/#tutorial">Tutorial</a>, but here we copy it again using exactly the same input as that given to BK. To make the comparison explicit, let&#39;s also make an enumerated list for the Attractors.jl info:</p><ol><li>A <code>DynamicalSystem</code>,</li><li>an <code>AttractorMapper</code> instance (and its meta parameters). For the mapper used here, <code>AttractorsViaRecurrences</code>, the meta parameters are:<ol><li>A state space tesselation</li><li>A recurrence threshold</li><li>A lost iterations threshold</li></ol></li><li>a global continuation algorithm, and optionally a matcher for it.</li><li>a sampler to sample initial conditions in the state space.</li></ol><pre><code class="language-julia hljs">using Attractors
-ds = CoupledODEs(modified_lorenz_rule!, u0, p0;
-    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
+ds = CoupledODEs(
+    modified_lorenz_rule!, u0, p0;
+    diffeq = (alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9)
 )
 
 grid = (
@@ -143,7 +148,8 @@ grid = (
     range(-20.0, 20.0; length = 200), # z
 )
 
-mapper = AttractorsViaRecurrences(ds, grid;
+mapper = AttractorsViaRecurrences(
+    ds, grid;
     consecutive_recurrences = 1000,
     consecutive_lost_steps = 100,
 )
@@ -153,9 +159,9 @@ sampler, = statespace_sampler(grid)
 algo = AttractorSeedContinueMatch(mapper)
 
 fractions_cont, attractors_cont = global_continuation(
-	algo, prange, pidx, sampler; samples_per_parameter = 1_000
+    algo, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
 plot_attractors_curves(
-    attractors_cont,  A -&gt; minimum(A[:, 1]), prange,
-)</code></pre><img src="97c7a3da.png" alt="Example block output"/><p>This code takes about 15 seconds to run. This number however is for 1000 initial conditions, not one (i.e., the one branch generated during the traditional continuation).</p><h2 id="Discussion-and-comparison"><a class="docs-heading-anchor" href="#Discussion-and-comparison">Discussion and comparison</a><a id="Discussion-and-comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Discussion-and-comparison" title="Permalink"></a></h2><p>Attractors.jl found not only a single limit cycle, but also all system attractors, including chaotic or quasiperiodic ones. It didn&#39;t require any initial guess regarding the limit cycle or its period, but only a state space box that may contain attractors. Attractors.jl is extremely robust w.r.t. to its input parameters: the state space box can be arbitrarily large, as long as it is large enough. Similarly, all meta parameters of <code>AttractorsViaRecurrences</code> only need to be large enough; the larger, the more accurate the result. These algorithms are also robust in the sense of working well for many different types of dynamical systems, including discrete ones, see (<a href="../references/#Datseris2022">Datseris and Wagemakers, 2022</a>) for a demonstration. And finally, Attractors.jl estimates a more general nonlocal measure of stability, in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable, however the other way around isn&#39;t guaranteed. The global continuation of Attractors.jl continues the whole of a multistable state space across an arbitrary parameter curve. It finds all attractors that exist at each parameter combination and matches them to previous ones to establish continuity. It is completely fine for some attractors to stop existing during the global continuation.</p><p>Local continuation tracks a single and specific fixed point or limit cycle within a specified parameter range. The continuation will stop if the object stops existing all-together. But the local continuation can continue to track the object if it becomes unstable. Local continuation also automatically detects and labels local bifurcations. In our experience having the local bifurcations is always useful. Now, whether the unstable branches of a limit cycle are useful or not, depends on the research question and whether the analysis is done for some sort of real world understanding (unstable limit cycles / fixed points don&#39;t actually exist in the real world). Beyond this however, BifurcationKit.jl is also optimised for PDE systems, while Attractors.jl isn&#39;t.</p><p>To be transparent, the biggest downside of local continuation software (and not a particular downside of BifurcationKit.jl specifically), is that it can take <strong>a lot of effort</strong> or <strong>a lot of expertise</strong> to make them work. At least, a lot of effort compared with the effort it took to make the Attractors.jl version work, which was simply &quot;increase the recurrences threshold&quot;, which is standard practice when dealing with chaotic systems (<a href="../references/#Datseris2022">Datseris and Wagemakers, 2022</a>). For example, any other of the periodic orbit algorithms of BifurcationKit.jl (such as shooting or trapezoid) fails unless its parameters are adjusted. Using alternative specifications for the Jacobian or the linear solving algorithm can also lead to failure. Using an incorrect initial period guess can also lead to failure. We imagine that this sensitivity would apply also to some other of the several meta-parameters that enter a traditional continuation routine, for example the thresholds and accuracy parameters related to Newton convergence, but we didn&#39;t check further. This is exactly what we were alluding to in the comparison we did in (<a href="../references/#Datseris2023">Datseris <em>et al.</em>, 2023</a>), that traditional local continuation &quot;requires expertise and constant interventions&quot;. See (<a href="../references/#Datseris2023">Datseris <em>et al.</em>, 2023</a>) for a more thorough comparison (that was based on and older and less powerful version of Attractors.jl).</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../examples/">« Examples for Attractors.jl</a><a class="docs-footer-nextpage" href="../references/">References »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Thursday 27 November 2025 13:30">Thursday 27 November 2025</span>. Using Julia version 1.11.7.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+    attractors_cont, A -&gt; minimum(A[:, 1]), prange,
+)</code></pre><img src="36a40a59.png" alt="Example block output"/><p>This code takes about 15 seconds to run. This number however is for 1000 initial conditions, not one (i.e., the one branch generated during the traditional continuation).</p><h2 id="Discussion-and-comparison"><a class="docs-heading-anchor" href="#Discussion-and-comparison">Discussion and comparison</a><a id="Discussion-and-comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Discussion-and-comparison" title="Permalink"></a></h2><p>Attractors.jl found not only a single limit cycle, but also all system attractors, including chaotic or quasiperiodic ones. It didn&#39;t require any initial guess regarding the limit cycle or its period, but only a state space box that may contain attractors. Attractors.jl is extremely robust w.r.t. to its input parameters: the state space box can be arbitrarily large, as long as it is large enough. Similarly, all meta parameters of <code>AttractorsViaRecurrences</code> only need to be large enough; the larger, the more accurate the result. These algorithms are also robust in the sense of working well for many different types of dynamical systems, including discrete ones, see (<a href="../references/#Datseris2022">Datseris and Wagemakers, 2022</a>) for a demonstration. And finally, Attractors.jl estimates a more general nonlocal measure of stability, in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable, however the other way around isn&#39;t guaranteed. The global continuation of Attractors.jl continues the whole of a multistable state space across an arbitrary parameter curve. It finds all attractors that exist at each parameter combination and matches them to previous ones to establish continuity. It is completely fine for some attractors to stop existing during the global continuation.</p><p>Local continuation tracks a single and specific fixed point or limit cycle within a specified parameter range. The continuation will stop if the object stops existing all-together. But the local continuation can continue to track the object if it becomes unstable. Local continuation also automatically detects and labels local bifurcations. In our experience having the local bifurcations is always useful. Now, whether the unstable branches of a limit cycle are useful or not, depends on the research question and whether the analysis is done for some sort of real world understanding (unstable limit cycles / fixed points don&#39;t actually exist in the real world). Beyond this however, BifurcationKit.jl is also optimised for PDE systems, while Attractors.jl isn&#39;t.</p><p>To be transparent, the biggest downside of local continuation software (and not a particular downside of BifurcationKit.jl specifically), is that it can take <strong>a lot of effort</strong> or <strong>a lot of expertise</strong> to make them work. At least, a lot of effort compared with the effort it took to make the Attractors.jl version work, which was simply &quot;increase the recurrences threshold&quot;, which is standard practice when dealing with chaotic systems (<a href="../references/#Datseris2022">Datseris and Wagemakers, 2022</a>). For example, any other of the periodic orbit algorithms of BifurcationKit.jl (such as shooting or trapezoid) fails unless its parameters are adjusted. Using alternative specifications for the Jacobian or the linear solving algorithm can also lead to failure. Using an incorrect initial period guess can also lead to failure. We imagine that this sensitivity would apply also to some other of the several meta-parameters that enter a traditional continuation routine, for example the thresholds and accuracy parameters related to Newton convergence, but we didn&#39;t check further. This is exactly what we were alluding to in the comparison we did in (<a href="../references/#Datseris2023">Datseris <em>et al.</em>, 2023</a>), that traditional local continuation &quot;requires expertise and constant interventions&quot;. See (<a href="../references/#Datseris2023">Datseris <em>et al.</em>, 2023</a>) for a more thorough comparison (that was based on and older and less powerful version of Attractors.jl).</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../examples/">« Examples for Attractors.jl</a><a class="docs-footer-nextpage" href="../references/">References »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Thursday 29 January 2026 23:19">Thursday 29 January 2026</span>. Using Julia version 1.11.8.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
