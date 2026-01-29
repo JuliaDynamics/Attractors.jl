@@ -1,11 +1,11 @@
 using Neighborhood
-export BasinsOfAttraction, 
-    ArrayBasinsOfAttraction, 
+export BasinsOfAttraction,
+    ArrayBasinsOfAttraction,
     SampledBasinsOfAttraction,
     extract_basins,
     extract_basins,
     extract_domain
-    
+
 #########################################################################################
 # Basins of Attraction structure definition
 #########################################################################################
@@ -46,19 +46,19 @@ length `D`. The `grid` represents the spatial domain, and can be anything given 
 as a grid, i.e., a tuple of ranges or a `Grid` type.
 
 """
-struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID,D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}} <: BasinsOfAttraction{ID}
-    basins::B 
+struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}} <: BasinsOfAttraction{ID}
+    basins::B
     attractors::Dict{AK, S}
     grid::G
 
-    function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid::G) where {ID, D, B <: AbstractArray{ID,D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}}
+    function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid::G) where {ID, D, B <: AbstractArray{ID, D}, T, V, G <: Grid, AK, S <: StateSpaceSet{D, T, V}}
         # Dimensionality checks
         length(grid.grid) != ndims(basins) && error("The basins and the grid must have the same number of dimensions")
-        # Attractor state space sets have the same type so same dimensions, can compare grid with any of them 
-        if !isempty(attractors) # 
+        # Attractor state space sets have the same type so same dimensions, can compare grid with any of them
+        if !isempty(attractors) #
             length(grid.grid) != length(valtype(collect(values(attractors))[1])) && error("The attractor points and the grid must have the same number of dimensions")
         end
-        new{ID,D,B,T,V,G,AK,S}(basins, attractors, grid)
+        return new{ID, D, B, T, V, G, AK, S}(basins, attractors, grid)
     end
 end
 # The definition of other constructors can be found in `basins/basins_utilities.jl`.
@@ -85,20 +85,20 @@ struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSp
     sampled_points::S
     search_struct::ss
 
-    function SampledBasinsOfAttraction(basins::Vector{ID}, attractors::Dict{AK, S}, sampled_points::S; tree = KDTree, metric = Euclidean(), ss_kwargs...) where 
-                    {ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+    function SampledBasinsOfAttraction(basins::Vector{ID}, attractors::Dict{AK, S}, sampled_points::S; tree = KDTree, metric = Euclidean(), ss_kwargs...) where
+        {ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
         # Dimensionality checks
         length(basins) != sampled_points && error("The basins and the sampled points must have equal length")
         search_struct = searchstructure(tree, BoA.sampled_points, metric, ss_kwargs...)
-        new{ID,D,T,V,AK,S,typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
+        return new{ID, D, T, V, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
     end
 end
 # The definition of other constructors can be found in `basins/basins_utilities.jl`.
 
 #########################################################################################
 # Basins of Attraction Convenience functions
-######################################################################################### 
-Base.iterate(BoA::BasinsOfAttraction, state=1) = state == 1 ? (extract_basins(BoA), 2) : state == 2 ? (extract_attractors(BoA), 3) : nothing
+#########################################################################################
+Base.iterate(BoA::BasinsOfAttraction, state = 1) = state == 1 ? (extract_basins(BoA), 2) : state == 2 ? (extract_attractors(BoA), 3) : nothing
 
 """
     extract_basins(BoA::BasinsOfAttraction) → basins
@@ -136,7 +136,7 @@ function Base.show(io::IO, BoA::ArrayBasinsOfAttraction)
     println(io, rpad(" grid: ", ps), extract_domain(BoA))
     attstrings = split(sprint(show, MIME"text/plain"(), extract_attractors(BoA)), '\n')
     println(io, rpad(" attractors: ", ps), attstrings[1])
-    for j in 2:size(attstrings,1)
+    for j in 2:size(attstrings, 1)
         println(io, rpad(" ", ps), attstrings[j])
     end
     return
@@ -150,7 +150,7 @@ function Base.show(io::IO, BoA::SampledBasinsOfAttraction)
     println(io, rpad(" basin length: ", ps), length(BoA))
     attstrings = split(sprint(show, MIME"text/plain"(), extract_attractors(BoA)), '\n')
     println(io, rpad(" attractors: ", ps), attstrings[1])
-    for j in 2:size(attstrings,1)
+    for j in 2:size(attstrings, 1)
         println(io, rpad(" ", ps), attstrings[j])
     end
     return

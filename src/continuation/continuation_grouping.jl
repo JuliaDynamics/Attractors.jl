@@ -2,7 +2,7 @@ export FeaturizeGroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct FeaturizeGroupAcrossParameter{A<:AttractorsViaFeaturizing, E} <: GlobalContinuationAlgorithm
+struct FeaturizeGroupAcrossParameter{A <: AttractorsViaFeaturizing, E} <: GlobalContinuationAlgorithm
     mapper::A
     info_extraction::E
     par_weight::Float64
@@ -73,17 +73,18 @@ function global_continuation(
         labels = group_features(features, mapper.group_config)
     end
     fractions_cont, attractors_cont =
-    label_fractions_across_parameter(labels, 1features, n, spp, info_extraction)
+        label_fractions_across_parameter(labels, 1features, n, spp, info_extraction)
     return fractions_cont, attractors_cont
 end
 
 function _get_features_pcurve(mapper::AttractorsViaFeaturizing, ics, n, spp, pcurve, show_progress)
-    progress = ProgressMeter.Progress(n;
-        desc="Generating features", enabled=show_progress, offset = 2,
+    progress = ProgressMeter.Progress(
+        n;
+        desc = "Generating features", enabled = show_progress, offset = 2,
     )
     # Extract the first possible feature to initialize the features container
     feature = extract_features(mapper, ics; N = 1)
-    features = Vector{typeof(feature[1])}(undef, n*spp)
+    features = Vector{typeof(feature[1])}(undef, n * spp)
     # Collect features
     for (i, p) in enumerate(pcurve)
         set_parameters!(mapper.ds, p)
@@ -93,7 +94,7 @@ function _get_features_pcurve(mapper::AttractorsViaFeaturizing, ics, n, spp, pcu
             u0s = ics
         end
         current_features = extract_features(mapper, u0s; show_progress, N = spp)
-        features[((i - 1)*spp + 1):i*spp] .= current_features
+        features[((i - 1) * spp + 1):(i * spp)] .= current_features
         ProgressMeter.next!(progress)
     end
     return features
@@ -108,15 +109,15 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
         # Here we know which indices correspond to which parameter value
         # because they are sequentially increased every `spp`
         # (steps per parameter)
-        current_labels = view(labels, ((i - 1)*spp + 1):i*spp)
-        current_features = view(features, ((i - 1)*spp + 1):i*spp)
+        current_labels = view(labels, ((i - 1) * spp + 1):(i * spp))
+        current_features = view(features, ((i - 1) * spp + 1):(i * spp))
         current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_cont[i] = basins_fractions(current_labels, current_ids)
         attractors_cont[i] = Dict(
             id => info_extraction(
-                view(current_features, findall(isequal(id), current_labels))
-            ) for id in current_ids
+                    view(current_features, findall(isequal(id), current_labels))
+                ) for id in current_ids
         )
     end
     return fractions_cont, attractors_cont

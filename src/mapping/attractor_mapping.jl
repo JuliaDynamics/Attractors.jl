@@ -121,18 +121,20 @@ See also [`convergence_and_basins_fractions`](@ref).
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
-function basins_fractions(mapper::AttractorMapper, ics::ValidICS;
+function basins_fractions(
+        mapper::AttractorMapper, ics::ValidICS;
         show_progress = true, N = 1000, additional_fs::Dict = Dict(),
     )
     used_container = ics isa AbstractVector
     N = used_container ? length(ics) : N
-    progress = ProgressMeter.Progress(N;
-        desc="Mapping initial conditions to attractors:", enabled = show_progress
+    progress = ProgressMeter.Progress(
+        N;
+        desc = "Mapping initial conditions to attractors:", enabled = show_progress
     )
     fs = Dict{Int, Int}()
     used_container && (labels = Vector{Int}(undef, N))
 
-    for i ∈ 1:N
+    for i in 1:N
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
@@ -143,7 +145,7 @@ function basins_fractions(mapper::AttractorMapper, ics::ValidICS;
     additive_dict_merge!(fs, additional_fs)
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
-    ffs = Dict(k => v/N for (k, v) in fs)
+    ffs = Dict(k => v / N for (k, v) in fs)
     if used_container
         return ffs, labels
     else
@@ -191,13 +193,12 @@ be used instead of [`basins_fractions`](@ref).
 function convergence_time end
 
 
-
 #########################################################################################
 # Includes
 #########################################################################################
-# Instantiate Grid type so that BasinsOfAttraction subtype ArrayBasinsOfAttraction 
+# Instantiate Grid type so that BasinsOfAttraction subtype ArrayBasinsOfAttraction
 # may be loaded which allows attractor_mapping_recurrences.jl to be loaded
-abstract type Grid end 
+abstract type Grid end
 
 include("../basins/basins_types.jl")
 include("attractor_mapping_proximity.jl")

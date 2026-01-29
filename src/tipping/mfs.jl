@@ -58,11 +58,12 @@ for a perturbation that simply brings us out of the basin, we look for the small
 perturbation that brings us into specified basin(s). This is enabled via the keyword
 `target_id`.
 """
-function minimal_critical_shock(mapper::AttractorMapper, u0, search_area, algorithm;
+function minimal_critical_shock(
+        mapper::AttractorMapper, u0, search_area, algorithm;
         metric = LinearAlgebra.norm, target_id = nothing
     )
     dim = length(u0)
-    if typeof(search_area) <: Tuple{<:Real,<:Real}
+    if typeof(search_area) <: Tuple{<:Real, <:Real}
         search_area = [search_area for _ in 1:dim]
     elseif length(search_area) != dim
         error("Input search area does not match the dimension of the system")
@@ -179,12 +180,13 @@ If perturbation with the same basin of attraction is found, it updates the best 
 so far and reduces the radius of the sphere. It repeats this process total_iterations times
 and returns the best perturbation found.
 """
-function mfs_brute_force(mapper::AttractorMapper, u0,
+function mfs_brute_force(
+        mapper::AttractorMapper, u0,
         best_shock, best_dist, dim, idchecker, metric,
         total_iterations, sphere_decrease_factor, seed
     )
 
-    temp_dist = best_dist*sphere_decrease_factor
+    temp_dist = best_dist * sphere_decrease_factor
     region = HSphereSurface(temp_dist, dim)
     generator, = statespace_sampler(region, seed)
     i = 0
@@ -199,7 +201,7 @@ function mfs_brute_force(mapper::AttractorMapper, u0,
             best_shock .= perturbation
             best_dist = temp_dist
             # update radius
-            temp_dist = temp_dist*sphere_decrease_factor
+            temp_dist = temp_dist * sphere_decrease_factor
             region = HSphereSurface(temp_dist, dim)
             generator, = statespace_sampler(region)
         end
@@ -273,7 +275,8 @@ function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     end
 
     if isnothing(algorithm.random_algo) && isnothing(algorithm.guess)
-        result = bboptimize(objective_function;
+        result = bboptimize(
+            objective_function;
             MaxSteps = algorithm.max_steps, SearchRange = search_area,
             NumDimensions = dim, TraceMode
         )
@@ -283,7 +286,8 @@ function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, m
         else
             guess = minimal_critical_shock(mapper, u0, search_area, algorithm.random_algo)
         end
-        result = bboptimize(objective_function, guess;
+        result = bboptimize(
+            objective_function, guess;
             MaxSteps = algorithm.max_steps,
             SearchRange = search_area,
             NumDimensions = dim, TraceMode,

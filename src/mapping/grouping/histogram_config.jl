@@ -12,7 +12,7 @@ same label. The `binning` is an instance of [`FixedRectangularBinning`](@ref)
 from ComplexityMeasures.jl. (the reason to not allow `RectangularBinning` is because
 during continuation we need to ensure that bins remain identical).
 """
-struct GroupViaHistogram{E<:RectangularBinEncoding} <: GroupingConfig
+struct GroupViaHistogram{E <: RectangularBinEncoding} <: GroupingConfig
     encoding::E
 end
 

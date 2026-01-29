@@ -46,6 +46,7 @@ function overwrite_dict!(old::Dict, new::Dict)
     for (k, v) in new
         old[k] = v
     end
+    return
 end
 
 """

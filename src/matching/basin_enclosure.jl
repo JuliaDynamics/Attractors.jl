@@ -70,7 +70,8 @@ function matching_map(
         e = matcher.ε
     end
     set_parameters!(ds, p)
-    proximity = AttractorsViaProximity(ds, current_attractors, e;
+    proximity = AttractorsViaProximity(
+        ds, current_attractors, e;
         horizon_limit = Inf, Ttr = 0, consecutive_lost_steps = matcher.consecutive_lost_steps
     )
     # we start building the "flow" map mapping previous attractors
@@ -109,7 +110,7 @@ function matching_map(
             # this matcher has only one entry, so we use it to match
             # (we don't care what happens to the rest of the old_IDs, as the `rmap`
             # only cares about what adjustments need to happen to the new_IDs)
-            new_ID, old_ID = only(matched_rmap)# our main `rmap`
+            new_ID, old_ID = only(matched_rmap) # our main `rmap`
             rmap[new_ID] = old_ID
         end
     end
@@ -120,25 +121,29 @@ function ε_from_centroids(attractors::AbstractDict)
     if length(attractors) == 1 # `attractors` has only 1 attractor
         attractor = first(attractors)[2] # get the single attractor
         mini, maxi = minmaxima(attractor)
-        ε = sqrt(sum(abs, maxi .- mini))/10
+        ε = sqrt(sum(abs, maxi .- mini)) / 10
         if ε == 0
-            throw(ArgumentError("""
-            Computed `ε = 0` in automatic estimation for `AttractorsViaFeaturizing`, probably because there is
-            only a single attractor that also is a single point. Please provide `ε` manually.
-            """))
+            throw(
+                ArgumentError(
+                    """
+                    Computed `ε = 0` in automatic estimation for `AttractorsViaFeaturizing`, probably because there is
+                    only a single attractor that also is a single point. Please provide `ε` manually.
+                    """
+                )
+            )
         end
         return ε
     end
     # otherwise compute cross-distances
     distances = setsofsets_distances(attractors, attractors, Centroid())
-    alldists = sort!(vcat([collect(values(d)) for (k,d) in distances]...))
+    alldists = sort!(vcat([collect(values(d)) for (k, d) in distances]...))
     filter!(!iszero, alldists)
-    return minimum(alldists)/4
+    return minimum(alldists) / 4
 end
 
 # group flows so that all old IDs that go to same new ID are in one vector
 # i.e., new id => [prev ids that flowed to new id]
 function _grouped_flows(flows, allnewids) # separated into
-    grouped = Dict(newid=>[k for (k,v) in flows if v==newid] for newid in allnewids)
+    grouped = Dict(newid => [k for (k, v) in flows if v == newid] for newid in allnewids)
     return grouped
 end

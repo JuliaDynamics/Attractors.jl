@@ -1,12 +1,12 @@
 export stability_measures_along_continuation
 
 function global_continuation(
-    acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
+        acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
-        length(pcurve); desc = "Continuing attractors and stability:", enabled=show_progress
+        length(pcurve); desc = "Continuing attractors and stability:", enabled = show_progress
     )
     mapper = acam.mapper
     reset_mapper!(mapper)
@@ -32,11 +32,13 @@ function global_continuation(
         reset_mapper!(mapper)
         if typeof(mapper.mapper) <: AttractorsViaRecurrences
             fs = if allows_mapper_u0(mapper)
-                seed_attractors_to_fractions_individual(mapper,
+                seed_attractors_to_fractions_individual(
+                    mapper,
                     prev_attractors, ics, N, acam.seeding
                 )
             else
-                seed_attractors_to_fractions_grouped(mapper,
+                seed_attractors_to_fractions_grouped(
+                    mapper,
                     prev_attractors, ics, N, acam.seeding
                 )
             end
@@ -60,7 +62,7 @@ function global_continuation(
     # This is the third difference in global continuation
     for i in 2:length(pcurve)
         for dict in values(measures_cont[i])
-            swap_dict_keys!(dict, rmaps[i-1])
+            swap_dict_keys!(dict, rmaps[i - 1])
         end
     end
     transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
@@ -77,7 +79,6 @@ function global_continuation(
 
     return transposed, attractors_cont
 end
-
 
 
 # make sure to allow the possiblity that the proximity options can also be
@@ -123,10 +124,10 @@ function stability_measures_along_continuation(
         samples_per_parameter = 1000,
         distance = Centroid(),
         proximity_mapper_options = NamedTuple(),
-        show_progress=true
+        show_progress = true
     )
     progress = ProgressMeter.Progress(
-        length(pcurve); desc = "Continuing stability measures:", enabled=show_progress
+        length(pcurve); desc = "Continuing stability measures:", enabled = show_progress
     )
     measures_cont = []
     for (i, p) in enumerate(pcurve)
@@ -163,11 +164,11 @@ function stability_measures_along_continuation(
 
         accumulator = StabilityMeasuresAccumulator(
             AttractorsViaProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
-            weighting_distribution=wd, finite_time=ft,
-            distance=d
+            weighting_distribution = wd, finite_time = ft,
+            distance = d
         )
         N = ics isa Function ? samples_per_parameter : length(ics)
-        for i ∈ 1:N
+        for i in 1:N
             ic = _get_ic(ics, i)
             id = accumulator(ic) # accumulate stability measures for given i.c.
         end

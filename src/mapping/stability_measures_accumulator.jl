@@ -133,7 +133,7 @@ The word "distance" here refers to the distance established by the `distance` ke
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, V<:AbstractVector, F, M, W} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int}
@@ -143,8 +143,9 @@ mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, V<:AbstractVect
     distance::M
 end
 
-function StabilityMeasuresAccumulator(mapper::AttractorMapper;
-        finite_time=1.0, weighting_distribution=EverywhereUniform(), distance=Centroid()
+function StabilityMeasuresAccumulator(
+        mapper::AttractorMapper;
+        finite_time = 1.0, weighting_distribution = EverywhereUniform(), distance = Centroid()
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
@@ -153,7 +154,7 @@ function StabilityMeasuresAccumulator(mapper::AttractorMapper;
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    StabilityMeasuresAccumulator{AM, V, F, M, W}(
+    return StabilityMeasuresAccumulator{AM, V, F, M, W}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
@@ -218,28 +219,28 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     for i in 1:length(u0s)
         for j in js
             if ids[j] == -1
-              d[i, j] = Inf
+                d[i, j] = Inf
             else
-              d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]], accumulator.distance)
+                d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]], accumulator.distance)
             end
         end
     end
 
     if (isa(accumulator.mapper, AttractorsViaProximity) && accumulator.mapper.ε != nothing)
-      ε = accumulator.mapper.ε
+        ε = accumulator.mapper.ε
     else
-      ε = 0.0
+        ε = 0.0
     end
 
     cps = zeros(length(cts))
     for i in 1:length(cts)
-      j = ids_to_js[bs[i]]
-      if d[i, j] > ε
-          cps[i] = cts[i] / d[i, j]
-      else
-          cts[i] = 0.0
-          cps[i] = 0.0
-      end
+        j = ids_to_js[bs[i]]
+        if d[i, j] > ε
+            cps[i] = cts[i] / d[i, j]
+        else
+            cts[i] = 0.0
+            cps[i] = 0.0
+        end
     end
 
     basin_frac = Dict(id => 0.0 for id in ids)
@@ -257,37 +258,37 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
 
     for i in 1:length(u0s)
-      id = bs[i]
-      j = ids_to_js[id]
-      w = ws[i]
-      ct = cts[i]
-      cp = cps[i]
+        id = bs[i]
+        j = ids_to_js[id]
+        w = ws[i]
+        ct = cts[i]
+        cp = cps[i]
 
-      basin_frac[id] += 1 / N
-      basin_stab[id] += w / N
-      if ct <= accumulator.finite_time
-          finite_time_basin_stab[id] += w / N
-      end
+        basin_frac[id] += 1 / N
+        basin_stab[id] += w / N
+        if ct <= accumulator.finite_time
+            finite_time_basin_stab[id] += w / N
+        end
 
-      mean_convergence_time[id] += w * ct / N
+        mean_convergence_time[id] += w * ct / N
 
-      mean_convergence_pace[id] += w * cp / N
+        mean_convergence_pace[id] += w * cp / N
 
-      if w > 0.0
-        maximal_convergence_time[id] = max(
-            maximal_convergence_time[id], ct
-        )
+        if w > 0.0
+            maximal_convergence_time[id] = max(
+                maximal_convergence_time[id], ct
+            )
 
-        maximal_noncritical_shock_magnitude[id] = max(
-            maximal_noncritical_shock_magnitude[id], d[i, j]
-        )
+            maximal_noncritical_shock_magnitude[id] = max(
+                maximal_noncritical_shock_magnitude[id], d[i, j]
+            )
 
-        maximal_convergence_pace[id] = max(
-            maximal_convergence_pace[id], cp
-        )
-      end
+            maximal_convergence_pace[id] = max(
+                maximal_convergence_pace[id], cp
+            )
+        end
 
-      mean_noncritical_shock_magnitude[id] += w * d[i, j] / N
+        mean_noncritical_shock_magnitude[id] += w * d[i, j] / N
     end
 
     normalization = sum(values(basin_stab))
@@ -310,11 +311,13 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     minimal_critical_shock_magnitude = Dict(
         id => minimum(
-            (d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
-            if accumulator.bs[i] != id && ws[i] > 0);
-            init = Inf,
-        )
-        for id in ids
+                (
+                    d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
+                    if accumulator.bs[i] != id && ws[i] > 0
+                );
+                init = Inf,
+            )
+            for id in ids
     )
     minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
 
@@ -331,12 +334,12 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
             end
             # Get the Jacobian matrix at the fixed point
             if isinplace(ds)
-              # For in-place systems, pre-allocate J and then compute it
-              J = Array{Float64}(undef, length(A[1]), length(A[1]))
-              jac(J, Array(A[1]), current_parameters(ds), 0)
+                # For in-place systems, pre-allocate J and then compute it
+                J = Array{Float64}(undef, length(A[1]), length(A[1]))
+                jac(J, Array(A[1]), current_parameters(ds), 0)
             else
-              # For out-of-place systems, compute J directly
-              J = jac(Array(A[1]), current_parameters(ds), 0)
+                # For out-of-place systems, compute J directly
+                J = jac(Array(A[1]), current_parameters(ds), 0)
             end
 
             λ = min(0, maximum(real.(eigvals(J))))
@@ -348,14 +351,14 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
                 maximal_amplification[id] = Inf
                 maximal_amplification_time[id] = Inf
             else
-                f(t) = -opnorm(exp(t*J))
-                T = range(0.0, 10*characteristic_return_time[id], length=20001)
+                f(t) = -opnorm(exp(t * J))
+                T = range(0.0, 10 * characteristic_return_time[id], length = 20001)
                 step_length = T[2] - T[1]
                 t0 = T[argmin(f.(T))]
-                if t0 == 10*characteristic_return_time[id] # maximum is at the end
-                  res = Optim.optimize(f, t0, t0 + 100*characteristic_return_time[id], Brent())
+                if t0 == 10 * characteristic_return_time[id] # maximum is at the end
+                    res = Optim.optimize(f, t0, t0 + 100 * characteristic_return_time[id], Brent())
                 else
-                  res = Optim.optimize(f, max(0.0, t0-step_length), t0+step_length, Brent())
+                    res = Optim.optimize(f, max(0.0, t0 - step_length), t0 + step_length, Brent())
                 end
                 maximal_amplification[id] = (-1) * Optim.minimum(res)
                 maximal_amplification_time[id] = Optim.minimizer(res)[1]
@@ -384,12 +387,18 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 end
 
 # Weighted median: smallest x with cumulative weight ≥ 0.5.
-function weighted_median(vals::AbstractVector{<:Real},
-                         w::AbstractVector{<:Real})
+function weighted_median(
+        vals::AbstractVector{<:Real},
+        w::AbstractVector{<:Real}
+    )
     @assert length(vals) == length(w)
-    if isempty(vals); return NaN; end
+    if isempty(vals)
+        return NaN
+    end
     s = sum(w)
-    if s == 0.0; return NaN; end
+    if s == 0.0
+        return NaN
+    end
     wn = w ./ s
     p = sortperm(vals)
     cum = 0.0

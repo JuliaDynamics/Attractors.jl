@@ -50,9 +50,13 @@ Map the given feature vector to its group label (integer).
 This is an internal function. It is strongly recommended that `feature isa SVector`.
 """
 function feature_to_group(feature, group_config::GroupingConfig)
-   throw(ArgumentError("""
-   `feature_to_group` not implemented for config $(nameof(typeof(group_config))).
-   """))
+    throw(
+        ArgumentError(
+            """
+            `feature_to_group` not implemented for config $(nameof(typeof(group_config))).
+            """
+        )
+    )
 end
 
 include("cluster_config.jl")

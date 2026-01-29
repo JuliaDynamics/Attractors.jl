@@ -41,7 +41,7 @@ an error is thrown.
 The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
 As such, the convergence time is always a float type even for discrete time systems.
 """
-struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet, T} <: AttractorMapper
+struct AttractorsViaProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpaceSet, N, K, M, SS <: AbstractStateSpaceSet, T} <: AttractorMapper
     ds::DS
     attractors::Dict{AK, SSS}
     ε::Float64
@@ -60,10 +60,11 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
 end
 
 AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
-AttractorsViaProximity(ds, attractors; ε = ε, kw...)
+    AttractorsViaProximity(ds, attractors; ε = ε, kw...)
 
-function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
-        Δt=1, Ttr=0, consecutive_lost_steps=10000, horizon_limit=1e3, verbose = false,
+function AttractorsViaProximity(
+        ds::DynamicalSystem, attractors::Dict;
+        Δt = 1, Ttr = 0, consecutive_lost_steps = 10000, horizon_limit = 1.0e3, verbose = false,
         distance = StrictlyMinimumDistance(), stop_at_Δt = false, ε = nothing,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
@@ -122,16 +123,20 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
             end
         end
         verbose && @info("Minimum distance between attractors computed: $(minε)")
-        ε = minε/10
+        ε = minε / 10
     else
         attractor = first(attractors)[2] # get the single attractor
         mini, maxi = minmaxima(attractor)
-        ε = sqrt(sum(abs, maxi .- mini))/10
+        ε = sqrt(sum(abs, maxi .- mini)) / 10
         if ε == 0
-            throw(ArgumentError("""
-            Computed `ε = 0` in automatic estimation, probably because there is
-            a single attractor that also is a single point. Please provide `ε` manually.
-            """))
+            throw(
+                ArgumentError(
+                    """
+                    Computed `ε = 0` in automatic estimation, probably because there is
+                    a single attractor that also is a single point. Please provide `ε` manually.
+                    """
+                )
+            )
         end
     end
     return ε

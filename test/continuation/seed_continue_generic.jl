@@ -26,9 +26,9 @@ using Random
     end
 
     r = 1.0; q = 0.5
-    ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r, q])
-    yg = xg = range(-10., 10, length = 100)
-    grid = (xg,yg)
+    ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r, q])
+    yg = xg = range(-10.0, 10, length = 100)
+    grid = (xg, yg)
     mapper1 = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
 
     sampler, = statespace_sampler(grid, 1234)
@@ -108,7 +108,7 @@ end
     end
 
     rs = [0, 2.0, 4.0]
-    ds = DeterministicIteratedMap(dumb_map2, [0., 0.], [1.0])
+    ds = DeterministicIteratedMap(dumb_map2, [0.0, 0.0], [1.0])
     N = 5
 
     function make_ics(parameters, n)

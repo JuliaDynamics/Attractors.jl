@@ -3,7 +3,7 @@ export ics_from_grid, map_to_basin
 
 #########################################################################################
 # Basins of Attraction Constructors - docs in basin_types.jl
-######################################################################################### 
+#########################################################################################
 # ArrayBasinsOfAttraction with grid as tuple
 function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, AK, S <: AbstractStateSpaceSet}
     size(basins) != length.(grid_tup) && error("The size of the grid must be equal to the size of the basins array")
@@ -14,20 +14,24 @@ function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::T
     else
         error("Incorrect grid specification!")
     end
-    ArrayBasinsOfAttraction(basins, attractors, grid)
+    return ArrayBasinsOfAttraction(basins, attractors, grid)
 end
 # Sampled Basin of Attraction with sampled points as a vector of vectors
-function SampledBasinsOfAttraction(points_ids::Vector{ID}, attractors::Dict{AK, S}, sampled_points::Vector{U};
-            tree = KDTree, metric = Euclidean(), ss_kwargs...) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+function SampledBasinsOfAttraction(
+        points_ids::Vector{ID}, attractors::Dict{AK, S}, sampled_points::Vector{U};
+        tree = KDTree, metric = Euclidean(), ss_kwargs...
+    ) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
     sampled_set = StateSpaceSet(sampled_points)
-    eltype(S) != V && error("The attractor points and sampled points must be represented " * 
-    "by the same type of vector, that is they must have the same element type and length")
-    SampledBasinsOfAttraction(points_ids, attractors, sampled_set; tree = tree, metric = metric, ss_kwargs=ss_kwargs)
+    eltype(S) != V && error(
+        "The attractor points and sampled points must be represented " *
+            "by the same type of vector, that is they must have the same element type and length"
+    )
+    return SampledBasinsOfAttraction(points_ids, attractors, sampled_set; tree = tree, metric = metric, ss_kwargs = ss_kwargs)
 end
 
 #########################################################################################
 # Other utilities
-######################################################################################### 
+#########################################################################################
 """
     basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → boa
 
@@ -84,7 +88,7 @@ Note that, as with the other `basins_of_attraction` function, the return can be 
 function basins_of_attraction(mapper::AttractorMapper, ics::ValidICS; show_progress = true, N = 1000)
     used_container = ics isa AbstractVector
     ics_vec = used_container ? ics : [ics() for _ in 1:N]
-    _, labels = basins_fractions(mapper, ics_vec, show_progress=show_progress)
+    _, labels = basins_fractions(mapper, ics_vec, show_progress = show_progress)
     attractors = extract_attractors(mapper)
     return SampledBasinsOfAttraction(labels, attractors, ics_vec)
 end
@@ -104,8 +108,8 @@ end
 
 # Type-stable generation of an initial condition given a grid array index
 @generated function generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
-    gens = [:(grid[$k][ind[$k]]) for k=1:B]
-    quote
+    gens = [:(grid[$k][ind[$k]]) for k in 1:B]
+    return quote
         Base.@_inline_meta
         @inbounds return SVector{$B, Float64}($(gens...))
     end
@@ -133,7 +137,7 @@ function basins_fractions(basins::AbstractArray, ids = unique(basins))
     N = length(basins)
     for ξ in ids
         B = count(isequal(ξ), basins)
-        fs[ξ] = B/N
+        fs[ξ] = B / N
     end
     return fs
 end
@@ -196,18 +200,20 @@ See also [`convergence_time`](@ref).
 
 - `show_progress = true`: show progress bar.
 """
-function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS;
+function convergence_and_basins_fractions(
+        mapper::AttractorMapper, ics::ValidICS;
         show_progress = true, N = 1000,
     )
     N = ics isa Function ? N : length(ics)
-    progress = ProgressMeter.Progress(N;
-        desc="Mapping initial conditions to attractors:", enabled = show_progress
+    progress = ProgressMeter.Progress(
+        N;
+        desc = "Mapping initial conditions to attractors:", enabled = show_progress
     )
     fs = Dict{Int, Int}()
     labels = Vector{Int}(undef, N)
     iterations = Vector{typeof(current_time(mapper.ds))}(undef, N)
 
-    for i ∈ 1:N
+    for i in 1:N
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress = false)
         fs[label] = get(fs, label, 0) + 1
@@ -216,7 +222,7 @@ function convergence_and_basins_fractions(mapper::AttractorMapper, ics::ValidICS
         show_progress && ProgressMeter.next!(progress)
     end
     # Transform count into fraction
-    ffs = Dict(k => v/N for (k, v) in fs)
+    ffs = Dict(k => v / N for (k, v) in fs)
     return ffs, labels, iterations
 end
 
@@ -240,7 +246,7 @@ end
 
 # Map point to index of the nearest member of the domain of the basin of attraction
 map_to_domain(BoA::ArrayBasinsOfAttraction, point) = basin_cell_index(point, BoA.grid) # Nearest grid cell
-function map_to_domain(BoA::SampledBasinsOfAttraction, point; tree = KDTree, metric = Euclidean(), ss_kwargs...) 
+function map_to_domain(BoA::SampledBasinsOfAttraction, point; tree = KDTree, metric = Euclidean(), ss_kwargs...)
     idx, _ = nn(BoA.search_struct, point, args...; kwargs...)
     return idx
 end

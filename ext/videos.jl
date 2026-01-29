@@ -1,5 +1,6 @@
 function Attractors.animate_attractors_continuation(
-    ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx; kw...)
+        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx; kw...
+    )
     pcurve = [[pidx => p] for p in prange]
     return animate_attractors_continuation(ds, attractors_cont, fractions_cont, pcurve; prange, kw...)
 end
@@ -29,8 +30,9 @@ function Attractors.animate_attractors_continuation(
     length(access) ≠ 2 && error("Need two indices to select two dimensions of `ds`.")
     K = length(ukeys)
     fig = Figure(; figure...)
-    ax = Axis(fig[1,:][1,1]; limits, axis...)
-    fracax = Axis(fig[1,:][1,2]; width = 50, limits = (0,1,0,1), ylabel = "fractions",
+    ax = Axis(fig[1, :][1, 1]; limits, axis...)
+    fracax = Axis(
+        fig[1, :][1, 2]; width = 50, limits = (0, 1, 0, 1), ylabel = "fractions",
         yaxisposition = :right, fracaxis...
     )
     hidedecorations!(fracax; label = false)
@@ -48,20 +50,21 @@ function Attractors.animate_attractors_continuation(
     # setup fractions axis
     heights = Observable(fill(0.1, K))
     barcolors = [colors[k] for k in ukeys]
-    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack=1:K, color = barcolors)
+    barplot!(fracax, fill(0.5, K), heights; width = 1, gap = 0, stack = 1:K, color = barcolors)
 
     # add additional attractor series plots if chosen
     vline_obs = Observable(prange[1])
     if !isnothing(a2rs)
         a2rs isa Vector || error("`a2rs` must be a `Vector`.")
         n = length(a2rs)
-        extra_axs = [Axis(fig[2,:][i, :]) for i in 1:n]
+        extra_axs = [Axis(fig[2, :][i, :]) for i in 1:n]
         extra_axs[1].title = "global continuation: features"
         linkxaxes!(extra_axs...)
         extra_axs[end].xlabel = string(parameter_name)
         rowsize!(fig.layout, 2, Relative(a2rs_ratio))
         for (j, (axa, a2r)) in enumerate(zip(extra_axs, a2rs))
-            plot_attractors_curves!(axa, attractors_cont, a2r, prange;
+            plot_attractors_curves!(
+                axa, attractors_cont, a2r, prange;
                 ukeys, colors, markers, add_legend = false, series_kwargs,
             )
             axa.ylabel = a2rs_ylabels[j]
@@ -70,8 +73,8 @@ function Attractors.animate_attractors_continuation(
             vlines!(axa, vline_obs; vline_kwargs...)
         end
         # layouting improvements
-        content(fig[1,:]).alignmode = Mixed(left = 0, right = 0)
-        content(fig[2,:]).alignmode = Mixed(left = 0, right = 0)
+        content(fig[1, :]).alignmode = Mixed(left = 0, right = 0)
+        content(fig[2, :]).alignmode = Mixed(left = 0, right = 0)
         Makie.update_state_before_display!(fig)
         yspace = maximum(tight_yticklabel_spacing!, extra_axs)
         for ax in extra_axs
@@ -83,7 +86,7 @@ function Attractors.animate_attractors_continuation(
     # okay, recording loop now...
     record(fig, savename, eachindex(attractors_cont); framerate) do i
         p = pcurve[i]
-        text = sprint(show, p; context=:compact => true)
+        text = sprint(show, p; context = :compact => true)
         ax.title = "global continuation: attractors\np: $text"
         attractors = attractors_cont[i]
         fractions = fractions_cont[i]
@@ -120,4 +123,3 @@ function auto_attractor_lims(attractors_cont, access)
     dy = ymax - ymin
     return (xmin - 0.1dx, xmax + 0.1dx, ymin - 0.1dy, ymax + 0.1dy)
 end
-
