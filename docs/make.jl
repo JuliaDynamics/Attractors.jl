@@ -46,10 +46,11 @@ using DocumenterCitations
 
 bib = CitationBibliography(
     joinpath(@__DIR__, "refs.bib");
-    style=:authoryear
+    style = :authoryear
 )
 
-build_docs_with_style(pages, Attractors, StateSpaceSets;
+build_docs_with_style(
+    pages, Attractors, StateSpaceSets;
     expandfirst = ["index.md"], bib, warnonly = [:doctest, :missing_docs, :cross_references],
-    htmlkw = (;size_threshold_ignore)
+    htmlkw = (; size_threshold_ignore)
 )

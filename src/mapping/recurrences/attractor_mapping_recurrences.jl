@@ -123,14 +123,15 @@ timer of the FSM.)
 A video illustrating how the algorithm works can be found in the online documentation,
 under the [recurrences animation](@ref recurrences_animation) page.
 """
-struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
+struct AttractorsViaRecurrences{DS <: DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS
     bsn_nfo::B
     grid::G
     kwargs::K
 end
 
-function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
+function AttractorsViaRecurrences(
+        ds::DynamicalSystem, grid;
         Dt = nothing, Δt = Dt, sparse = true,
         force_non_adaptive = false, stop_at_Δt = force_non_adaptive, kwargs...
     )
@@ -187,10 +188,8 @@ function convergence_time(m::AttractorsViaRecurrences)
         x = get(kw, :consecutive_attractor_steps, 2)
     end
     x = min(i, x) # it cannot be more than i!
-    return (i - x + 1)*m.bsn_nfo.Δt
+    return (i - x + 1) * m.bsn_nfo.Δt
 end
-
-
 
 
 """
@@ -206,11 +205,14 @@ The return has type [`ArrayBasinsOfAttraction`](@ref), but may be decomposed as 
 ensuring backwards compatibility with the previous return format.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    if mapper.bsn_nfo.BoA.basins isa SparseArray;
-        throw(ArgumentError("""
-            Sparse version of AttractorsViaRecurrences is incompatible with
-            `basins_of_attraction(mapper)`."""
-        ))
+    if mapper.bsn_nfo.BoA.basins isa SparseArray
+        throw(
+            ArgumentError(
+                """
+                Sparse version of AttractorsViaRecurrences is incompatible with
+                `basins_of_attraction(mapper)`."""
+            )
+        )
     end
 
     if (mapper.bsn_nfo.BoA.grid isa SubdivisionBasedGrid)
@@ -245,8 +247,10 @@ end
 # Definition of `BasinInfo` and initialization
 #####################################################################################
 
-mutable struct BasinsInfo{D, Δ, T, V, G<:Grid, B <: AbstractArray{Int,D},
-                                A <: ArrayBasinsOfAttraction{Int, D, B, T, V, G}}
+mutable struct BasinsInfo{
+        D, Δ, T, V, G <: Grid, B <: AbstractArray{Int, D},
+        A <: ArrayBasinsOfAttraction{Int, D, B, T, V, G},
+    }
     BoA::A # sparse or dense
     Δt::Δ
     state::Symbol
@@ -272,7 +276,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
     D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
-    if D ≠ G && (ds isa PoincareMap && G ∉ (D, D-1))
+    if D ≠ G && (ds isa PoincareMap && G ∉ (D, D - 1))
         error("Grid and dynamical system do not have the same dimension!")
     end
 
@@ -282,9 +286,9 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
         multiplier = 0
     end
     basins_array = if sparse
-        SparseArray{Int}(undef, (map(length, grid ).*(2^multiplier)))
+        SparseArray{Int}(undef, (map(length, grid) .* (2^multiplier)))
     else
-        zeros(Int, (map(length, grid).*(2^multiplier))...)
+        zeros(Int, (map(length, grid) .* (2^multiplier))...)
     end
     V = SVector{G, T}
     array_BoA = ArrayBasinsOfAttraction(basins_array, Dict{Int, StateSpaceSet{G, T, V}}(), grid_nfo)
@@ -292,7 +296,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
         array_BoA,
         Δt,
         :att_search,
-        2,4,0,1,0,0,
+        2, 4, 0, 1, 0, 0,
         Vector{CartesianIndex{G}}(),
         :search,
         stop_at_Δt,
@@ -344,7 +348,7 @@ function automatic_Δt_basins(ds, grid_nfo::Grid; N = 5000)
     end
 
     s = mean_cell_diagonal(grid_nfo)
-    Δt = 10*s*N/dudt
+    Δt = 10 * s * N / dudt
     return Δt
 end
 

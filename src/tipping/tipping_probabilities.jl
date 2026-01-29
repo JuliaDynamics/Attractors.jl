@@ -47,14 +47,14 @@ function tipping_probabilities(basins_before::AbstractArray, basins_after::Abstr
         for (j, ξ) in enumerate(aid)
             B_j = findall(isequal(ξ), basins_after)
             μ_overlap = length(B_i ∩ B_j)
-            P[i, j] = μ_overlap/μ_B_i
+            P[i, j] = μ_overlap / μ_B_i
         end
     end
     return P
 end
 
 function put_minus_1_at_end!(bid)
-    if -1 ∈ bid
+    return if -1 ∈ bid
         sort!(bid)
         popfirst!(bid)
         push!(bid, -1)
@@ -62,5 +62,7 @@ function put_minus_1_at_end!(bid)
 end
 
 
-tipping_probabilities(BoA_before::ArrayBasinsOfAttraction, 
-    BoA_after::ArrayBasinsOfAttraction) = tipping_probabilities(BoA_before.basins, BoA_after.basins)
+tipping_probabilities(
+    BoA_before::ArrayBasinsOfAttraction,
+    BoA_after::ArrayBasinsOfAttraction
+) = tipping_probabilities(BoA_before.basins, BoA_after.basins)

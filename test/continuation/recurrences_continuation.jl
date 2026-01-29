@@ -9,7 +9,7 @@ using Random
     # This is a fake bistable map that has two equilibrium points
     # for r > 0.5. It has predictable fractions.
     function dumb_map(dz, z, p, n)
-        x,y = z
+        x, y = z
         r = p[1]
 
         if r < 0.5
@@ -27,9 +27,9 @@ using Random
     end
 
     r = 1.0
-    ds = DeterministicIteratedMap(dumb_map, [0., 0.], [r])
-    yg = xg = range(-10., 10, length = 100)
-    grid = (xg,yg)
+    ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r])
+    yg = xg = range(-10.0, 10, length = 100)
+    grid = (xg, yg)
     mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
 
     sampler, = statespace_sampler(grid, 1234)
@@ -68,11 +68,11 @@ end
     # This is a fake multistable map helps at testing the grouping
     # capabilities. We know what it does analytically!
     function dumb_map(dz, z, p, n)
-        x,y = z
+        x, y = z
         r = p[1]
 
-        θ = mod(angle(x + im*y),2pi)
-        rr = abs(x+ im*y)
+        θ = mod(angle(x + im * y), 2pi)
+        rr = abs(x + im * y)
 
         # This map works as follows: for the parameter r< 0.5 there are
         # 8 attractors close to the origin (radius 0.1)
@@ -88,24 +88,24 @@ end
             end
         end
 
-        if 0 < θ ≤ π/4
-           x = rr*cos(π/8); y = rr*sin(π/8)
-        elseif π/4 < θ ≤ π/2
-            x = rr*cos(3π/8); y = rr*sin(3π/8)
-        elseif π/2 < θ ≤ 3π/4
-            x = rr*cos(5π/8); y = rr*sin(5π/8)
-        elseif 3π/4 < θ ≤ π
-            x = rr*cos(7π/8); y = rr*sin(7π/8)
-        elseif π < θ ≤ 5π/4
-            x = rr*cos(9π/8); y = rr*sin(9π/8)
-        elseif 5π/4 < θ ≤ 6π/4
-            x = rr*cos(11π/8); y = rr*sin(11π/8)
-        elseif 6π/4 < θ ≤ 7π/4
-            x = rr*cos(13π/8); y = rr*sin(13π/8)
-        elseif 7π/4 < θ ≤ 8π/4
-            x = rr*cos(15π/8); y = rr*sin(15π/8)
+        if 0 < θ ≤ π / 4
+            x = rr * cos(π / 8); y = rr * sin(π / 8)
+        elseif π / 4 < θ ≤ π / 2
+            x = rr * cos(3π / 8); y = rr * sin(3π / 8)
+        elseif π / 2 < θ ≤ 3π / 4
+            x = rr * cos(5π / 8); y = rr * sin(5π / 8)
+        elseif 3π / 4 < θ ≤ π
+            x = rr * cos(7π / 8); y = rr * sin(7π / 8)
+        elseif π < θ ≤ 5π / 4
+            x = rr * cos(9π / 8); y = rr * sin(9π / 8)
+        elseif 5π / 4 < θ ≤ 6π / 4
+            x = rr * cos(11π / 8); y = rr * sin(11π / 8)
+        elseif 6π / 4 < θ ≤ 7π / 4
+            x = rr * cos(13π / 8); y = rr * sin(13π / 8)
+        elseif 7π / 4 < θ ≤ 8π / 4
+            x = rr * cos(15π / 8); y = rr * sin(15π / 8)
         end
-        dz[1]= x; dz[2] = y
+        dz[1] = x; dz[2] = y
         return
     end
 
@@ -128,7 +128,7 @@ end
 
     r = 0.3
     ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r])
-    yg = xg = range(-10., 10, length = 100)
+    yg = xg = range(-10.0, 10, length = 100)
     grid = (xg, yg)
 
     sampler, = statespace_sampler(grid, 1234)
@@ -161,84 +161,85 @@ end
 
 if DO_EXTENSIVE_TESTS
 
-@testset "Henon map" begin
-    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-    ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
-    ps = range(1.2, 1.25; length = 101)
-    # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
-    # (you can see this by launching our wonderful `interactive_orbitdiagram` app).
-    # So we can use this to test different matching processes
-    # (because "by distance" matches the two kind of attractors already)
-    # Notice that the length=101 is rather sensitive and depending on it, some
-    # much smaller periodic windows exist in the range.
-    # (For 101, a period-14 window exists in the second parameter entry)
-    acritical = 1.2265
+    @testset "Henon map" begin
+        henon_rule(x, p, n) = SVector{2}(1.0 - p[1] * x[1]^2 + x[2], p[2] * x[1])
+        ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+        ps = range(1.2, 1.25; length = 101)
+        # In these parameters we go from a chaotic attractor to a period 7 orbit at a≈1.2265
+        # (you can see this by launching our wonderful `interactive_orbitdiagram` app).
+        # So we can use this to test different matching processes
+        # (because "by distance" matches the two kind of attractors already)
+        # Notice that the length=101 is rather sensitive and depending on it, some
+        # much smaller periodic windows exist in the range.
+        # (For 101, a period-14 window exists in the second parameter entry)
+        acritical = 1.2265
 
-    xg = yg = range(-2.5, 2.5, length = 500)
-    pidx = 1
-    sampler, = statespace_sampler(HRectangle([-2,-2], [2,2]), 1234)
-    distance_function = function (A, B)
-        # length of attractors within a factor of 2, then distance is ≤ 1
-        return abs(log(2, length(A)) - log(2, length(B)))
+        xg = yg = range(-2.5, 2.5, length = 500)
+        pidx = 1
+        sampler, = statespace_sampler(HRectangle([-2, -2], [2, 2]), 1234)
+        distance_function = function (A, B)
+            # length of attractors within a factor of 2, then distance is ≤ 1
+            return abs(log(2, length(A)) - log(2, length(B)))
+        end
+        # notice that without this special distance function, even with a
+        # really small threshold like 0.2 we still get a "single" attractor
+        # throughout the range. Now we get one with period 14, a chaotic,
+        # and one with period 7 that spans the second half of the parameter range
+        mapper = AttractorsViaRecurrences(
+            ds, (xg, yg); sparse = false,
+            consecutive_recurrences = 3000,
+            attractor_locate_steps = 3000
+        )
+        rsc = RecurrencesFindAndMatch(
+            mapper;
+            threshold = 0.99, distance = distance_function
+        )
+        fractions_cont, attractors_cont = global_continuation(
+            rsc, ps, pidx, sampler;
+            show_progress = false, samples_per_parameter = 100
+        )
+
+        for (i, p) in enumerate(ps)
+            fs = fractions_cont[i]
+            attractors = attractors_cont[i]
+            @test sum(values(fs)) ≈ 1
+            # Test that keys are the same (-1 doesn't have attractor)
+            k = sort!(collect(keys(fs)))
+            -1 ∈ k && deleteat!(k, 1)
+            attk = sort!(collect(keys(attractors)))
+            @test k == attk
+        end
+
+        # unique keys
+        ukeys = Attractors.unique_keys(attractors_cont)
+
+        # We must have 3 attractors: initial chaotic, period 14 in the middle,
+        # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
+        # Notice that due to the storage of "ghost" attractors in `RAFM`, the
+        # first and second chaotic attractors are mapped to each other.
+        @test ukeys == 1:3
+
+        # # Animation of henon attractors
+        # animate_attractors_continuation(ds, attractors_cont, fractions_cont, ps, pidx)
     end
-    # notice that without this special distance function, even with a
-    # really small threshold like 0.2 we still get a "single" attractor
-    # throughout the range. Now we get one with period 14, a chaotic,
-    # and one with period 7 that spans the second half of the parameter range
-    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false,
-        consecutive_recurrences = 3000,
-        attractor_locate_steps = 3000
-    )
-    rsc = RecurrencesFindAndMatch(mapper;
-        threshold = 0.99, distance = distance_function
-    )
-    fractions_cont, attractors_cont = global_continuation(
-        rsc, ps, pidx, sampler;
-        show_progress = false, samples_per_parameter = 100
-    )
 
-    for (i, p) in enumerate(ps)
-        fs = fractions_cont[i]
-        attractors = attractors_cont[i]
-        @test sum(values(fs)) ≈ 1
-        # Test that keys are the same (-1 doesn't have attractor)
-        k = sort!(collect(keys(fs)))
-        -1 ∈ k && deleteat!(k, 1)
-        attk = sort!(collect(keys(attractors)))
-        @test k == attk
+    @testset "non-found attractors" begin
+        # This is standard henon map
+        henon_rule(x, p, n) = SVector{2}(1.0 - p[1] * x[1]^2 + x[2], p[2] * x[1])
+        ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
+        ps = range(1.2, 1.25; length = 3)
+        # This grid is chosen such that no attractors are in there!
+        xg = yg = range(-25, -5; length = 500)
+        pidx = 1
+        sampler, = statespace_sampler(HRectangle([-2, -2], [2, 2]), 1234)
+        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false)
+        rsc = RecurrencesFindAndMatch(mapper)
+
+        fractions_cont, attractors_cont = global_continuation(
+            rsc, ps, pidx, sampler;
+            show_progress = false, samples_per_parameter = 100
+        )
+        @test all(i -> isempty(i), attractors_cont)
     end
 
-    # unique keys
-    ukeys = Attractors.unique_keys(attractors_cont)
-
-    # We must have 3 attractors: initial chaotic, period 14 in the middle,
-    # chaotic again, and period 7 at the end. ALl of these should be matched to each other.
-    # Notice that due to the storage of "ghost" attractors in `RAFM`, the
-    # first and second chaotic attractors are mapped to each other.
-    @test ukeys == 1:3
-
-    # # Animation of henon attractors
-    # animate_attractors_continuation(ds, attractors_cont, fractions_cont, ps, pidx)
 end
-
-@testset "non-found attractors" begin
-    # This is standard henon map
-    henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-    ds = DeterministicIteratedMap(henon_rule, zeros(2), [1.4, 0.3])
-    ps = range(1.2, 1.25; length = 3)
-    # This grid is chosen such that no attractors are in there!
-    xg = yg = range(-25, -5; length = 500)
-    pidx = 1
-    sampler, = statespace_sampler(HRectangle([-2,-2], [2,2]), 1234)
-    mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse=false)
-    rsc = RecurrencesFindAndMatch(mapper)
-
-    fractions_cont, attractors_cont = global_continuation(
-        rsc, ps, pidx, sampler;
-        show_progress = false, samples_per_parameter = 100
-    )
-    @test all(i -> isempty(i), attractors_cont)
-end
-
-end
-

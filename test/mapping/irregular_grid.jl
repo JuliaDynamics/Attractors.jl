@@ -5,8 +5,8 @@ function predator_prey_ds()
     function predator_prey_fastslow(u, p, t)
         α, γ, ϵ, ν, h, K, m = p
         N, P = u
-        du1 = α*N*(1 - N/K) - γ*N*P / (N+h)
-        du2 = ϵ*(ν*γ*N*P/(N+h) - m*P)
+        du1 = α * N * (1 - N / K) - γ * N * P / (N + h)
+        du2 = ϵ * (ν * γ * N * P / (N + h) - m * P)
         return SVector(du1, du2)
     end
     γ = 2.5
@@ -29,12 +29,13 @@ end
     xg = yg = range(0, 18; length = d)
     grid_reg = (xg, yg)
     pow = 8
-    xg = range(0, 18.0^(1/pow); length = d).^pow
+    xg = range(0, 18.0^(1 / pow); length = d) .^ pow
     grid_irreg = (xg, yg)
     grid_subdiv = subdivision_based_grid(ds, grid_reg)
     function test_grid(grid, bool)
         ds = predator_prey_ds()
-        mapper = AttractorsViaRecurrences(ds, grid;
+        mapper = AttractorsViaRecurrences(
+            ds, grid;
             Dt = 0.05, sparse = true, force_non_adaptive = true,
             consecutive_recurrences = 20, attractor_locate_steps = 100,
             store_once_per_cell = true,
@@ -65,12 +66,12 @@ end
     grid = subdivision_based_grid(ds, (xg, yg); maxlevel = 3)
     lvl_array = grid.lvl_array
 
-    @test (Attractors.basin_cell_index((2, 1.1) , grid) == CartesianIndex((17,9)))
-    @test (Attractors.basin_cell_index((3.6, 2.1) , grid) == CartesianIndex((29,17)))
-    @test (Attractors.basin_cell_index((4.9, 4.9) , grid) == CartesianIndex((33,33)))
-    @test (Attractors.basin_cell_index((0.5, 0.5) , grid) == CartesianIndex((5,5)))
-    @test (Attractors.basin_cell_index((3.4, 1.6) , grid) == CartesianIndex((27,13)))
-    @test (Attractors.basin_cell_index((4.7, 2.2) , grid) == CartesianIndex((37,17)))
+    @test (Attractors.basin_cell_index((2, 1.1), grid) == CartesianIndex((17, 9)))
+    @test (Attractors.basin_cell_index((3.6, 2.1), grid) == CartesianIndex((29, 17)))
+    @test (Attractors.basin_cell_index((4.9, 4.9), grid) == CartesianIndex((33, 33)))
+    @test (Attractors.basin_cell_index((0.5, 0.5), grid) == CartesianIndex((5, 5)))
+    @test (Attractors.basin_cell_index((3.4, 1.6), grid) == CartesianIndex((27, 13)))
+    @test (Attractors.basin_cell_index((4.7, 2.2), grid) == CartesianIndex((37, 17)))
 end
 
 @testset "automatic Δt" begin
@@ -78,7 +79,7 @@ end
 
     xg = yg = range(0, 18, length = 30)
     grid0 = (xg, yg)
-    xg = yg = range(0, 18.0^(1/2); length = 20).^2
+    xg = yg = range(0, 18.0^(1 / 2); length = 20) .^ 2
     grid1 = (xg, yg)
     grid2 = SubdivisionBasedGrid(grid0, rand([0, 1, 2], (30, 30)))
 

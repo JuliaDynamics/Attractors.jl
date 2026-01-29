@@ -64,7 +64,7 @@ function aggregate_attractor_fractions(
     )
 
     original_labels, unlabeled_fractions, parameter_idxs, features =
-    refactor_into_sequential_features(fractions_cont, attractors_cont, featurizer)
+        refactor_into_sequential_features(fractions_cont, attractors_cont, featurizer)
 
     grouped_labels = group_features(features, group_config)
 
@@ -113,7 +113,7 @@ end
 function reconstruct_joint_fractions(
         fractions_cont, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
     )
-    aggregated_fractions = [Dict{Int,Float64}() for _ in 1:length(fractions_cont)]
+    aggregated_fractions = [Dict{Int, Float64}() for _ in 1:length(fractions_cont)]
     current_p_idx = 0
     for j in eachindex(grouped_labels)
         new_label = grouped_labels[j]
@@ -132,12 +132,14 @@ end
 function info_of_grouped_features(features, grouped_labels, info_extraction)
     ids = sort!(unique(grouped_labels))
     # remove -1 if it's there
-    if ids[1] == -1; popfirst!(ids); end
+    if ids[1] == -1
+        popfirst!(ids)
+    end
     # extract the infos
-    Dict(
+    return Dict(
         id => info_extraction(
-            view(features, findall(isequal(id), grouped_labels))
-        ) for id in ids
+                view(features, findall(isequal(id), grouped_labels))
+            ) for id in ids
     )
 end
 

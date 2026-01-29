@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS<:DynamicalSystem, G<:GroupingConfig, F, T, SSS<:AbstractStateSpaceSet} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T, SSS <: AbstractStateSpaceSet} <: AttractorMapper
     ds::DS
     featurizer::F
     group_config::G
@@ -72,16 +72,17 @@ to the corresponding "attractor group", and then recording its trajectory
 with the same arguments `T, Ttr, Δt`. This is stored as the attractor,
 but of course there is no guarantee that this is actually an attractor.
 """
-function AttractorsViaFeaturizing(ds::DynamicalSystem, featurizer::Function,
+function AttractorsViaFeaturizing(
+        ds::DynamicalSystem, featurizer::Function,
         group_config::GroupingConfig = GroupViaClustering();
-        T=100, Ttr=100, Δt=1, threaded = true,
+        T = 100, Ttr = 100, Δt = 1, threaded = true,
     )
     D = dimension(ds)
     V = eltype(current_state(ds))
     T, Ttr, Δt = promote(T, Ttr, Δt)
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
-        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D,V}}(),
+        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D, V}}(),
     )
 end
 
@@ -107,7 +108,8 @@ end
 #####################################################################################
 # We only extend the general `basins_fractions`, because the clustering method
 # cannot map individual initial conditions to attractors
-function basins_fractions(mapper::AttractorsViaFeaturizing, ics::ValidICS;
+function basins_fractions(
+        mapper::AttractorsViaFeaturizing, ics::ValidICS;
         show_progress = true, N = 1000
     )
     # we always collect the initial conditions because we need their reference
@@ -143,7 +145,7 @@ Return a vector of the features of each initial condition in `ics` (as in
 Keyword `N` is ignored if `ics isa StateSpaceSet`.
 """
 function extract_features(mapper::AttractorsViaFeaturizing, args...; kwargs...)
-    if !(mapper.threaded)
+    return if !(mapper.threaded)
         extract_features_single(mapper, args...; kwargs...)
     else
         extract_features_threaded(mapper, args...; kwargs...)
@@ -151,13 +153,13 @@ function extract_features(mapper::AttractorsViaFeaturizing, args...; kwargs...)
 end
 
 function extract_features_single(mapper, ics; show_progress = true, N = 1000)
-    N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs
+    N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
     first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
     feature_vector[1] = first_feature
-    progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled=show_progress)
-    for i ∈ 1:N
-        ic = _get_ic(ics,i)
+    progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled = show_progress)
+    for i in 1:N
+        ic = _get_ic(ics, i)
         feature_vector[i] = extract_feature(mapper.ds, ic, mapper)
         ProgressMeter.next!(progress)
     end
@@ -165,8 +167,8 @@ function extract_features_single(mapper, ics; show_progress = true, N = 1000)
 end
 
 function (mapper::AttractorsViaFeaturizing)(u0)
-   f = extract_features_single(mapper, [u0])
-   return feature_to_group(f[1], mapper.group_config)
+    f = extract_features_single(mapper, [u0])
+    return feature_to_group(f[1], mapper.group_config)
 end
 
 # TODO: We need an alternative to deep copying integrators that efficiently
@@ -175,14 +177,14 @@ end
 
 using OhMyThreads: @tasks, @local
 function extract_features_threaded(mapper, ics; show_progress = true, N = 1000)
-    N = (typeof(ics) <: Function)  ? N : size(ics, 1) # number of actual ICs
+    N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
     # systems = [deepcopy(mapper.ds) for _ in 1:(Threads.nthreads() - 1)]
     # pushfirst!(systems, mapper.ds)
     first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
     feature_vector[1] = first_feature
-    progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled=show_progress)
-    @tasks for i ∈ 2:N
+    progress = ProgressMeter.Progress(N; desc = "Integrating trajectories:", enabled = show_progress)
+    @tasks for i in 2:N
         @local ds = deepcopy(referenced_dynamical_system(mapper))
         ic = _get_ic(ics, i)
         feature_vector[i] = extract_feature(ds, ic, mapper)
@@ -198,8 +200,12 @@ end
 
 function extract_attractors!(mapper::AttractorsViaFeaturizing, labels, ics)
     uidxs = unique(i -> labels[i], eachindex(labels))
-    attractors = Dict(labels[i] => trajectory(mapper.ds, mapper.total, ics[i];
-    Ttr = mapper.Ttr, Δt = mapper.Δt)[1] for i in uidxs if i > 0)
+    attractors = Dict(
+        labels[i] => trajectory(
+                mapper.ds, mapper.total, ics[i];
+                Ttr = mapper.Ttr, Δt = mapper.Δt
+            )[1] for i in uidxs if i > 0
+    )
     overwrite_dict!(mapper.attractors, attractors)
     return
 end

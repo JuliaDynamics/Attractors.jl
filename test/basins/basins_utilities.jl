@@ -4,7 +4,7 @@ using Test
 @testset "convergence_and_basins_of_attraction(mapper::AttractorMapper)" begin
 
     # Dynamical system
-    test_ds(u,p,t) =  SVector(0.5*u[1]*(1 -u[1]^2))
+    test_ds(u, p, t) = SVector(0.5 * u[1] * (1 - u[1]^2))
 
     # Test continuous system
     ds = CoupledODEs(test_ds, [1.0])
@@ -23,4 +23,3 @@ using Test
     @test eltype(convergence) == typeof(current_time(ds))
 
 end
-

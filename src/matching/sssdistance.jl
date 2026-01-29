@@ -43,7 +43,7 @@ is larger than this `threshold`, then it is guaranteed that the two sets will ge
 different ID in the replacement map, and hence, the set in `a₊` gets the next available
 integer as its ID.
 """
-@kwdef struct MatchBySSSetDistance{M, T<:Real} <: IDMatcher
+@kwdef struct MatchBySSSetDistance{M, T <: Real} <: IDMatcher
     distance::M = Centroid()
     threshold::T = Inf
     use_vanished::Bool = !isinf(threshold)
@@ -51,17 +51,19 @@ end
 
 _use_vanished(m::MatchBySSSetDistance) = m.use_vanished
 
-function matching_map(a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
+function matching_map(
+        a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
         kw...
     )
     # if either dictionary is empty there is no matching to be done
     isempty(a₊) || isempty(a₋) && return Dict{keytype(a₊), keytype(a₋)}()
     distances = setsofsets_distances(a₊, a₋, matcher.distance)
     keys₊, keys₋ = sort.(collect.(keys.((a₊, a₋))))
-    _matching_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold; kw...)
+    return _matching_map_distances(keys₊, keys₋, distances::Dict, matcher.threshold; kw...)
 end
 
-function _matching_map_distances(keys₊, keys₋, distances::Dict, threshold;
+function _matching_map_distances(
+        keys₊, keys₋, distances::Dict, threshold;
         next_id = next_free_id(keys₊, keys₋), kw... # rest of keywords aren't used.
     )
     # Transform distances to sortable collection. Sorting by distance

@@ -23,7 +23,7 @@ that both `templates` and the output of the `featurizer` function in
   Features that exceed `max_distance` to their nearest template get labelled `-1`.
 """
 struct GroupViaNearestFeature{D, T, K <: KDTree, X} <: GroupingConfig
-    templates::Vector{SVector{D,T}}
+    templates::Vector{SVector{D, T}}
     tree::K # KDTree with templates
     max_distance::T
     dummy_idxs::Vector{Int}
@@ -36,7 +36,7 @@ function GroupViaNearestFeature(
     k, v = collect(keys(templates)), values(templates)
     x = first(v)
     D = length(x); T = eltype(x)
-    t = map(x -> SVector{D,T}(x), v)
+    t = map(x -> SVector{D, T}(x), v)
     # The tree performs the nearest neighbor searches efficiently
     tree = searchstructure(KDTree, t, metric)
     dummy_idxs = [0]; dummy_dist = T[0]
