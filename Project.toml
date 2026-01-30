@@ -1,8 +1,8 @@
 name = "Attractors"
 uuid = "f3fd9213-ca85-4dba-9dfd-7fc91308fec7"
+version = "1.31.1"
 authors = ["George Datseris <datseris.george@gmail.com>", "Kalel Rossi", "Alexandre Wagemakers"]
 repo = "https://github.com/JuliaDynamics/Attractors.jl.git"
-version = "1.31.1"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
@@ -37,7 +37,7 @@ DynamicalSystemsBase = "3.9.1"
 Makie = "≥ 0.19"
 Neighborhood = "0.2.2"
 OhMyThreads = "0.8"
-Optim = "1.7"
+Optim = "1.7, 2"
 ProgressMeter = "1.7"
 Reexport = "1"
 StateSpaceSets = "2.5"
