@@ -246,9 +246,10 @@ function finite_state_machine!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{D, Δ, T}, u) where {D, Δ, T}
+function store_attractor!(bsn_nfo::BasinsInfo{D, Δ}, u) where {D, Δ}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
+    T = valtype(valtype(valtype(bsn_nfo.BoA.attractors)))
     V = SVector{D, T}
     return if haskey(bsn_nfo.BoA.attractors, attractor_id)
         push!(bsn_nfo.BoA.attractors[attractor_id], V(u))
