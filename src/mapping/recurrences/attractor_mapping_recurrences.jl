@@ -248,8 +248,8 @@ end
 #####################################################################################
 
 mutable struct BasinsInfo{
-        D, Δ, T, V, G <: Grid, B <: AbstractArray{Int, D},
-        A <: ArrayBasinsOfAttraction{Int, D, B, T, V, G},
+        D, Δ, B <: AbstractArray{Int, D},
+        A <: ArrayBasinsOfAttraction{Int, D, B},
     }
     BoA::A # sparse or dense
     Δt::Δ
