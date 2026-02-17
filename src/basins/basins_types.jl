@@ -51,7 +51,7 @@ struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S
     attractors::Dict{K, S}
     grid::G
 
-    function ArrayBasinsOfAttraction(basins::AbstractArray{ID, D}, attractors::Dict{K, S}, grid::G) where {D,ID,G<:Grid, K, S<:StateSpaceSet}
+    function ArrayBasinsOfAttraction(basins::AbstractArray{ID, D}, attractors::Dict{K, S}, grid::G) where {D, ID, G <: Grid, K, S <: StateSpaceSet}
         # Dimensionality checks
         length(grid.grid) != ndims(basins) && error("The basins and the grid must have the same number of dimensions")
         # Attractor state space sets have the same type so same dimensions, can compare grid with any of them
