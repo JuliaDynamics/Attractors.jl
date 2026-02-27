@@ -25,7 +25,7 @@ using Random
     end
 
     r = 3.833
-    ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
+    ds = DiscreteDynamicalSystem(dumb_map, [0.0, 0.0], [r])
 
     sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
 
@@ -80,20 +80,20 @@ if DO_EXTENSIVE_TESTS
 
         # Notice special parameter values:
         b, a = -0.9, 1.1 # notice the non-default parameters
-        henon_rule(x, p, n) = SVector{2}(1.0 - p[1]*x[1]^2 + x[2], p[2]*x[1])
-        ds = DeterministicIteratedMap(henon_rule, ones(2), [a,b])
+        henon_rule(x, p, n) = SVector{2}(1.0 - p[1] * x[1]^2 + x[2], p[2] * x[1])
+        ds = DeterministicIteratedMap(henon_rule, ones(2), [a, b])
         ps = range(0.6, 1.1; length = 11)
         pidx = 1
-        sampler, = statespace_sampler(HRectangle([-2,-2], [2,2]), 1234)
+        sampler, = statespace_sampler(HRectangle([-2, -2], [2, 2]), 1234)
 
         # Feature based on period.
         function featurizer(a, t) # feature based on period!
-            tol = 1e-5
+            tol = 1.0e-5
             L = length(a)
-            if abs(a[L-1,1] - a[L,1]) < tol
+            if abs(a[L - 1, 1] - a[L, 1]) < tol
                 # period 1
                 return [1]
-            elseif abs(a[L-3,1] - a[L,1]) < tol
+            elseif abs(a[L - 3, 1] - a[L, 1]) < tol
                 # period 3
                 return [3]
             else
@@ -101,7 +101,8 @@ if DO_EXTENSIVE_TESTS
             end
         end
         clusterspecs = Attractors.GroupViaClustering(rescale_features = false, optimal_radius_method = 1.0)
-        mapper = Attractors.AttractorsViaFeaturizing(ds, featurizer, clusterspecs;
+        mapper = Attractors.AttractorsViaFeaturizing(
+            ds, featurizer, clusterspecs;
             T = 10, Ttr = 2000, threaded = true
         )
         gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 0.0)

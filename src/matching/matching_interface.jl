@@ -116,7 +116,7 @@ function match_sequentially!(
     )
     # this generic implementation works for any matcher!!!
     # the matcher also provides the `use_vanished` keyword if it makes sense!
-    rmaps = Dict{Int,Int}[]
+    rmaps = Dict{Int, Int}[]
     if !use_vanished # matchers implement this!
         rmaps = _rematch_ignored!(attractors, matcher; kw...)
     else
@@ -155,21 +155,22 @@ function match_sequentially!(continuation_quantity::AbstractVector{<:Dict}, rmap
         throw(ArgumentError("the matching maps should be 1 less than the global_continuation quantities"))
     end
     for (i, rmap) in enumerate(rmaps)
-        quantity = continuation_quantity[i+1]
+        quantity = continuation_quantity[i + 1]
         swap_dict_keys!(quantity, rmap)
     end
     return rmaps
 end
 
 # Concrete implementation of `match_sequentially!`:
-function _rematch_ignored!(attractors_cont, matcher;
+function _rematch_ignored!(
+        attractors_cont, matcher;
         ds = nothing, pcurve = eachindex(attractors_cont),
     )
     next_id = 1
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
-    for i in 1:length(attractors_cont)-1
-        a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
-        p, pprev = pcurve[i+1], pcurve[i]
+    for i in 1:(length(attractors_cont) - 1)
+        a₊, a₋ = attractors_cont[i + 1], attractors_cont[i]
+        p, pprev = pcurve[i + 1], pcurve[i]
         # If there attractors, update the max id
         if !(isempty(a₊) || isempty(a₋))
             # we always compute a next id. In this way, if an attractor disappears
@@ -185,7 +186,8 @@ function _rematch_ignored!(attractors_cont, matcher;
 end
 
 # Another concrete implementation of `match_sequentially!`:
-function _rematch_with_past!(attractors_cont, matcher;
+function _rematch_with_past!(
+        attractors_cont, matcher;
         ds = nothing, pcurve = eachindex(attractors_cont),
     )
     # this dictionary stores all instances of previous attractors and is updated
@@ -193,14 +195,14 @@ function _rematch_with_past!(attractors_cont, matcher;
     # the current attractors
     latest_ghosts = deepcopy(attractors_cont[1])
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
-    for i in 1:length(attractors_cont)-1
-        a₊, a₋ = attractors_cont[i+1], attractors_cont[i]
+    for i in 1:(length(attractors_cont) - 1)
+        a₊, a₋ = attractors_cont[i + 1], attractors_cont[i]
         # first update ghosts
         for (k, A) in a₋
             latest_ghosts[k] = A
         end
         # and then match
-        p, pprev = pcurve[i+1], pcurve[i]
+        p, pprev = pcurve[i + 1], pcurve[i]
         rmap = matching_map!(a₊, latest_ghosts, matcher; pprev, p, ds)
         push!(rmaps, rmap)
     end

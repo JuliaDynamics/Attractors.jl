@@ -19,9 +19,9 @@ end
     basins_after = ones(20, 20)
     basins_after[:, 11:20] .= 2
     P = tipping_probabilities(basins_before, basins_after)
-    @test size(P) == (2,2)
-    @test P[1,1] ≈ 1/3
-    @test P[2,1] == 1
-    @test P[1,2] ≈ 2/3
-    @test P[2,2] == 0
+    @test size(P) == (2, 2)
+    @test P[1, 1] ≈ 1 / 3
+    @test P[2, 1] == 1
+    @test P[1, 2] ≈ 2 / 3
+    @test P[2, 2] == 0
 end

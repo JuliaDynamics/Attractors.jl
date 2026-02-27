@@ -21,10 +21,13 @@ export plot_attractors, plot_attractors!
 # Basins
 ##########################################################################################
 """
+    heatmap_basins_attractors(BoA::ArrayBasinsOfAttraction; kwargs...) 
     heatmap_basins_attractors(grid, basins, attractors; kwargs...)
 
 Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 `attractors`, i.e., the output of [`basins_of_attraction`](@ref).
+
+The second function signature exists for backwards compatibility
 
 ## Keyword arguments
 
@@ -36,7 +39,8 @@ function heatmap_basins_attractors! end
 export heatmap_basins_attractors, heatmap_basins_attractors!
 
 """
-    shaded_basins_heatmap(grid, basins, attractors, iterations; kwargs...)
+    shaded_basins_heatmap(BoA::ArrayBasinsOfAttraction, iterations; kwargs...)
+    shaded_basins_heatmap(grid, basins, attractors, iterations; kwargs...) 
 
 Plot a heatmap of found (2-dimensional) `basins` of attraction and corresponding
 `attractors`. A matrix `iterations` with the same size of `basins` must be provided
@@ -44,6 +48,8 @@ to shade the color according to the value of this matrix. A small value correspo
 to a light color and a large value to a darker tone. This is useful to represent
 the number of iterations taken for each initial condition to converge. See also
 [`convergence_time`](@ref) to store this iteration number.
+
+The second function signature exists for backwards compatibility
 
 ## Keyword arguments
 
@@ -62,8 +68,7 @@ export shaded_basins_heatmap, shaded_basins_heatmap!
 ##########################################################################################
 """
     animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_cont, fractions_cont, pcurve;
-        kwargs...
+        ds::DynamicalSystem, attractors_cont, fractions_cont, pcurve; kw...
     )
 
 Animate how the found system attractors and their corresponding basin fractions
@@ -86,6 +91,29 @@ while `ds, pcurve` are the input to [`global_continuation`](@ref).
   creation of the `Figure`, the `Axis`, the "bar-like" axis containing the fractions,
   and the `axislegend` that adds the legend (if `add_legend = true`).
 - `add_legend = true`: whether to display the axis legend.
+
+## Continuation plot animation
+
+In addition to animating the attractors scatterplot,
+the plot of [`plot_attractors_curves`](@ref) can be added below the main attractor plot.
+It is animated by a dashed line that moves as the parameter is changed.
+
+This is enabled by providing a non-`nothing` keyword for `a2rs`,
+and the behavior of plot is controlled by the following keywords:
+
+- `a2rs`: a vector of functions that map attractors to real numbers.
+- `prange = 1:length(attractors_cont)`: range of parameter values to plot on the x-axis
+  of the additional plot(s). If given directly to `animate_attractors_continuation`
+  it is obtained from there.
+- `series_kwargs = NamedTuple()`: named tuple of arguments propagated
+  to `Makie.scatterlines!` that plots the curves.
+- `a2rs_ratio = 0.5`: the height ratio of the additional plot(s) relative to the main
+  attractor plot.
+- `a2rs_ylabels`: vector of y-axis labels for the additional plot(s).
+- `parameter_name = "parameter"`. Name of the x-axis of the additional plot(s).
+-  `vline_kwargs = (linestyle = :dash, linewidth = 3, color = "black")`: named tuple of arguments
+  propagated to `Makie.vlines!` that plots the vertical dashed line moving
+  as the parameter is changed.
 """
 function animate_attractors_continuation end
 export animate_attractors_continuation

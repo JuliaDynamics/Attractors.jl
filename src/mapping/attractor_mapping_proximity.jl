@@ -41,7 +41,7 @@ an error is thrown.
 The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
 As such, the convergence time is always a float type even for discrete time systems.
 """
-struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSet, N, K, M, SS<:AbstractStateSpaceSet, T} <: AttractorMapper
+struct AttractorsViaProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpaceSet, N, K, M, SS <: AbstractStateSpaceSet, T} <: AttractorMapper
     ds::DS
     attractors::Dict{AK, SSS}
     ε::Float64
@@ -60,14 +60,18 @@ struct AttractorsViaProximity{DS<:DynamicalSystem, AK, SSS<:AbstractStateSpaceSe
 end
 
 AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
-AttractorsViaProximity(ds, attractors; ε = ε, kw...)
+    AttractorsViaProximity(ds, attractors; ε = ε, kw...)
 
-function AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict;
-        Δt=1, Ttr=0, consecutive_lost_steps=10000, horizon_limit=1e3, verbose = false,
+function AttractorsViaProximity(
+        ds::DynamicalSystem, attractors::Dict;
+        Δt = 1, Ttr = 0, consecutive_lost_steps = 10000, horizon_limit = 1.0e3, verbose = false,
         distance = StrictlyMinimumDistance(), stop_at_Δt = false, ε = nothing,
     )
     if !(valtype(attractors) <: AbstractStateSpaceSet)
         error("The input attractors must be a dictionary with values of `StateSpaceSet`s.")
+    end
+    if isempty(attractors)
+        error("The input attractors cannot be an empty dictionary.")
     end
     if dimension(ds) ≠ dimension(first(attractors)[2])
         error("Dimension of the dynamical system and candidate attractors must match.")
@@ -112,23 +116,27 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
                 k == m && continue
                 for p in A # iterate over all points of attractor
                     Neighborhood.NearestNeighbors.knn_point!(
-                        tree, p, false, dist, idx, Neighborhood.NearestNeighbors.always_false
+                        tree, p, false, dist, idx, Returns(false)
                     )
                     dist[1] < minε && (minε = dist[1])
                 end
             end
         end
         verbose && @info("Minimum distance between attractors computed: $(minε)")
-        ε = minε/10
+        ε = minε / 10
     else
         attractor = first(attractors)[2] # get the single attractor
         mini, maxi = minmaxima(attractor)
-        ε = sqrt(sum(abs, maxi .- mini))/10
+        ε = sqrt(sum(abs, maxi .- mini)) / 10
         if ε == 0
-            throw(ArgumentError("""
-            Computed `ε = 0` in automatic estimation, probably because there is
-            a single attractor that also is a single point. Please provide `ε` manually.
-            """))
+            throw(
+                ArgumentError(
+                    """
+                    Computed `ε = 0` in automatic estimation, probably because there is
+                    a single attractor that also is a single point. Please provide `ε` manually.
+                    """
+                )
+            )
         end
     end
     return ε
@@ -182,6 +190,6 @@ function Base.show(io::IO, mapper::AttractorsViaProximity)
     return
 end
 
-extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
+_extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
 
 convergence_time(mapper::AttractorsViaProximity) = mapper.latest_convergence_time[]

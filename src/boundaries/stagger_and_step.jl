@@ -101,15 +101,19 @@ The method produces a pseudo-trajectory of `N` points δ-close
 to the stable manifold of the chaotic saddle. 
 
 """
-function stagger_and_step(ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1e-10, Tm = 30, 
-    γ = 1.1, max_steps = Int64(1e5), max_escape_time = 10000, stagger_mode = :exp, δ₀ = 1.0, 
-    show_progress = true,  rng::AbstractRNG = Xoshiro())
+function stagger_and_step(
+        ds::DynamicalSystem, x0, N::Int, isinside::Function; δ = 1.0e-10, Tm = 30,
+        γ = 1.1, max_steps = Int64(1.0e5), max_escape_time = 10000, stagger_mode = :exp, δ₀ = 1.0,
+        show_progress = true, rng::AbstractRNG = Xoshiro()
+    )
 
     progress = ProgressMeter.Progress(
         N; desc = "Saddle estimation: ", dt = 1.0
     )
-    xi = stagger_trajectory(ds, x0, Tm, isinside, :unif, δ₀, 
-                            γ, max_steps, max_escape_time, rng) 
+    xi = stagger_trajectory(
+        ds, x0, Tm, isinside, :unif, δ₀,
+        γ, max_steps, max_escape_time, rng
+    )
     if isnothing(xi)
         error("Cannot find a stagger trajectory. Choose a different starting point or 
                 search radius δ₀.")
@@ -122,12 +126,16 @@ function stagger_and_step(ds::DynamicalSystem, x0, N::Int, isinside::Function; �
         if escape_time!(ds, xi, isinside, max_escape_time) > Tm
             reinit!(ds, xi)
         else
-            xp, Tp = stagger!(ds, xi, Tm, isinside, stagger_mode, δ, γ, max_steps,  
-                              max_escape_time, rng)
+            xp, Tp = stagger!(
+                ds, xi, Tm, isinside, stagger_mode, δ, γ, max_steps,
+                max_escape_time, rng
+            )
             # The stagger step may fail. We reinitiate the algorithm from a new initial condition.
             if Tp < 0
-                xp = stagger_trajectory(ds, x0, Tm, isinside, :exp, δ₀, γ, max_steps,  
-                                        max_escape_time, rng) 
+                xp = stagger_trajectory(
+                    ds, x0, Tm, isinside, :exp, δ₀, γ, max_steps,
+                    max_escape_time, rng
+                )
                 if isnothing(xp)
                     error("Cannot find a stagger trajectory. Choose a different starting 
                           point or search radius δ₀.")
@@ -135,7 +143,7 @@ function stagger_and_step(ds::DynamicalSystem, x0, N::Int, isinside::Function; �
                 δ = 0.1
             end
             reinit!(ds, xp)
-        end 
+        end
         step!(ds)
         xi = copy(current_state(ds))
         v[n] = xi
@@ -158,28 +166,29 @@ returns nothing.
 This is an auxiliary function for [`stagger_and_step`](@ref). 
 Arguments and definitions are identical for both functions. 
 """
-function stagger_trajectory(ds, x0, Tm, isinside, stagger_mode, δ, γ,
-        max_steps, max_escape_time, rng)
+function stagger_trajectory(
+        ds, x0, Tm, isinside, stagger_mode, δ, γ,
+        max_steps, max_escape_time, rng
+    )
     T = escape_time!(ds, x0, isinside, max_escape_time)
-    xi = copy(x0) 
-    while !(T > Tm)  # we must have T > Tm at each step 
+    xi = copy(x0)
+    while !(T > Tm)  # we must have T > Tm at each step
         xi, T = stagger!(ds, xi, T, isinside, stagger_mode, δ, γ, max_steps, max_escape_time, rng)
         if T < 0
             return nothing
-        end 
-            
+        end
+
     end
     return xi
 end
-    
 
 
-function escape_time!(ds, x0, isinside, max_escape_time) 
-    set_state!(ds,x0)
+function escape_time!(ds, x0, isinside, max_escape_time)
+    set_state!(ds, x0)
     reinit!(ds, x0)
-    k = 1; 
-    while isinside(current_state(ds)) 
-        if k > max_escape_time 
+    k = 1
+    while isinside(current_state(ds))
+        if k > max_escape_time
             error("The trajectory did not escape for ", k, " steps, you probably have \
 an attractor in the defined region. Last point evaluated: ", current_state(ds))
         end
@@ -190,21 +199,21 @@ an attractor in the defined region. Last point evaluated: ", current_state(ds))
 end
 
 function rand_u!(u, δ, n, stagger_mode, rng)
-    if stagger_mode == :exp 
+    if stagger_mode == :exp
         a = -log10(δ)
-        s = (15-a)*rand(rng) + a
-        randn!(rng,u)
-        u .*= (10.0^(-s))/norm(u)
+        s = (15 - a) * rand(rng) + a
+        randn!(rng, u)
+        u .*= (10.0^(-s)) / norm(u)
         return
     elseif stagger_mode == :unif
-        s = δ*rand(rng)
+        s = δ * rand(rng)
         randn!(rng, u)
-        u .*= s/norm(u)
+        u .*= s / norm(u)
         return
     elseif stagger_mode == :adaptive
-        s = δ*randn(rng)
-        randn!(rng,u)
-        u .*= s/norm(u)
+        s = δ * randn(rng)
+        randn!(rng, u)
+        u .*= s / norm(u)
         return
     else
         error("Invalid stagger_mode: $stagger_mode")
@@ -218,34 +227,36 @@ end
 This function searches a new candidate in a neighborhood of x0 with a random search 
 depending on some distribution. If the search fails it returns a negative time.
 """
-function stagger!(ds, x0, Tm, isinside, stagger_mode, δ, γ,
-        max_steps, max_escape_time, rng; verbose = false)
-    Tp = 0; xp = zeros(length(x0)); k = 1; 
+function stagger!(
+        ds, x0, Tm, isinside, stagger_mode, δ, γ,
+        max_steps, max_escape_time, rng; verbose = false
+    )
+    Tp = 0; xp = zeros(length(x0)); k = 1
     u = zeros(length(x0))
     T0 = escape_time!(ds, x0, isinside, max_escape_time)
     if !isinside(x0)
         error("x0 must be in grid")
     end
-    while Tp ≤ Tm 
+    while Tp ≤ Tm
         rand_u!(u, δ, length(x0), stagger_mode, rng)
-        xp .= x0 .+ u 
+        xp .= x0 .+ u
 
-        if k > max_steps 
-           if verbose 
-               @warn "Stagger search fails, δ is too small or T is too large. 
+        if k > max_steps
+            if verbose
+                @warn "Stagger search fails, δ is too small or T is too large. 
                 We reinitiate the algorithm
                "
-           end
-           return xp, -1
+            end
+            return xp, -1
         end
         Tp = escape_time!(ds, xp, isinside, max_escape_time)
         if stagger_mode == :adaptive
             # We adapt the variance of the search
             # if the alg. can't find a candidate
             if Tp < T0
-                δ = δ/γ
+                δ = δ / γ
             elseif Tp == T0
-                δ = δ*γ
+                δ = δ * γ
             end
             if Tp == Tm
                 # The adaptive alg. accepts T == Tp
@@ -256,4 +267,3 @@ function stagger!(ds, x0, Tm, isinside, stagger_mode, δ, γ,
     end
     return xp, Tp
 end
-

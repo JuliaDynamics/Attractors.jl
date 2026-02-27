@@ -11,9 +11,10 @@ or `-1` if it does not convergence anywhere (e.g., divergence to infinity or exc
 Notice the numbering system `cell_label` is as in `finite_state_machine!`.
 Even numbers are attractors, odd numbers are basins.
 """
-function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
+function recurrences_map_to_label!(
+        bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # `mx_chk_safety` is deprecated
-        mx_chk_safety = Int(1e6), maximum_iterations = mx_chk_safety, Ttr = 0, kwargs...
+        mx_chk_safety = Int(1.0e6), maximum_iterations = mx_chk_safety, Ttr = 0, kwargs...
     )
     # This routine identifies the attractor using the previously defined basin.
 
@@ -57,7 +58,7 @@ function recurrences_map_to_label!(bsn_nfo::BasinsInfo, ds::DynamicalSystem, u0;
         # accommodate the special case of a Poincare map with the grid defined
         # directly on the hyperplane, `plane::Tuple{Int, <: Real}`.
         y = _possibly_reduced_state(new_y, ds, bsn_nfo)
-        n = basin_cell_index(y, bsn_nfo.grid_nfo)
+        n = basin_cell_index(y, bsn_nfo.BoA.grid)
         cell_label = finite_state_machine!(bsn_nfo, n, y; kwargs...)
     end
     return cell_label
@@ -65,14 +66,13 @@ end
 
 _possibly_reduced_state(y, ds, grid) = y
 function _possibly_reduced_state(y, ds::PoincareMap, bsn_nfo)
-    grid = bsn_nfo.grid_nfo.grid
-    if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds)-1
+    grid = bsn_nfo.BoA.grid.grid
+    if ds.planecrossing.plane isa Tuple && length(grid) == dimension(ds) - 1
         return y[ds.diffidxs]
     else
         return y
     end
 end
-
 
 
 """
@@ -109,21 +109,21 @@ function finite_state_machine!(
         consecutive_lost_steps = mx_chk_lost,
         # other non-changed keywords
         show_progress = true, # show_progress can be used when finding new attractor.
-        horizon_limit = 1e6,
+        horizon_limit = 1.0e6,
         store_once_per_cell = true,
     )
 
     # if n[1] == -1 means we are outside the grid,
     # otherwise, we retrieve the label stored at the grid
     # (which by default is 0 unless we have visited the cell before)
-    ic_label = n[1] == -1 ? -1 : bsn_nfo.basins[n]
+    ic_label = n[1] == -1 ? -1 : bsn_nfo.BoA.basins[n]
 
     update_finite_state_machine!(bsn_nfo, ic_label)
 
     # This state means that we have visited a cell that contains a recorded attractor
     if bsn_nfo.state == :att_hit
         if ic_label == bsn_nfo.prev_label
-             bsn_nfo.consecutive_match += 1
+            bsn_nfo.consecutive_match += 1
         end
         if bsn_nfo.consecutive_match ≥ consecutive_attractor_steps
             # We've hit an existing attractor `consecutive_attractor_steps` times in a row
@@ -143,7 +143,7 @@ function finite_state_machine!(
     if bsn_nfo.state == :att_search
         if ic_label == 0
             # unlabeled box, label it with current odd label and reset counter
-            bsn_nfo.basins[n] = bsn_nfo.visited_cell_label
+            bsn_nfo.BoA.basins[n] = bsn_nfo.visited_cell_label
             # also keep track of visited cells. This makes it easier to clean
             # up the basin array later!
             push!(bsn_nfo.visited_cells, n) # keep track of visited cells
@@ -156,7 +156,7 @@ function finite_state_machine!(
         # If we accumulated enough recurrences, we claim that we
         # have found an attractor, and we switch to `:att_found`.
         if bsn_nfo.consecutive_match >= consecutive_recurrences
-            bsn_nfo.basins[n] = bsn_nfo.current_att_label
+            bsn_nfo.BoA.basins[n] = bsn_nfo.current_att_label
             store_attractor!(bsn_nfo, u)
             bsn_nfo.state = :att_found
             bsn_nfo.consecutive_match = 0
@@ -176,23 +176,25 @@ function finite_state_machine!(
         elseif ic_label == 0 || ic_label == bsn_nfo.visited_cell_label
             # Visited a cells that was not labelled as the new attractor
             # label it and store it as part of the attractor
-            bsn_nfo.basins[n] = bsn_nfo.current_att_label
+            bsn_nfo.BoA.basins[n] = bsn_nfo.current_att_label
             store_attractor!(bsn_nfo, u)
         elseif iseven(ic_label) && ic_label ≠ bsn_nfo.current_att_label
             # Visited a cell labelled as an *existing* attractor! We have
             # attractors intersection in the grid! The algorithm can't handle this,
             # so we throw an error.
-            error("""
-            During the phase of locating a new attractor, found via sufficient recurrences,
-            we encountered a cell of a previously-found attractor. This can happen because:
-            - two attractors intersect in the grid (decrease grid spacing)
-            - the precision with which we find and store attractors is not high enough
-              (increase any of `consecutive_recurrences, consecutive_attractor_steps, attractor_locate_steps`)
-            - there exists significant slowdown/stickiness in state space that is wrongly
-              interpreted as an attractor (increase any of `consecutive_recurrences, Ttr, Δt`)
+            error(
+                """
+                During the phase of locating a new attractor, found via sufficient recurrences,
+                we encountered a cell of a previously-found attractor. This can happen because:
+                - two attractors intersect in the grid (decrease grid spacing)
+                - the precision with which we find and store attractors is not high enough
+                  (increase any of `consecutive_recurrences, consecutive_attractor_steps, attractor_locate_steps`)
+                - there exists significant slowdown/stickiness in state space that is wrongly
+                  interpreted as an attractor (increase any of `consecutive_recurrences, Ttr, Δt`)
 
-            Index of cell that this occured at: $(n).
-            """)
+                Index of cell that this occured at: $(n).
+                """
+            )
         end
         # in the `:att_found` phase, the consecutive match is always increasing
         bsn_nfo.consecutive_match += 1
@@ -244,21 +246,22 @@ function finite_state_machine!(
     end
 end
 
-function store_attractor!(bsn_nfo::BasinsInfo{D, G, Δ, T}, u) where {D, G, Δ, T}
+function store_attractor!(bsn_nfo::BasinsInfo{D, Δ}, u) where {D, Δ}
     # bsn_nfo.current_att_label is the number of the attractor multiplied by two
     attractor_id = bsn_nfo.current_att_label ÷ 2
+    T = valtype(valtype(valtype(bsn_nfo.BoA.attractors)))
     V = SVector{D, T}
-    if haskey(bsn_nfo.attractors, attractor_id)
-        push!(bsn_nfo.attractors[attractor_id], V(u))
+    return if haskey(bsn_nfo.BoA.attractors, attractor_id)
+        push!(bsn_nfo.BoA.attractors[attractor_id], V(u))
     else
         # initialize container for new attractor
-        bsn_nfo.attractors[attractor_id] = StateSpaceSet([V(u)])
+        bsn_nfo.BoA.attractors[attractor_id] = StateSpaceSet([V(u)])
     end
 end
 
 function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
     old_label = bsn_nfo.visited_cell_label
-    basins = bsn_nfo.basins
+    basins = bsn_nfo.BoA.basins
     while !isempty(bsn_nfo.visited_cells)
         ind = pop!(bsn_nfo.visited_cells)
         if basins[ind] == old_label
@@ -269,13 +272,14 @@ function cleanup_visited_cells!(bsn_nfo::BasinsInfo)
             end
         end
     end
+    return
 end
 
 function reset_basins_counters!(bsn_nfo::BasinsInfo)
     bsn_nfo.consecutive_match = 0
     bsn_nfo.consecutive_lost = 0
     bsn_nfo.prev_label = 0
-    bsn_nfo.state = :att_search
+    return bsn_nfo.state = :att_search
 end
 
 function update_finite_state_machine!(bsn_nfo, ic_label)

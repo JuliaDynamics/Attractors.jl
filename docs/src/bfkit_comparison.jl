@@ -56,8 +56,8 @@
 function modified_lorenz_rule!(du, u, p, t = 0)
     x, y, z = u; a, b = p
     du[1] = y - x
-    du[2] = - x*z + b*abs(z)
-    du[3] = x*y - a
+    du[2] = - x * z + b * abs(z)
+    du[3] = x * y - a
     return du
 end
 prange = 4.7:0.02:6
@@ -89,8 +89,8 @@ point_on_lc = [
 ]
 
 ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 50.0), p0)
-sol = OrdinaryDiffEqVerner.solve(ode_prob; alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
-j = length(sol)÷2
+sol = OrdinaryDiffEqVerner.solve(ode_prob; alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9)
+j = length(sol) ÷ 2
 fig, ax = lines(sol.t[j:end], sol[1, j:end])
 lines!(ax, sol.t[j:end], sol[2, j:end])
 lines!(ax, sol.t[j:end], sol[3, j:end])
@@ -105,9 +105,9 @@ fig
 # would need to fine tune to the problem at hand.
 opts_br = BK.ContinuationPar(
     p_min = prange[1], p_max = prange[end],
-    ds = 0.002, dsmax = 0.01, dsmin = 1e-6, n_inversion = 6,
+    ds = 0.002, dsmax = 0.01, dsmin = 1.0e-6, n_inversion = 6,
     detect_bifurcation = 3, max_bisection_steps = 50, nev = 4,
-    max_steps = 2000, tol_stability = 1e-3,
+    max_steps = 2000, tol_stability = 1.0e-3,
 )
 
 # We now create a periodic orbit problem type, by choosing a periodic
@@ -125,13 +125,16 @@ probpo, cish = BK.generate_ci_problem(
 # To call the continuation we need to also tell it what aspects of the
 # periodic orbit to record, so we define
 
-argspo = (record_from_solution = (x, p; k...) -> begin
-		xtt = BK.get_periodic_orbit(p.prob, x, p.p)
-		return (max = maximum(xtt[1,:]),
-				min = minimum(xtt[1,:]),
-				period = BK.getperiod(p.prob, x, p.p),
-                p = p.p,)
-	end,
+argspo = (
+    record_from_solution = (x, p; k...) -> begin
+        xtt = BK.get_periodic_orbit(p.prob, x, p.p)
+        return (
+            max = maximum(xtt[1, :]),
+            min = minimum(xtt[1, :]),
+            period = BK.getperiod(p.prob, x, p.p),
+            p = p.p,
+        )
+    end,
 )
 
 # we also define the predictor
@@ -139,7 +142,8 @@ predictor = BK.PALC(tangent = BK.Bordered())
 
 # and _finally_ call the continuation from BK
 
-@time branch = BK.continuation(probpo, cish, predictor, opts_br;
+@time branch = BK.continuation(
+    probpo, cish, predictor, opts_br;
     verbosity = 0, plot = false,
     linear_algo = BK.COPBLS(), # faster linear solver
     argspo...,
@@ -191,8 +195,9 @@ fig
 # 1. a sampler to sample initial conditions in the state space.
 
 using Attractors
-ds = CoupledODEs(modified_lorenz_rule!, u0, p0;
-    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9)
+ds = CoupledODEs(
+    modified_lorenz_rule!, u0, p0;
+    diffeq = (alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9)
 )
 
 grid = (
@@ -201,7 +206,8 @@ grid = (
     range(-20.0, 20.0; length = 200), # z
 )
 
-mapper = AttractorsViaRecurrences(ds, grid;
+mapper = AttractorsViaRecurrences(
+    ds, grid;
     consecutive_recurrences = 1000,
     consecutive_lost_steps = 100,
 )
@@ -211,11 +217,11 @@ sampler, = statespace_sampler(grid)
 algo = AttractorSeedContinueMatch(mapper)
 
 fractions_cont, attractors_cont = global_continuation(
-	algo, prange, pidx, sampler; samples_per_parameter = 1_000
+    algo, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
 plot_attractors_curves(
-    attractors_cont,  A -> minimum(A[:, 1]), prange,
+    attractors_cont, A -> minimum(A[:, 1]), prange,
 )
 
 # This code takes about 15 seconds to run.

@@ -27,15 +27,15 @@
 #########################################################################################
 # Basic struct
 #########################################################################################
-struct SparseArray{T,N} <: AbstractArray{T,N}
-    data::Dict{CartesianIndex{N},T}
-    dims::NTuple{N,Int64}
+struct SparseArray{T, N} <: AbstractArray{T, N}
+    data::Dict{CartesianIndex{N}, T}
+    dims::NTuple{N, Int64}
 end
-function SparseArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
-    return SparseArray{T,N}(Dict{CartesianIndex{N},T}(), dims)
+function SparseArray{T, N}(::UndefInitializer, dims::Dims{N}) where {T, N}
+    return SparseArray{T, N}(Dict{CartesianIndex{N}, T}(), dims)
 end
-SparseArray{T}(::UndefInitializer, dims::Dims{N}) where {T,N} =
-    SparseArray{T,N}(undef, dims)
+SparseArray{T}(::UndefInitializer, dims::Dims{N}) where {T, N} =
+    SparseArray{T, N}(undef, dims)
 SparseArray{T}(::UndefInitializer, dims...) where {T} = SparseArray{T}(undef, dims)
 
 Base.empty!(x::SparseArray) = empty!(x.data)
@@ -54,12 +54,13 @@ _zero(::Type{Set{X}}) where {X<:AbstractArray} = Set{X}()
 Base.@propagate_inbounds Base.getindex(a::SparseArray{T,N}, I::Vararg{Int,N}) where {T,N} =
                                         getindex(a, CartesianIndex(I))
 
-@inline function Base.setindex!(a::SparseArray{T,N}, v, I::CartesianIndex{N}) where {T,N}
+@inline function Base.setindex!(a::SparseArray{T, N}, v, I::CartesianIndex{N}) where {T, N}
     a.data[I] = v
     return v
 end
 Base.@propagate_inbounds function Base.setindex!(
-    a::SparseArray{T,N}, v, I::Vararg{Int,N}) where {T,N}
+        a::SparseArray{T, N}, v, I::Vararg{Int, N}
+    ) where {T, N}
     return setindex!(a, v, CartesianIndex(I))
 end
 

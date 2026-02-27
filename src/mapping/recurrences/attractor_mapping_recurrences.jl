@@ -123,14 +123,15 @@ timer of the FSM.)
 A video illustrating how the algorithm works can be found in the online documentation,
 under the [recurrences animation](@ref recurrences_animation) page.
 """
-struct AttractorsViaRecurrences{DS<:DynamicalSystem, B, G, K} <: AttractorMapper
+struct AttractorsViaRecurrences{DS <: DynamicalSystem, B, G, K} <: AttractorMapper
     ds::DS
     bsn_nfo::B
     grid::G
     kwargs::K
 end
 
-function AttractorsViaRecurrences(ds::DynamicalSystem, grid;
+function AttractorsViaRecurrences(
+        ds::DynamicalSystem, grid;
         Dt = nothing, Δt = Dt, sparse = true,
         force_non_adaptive = false, stop_at_Δt = force_non_adaptive, kwargs...
     )
@@ -165,14 +166,15 @@ function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
 
+
 function Base.show(io::IO, mapper::AttractorsViaRecurrences)
     ps = generic_mapper_print(io, mapper)
     println(io, rpad(" grid: ", ps), mapper.grid)
-    println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.attractors)
+    println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.BoA.attractors)
     return
 end
 
-extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.attractors
+_extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.BoA.attractors
 
 function convergence_time(m::AttractorsViaRecurrences)
     i = m.bsn_nfo.safety_counter
@@ -189,33 +191,40 @@ function convergence_time(m::AttractorsViaRecurrences)
         x = get(kw, :consecutive_attractor_steps, 2)
     end
     x = min(i, x) # it cannot be more than i!
-    return (i - x + 1)*m.bsn_nfo.Δt
+    return (i - x + 1) * m.bsn_nfo.Δt
 end
 
 
 """
-    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
+    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true) → boa
 
 This is a special method of `basins_of_attraction` that using recurrences does
 _exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@cite).
 By enforcing that the internal grid of `mapper` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
+
+The return has type [`ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = boa`
+ensuring backwards compatibility with the previous return format.
 """
 function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
-    basins = mapper.bsn_nfo.basins
-    if basins isa SparseArray;
-        throw(ArgumentError("""
-            Sparse version of AttractorsViaRecurrences is incompatible with
-            `basins_of_attraction(mapper)`."""
-        ))
+    if mapper.bsn_nfo.BoA.basins isa SparseArray
+        throw(
+            ArgumentError(
+                """
+                Sparse version of AttractorsViaRecurrences is incompatible with
+                `basins_of_attraction(mapper)`."""
+            )
+        )
     end
 
-    if (mapper.bsn_nfo.grid_nfo isa SubdivisionBasedGrid)
+    if (mapper.bsn_nfo.BoA.grid isa SubdivisionBasedGrid)
         grid = mapper.grid.max_grid
     else
         grid = mapper.grid.grid
     end
+
+    basins = zero(mapper.bsn_nfo.BoA.basins)
 
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
@@ -230,29 +239,22 @@ function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = 
         if basins[ind] == 0
             show_progress && ProgressMeter.update!(progress, k)
             y0 = generate_ic_on_grid(grid, ind)
-            basins[ind] = recurrences_map_to_label!(
-                mapper.bsn_nfo, mapper.ds, y0; show_progress, mapper.kwargs...
-            )
+            basins[ind] = mapper(y0; show_progress)
         end
     end
 
-    # remove attractors and rescale from 1 to max number of attractors
-    ind = iseven.(basins)
-    basins[ind] .+= 1
-    basins .= (basins .- 1) .÷ 2
-    return basins, mapper.bsn_nfo.attractors
+    return ArrayBasinsOfAttraction(basins, extract_attractors(mapper), grid)
 end
 
 #####################################################################################
 # Definition of `BasinInfo` and initialization
 #####################################################################################
-# we need the abstract grid type because of the type parameterization in `BasinsInfo`
-# the grid subtypes are in the grids file.
-abstract type Grid end
 
-mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
-    basins::A # sparse or dense
-    grid_nfo::G
+mutable struct BasinsInfo{
+        D, Δ, B <: AbstractArray{Int, D},
+        A <: ArrayBasinsOfAttraction{Int, D, B},
+    }
+    BoA::A # sparse or dense
     Δt::Δ
     state::Symbol
     current_att_label::Int
@@ -261,7 +263,6 @@ mutable struct BasinsInfo{D, G<:Grid, Δ, T, V, A <: AbstractArray{Int, D}}
     consecutive_lost::Int
     prev_label::Int
     safety_counter::Int
-    attractors::Dict{Int, StateSpaceSet{D, T, V}}
     visited_cells::Vector{CartesianIndex{D}}
     return_code::Symbol
     stop_at_Δt::Bool
@@ -278,7 +279,7 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
     D = dimension(ds)
     T = eltype(current_state(ds))
     G = length(grid)
-    if D ≠ G && (ds isa PoincareMap && G ∉ (D, D-1))
+    if D ≠ G && (ds isa PoincareMap && G ∉ (D, D - 1))
         error("Grid and dynamical system do not have the same dimension!")
     end
 
@@ -288,18 +289,17 @@ function initialize_basin_info(ds::DynamicalSystem, grid_nfo, Δtt, sparse, stop
         multiplier = 0
     end
     basins_array = if sparse
-        SparseArray{Int}(undef, (map(length, grid ).*(2^multiplier)))
+        SparseArray{Int}(undef, (map(length, grid) .* (2^multiplier)))
     else
-        zeros(Int, (map(length, grid).*(2^multiplier))...)
+        zeros(Int, (map(length, grid) .* (2^multiplier))...)
     end
     V = SVector{G, T}
+    array_BoA = ArrayBasinsOfAttraction(basins_array, Dict{Int, StateSpaceSet{G, T, V}}(), grid_nfo)
     bsn_nfo = BasinsInfo(
-        basins_array,
-        grid_nfo,
+        array_BoA,
         Δt,
         :att_search,
-        2,4,0,1,0,0,
-        Dict{Int, StateSpaceSet{G, T, V}}(),
+        2, 4, 0, 1, 0, 0,
         Vector{CartesianIndex{G}}(),
         :search,
         stop_at_Δt,
@@ -374,11 +374,11 @@ as if it has just been initialized. Useful in `for` loops
 that loop over a parameter of the dynamical system stored in `mapper`.
 """
 function reset_mapper!(mapper::AttractorsViaRecurrences)
-    empty!(mapper.bsn_nfo.attractors)
-    if mapper.bsn_nfo.basins isa Array
-        mapper.bsn_nfo.basins .= 0
+    empty!(mapper.bsn_nfo.BoA.attractors)
+    if mapper.bsn_nfo.BoA.basins isa Array
+        mapper.bsn_nfo.BoA.basins .= 0
     else
-        empty!(mapper.bsn_nfo.basins)
+        empty!(mapper.bsn_nfo.BoA.basins)
     end
     mapper.bsn_nfo.state = :att_search
     mapper.bsn_nfo.consecutive_match = 0
@@ -389,6 +389,6 @@ function reset_mapper!(mapper::AttractorsViaRecurrences)
     return
 end
 
+include("grids.jl")
 include("sparse_arrays.jl")
 include("finite_state_machine.jl")
-include("grids.jl")

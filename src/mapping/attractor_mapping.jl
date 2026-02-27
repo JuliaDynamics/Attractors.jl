@@ -121,18 +121,20 @@ See also [`convergence_and_basins_fractions`](@ref).
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
-function basins_fractions(mapper::AttractorMapper, ics::ValidICS;
+function basins_fractions(
+        mapper::AttractorMapper, ics::ValidICS;
         show_progress = true, N = 1000, additional_fs::Dict = Dict(),
     )
     used_container = ics isa AbstractVector
     N = used_container ? length(ics) : N
-    progress = ProgressMeter.Progress(N;
-        desc="Mapping initial conditions to attractors:", enabled = show_progress
+    progress = ProgressMeter.Progress(
+        N;
+        desc = "Mapping initial conditions to attractors:", enabled = show_progress
     )
     fs = Dict{Int, Int}()
     used_container && (labels = Vector{Int}(undef, N))
 
-    for i ∈ 1:N
+    for i in 1:N
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress)
         fs[label] = get(fs, label, 0) + 1
@@ -143,7 +145,7 @@ function basins_fractions(mapper::AttractorMapper, ics::ValidICS;
     additive_dict_merge!(fs, additional_fs)
     N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
     # Transform count into fraction
-    ffs = Dict(k => v/N for (k, v) in fs)
+    ffs = Dict(k => v / N for (k, v) in fs)
     if used_container
         return ffs, labels
     else
@@ -161,11 +163,19 @@ Return a dictionary mapping label IDs to attractors found by the `mapper`.
 This function should be called after calling [`basins_fractions`](@ref)
 with the given `mapper` so that the attractors have actually been found first.
 
-For `AttractorsViaFeaturizing`, the attractors are only stored if
-the mapper was called with pre-defined initial conditions rather than
-a sampler (function returning initial conditions).
+For developing a new mapper: extend the internal function `_extract_attractors`.
 """
-extract_attractors(::AttractorMapper) = error("not implemented")
+function extract_attractors(mapper::AttractorMapper)
+    attractors = _extract_attractors(mapper)
+    ds = referenced_dynamical_system(mapper)
+    # name attractor variables if possible
+    isnothing(referrenced_sciml_model(ds)) && return attractors
+    names = named_variables(ds)
+    for (k, A) in attractors
+        attractors[k] = StateSpaceSet(A; names)
+    end
+    return attractors
+end
 
 
 """
@@ -182,9 +192,15 @@ be used instead of [`basins_fractions`](@ref).
 """
 function convergence_time end
 
+
 #########################################################################################
 # Includes
 #########################################################################################
+# Instantiate Grid type so that BasinsOfAttraction subtype ArrayBasinsOfAttraction
+# may be loaded which allows attractor_mapping_recurrences.jl to be loaded
+abstract type Grid end
+
+include("../basins/basins_types.jl")
 include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")

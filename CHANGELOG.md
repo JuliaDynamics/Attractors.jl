@@ -1,8 +1,35 @@
-# v1.27
+# v1.32
 
 - `automatic_Δt_basins` deprecated for `automatic_Δt_recurrences`.
 - More options for `automatic_Δt_recurrences`.
 - `automatic_Δt_recurrences` allows providing the grid as a tuple.
+
+# v1.31
+
+- New `BasinsOfAttraction` type and subtypes, containing "basins" as an array or vector, attractors, and a "spatial domain" i.e. a `Grid` or sampled points.
+- All functions using "basins" can now also be called with these new types.
+- Type is decomposible such that `basins, attractors = boa` which ensures backwards compatibility.
+- `map_to_basin` function allows interpolating points to basins.
+
+# v1.30
+
+- `animate_attractors_continuation` has been enhanced to allow animating a
+  sliding `vline` over a standard continuation plot in addition to animating
+  the attractors. Now used in the main tutorial as well.
+
+# v1.29
+
+- Keyword `metric` of `StabilityMeasuresAccumulator` is no longer used as it was incorrect.
+- New keyword `distance` for `StabilityMeasuresAccumulator`.
+- Source code of `StabilityMeasuresAccumulator` has been drastically simplified, and instructions for how to extent its functionality were added.
+
+# v1.28
+
+- `extract_attractors` will now automatically name the dimensions of the attractors for MTK-derived systems.
+
+# v1.27
+
+- It is now possible to specify initial conditions that depend on the parameters during a global continuation. See `PerParameterInitialConditions`.
 
 # v1.26
 

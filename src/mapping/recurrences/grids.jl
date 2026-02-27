@@ -9,9 +9,9 @@ struct RegularGrid{D, R <: AbstractRange} <: Grid
 end
 function RegularGrid(grid::NTuple)
     D = length(grid)
-    grid_steps = SVector{D,Float64}(step.(grid))
-    grid_maxima = SVector{D,Float64}(maximum.(grid))
-    grid_minima = SVector{D,Float64}(minimum.(grid))
+    grid_steps = SVector{D, Float64}(step.(grid))
+    grid_maxima = SVector{D, Float64}(maximum.(grid))
+    grid_minima = SVector{D, Float64}(minimum.(grid))
     return RegularGrid(grid_steps, grid_minima, grid_maxima, grid)
 end
 
@@ -42,7 +42,7 @@ Value `n > 0` means that the corresponding cell will be subdivided
 in total `2^n` times (along each dimension), resulting in finer cells
 within the original coarse cell.
 """
-struct SubdivisionBasedGrid{D, R <: AbstractRange} <:Grid
+struct SubdivisionBasedGrid{D, R <: AbstractRange} <: Grid
     grid_steps::Dict{Int, Vector{Int}}
     grid_minima::SVector{D, Float64}
     grid_maxima::SVector{D, Float64}
@@ -81,14 +81,14 @@ function SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array
     any(<(0), unique_lvls) && error("Level array cannot contain negative values!")
     grid_steps = Dict{Int, Vector{Int}}()
     for i in unique_lvls
-        grid_steps[i] = [length(axis)*2^i for axis in grid]
+        grid_steps[i] = [length(axis) * 2^i for axis in grid]
     end
     grid_maxima = SVector{D, Float64}(maximum.(grid))
     grid_minima = SVector{D, Float64}(minimum.(grid))
 
     function scale_axis(axis, multiplier)
         new_length = length(axis) * (2^multiplier)
-        return range(first(axis), last(axis), length=new_length)
+        return range(first(axis), last(axis), length = new_length)
     end
     multiplier = maximum(keys(grid_steps))
     scaled_axis = [scale_axis(axis, multiplier) for axis in grid]
@@ -125,7 +125,7 @@ function make_lvl_array(ds::DynamicalSystem, grid, maxlevel, q)
     # subdivision is just the log2 of the ratio. We do this fancy
     # computation because this way zeros are handled correctly
     # (and we also clamp the values of the level array correctly in 0-maxlevel)
-    result = [round(Int,log2(clamp(x, 1, 2^maxlevel))) for x in ratios]
+    result = [round(Int, log2(clamp(x, 1, 2^maxlevel))) for x in ratios]
     return result
 end
 
@@ -141,7 +141,7 @@ function basin_cell_index(u, grid_nfo::RegularGrid)
         end
     end
     # Snap point to grid
-    ind = @. round(Int, (u - grid_nfo.grid_minima)/grid_nfo.grid_steps) + 1
+    ind = @. round(Int, (u - grid_nfo.grid_minima) / grid_nfo.grid_steps) + 1
     return CartesianIndex{D}(ind...)
 end
 
@@ -158,7 +158,7 @@ end
 
 function basin_cell_index(u, grid_nfo::SubdivisionBasedGrid)
     D = length(grid_nfo.grid) # compile-type deduction
-    initial_index = basin_cell_index(u, RegularGrid(SVector{D,Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
+    initial_index = basin_cell_index(u, RegularGrid(SVector{D, Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
     if initial_index == CartesianIndex{D}(-1)
         return initial_index
     end
@@ -168,7 +168,7 @@ function basin_cell_index(u, grid_nfo::SubdivisionBasedGrid)
     grid_steps = grid_nfo.grid_steps
     max_level = maximum(keys(grid_steps))
     grid_step = (grid_maxima - grid_minima .+ 1) ./ grid_steps[cell_area]
-    ind = @. round(Int, (u - grid_minima)/grid_step, RoundDown) * (2^(max_level-cell_area)) + 1
+    ind = @. round(Int, (u - grid_minima) / grid_step, RoundDown) * (2^(max_level - cell_area)) + 1
     return CartesianIndex{D}(ind...)
 end
 
@@ -178,5 +178,5 @@ end
 Base.show(io::IO, g::RegularGrid) = Base.show(io, g.grid)
 Base.show(io::IO, g::IrregularGrid) = Base.show(io, g.grid)
 function Base.show(io::IO, g::SubdivisionBasedGrid)
-    println(io, "SubdivisionBasedGrid with $(maximum(g.lvl_array)) subdivisions")
+    return println(io, "SubdivisionBasedGrid with $(maximum(g.lvl_array)) subdivisions")
 end

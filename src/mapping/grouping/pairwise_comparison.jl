@@ -52,7 +52,7 @@ reducing it until no more attractors are found and no duplicates appear.
 The method scales as O(N) in memory and performance with N the number of features.
 This is a huge difference versus the O(N^2) of [`GroupViaClustering`](@ref).
 """
-@kwdef struct GroupViaPairwiseComparison{R<:Real, M} <: GroupingConfig
+@kwdef struct GroupViaPairwiseComparison{R <: Real, M} <: GroupingConfig
     threshold::R = 0.1
     metric::M = Euclidean()
     rescale_features::Bool = true
@@ -77,7 +77,7 @@ function _cluster_features_into_labels(features, config::GroupViaPairwiseCompari
     cluster_labels = [1] # labels for the clusters, going from 1 : num_clusters
     next_cluster_label = 2
 
-    for idx_feature = 2:length(features)
+    for idx_feature in 2:length(features)
         feature = features[idx_feature]
         # because here the cluster labels are always the positive integers,
         # we don't need a dictionary. `Vector` keys are the IDs we need.
