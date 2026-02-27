@@ -1,8 +1,8 @@
 # v1.32
 
-- `automatic_Δt_basins` deprecated for `automatic_Δt_recurrences`.
+- `automatic_Δt_basins` deprecated for `automatic_Δt_recurrences`. The new name better conveys that the function targets the recurrences mapper, not a generic basins application.
 - More options for `automatic_Δt_recurrences`.
-- `automatic_Δt_recurrences` allows providing the grid as a tuple.
+- `automatic_Δt_recurrences` now allows providing the grid as a tuple.
 
 # v1.31
 
