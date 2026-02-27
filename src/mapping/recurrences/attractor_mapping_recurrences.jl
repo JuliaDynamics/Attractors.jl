@@ -318,7 +318,7 @@ import LinearAlgebra
 Calculate an optimal `Δt` value for [`AttractorsViaRecurrences`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
 points within the bounding box of the grid.
-The average `f` is then compared with the average diagonal length of a grid
+The aggregated `f` is then compared with the average diagonal length of a grid
 cell and their ratio provides `Δt`, multiplied by `factor`.
 
 Notice that `Δt` should not be too small which happens typically if the grid resolution
@@ -329,7 +329,8 @@ a performance drop.
 ## Keyword arguments
 
 - `N = 5000`: random samples in the grid to use.
-- `agg = mean`: function used to average `f`. `median` is another option.
+- `agg = mean`: function used to average `f`. `median` is another option, and another one is
+  `v -> quantile(v, 0.1)` for some low quantile.
 - `factor = 10`: factor multiplying the ratio of diagonal/speed.
 - `norm = LinearAlgebra.norm`: function used to obtain speed from state space velocity.
 """
