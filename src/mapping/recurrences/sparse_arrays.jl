@@ -44,15 +44,15 @@ Base.size(a::SparseArray) = a.dims
 #########################################################################################
 # Indexing
 #########################################################################################
-@inline function Base.getindex(a::SparseArray{T,N}, I::CartesianIndex{N}) where {T,N}
+@inline function Base.getindex(a::SparseArray{T, N}, I::CartesianIndex{N}) where {T, N}
     return get(a.data, I, _zero(T))
 end
 # To avoid type piracy for zero of Set:
 _zero(T) = zero(T)
-_zero(::Type{Set{X}}) where {X<:AbstractArray} = Set{X}()
+_zero(::Type{Set{X}}) where {X <: AbstractArray} = Set{X}()
 
-Base.@propagate_inbounds Base.getindex(a::SparseArray{T,N}, I::Vararg{Int,N}) where {T,N} =
-                                        getindex(a, CartesianIndex(I))
+Base.@propagate_inbounds Base.getindex(a::SparseArray{T, N}, I::Vararg{Int, N}) where {T, N} =
+    getindex(a, CartesianIndex(I))
 
 @inline function Base.setindex!(a::SparseArray{T, N}, v, I::CartesianIndex{N}) where {T, N}
     a.data[I] = v

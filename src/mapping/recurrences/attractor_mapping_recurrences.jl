@@ -334,7 +334,8 @@ a performance drop.
 - `factor = 10`: factor multiplying the ratio of diagonal/speed.
 - `norm = LinearAlgebra.norm`: function used to obtain speed from state space velocity.
 """
-function automatic_Δt_recurrences(ds, grid_nfo::Grid;
+function automatic_Δt_recurrences(
+        ds, grid_nfo::Grid;
         factor = 10, N = 5000, agg = mean, norm = LinearAlgebra.norm
     )
     isdiscretetime(ds) && return 1
@@ -361,7 +362,7 @@ function automatic_Δt_recurrences(ds, grid_nfo::Grid;
     end
     u = agg(dudt)
     s = mean_cell_diagonal(grid_nfo)
-    Δt = factor*s/u
+    Δt = factor * s / u
     return Δt
 end
 
