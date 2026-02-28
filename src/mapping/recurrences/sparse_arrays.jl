@@ -45,8 +45,12 @@ Base.size(a::SparseArray) = a.dims
 # Indexing
 #########################################################################################
 @inline function Base.getindex(a::SparseArray{T, N}, I::CartesianIndex{N}) where {T, N}
-    return get(a.data, I, zero(T))
+    return get(a.data, I, _zero(T))
 end
+# To avoid type piracy for zero of Set:
+_zero(T) = zero(T)
+_zero(::Type{Set{X}}) where {X <: AbstractArray} = Set{X}()
+
 Base.@propagate_inbounds Base.getindex(a::SparseArray{T, N}, I::Vararg{Int, N}) where {T, N} =
     getindex(a, CartesianIndex(I))
 
@@ -59,3 +63,27 @@ Base.@propagate_inbounds function Base.setindex!(
     ) where {T, N}
     return setindex!(a, v, CartesianIndex(I))
 end
+
+Base.checkbounds(::Type{Bool}, x::SparseArray, k::CartesianIndex) = haskey(x.data, k)
+
+#########################################################################################
+# Broadcasting
+#########################################################################################
+function sparsebroadcast(f, As...)
+    sidxs = findall(A -> A isa SparseArray, As)
+    if isempty(sidxs)
+        return broadcast(f, As...)
+    end
+    dims = size(As[sidxs[1]])
+    kfirst = first(keys(As[sidxs[1]]))
+    T = typeof(f(map(A -> A isa AbstractArray ? A[kfirst] : A, As)...))
+    out = SparseArray{T, length(dims)}(undef, dims)
+    for k in eachindex(As[sidxs[1]])
+        # function assumes internally all keys are the same
+        args = map(A -> A isa AbstractArray ? A[k] : A, As)
+        out[k] = f(args...)
+    end
+    return out
+end
+
+Base.eachindex(A::SparseArray) = eachindex(A.data)

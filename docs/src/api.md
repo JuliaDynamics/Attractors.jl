@@ -14,7 +14,7 @@ extract_attractors
 
 ```@docs
 AttractorsViaRecurrences
-automatic_Δt_basins
+automatic_Δt_recurrences
 SubdivisionBasedGrid
 subdivision_based_grid
 ```
