@@ -35,7 +35,7 @@ return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a
 to IDs (keys) in dictionary `a₋`, so that
 so that values in `a₊` that are the "closest" to values in `a₋` get assigned the
 same key as in `a₋`. In this way keys of `a₊` are "matched" to keys of `a₋`.
-Use [`swap_dict_keys`](@ref) to apply `rmap` to `a₊`
+Use [`swap_dict_keys!`](@ref) to apply `rmap` to `a₊`
 or to other dictionaries with same keys as `a₊`.
 
 How matching happens, i.e., how "closeness" is defined, depends on the algorithm `matcher`.
