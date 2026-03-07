@@ -84,7 +84,7 @@ function Attractors.heatmap_basins_attractors(grid, basins::AbstractArray, attra
 end
 
 function Attractors.heatmap_basins_attractors(BoA::ArrayBasinsOfAttraction; kwargs...)
-    return Attractors.heatmap_basins_attractors(BoA.grid, BoA.basins, BoA.attractors; kwargs...)
+    return Attractors.heatmap_basins_attractors(BoA.grid.grid, BoA.basins, BoA.attractors; kwargs...)
 end
 
 function Attractors.heatmap_basins_attractors!(
