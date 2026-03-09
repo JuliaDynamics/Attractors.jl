@@ -207,11 +207,9 @@ end
 # Function to reset the accumulator
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
-    ds = referenced_dynamical_system(a.mapper)
-    V = typeof(current_state(ds))
-    empty!*a.u0s = Vector{V}()
-    a.bs = Vector{Int}()
-    a.cts = Vector{Float64}()
+    empty!(a.u0s)
+    empty!(a.bs)
+    empty!(a.cts)
     return
 end
 
