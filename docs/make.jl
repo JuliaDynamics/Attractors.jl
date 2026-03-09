@@ -17,7 +17,6 @@ Literate.markdown(
     credit = false,
 )
 
-
 pages = [
     "index.md",
     "tutorial.md",

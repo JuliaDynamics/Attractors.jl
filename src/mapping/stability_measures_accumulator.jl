@@ -170,7 +170,7 @@ end
 extras = Dict("maxv" => extra_function)
 ```
 """
-mutable struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E<:Dict} <: AttractorMapper
+struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
@@ -209,7 +209,7 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     ds = referenced_dynamical_system(a.mapper)
     V = typeof(current_state(ds))
-    a.u0s = Vector{V}()
+    empty!*a.u0s = Vector{V}()
     a.bs = Vector{Int}()
     a.cts = Vector{Float64}()
     return
