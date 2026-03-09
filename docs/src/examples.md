@@ -798,7 +798,7 @@ function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
     ids = extract_basins(sboa)
     u0s = extract_domain(sboa)
     att = extract_attractors(sboa) # we don't need the attractors for this example
-    out = Dict(k => 0.0 for k in unique(ids))
+    out = Dict(k => 0.0 for k in unique(ids)) # our function must return a Dict
     for i in eachindex(ids)
         id = ids[i]
         out[id] = max(out[id], u0s[i][2])
@@ -806,6 +806,7 @@ function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
     return out
 end
 
+# `extras` must be dictionary mapping the quantifier name to its function.
 extras = Dict("maxv" => extra_function)
 ```
 

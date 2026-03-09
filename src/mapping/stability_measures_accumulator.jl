@@ -150,6 +150,25 @@ and the dynamical system and returns a dictionary mapping attractor IDs to an ou
 (anything works, but real numbers make most sense).
 Each provided function produces an additional entry in the
 output dictionary of the accumulator, with name provided by its key in the dictionary.
+
+Here's an example `extras` taken from one of the online [examples](@ref user_defined_quantifiers):
+
+```julia
+function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
+    ids = extract_basins(sboa)
+    u0s = extract_domain(sboa)
+    att = extract_attractors(sboa) # we don't need the attractors for this example
+    out = Dict(k => 0.0 for k in unique(ids)) # our function must return a Dict
+    for i in eachindex(ids)
+        id = ids[i]
+        out[id] = max(out[id], u0s[i][2])
+    end
+    return out
+end
+
+# must be dictionary mapping the quantifier name to its function.
+extras = Dict("maxv" => extra_function)
+```
 """
 mutable struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E<:Dict} <: AttractorMapper
     mapper::AM
