@@ -384,7 +384,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
     end
 
-    return Dict(
+    output = Dict(
         "characteristic_return_time" => characteristic_return_time,
         "reactivity" => reactivity,
         "maximal_amplification" => maximal_amplification,
@@ -402,6 +402,16 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         "basin_stability" => basin_stab,
         "finite_time_basin_stability" => finite_time_basin_stab,
     )
+
+    # extra quantifiers requested by the user
+    if !isempty(extras)
+        sboa = SampledBasinsOfattraction(bs, attractors, u0s)
+        for (key, f) in extras
+            output[key] = f(sboa, ds)
+        end
+    end
+
+    return output
 end
 
 # Weighted median: smallest x with cumulative weight ≥ 0.5.
