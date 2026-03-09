@@ -77,9 +77,9 @@ uses to interpolate state space points to their nearest basin. These arguments a
 
 * `tree`: search tree constructor (e.g. `KDTree`, `BallTree`).
 * `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`).
-* `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`.
+* `searchstructure_kwargs...`: additional keyword arguments propagated to `Neighborhood.searchstructure`.
 """
-struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}, ss <: Neighborhood.SearchType} <: BasinsOfAttraction{ID}
+struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}, ss} <: BasinsOfAttraction{ID}
     points_ids::Vector{ID}
     attractors::Dict{AK, S}
     sampled_points::S
@@ -87,9 +87,8 @@ struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSp
 
     function SampledBasinsOfAttraction(basins::Vector{ID}, attractors::Dict{AK, S}, sampled_points::S; tree = KDTree, metric = Euclidean(), ss_kwargs...) where
         {ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
-        # Dimensionality checks
-        length(basins) != sampled_points && error("The basins and the sampled points must have equal length")
-        search_struct = searchstructure(tree, BoA.sampled_points, metric, ss_kwargs...)
+        length(basins) != length(sampled_points) && error("The basins and the sampled points must have equal length")
+        search_struct = searchstructure(tree, sampled_points, metric; ss_kwargs...)
         return new{ID, D, T, V, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
     end
 end
