@@ -40,11 +40,10 @@ abstract type BasinsOfAttraction{ID} end
     ArrayBasinsOfAttraction(basins, attractors, grid)
 
 A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by an
-`array::AbstractArray`, that has `D` number of dimensions. The `attractors` take the form of a
-dictionary mapping attractor labels to `StateSpaceSet`'s with the points of each set being of
-length `D`. The `grid` represents the spatial domain, and can be anything given to [`AttractorsViaRecurrences`](@ref)
-as a grid, i.e., a tuple of ranges or a `Grid` type.
-
+`array::AbstractArray`, that has `D` number of dimensions. The `grid` prescribes
+the state space domain that `basins` cover, and can be anything given to [`AttractorsViaRecurrences`](@ref)
+as a grid, i.e., a tuple of ranges or a `Grid` subtype.
+The `attractors` are the usual form of Attractors.jl, a dictionary labels to `StateSpaceSet`s.
 """
 struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S <: StateSpaceSet} <: BasinsOfAttraction{ID}
     basins::B
@@ -67,18 +66,19 @@ end
 """
     SampledBasinsOfAttraction(basins, attractors, sampled_points)
 
-A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by a `vector::AbstractVector`.
-The `attractors` take the form of a dictionary mapping attractor labels to `StateSpaceSet`'s with
-the points of each set being of equal length. The spatial domain of this basin type is `sampled_points` which
-can be a `StateSpaceSet` with the same dimensionality, element type, and vector type as those
-used to represent the attractors or alternatively a vector of points with the aforementioned requirements.
+A subtype of [`BasinsOfAttraction`](@ref) where the basins are sampled points in the state space.
+`basins` are thus a `vector::AbstractVector`, each entry corresponding to the point in `sampled_points`.
+The `attractors` are the usual form of Attractors.jl, a dictionary labels to `StateSpaceSet`s.
+
+`sampled_points` can be a `StateSpaceSet` with the same dimensionality and element type
+as the attractors, or alternatively a vector of points with the same requirements.
 
 Additional keyword arguments may be specified for use in the construction of a search structure which [`map_to_basin`](@ref)
 uses to interpolate state space points to their nearest basin. These arguments are:
 
-* `tree`: search tree constructor (e.g. `KDTree`, `BallTree`)
-* `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`)
-* `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`
+* `tree`: search tree constructor (e.g. `KDTree`, `BallTree`).
+* `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`).
+* `searchstructure_kwargs...`: additional keyword arguments passed to `searchstructure`.
 """
 struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}, ss <: Neighborhood.SearchType} <: BasinsOfAttraction{ID}
     points_ids::Vector{ID}
