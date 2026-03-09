@@ -824,6 +824,8 @@ stability_measures["maxv"]
 
 Unsurprisingly, the maximum value of the `y` coordinate is ≈2 for all basins, but this we new already due to the symmetries of the system's basins!
 
+Notice that this new extra quantity would also be tracked along a continuation if the accumulator is given to a continuation like in the main tutorial's example.
+
 ## Invariant saddle of a dynamical system
 
 The stagger-and-step method approximates the invariant
