@@ -8,14 +8,19 @@ struct EverywhereUniform end
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
-    StabilityMeasuresAccumulator(mapper::AttractorMapper; kwargs...)
+    StabilityMeasuresAccumulator(mapper::AttractorMapper [, extras]; kwargs...)
 
 A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability measures in the most efficient
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
 that implements the `id = mapper(u0)` syntax. This functionality was developed
-as part of [Morr2025](@cite). If you use it, cite this paper along with the Attractors.jl
-publication [Datseris2023](@cite).
+as part of [Morr2026](@cite).
+
+The accummulator records several measures of stability (or resilience) defined
+in [Morr2026](@cite), and a few more related and derived shortly after, see list below.
+However, it also allows computing any additional user-defined quantifier that is
+a function of the attractors and/or their basins of attraction via the `extras`
+argument, see the Extra quantifiers section below.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
@@ -132,19 +137,32 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
+
+### Extra quantifiers
+
+The accumulator produces [`SampledBasinsOfAttraction`](@ref) instances internally.
+Thus, any function of such objects can be estimated at the end of the accumulation
+(at the call of `finalize_accumulator`). To enhance the output of the accumulator
+with arbitrary quantifiers you can provide as the optional argument `extras`.
+It is a dictionary mapping additional quantifier names (as `String`s) to functions
+`f(sboa, ds)`, where each function takes as an input the sampled basins
+and the dynamical system and returns an output (anything works, but real numbers
+make most sense). Each provided function produces an additional entry in the
+output dictionary of the accumulator, with name provided by its key in the dictionary.
 """
-mutable struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W} <: AttractorMapper
+mutable struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E<:Dict} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
-    bs::Vector{Int}
-    cts::Vector{Float64}
+    bs::Vector{Int} # basins vector
+    cts::Vector{Float64} # convergence times
     finite_time::F
     weighting_distribution::W
     distance::M
+    extras::E
 end
 
 function StabilityMeasuresAccumulator(
-        mapper::AttractorMapper;
+        mapper::AttractorMapper, extras = Dict();
         finite_time = 1.0, weighting_distribution = EverywhereUniform(), distance = Centroid()
     )
     reset_mapper!(mapper)
