@@ -38,7 +38,7 @@ end
 
     @testset "nonlocal stab" begin
         testfile("nonlocal/mfstest.jl")
-        testfile("mapping/stability_measures_accumulator.jl")
+        testfile("nonlocal/stability_measures_accumulator.jl")
     end
 
     @testset "boundaries" begin

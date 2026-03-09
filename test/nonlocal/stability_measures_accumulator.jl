@@ -20,24 +20,20 @@ function dumb_map(z, p, n)
 end
 
 dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
-
 grid = ([-1, 0, 1], [-1, 0, 1])
-
 mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
 
 A = ics_from_grid(grid)
 for u0 in A
-    id = mapper(u0)
+    id = mapper(u0) # run this to find all attractors
 end
 
 attractors = extract_attractors(mapper)
-
 mapper = AttractorsViaProximity(dynamics, attractors, 0.01, Ttr = 0)
-
 accumulator = StabilityMeasuresAccumulator(mapper, finite_time = 0.5)
 
 for u0 in A
-    id = accumulator(u0)
+    id = accumulator(u0) # run this to accumulate measures
 end
 
 results = finalize_accumulator(accumulator)
@@ -67,7 +63,7 @@ results_expected = Dict(
     "maximal_amplification_time" => Dict(2 => NaN, 1 => NaN, -1 => NaN)
 )
 # Check if the results are as expected
-@testset "Nonlocal Stability Measures Accumulator with dumb map" begin
+@testset "Stability Measures Accumulator with dumb map" begin
     for (key, value) in results_expected
         @test key in keys(results)
         @test isapprox(
@@ -112,7 +108,7 @@ measures_cont_expected = Dict(
     "maximal_amplification" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)],
     "maximal_amplification_time" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)]
 )
-@testset "Nonlocal Stability Measures Continuation" begin
+@testset "Stability Measures Accumulator Continuation" begin
     # Validate the results
     for (key, value) in measures_cont_expected
         @test key in keys(measures_cont)
@@ -213,7 +209,7 @@ end
 
 @testset "Discrete time" begin
     # For these parameters the map has 1 fixed point and one period 3 orbit.
-    # The tests fail because linear measures are not computed for discrete sytems now.
+    # The tests failed because linear measures are not computed for discrete sytems now.
     henon_rule_alter(x, p, n) = SVector{2}(1.0 - p[1] * x[1]^2 + x[2], -p[2] * x[1])
     μ = 1.05; J = 0.9
     ds = DeterministicIteratedMap(henon_rule_alter, zeros(2), [μ, J])
@@ -221,10 +217,8 @@ end
     yg = range(-3.0, 4.0; length = 101)
     grid = (xg, yg)
 
-
     mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
     accumulator = StabilityMeasuresAccumulator(mapper)
-
 
     A = ics_from_grid(grid)
     for u0 in A
@@ -238,4 +232,47 @@ end
         measures = collect(values(stability_measures[m]))
         @test count(!isnan, measures) ≥ 0
     end
+end
+
+
+@testset "user-defined quantifiers" begin
+    r = 0.5
+    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
+    grid = ([-1, 0, 1], [-1, 0, 1])
+    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
+    A = ics_from_grid(grid)
+
+    # this function counts how many points in basin of attraction
+    # have x-coordinate larger than `r`. For the starting parameter 0.5
+    # this is known and is exactly 3 for one attractor and 0 for the other.
+    function extra_function(sboa, ds)
+        r = current_parameter(ds, 1)
+        ids = extract_basins(sboa)
+        u0s = extract_domain(sboa)
+        out = Dict(k => 0 for k in unique(ids))
+        for i in eachindex(ids)
+            if u0s[i][1] > r
+                out[ids[i]] += 1
+            end
+        end
+        return out
+    end
+
+    extras = Dict(
+        "extra" => extra_function
+    )
+    accumulator = StabilityMeasuresAccumulator(mapper, extras)
+
+    for u0 in A
+        id = accumulator(u0) # run this to accumulate measures
+    end
+
+    results = finalize_accumulator(accumulator)
+
+    @test haskey(results, "extra")
+    @test results["extra"] isa Dict
+    @test valtype(results["extra"]) == Int
+    uservals = sort!(collect(values(results["extra"])))
+    @test uservals == [0, 3]
+
 end

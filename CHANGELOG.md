@@ -1,3 +1,7 @@
+# v1.33
+
+- New enhancement for `StabilityMeasuresAccumulator`: now arbitrary user-defined functions of the basins and attractors can be given.
+
 # v1.32
 
 - `automatic_Δt_basins` deprecated for `automatic_Δt_recurrences`. The new name better conveys that the function targets the recurrences mapper, not a generic basins application.

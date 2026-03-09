@@ -749,10 +749,9 @@ computing the zeroes of the ODE system. However, the edge tracking algorithm all
 edge states also in high-dimensional and chaotic systems where a simple computation of
 unstable equilibria becomes infeasible.
 
-## Estimating (almost) all stability measures at a given parameter
+## Estimating (almost) all stability measures using the accumulator
 
-The type [`StabilityMeasuresAccumulator`](@ref) is showcased in an application of
-finding all stability measures for the Duffing oscillator.
+The type [`StabilityMeasuresAccumulator`](@ref) which was highlighted in the main tutorial is showcased in an application of finding all stability measures for the Duffing oscillator at a fixed parameter here.
 
 ```@example MAIN
 function duffing(u, p, t)
@@ -774,19 +773,59 @@ grid = (range(-2, 2; length = n_grid),range(-2, 2; length = n_grid),)
 
 mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
 
-accumulator = StabilityMeasuresAccumulator(mapper, finite_time=50.0, weighting_distribution=MvNormal(zeros(2), 1.0*I))
+accumulator = StabilityMeasuresAccumulator(mapper;
+    finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
+)
 ```
 
 If we call this object on some initial conditions and finalize its values, we receive
 several different stability measures. Their interpretation can be found in the documentation of [`StabilityMeasuresAccumulator`](@ref).
 
 ```@example MAIN
-A = ics_from_grid(grid)
-for u0 in A
+ics = ics_from_grid(grid)
+for u0 in ics
     id = accumulator(u0)
 end
 stability_measures = finalize_accumulator(accumulator)
 ```
+
+## [Enhancing the accumulator with arbitrary user-defined quantifiers](@id user_defined_quantifiers)
+
+Following from the example above, lets' say that we want to enhance the accumulator with another quantity which is not estimated by default. In this example this will simply be the maximum velocity (2nd variable) each basin has. Following the documentation of [`StabilityMeasuresAccumulator`](@ref), we only need to define a function that inputs a [`SampledBasinsOfAttraction`](@ref) and returns a dictionary mapping attractor IDs to their additional quantifier. We can do this like so:
+
+```@example MAIN
+function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
+    ids = extract_basins(sboa)
+    u0s = extract_domain(sboa)
+    att = extract_attractors(sboa) # we don't need the attractors for this example
+    out = Dict(k => 0.0 for k in unique(ids)) # our function must return a Dict
+    for i in eachindex(ids)
+        id = ids[i]
+        out[id] = max(out[id], u0s[i][2])
+    end
+    return out
+end
+
+# `extras` must be dictionary mapping the quantifier name to its function.
+extras = Dict("maxv" => extra_function)
+```
+
+we now pass this to a new accumulator and re-run everything:
+
+```@example MAIN
+accumulator = StabilityMeasuresAccumulator(mapper, extras;
+    finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
+)
+for u0 in ics
+    id = accumulator(u0)
+end
+stability_measures = finalize_accumulator(accumulator)
+stability_measures["maxv"]
+```
+
+Unsurprisingly, the maximum value of the `y` coordinate is ≈2 for all basins, but this we new already due to the symmetries of the system's basins!
+
+Notice that this new extra quantity would also be tracked along a continuation if the accumulator is given to a continuation like in the main tutorial's example.
 
 ## Invariant saddle of a dynamical system
 
