@@ -19,19 +19,18 @@ the size of the basins as an array or a set of points sampled from the state spa
 can be accessed using the [`extract_basins`](@ref), [`extract_attractors`](@ref),
 and [`extract_domain`](@ref) functions respectively.
 
+The [`map_to_basin`](@ref) function provides interpolation of a point in state space
+to the basin of attraction it is likely to belong to.
+
 Currently available subtypes:
 
 * [`ArrayBasinsOfAttraction`](@ref)
 * [`SampledBasinsOfAttraction`](@ref)
 
-All `BasinsOfAttraction` subtypes can be used with [`basins_fractions`](@ref) provided
-that the basins are represented as subtypes of `AbstractArray`. Additionally, all
-`BasinsOfAttraction` subtypes are iterable in the sense: `basins, attractors = BoA`, this
+All `BasinsOfAttraction` subtypes can be used with [`basins_fractions`](@ref). Additionally,
+all `BasinsOfAttraction` subtypes are iterable: `basins, attractors = BoA`. This
 was done to ensure backwards compatibility for functions whose original return format was
 `basins, attractors` but has since been replaced with a `BasinsOfAttraction` type.
-
-The [`map_to_basin`](@ref) function provides simple interpolation of a point in state space
-to determine which basin of attraction it is likely to belong to.
 """
 abstract type BasinsOfAttraction{ID} end
 
