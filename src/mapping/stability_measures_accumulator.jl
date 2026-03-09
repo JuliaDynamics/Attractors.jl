@@ -143,11 +143,12 @@ The word "distance" here refers to the distance established by the `distance` ke
 The accumulator produces [`SampledBasinsOfAttraction`](@ref) instances internally.
 Thus, any function of such objects can be estimated at the end of the accumulation
 (at the call of `finalize_accumulator`). To enhance the output of the accumulator
-with arbitrary quantifiers you can provide as the optional argument `extras`.
+with arbitrary quantifiers you can provide the optional argument `extras`.
 It is a dictionary mapping additional quantifier names (as `String`s) to functions
-`f(sboa, ds)`, where each function takes as an input the sampled basins
-and the dynamical system and returns an output (anything works, but real numbers
-make most sense). Each provided function produces an additional entry in the
+`f(sboa, ds)`. Each function `f` takes as an input the sampled basins
+and the dynamical system and returns a dictionary mapping attractor IDs to an output
+(anything works, but real numbers make most sense).
+Each provided function produces an additional entry in the
 output dictionary of the accumulator, with name provided by its key in the dictionary.
 """
 mutable struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E<:Dict} <: AttractorMapper
@@ -172,14 +173,15 @@ function StabilityMeasuresAccumulator(
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    return StabilityMeasuresAccumulator{AM, V, F, M, W}(
+    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras)}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
         Vector{Float64}(),
         finite_time,
         weighting_distribution,
-        distance
+        distance,
+        extras
     )
 end
 
@@ -384,7 +386,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
     end
 
-    output = Dict(
+    output = Dict{String, Any}(
         "characteristic_return_time" => characteristic_return_time,
         "reactivity" => reactivity,
         "maximal_amplification" => maximal_amplification,
@@ -404,9 +406,9 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     )
 
     # extra quantifiers requested by the user
-    if !isempty(extras)
-        sboa = SampledBasinsOfattraction(bs, attractors, u0s)
-        for (key, f) in extras
+    if !isempty(accumulator.extras)
+        sboa = SampledBasinsOfAttraction(bs, attractors, u0s)
+        for (key, f) in accumulator.extras
             output[key] = f(sboa, ds)
         end
     end
