@@ -545,10 +545,8 @@ end
 resize!(fig, 600, 500)
 fig
 
-
 # For more specialization on estimating these stability measures,
 # see the documentation of [`StabilityMeasuresAccumulator`](@ref).
-
 
 # One of the biggest strengths of Attractors.jl is that it is not an isolated software.
 # It is part of **DynamicalSystems.jl**. We can straightforwardly use any other
@@ -574,7 +572,12 @@ end
 # for each attractor. `map` just means that we don't have to pre-allocate a
 # new vector before the loop; it creates it for us.
 
-# We now visualize the MLE with the same way as any other quantity over the continuation:
+# Notice: in the example here we we computed the Lyapunov exponents after the fact.
+# We could do it however duing the first-pass of the continuation of the
+# [`StabilityMeasuresAccumulator`](@ref) by providing the `extras` argument to it,
+# see e.g., the [example of additional quantifiers](@ref user_defined_quantifiers) online.
+
+# Regardless, we now visualize the MLE with the same way as any other quantity over the continuation:
 
 axλ = Axis(fig[-length(chosen), 1]; ylabel = "MLE")
 hidexdecorations!(axλ)
