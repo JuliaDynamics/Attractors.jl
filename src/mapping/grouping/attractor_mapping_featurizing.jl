@@ -112,10 +112,7 @@ end
 #####################################################################################
 # Extension of `AttractorMapper` API: basins_fractions_grouped
 #####################################################################################
-function basins_fractions_grouped(mapper, ics, progress, labels)
-    # we always collect the initial conditions because we need their reference
-    # to extract the attractors
-    append!(ics, additional_ics)
+function basins_fractions_grouped(mapper::AttractorsViaFeaturizing, ics, progress, labels)
     features = extract_features(mapper, ics; progress)
     glabels = group_features(features, mapper.group_config)
     if length(labels) > 1
