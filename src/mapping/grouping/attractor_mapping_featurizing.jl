@@ -112,20 +112,17 @@ end
 #####################################################################################
 # Extension of `AttractorMapper` API: basins_fractions_grouped
 #####################################################################################
-function basins_fractions_grouped(mapper, ics, N, progress, labels, additional_ics)
+function basins_fractions_grouped(mapper, ics, progress, labels)
     # we always collect the initial conditions because we need their reference
     # to extract the attractors
-    icscol = if ics isa Function
-        StateSpaceSet([copy(ics()) for _ in 1:N])
-    else
-        ics
+    append!(ics, additional_ics)
+    features = extract_features(mapper, ics; progress)
+    glabels = group_features(features, mapper.group_config)
+    if length(labels) > 1
+        labels .= glabels
     end
-    append!(isccol, additional_ics)
-    features = extract_features(mapper, icscol; progress)
-    group_labels = group_features(features, mapper.group_config)
-    length(labels) > 1 && (labels .= @view(group_labels[1:N]))
-    extract_attractors!(mapper, group_labels, icscol)
-    fs = basins_fractions(group_labels) # Vanilla fractions method with Array input
+    extract_attractors!(mapper, labels, icscol)
+    fs = basins_fractions(labels) # Vanilla fractions method with Array input
     return fs
 end
 

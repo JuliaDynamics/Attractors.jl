@@ -136,7 +136,13 @@ function basins_fractions(
     ffs = if allows_mapper_u0(mapper)
         basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
     else
-        basins_fractions_grouped(mapper, ics, N, progress, labels, additional_ics)
+        icscol = if ics isa Function
+            StateSpaceSet([copy(ics()) for _ in 1:N])
+        else
+            ics
+        end
+        icscol = vcat(icscol, additional_ics)
+        basins_fractions_grouped(mapper, icscol, progress, labels)
     end
     if used_container
         return ffs, labels
@@ -162,7 +168,18 @@ function basins_fractions_individual(mapper, ics, N, progress, labels, additiona
     return ffs
 end
 
-function basins_fractions_grouped(mapper, ics, N, progress, labels, additional_ics)
+"""
+    basins_fractions_grouped(mapper, ics, progress, labels)
+
+Internal function called by `basins_fractions` for `AttractorMapper`s that
+cannot map individual initial conditions to attractor labels.
+Must be extended for new mappers that fall under this category.
+`ics` is the initial conditions already collected into vector,
+`progress` is an initialized progress bar of appropriate size,
+`labels` is an initialized container of labels that should be overwritten
+in the function call.
+"""
+function basins_fractions_grouped(mapper, ics, progress, labels)
     error("Must be implemented for mapper of type $(nameof(typeof(mapper)))")
 end
 
