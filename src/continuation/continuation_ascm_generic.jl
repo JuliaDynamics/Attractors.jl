@@ -182,7 +182,7 @@ function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N
         for u0 in seeding(att)
             # We map the initial condition to an attractor, but we don't care
             # about which attractor we go to. This is just so that the internal
-            # array of `AttractorsViaRecurrences` registers the attractors
+            # data of `AttractorsViaRecurrences` registers the attractors
             label = mapper(u0; show_progress = false)
             seeded_fs[label] = get(seeded_fs, label, 0) + 1
         end
@@ -220,15 +220,4 @@ function seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, s
     # with these extra u0s we now perform fractions estimation as normal
     fs, = basins_fractions(mapper, StateSpaceSet(u0s); show_progress = false)
     return fs
-end
-
-allows_mapper_u0(::AttractorMapper) = true
-function allows_mapper_u0(mapper::AttractorsViaFeaturizing)
-    if mapper.group_config isa GroupViaClustering
-        return false
-    elseif mapper.group_config isa GroupViaPairwiseComparison
-        return false
-    else
-        return true
-    end
 end
