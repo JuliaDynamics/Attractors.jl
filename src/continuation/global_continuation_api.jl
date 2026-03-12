@@ -73,14 +73,14 @@ can be performed over arbitrary user-defined curves in parameter space.
 The second call signature with `pcurve` allows for this possibility. In this case
 `pcurve` is a vector of iterables, where each iterable maps parameter indices
 to parameter values. These iterables can be dictionaries, named tuples, `Vector{Pair}`,
-anything that can be given in `set_parameters!`.
-The sequence of the iterables defines a curve in parameter space.
+anything that can be given in `set_parameters!`. We recommend to use dictionaries.
+Regardless, the sequence of the iterables defines a curve in parameter space.
 In fact, the version with `prange, pidx` simply defines
-`pcurve = [[pidx => p] for p in prange]` and calls the second method.
+`pcurve = [Dict(pidx => p) for p in prange]` and calls the second method.
 """
 function global_continuation(alg::GlobalContinuationAlgorithm, prange::AbstractVector, pidx, sampler; kw...)
     # everything is propagated to the curve setting
-    pcurve = [[pidx => p] for p in prange]
+    pcurve = [Dict(pidx => p) for p in prange]
     return global_continuation(alg, pcurve, sampler; kw...)
 end
 
