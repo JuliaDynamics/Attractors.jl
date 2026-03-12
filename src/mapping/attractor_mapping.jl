@@ -123,34 +123,47 @@ See also [`convergence_and_basins_fractions`](@ref).
 """
 function basins_fractions(
         mapper::AttractorMapper, ics::ValidICS;
-        show_progress = true, N = 1000, additional_fs::Dict = Dict(),
+        show_progress = true, N = 1000,
+        # this is an internal keyword used in the ASCM global conitnuation
+        additional_ics = [],
     )
     used_container = ics isa AbstractVector
     N = used_container ? length(ics) : N
-    progress = ProgressMeter.Progress(
-        N;
-        desc = "Mapping initial conditions to attractors:", enabled = show_progress
+    progress = ProgressMeter.Progress(N;
+        desc = "Mapping i.c. to attractors:", enabled = show_progress
     )
-    fs = Dict{Int, Int}()
-    used_container && (labels = Vector{Int}(undef, N))
-
-    for i in 1:N
-        ic = _get_ic(ics, i)
-        label = mapper(ic; show_progress)
-        fs[label] = get(fs, label, 0) + 1
-        used_container && (labels[i] = label)
-        show_progress && ProgressMeter.next!(progress)
+    labels = Vector{Int}(undef, used_container ? N : 1)
+    ffs = if allows_mapper_u0(mapper)
+        basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
+    else
+        basins_fractions_grouped(mapper, ics, N, progress, labels, additional_ics)
     end
-    # the non-public-API `additional_fs` i s used in the continuation methods
-    additive_dict_merge!(fs, additional_fs)
-    N = N + (isempty(additional_fs) ? 0 : sum(values(additional_fs)))
-    # Transform count into fraction
-    ffs = Dict(k => v / N for (k, v) in fs)
     if used_container
         return ffs, labels
     else
         return ffs
     end
+end
+
+function basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
+    fs = Dict{Int, Int}()
+    for u0 in additional_ics
+        label = mapper(u0; show_progress = false)
+        fs[label] = get(fs, label, 0) + 1
+    end
+    for i in 1:N
+        ic = _get_ic(ics, i)
+        label = mapper(ic; show_progress = false)
+        fs[label] = get(fs, label, 0) + 1
+        length(labels) > 1 && (labels[i] = label)
+        ProgressMeter.next!(progress)
+    end
+    ffs = Dict(k => v / (N + lenth(additional_ics)) for (k, v) in fs)
+    return ffs
+end
+
+function basins_fractions_grouped(mapper, ics, N, progress, labels, additional_ics)
+    error("Must be implemented for mapper of type $(nameof(typeof(mapper)))")
 end
 
 _get_ic(ics::Function, i) = ics()
@@ -160,8 +173,9 @@ _get_ic(ics::AbstractVector, i) = ics[i]
     extract_attractors(mapper::AttractorsMapper) → attractors
 
 Return a dictionary mapping label IDs to attractors found by the `mapper`.
-This function should be called after calling [`basins_fractions`](@ref)
-with the given `mapper` so that the attractors have actually been found first.
+This function should be called after mapping initial conditions with `mapper`
+(e.g., calling [`basins_fractions`](@ref))
+so that the attractors have actually been found first.
 
 For developing a new mapper: extend the internal function `_extract_attractors`.
 """
