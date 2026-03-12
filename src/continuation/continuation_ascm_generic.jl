@@ -189,17 +189,10 @@ function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N
     end
     # Now perform basin fractions estimation as normal, utilizing found attractors
     # (the function comes from attractor_mapping.jl)
-    if ics isa Function
-        fs = basins_fractions(
-            mapper, ics;
-            additional_fs = seeded_fs, show_progress = false, N
-        )
-    else
-        fs, = basins_fractions(
-            mapper, ics;
-            additional_fs = seeded_fs, show_progress = false
-        )
-    end
+    fs = basins_fractions(
+        mapper, ics;
+        additional_fs = seeded_fs, show_progress = false, N
+    )
     return fs
 end
 
