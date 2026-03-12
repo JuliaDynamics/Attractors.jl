@@ -127,6 +127,7 @@ function global_continuation(
     )
     mapper = acam.mapper
     prev_attractors = empty(extract_attractors(mapper))
+    additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict[]
@@ -136,18 +137,27 @@ function global_continuation(
     for p in pcurve
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
-        # Seed initial conditions from previous attractors
-        # Notice that one of the things that happens here is some attractors have
-        # really small basins. We find them with the seeding process here, but the
-        # subsequent random sampling in `basins_fractions` doesn't. This leads to
-        # having keys in `mapper.bsn_nfo.attractors` that do not exist in the computed
-        # fractions. The fix is easy: we add the initial conditions mapped from
-        # seeding to the fractions using an internal argument.
-        fs = if allows_mapper_u0(mapper)
-            seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, acam.seeding)
-        else
-            seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding, p)
+        # Seed initial conditions from previous attractors.
+        # Here we utilize the interal keyword `additional_ics` of `basins_fractions`.
+        # The seeding process finds attractors with really small basins, and we need
+        # to take this into account when creating the basin fractions, otherwise there
+        # could be attractor IDs with 0 fractions in the final output (if the small basin
+        # attractors are not found from the random sampling)
+        # collect seeds
+        empty!(additional_ics)
+        for att in values(prev_attractors)
+            for u0 in seeding(att)
+                push!(additional_ics, u0)
+            end
         end
+        # now prepare the initial conditions if per-parameter is requested
+        if ics isa PerParameterInitialConditions
+            pics = ics.generator(parameters, N)
+        else
+            pics = ics
+        end
+        # and finally call basin fractions; it knows how to do all calculations given the mapper
+        fs = basins_fractions(mapper, pics; N, additional_ics)
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(mapper))
         # we don't match attractors here, this happens directly at the end.
@@ -163,6 +173,8 @@ function global_continuation(
     return fractions_cont, attractors_cont
 end
 
+
+# TODO: Delete these
 function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N, seeding)
     # actual seeding
     seeded_fs = Dict{Int, Int}()
