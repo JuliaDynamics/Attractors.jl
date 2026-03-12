@@ -126,25 +126,14 @@ function global_continuation(
         desc = "Continuing attractors and basins:", enabled = show_progress
     )
     mapper = acam.mapper
-    reset_mapper!(mapper)
-    # first parameter is run in isolation, as it has no prior to seed from
-    set_parameters!(referenced_dynamical_system(mapper), pcurve[1])
-    if ics isa Function
-        fs = basins_fractions(mapper, ics; show_progress = false, N)
-    elseif ics isa PerParameterInitialConditions
-        u0s = ics.generator(pcurve[1], N)
-        fs, = basins_fractions(mapper, u0s; show_progress = false)
-    else # we ignore labels in this continuation algorithm
-        fs, = basins_fractions(mapper, ics; show_progress = false)
-    end
-    # At each parmaeter `p`, a dictionary mapping attractor ID to fraction is created.
-    fractions_cont = [fs]
-    # The attractors are also stored (and are the primary output)
-    prev_attractors = deepcopy(extract_attractors(mapper))
+    prev_attractors = empty(extract_attractors(mapper))
+    # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
+    attractors_cont = Dict[]
+    fractions_cont = Dict[]
     attractors_cont = [deepcopy(prev_attractors)] # we need the copy
     ProgressMeter.next!(progress)
     # Continue loop over all remaining parameters
-    for p in @view(pcurve[2:end])
+    for p in pcurve
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
         # Seed initial conditions from previous attractors
@@ -159,13 +148,12 @@ function global_continuation(
         else
             seed_attractors_to_fractions_grouped(mapper, prev_attractors, ics, N, acam.seeding, p)
         end
-        current_attractors = deepcopy(extract_attractors(mapper))
+        # deepcopy is important here as attractor container always referrenced
+        prev_attractors = deepcopy(extract_attractors(mapper))
         # we don't match attractors here, this happens directly at the end.
         # here we just store the result
         push!(fractions_cont, fs)
-        push!(attractors_cont, current_attractors)
-        # This is safe due to the deepcopies
-        overwrite_dict!(prev_attractors, current_attractors)
+        push!(attractors_cont, prev_attractors)
         ProgressMeter.next!(progress)
     end
     rmaps = match_sequentially!(
