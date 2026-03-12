@@ -65,19 +65,22 @@ function global_continuation(
             swap_dict_keys!(dict, rmaps[i - 1])
         end
     end
-    transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
+    transposed = accumulator_continuation_output(measures_cont)
+    return transposed, attractors_cont
+end
+
+function accumulator_continuation_output(measures_cont)
+    transposed = Dict{String, Vector{Dict{Int64, Any}}}()
     for measure in measures_cont[1]
         measure_name = measure[1]
-        transposed[measure_name] = Vector{Dict{Int64, Float64}}()
+        transposed[measure_name] = Vector{Dict{Int64, Any}}()
     end
-
     for measures in measures_cont
         for (measure_name, measure_dict) in measures
             push!(transposed[measure_name], measure_dict)
         end
     end
-
-    return transposed, attractors_cont
+    return transposed
 end
 
 
