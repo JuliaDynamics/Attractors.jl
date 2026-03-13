@@ -15,11 +15,9 @@ using Random
             dz[1] = dz[2] = 0.0
         else
             if x > 0
-                dz[1] = r
-                dz[2] = r
+                dz[1] = dz[2] = r
             else
-                dz[1] = -r
-                dz[2] = -r
+                dz[1] = dz[2] = -r
             end
         end
         return
@@ -36,9 +34,7 @@ using Random
     rrange = range(0, 2; length = 20)
     ridx = 1
 
-    function featurizer(A, t)
-        return A[end]
-    end
+    featurizer(A, t) = A[end]
 
     # in all honesty, we don't have to test 2 grouping configs,
     # as the algorithm is agnostic to the grouping. But oh well!
@@ -112,8 +108,7 @@ end
     N = 5
 
     function make_ics(parameters, n)
-        I = parameters[1].second
-        @show I
+        I = parameters[1]
         N = round(Int, sqrt(n))
         grid = (range(-1.0, 1.0; length = N), range(-0.5, 0.5; length = N))
         ics = [SVector(v, w + I) for w in grid[2] for v in grid[1]]
@@ -126,7 +121,7 @@ end
     mapper = AttractorsViaFeaturizing(ds, featurizer, gconfig; Ttr = 1, T = 1)
     gca = AttractorSeedContinueMatch(mapper; seeding = A -> [])
 
-    pcurve = [[1 => r] for r in rs]
+    pcurve = [Dict(1 => r) for r in rs]
     fractions_cont, attractors_cont = global_continuation(gca, pcurve, icsgen; samples_per_parameter = 25)
 
     # all times 2 attractors, never the 0.0 attractor

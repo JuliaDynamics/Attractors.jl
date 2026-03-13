@@ -118,8 +118,8 @@ function basins_fractions_grouped(mapper::AttractorsViaFeaturizing, ics, progres
     if length(labels) > 1
         labels .= glabels
     end
-    extract_attractors!(mapper, labels, icscol)
-    fs = basins_fractions(labels) # Vanilla fractions method with Array input
+    extract_attractors!(mapper, glabels, ics)
+    fs = basins_fractions(glabels) # Vanilla fractions method with Array input
     return fs
 end
 

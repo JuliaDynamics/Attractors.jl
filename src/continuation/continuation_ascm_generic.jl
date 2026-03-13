@@ -117,7 +117,7 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
 end
 
 function global_continuation(
-        acam::AttractorSeedContinueMatch, pcurve, ics;
+        ascm::AttractorSeedContinueMatch, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
@@ -125,13 +125,12 @@ function global_continuation(
         length(pcurve);
         desc = "Continuing attractors and basins:", enabled = show_progress
     )
-    mapper = acam.mapper
+    mapper = ascm.mapper
     prev_attractors = empty(extract_attractors(mapper))
     additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict[]
-    attractors_cont = [deepcopy(prev_attractors)] # we need the copy
     ProgressMeter.next!(progress)
     # Continue loop over all remaining parameters
     for p in pcurve
@@ -146,18 +145,20 @@ function global_continuation(
         # collect seeds
         empty!(additional_ics)
         for att in values(prev_attractors)
-            for u0 in seeding(att)
+            for u0 in ascm.seeding(att)
                 push!(additional_ics, u0)
             end
         end
         # now prepare the initial conditions if per-parameter is requested
         if ics isa PerParameterInitialConditions
-            pics = ics.generator(parameters, N)
+            pics = ics.generator(p, N)
         else
             pics = ics
         end
         # and finally call basin fractions; it knows how to do all calculations given the mapper
-        fs = basins_fractions(mapper, pics; N, additional_ics)
+        # TODO: Would be nice to enable nested progress meters here!
+        ret = basins_fractions(mapper, pics; N, additional_ics, show_progress = false)
+        fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(mapper))
         # we don't match attractors here, this happens directly at the end.
@@ -167,7 +168,7 @@ function global_continuation(
         ProgressMeter.next!(progress)
     end
     rmaps = match_sequentially!(
-        attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
     )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont

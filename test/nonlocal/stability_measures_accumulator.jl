@@ -20,7 +20,7 @@ function dumb_map(z, p, n)
 end
 
 dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
-grid = ([-1, 0, 1], [-1, 0, 1])
+grid = ([-1, 0, 1.0], [-1, 0, 1.0])
 mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
 
 A = ics_from_grid(grid)
@@ -63,7 +63,7 @@ results_expected = Dict(
     "maximal_amplification_time" => Dict(2 => NaN, 1 => NaN, -1 => NaN)
 )
 # Check if the results are as expected
-@testset "Stability Measures Accumulator with dumb map" begin
+@testset "Accumulator with dumb map" begin
     for (key, value) in results_expected
         @test key in keys(results)
         @test isapprox(
@@ -108,7 +108,7 @@ measures_cont_expected = Dict(
     "maximal_amplification" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)],
     "maximal_amplification_time" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)]
 )
-@testset "Stability Measures Accumulator Continuation" begin
+@testset "Accumulator Continuation" begin
     # Validate the results
     for (key, value) in measures_cont_expected
         @test key in keys(measures_cont)
@@ -238,7 +238,6 @@ end
 @testset "user-defined quantifiers" begin
     r = 0.5
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
-    grid = ([-1, 0, 1], [-1, 0, 1])
     mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
@@ -274,5 +273,33 @@ end
     @test valtype(results["extra"]) == Int
     uservals = sort!(collect(values(results["extra"])))
     @test uservals == [0, 3]
+
+    @testset "continuation" begin
+        rs = [0.5, 1.0]
+        gca = AttractorSeedContinueMatch(accumulator)
+        measures_cont, attractors_cont = global_continuation(gca, prange, 1, A)
+
+    end
+
+end
+
+
+@testset "accummulator with featurizer" begin
+    rs = [0.5, 1.0]
+    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
+    grid = ([-1, 0, 1], [-1, 0, 1])
+    ics = ics_from_grid(grid)
+    featurizer(A, t) = A[end]
+    gconfig = GroupViaPairwiseComparison()
+    mapper = AttractorsViaFeaturizing(ds, featurizer, gconfig)
+    accumulator = StabilityMeasuresAccumulator(mapper)
+
+    @testset "single parameter" begin
+
+    end
+
+    @testset "continuation" begin
+
+    end
 
 end

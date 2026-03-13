@@ -88,9 +88,10 @@ end
     PerParameterInitialConditions(generator)
 
 Wrapper around a function `generator`, to be called as
-`generator(parameter_pairs, N::Int)`.
+`generator(parameters, N::Int)`.
 It inputs the current parameter(s) of a [`global_continuation`](@ref)
 (elements of `pcurve`), and generates a vector of `N` initial conditions.
+Note that elements of `pcurve` are recommended to be dictionaries.
 """
 struct PerParameterInitialConditions{F}
     generator::F

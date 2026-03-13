@@ -98,7 +98,7 @@ i.e., the pairs of `old => new` IDs.
 - `pcurve = nothing`: the curve of parameters along which the continuation occured,
   from which to extract the `p, pprev` values given to [`matching_map`](@ref).
   See [`global_continuation`](@ref) if you are unsure what this means.
-- `ds = nothing`: propagated to [`matching_map`](@ref).
+- `ds = nothing`: dynamical system propagated to [`matching_map`](@ref).
 - `retract_keys::Bool = true`: If `true` at the end the function will "retract" keys (i.e., make the
   integers smaller integers) so that all unique IDs
   are the 1-incremented positive integers. E.g., if the IDs where 1, 6, 8, they will become

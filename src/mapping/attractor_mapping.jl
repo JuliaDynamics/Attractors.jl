@@ -136,12 +136,13 @@ function basins_fractions(
     ffs = if allows_mapper_u0(mapper)
         basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
     else
+        # collect all initial conditions
         icscol = if ics isa Function
             StateSpaceSet([copy(ics()) for _ in 1:N])
         else
-            ics
+            copy(ics)
         end
-        icscol = vcat(icscol, additional_ics)
+        append!(icscol, additional_ics)
         basins_fractions_grouped(mapper, icscol, progress, labels)
     end
     if used_container
@@ -164,7 +165,7 @@ function basins_fractions_individual(mapper, ics, N, progress, labels, additiona
         length(labels) > 1 && (labels[i] = label)
         ProgressMeter.next!(progress)
     end
-    ffs = Dict(k => v / (N + lenth(additional_ics)) for (k, v) in fs)
+    ffs = Dict(k => v / (N + length(additional_ics)) for (k, v) in fs)
     return ffs
 end
 
