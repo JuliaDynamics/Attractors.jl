@@ -46,9 +46,11 @@ label = mapper(u0)
 ```
 and this will on the fly compute and return the label of the attractor `u0` converges at.
 The mappers that can do this are:
+
 * [`AttractorsViaProximity`](@ref)
 * [`AttractorsViaRecurrences`](@ref)
-* [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref) configuration.
+* [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref)
+  or [`GroupViaNearestFeature`](@ref) configurations.
 
 See also [`StabilityMeasuresAccumulator`](@ref) that extends this interface
 to accelerate estimation of stability measures.
