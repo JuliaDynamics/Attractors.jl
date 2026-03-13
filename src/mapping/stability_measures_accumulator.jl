@@ -12,10 +12,11 @@ Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability measures in the most efficient
-way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
-that implements the `id = mapper(u0)` syntax. This functionality was developed
-as part of [Morr2026](@cite).
+way possible. `mapper` is any instance of an [`AttractorMapper`](@ref),
+although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make sense.
 
+This functionality was developed as part of [Morr2026](@cite) and has now been extended
+to work for any `AttractorMapper` current or future.
 The accummulator records several measures of stability (or resilience) defined
 in [Morr2026](@cite), and a few more related and derived shortly after, see list below.
 However, it also allows computing any additional user-defined quantifier that is
