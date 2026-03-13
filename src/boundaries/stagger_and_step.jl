@@ -12,23 +12,22 @@ Implement the stagger-and-step method
 non-attracting set governing the chaotic transient dynamics 
 of a system, namely the stable manifold of a chaotic saddle. 
 
-Given the dynamical system `ds` and a initial guess `x0` in a 
-region *with no attractors* defined by the membership function 
-`isinside`, the algorithm returns a `StateSpaceState` named `trajectory` 
+Before starting the algorithm, we must search a region of the 
+phase space defined by a membership function `isinside` that 
+fulfils three conditions: 
+1. The function `isinside(x)` must return `true` if the point `x` is 
+   inside the chosen bounded region and `false` otherwise. See 
+   [`statespace_sampler`](@ref) as a helper to construct this 
+2. The region contains *no attractors*.
+3. The stable manifold of the saddle *must* be inside the defined region. 
+
+Given the dynamical system `ds` and a initial guess `x0`, 
+the algorithm returns a `StateSpaceState` named `trajectory` 
 of `N` points from the phase space close to the stable manifold. 
-It is important that the stable manifold of the saddle *must* be
-inside the defined region. 
 If we set one of this point as an initial condition of `ds`, 
 the trajectory escape from the region after at least `Tm` 
 steps of `ds`. The search is stochastic and depends on the 
 parameter `δ` defining a (small) neighborhood of search. 
-
-The function `isinside(x)` must return `true` if the point `x` is 
-inside the chosen bounded region and `false` otherwise. See 
-[`statespace_sampler`](@ref) as a helper to construct this 
-function. For the algorithm to be successful, the bounded 
-region must contain the saddle and attractors must lay 
-outside the bounds. 
 
 ## Keyword arguments
 * `δ = 1e-10`: A small number constraining the random
