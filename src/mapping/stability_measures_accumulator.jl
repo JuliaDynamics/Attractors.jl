@@ -243,15 +243,16 @@ See [`StabilityMeasuresAccumulator`](@ref) for more.
 function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ds = referenced_dynamical_system(accumulator)
     attractors = extract_attractors(accumulator.mapper)
-    ids = vcat(collect(keys(attractors)), -1)
-    js = 1:length(ids)
-    ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
+    ids = unique(bs)
+    js = 1:length(ids)
+    ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
     N = length(u0s)
     N == 0 && error("No initial conditions have been processed. Cannot finalize accumulator.")
 
+    # make distance matrix attractors <-> u0s
     d = zeros(length(u0s), length(js))
     for i in 1:length(u0s)
         for j in js
@@ -263,12 +264,13 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
     end
 
-    if (isa(accumulator.mapper, AttractorsViaProximity) && accumulator.mapper.ε != nothing)
+
+    # convergence paces
+    if (isa(accumulator.mapper, AttractorsViaProximity) && !isnothing(accumulator.mapper.ε))
         ε = accumulator.mapper.ε
     else
         ε = 0.0
     end
-
     cps = zeros(length(cts))
     for i in 1:length(cts)
         j = ids_to_js[bs[i]]
@@ -280,6 +282,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
     end
 
+    # now perform the bulk of nonlocal stability estimation
     basin_frac = Dict(id => 0.0 for id in ids)
     basin_stab = Dict(id => 0.0 for id in ids)
     finite_time_basin_stab = Dict(id => 0.0 for id in ids)
@@ -308,18 +311,15 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
 
         mean_convergence_time[id] += w * ct / N
-
         mean_convergence_pace[id] += w * cp / N
 
         if w > 0.0
             maximal_convergence_time[id] = max(
                 maximal_convergence_time[id], ct
             )
-
             maximal_noncritical_shock_magnitude[id] = max(
                 maximal_noncritical_shock_magnitude[id], d[i, j]
             )
-
             maximal_convergence_pace[id] = max(
                 maximal_convergence_pace[id], cp
             )
@@ -356,13 +356,16 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
             )
             for id in ids
     )
-    minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
+    if -1 ∈ ids
+        minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
+    end
 
     # linear measures
     characteristic_return_time = Dict(id => NaN for id in ids)
     reactivity = Dict(id => NaN for id in ids)
     maximal_amplification = Dict(id => NaN for id in ids)
     maximal_amplification_time = Dict(id => NaN for id in ids)
+    # TODO: This can be updated to work also for discrete time systems
     if !isdiscretetime(ds)
         jac = jacobian(ds)
         for (id, A) in attractors
@@ -456,4 +459,22 @@ function weighted_median(
         end
     end
     return float(vals[p[end]])
+end
+
+# Extension function to allow accumulator to work also with non-single-u0 mappers
+function basins_fractions_grouped(accumulator::StabilityMeasuresAccumulator, ics, progress::Progress, labels)
+    # note that ics is always collected into vector, cascaded by `basins_fraction`.
+    # Here we'll call the same function with the stored mapper, cheating the system
+    fs, _labels = basins_fractions(accumulator.mapper, ics; show_progress = progress.core.enabled)
+    if !isempty(labels)
+        labels .= @view(_labels[1:length(labels)])
+    end
+    # and then we'll use the found labels and store the `ics`. The downside is that
+    # we can't have a proper convergence time, but that's okay
+    for i in eachindex(ics)
+        push!(accumulator.u0s, ics[i])
+        push!(accumulator.bs, _labels[i])
+        push!(accumulator.cts, NaN)
+    end
+    return fs
 end

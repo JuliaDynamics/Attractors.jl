@@ -132,7 +132,7 @@ function basins_fractions(
     progress = ProgressMeter.Progress(N;
         desc = "Mapping i.c. to attractors:", enabled = show_progress
     )
-    labels = Vector{Int}(undef, used_container ? N : 1)
+    labels = Vector{Int}(undef, used_container ? N : 0)
     ffs = if allows_mapper_u0(mapper)
         basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
     else
@@ -162,7 +162,7 @@ function basins_fractions_individual(mapper, ics, N, progress, labels, additiona
         ic = _get_ic(ics, i)
         label = mapper(ic; show_progress = false)
         fs[label] = get(fs, label, 0) + 1
-        length(labels) > 1 && (labels[i] = label)
+        !isempty(labels) && (labels[i] = label)
         ProgressMeter.next!(progress)
     end
     ffs = Dict(k => v / (N + length(additional_ics)) for (k, v) in fs)

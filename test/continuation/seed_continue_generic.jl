@@ -104,7 +104,7 @@ end
     end
 
     rs = [0, 2.0, 4.0]
-    ds = DeterministicIteratedMap(dumb_map2, [0.0, 0.0], [1.0])
+    ds = DeterministicIteratedMap(dumb_map2, [0.0, 0.0], [1.0, 0])
     N = 5
 
     function make_ics(parameters, n)

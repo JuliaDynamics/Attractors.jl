@@ -166,7 +166,7 @@ function stability_measures_along_continuation(
         else
             pics = ics
         end
-        basins_fractions(accumulator, pics; N, additional_ics, show_progress = false)
+        basins_fractions(accumulator, pics; N, show_progress = false)
         push!(measures_cont, finalize_accumulator(accumulator))
         ProgressMeter.next!(progress)
     end

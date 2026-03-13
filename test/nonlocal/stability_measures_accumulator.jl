@@ -45,22 +45,22 @@ results = finalize_accumulator(accumulator)
 # point [-1, 1] which is the furthest point in its basin.
 
 results_expected = Dict(
-    "mean_convergence_time" => Dict(2 => 0.22222, 1 => 0.55555, -1 => NaN),
-    "maximal_noncritical_shock_magnitude" => Dict(2 => 2.23607, 1 => 2.0, -1 => NaN),
+    "mean_convergence_time" => Dict(2 => 0.22222, 1 => 0.55555),
+    "maximal_noncritical_shock_magnitude" => Dict(2 => 2.23607, 1 => 2.0),
     "finite_time_basin_stability" => Dict(2 => 0.11111, 1 => 0.11111, -1 => 0.0),
-    "median_convergence_pace" => Dict(2 => 0.5, 1 => 0.5, -1 => NaN),
-    "median_convergence_time" => Dict(2 => 1.0, 1 => 1.0, -1 => NaN),
-    "minimal_critical_shock_magnitude" => Dict(2 => 2.0, 1 => 1.0, -1 => NaN),
+    "median_convergence_pace" => Dict(2 => 0.5, 1 => 0.5),
+    "median_convergence_time" => Dict(2 => 1.0, 1 => 1.0),
+    "minimal_critical_shock_magnitude" => Dict(2 => 2.0, 1 => 1.0),
     "basin_stability" => Dict(2 => 0.66667, 1 => 0.33333, -1 => 0.0),
-    "maximal_convergence_pace" => Dict(2 => 1.0, 1 => 1.0, -1 => NaN),
-    "maximal_convergence_time" => Dict(2 => 1.0, 1 => 1.0, -1 => NaN),
-    "mean_convergence_pace" => Dict(2 => 0.16667, 1 => 0.40604, -1 => NaN),
+    "maximal_convergence_pace" => Dict(2 => 1.0, 1 => 1.0),
+    "maximal_convergence_time" => Dict(2 => 1.0, 1 => 1.0),
+    "mean_convergence_pace" => Dict(2 => 0.16667, 1 => 0.40604),
     "basin_fraction" => Dict(2 => 0.66667, 1 => 0.33333, -1 => 0.0),
-    "mean_noncritical_shock_magnitude" => Dict(2 => 0.33333, 1 => 0.85003, -1 => NaN),
-    "characteristic_return_time" => Dict(2 => NaN, 1 => NaN, -1 => NaN),
-    "reactivity" => Dict(2 => NaN, 1 => NaN, -1 => NaN),
-    "maximal_amplification" => Dict(2 => NaN, 1 => NaN, -1 => NaN),
-    "maximal_amplification_time" => Dict(2 => NaN, 1 => NaN, -1 => NaN)
+    "mean_noncritical_shock_magnitude" => Dict(2 => 0.33333, 1 => 0.85003),
+    "characteristic_return_time" => Dict(2 => NaN, 1 => NaN),
+    "reactivity" => Dict(2 => NaN, 1 => NaN),
+    "maximal_amplification" => Dict(2 => NaN, 1 => NaN),
+    "maximal_amplification_time" => Dict(2 => NaN, 1 => NaN)
 )
 # Check if the results are as expected
 @testset "Accumulator with dumb map" begin
@@ -92,21 +92,21 @@ measures_cont = stability_measures_along_continuation(
 
 measures_cont_expected = Dict(
     "finite_time_basin_stability" => [Dict(1 => 0.11111, -1 => 0.0), Dict(2 => 0.11111, 1 => 0.11111, -1 => 0.0)],
-    "maximal_noncritical_shock_magnitude" => [Dict(1 => 1.41421, -1 => NaN), Dict(2 => 2.23607, 1 => 2.0, -1 => NaN)],
-    "median_convergence_pace" => [Dict(1 => 0.70711, -1 => NaN), Dict(2 => 0.5, 1 => 0.5, -1 => NaN)],
+    "maximal_noncritical_shock_magnitude" => [Dict(1 => 1.41421), Dict(2 => 2.23607, 1 => 2.0)],
+    "median_convergence_pace" => [Dict(1 => 0.70711), Dict(2 => 0.5, 1 => 0.5)],
     "basin_stability" => [Dict(1 => 1.0, -1 => 0.0), Dict(2 => 0.66667, 1 => 0.33333, -1 => 0.0)],
-    "maximal_convergence_pace" => [Dict(1 => 1.0, -1 => NaN), Dict(2 => 1.0, 1 => 1.0, -1 => NaN)],
-    "mean_convergence_pace" => [Dict(1 => 0.75871, -1 => NaN), Dict(2 => 0.40604, 1 => 0.16667, -1 => NaN)],
+    "maximal_convergence_pace" => [Dict(1 => 1.0), Dict(2 => 1.0, 1 => 1.0)],
+    "mean_convergence_pace" => [Dict(1 => 0.75871), Dict(2 => 0.40604, 1 => 0.16667)],
     "basin_fraction" => [Dict(1 => 1.0, -1 => 0.0), Dict(2 => 0.66667, 1 => 0.33333, -1 => 0.0)],
-    "mean_convergence_time" => [Dict(1 => 0.88889, -1 => NaN), Dict(2 => 0.22222, 1 => 0.55555, -1 => NaN)],
-    "minimal_critical_shock_magnitude" => [Dict(1 => Inf, -1 => NaN), Dict(2 => 2.0, 1 => 1.0, -1 => NaN)],
-    "median_convergence_time" => [Dict(1 => 1.0, -1 => NaN), Dict(2 => 1.0, 1 => 1.0, -1 => NaN)],
-    "maximal_convergence_time" => [Dict(1 => 1.0, -1 => NaN), Dict(2 => 1.0, 1 => 1.0, -1 => NaN)],
-    "mean_noncritical_shock_magnitude" => [Dict(1 => 1.07298, -1 => NaN), Dict(2 => 0.33333, 1 => 0.85003, -1 => NaN)],
-    "characteristic_return_time" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)],
-    "reactivity" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)],
-    "maximal_amplification" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)],
-    "maximal_amplification_time" => [Dict(1 => NaN, -1 => NaN), Dict(2 => NaN, 1 => NaN, -1 => NaN)]
+    "mean_convergence_time" => [Dict(1 => 0.88889), Dict(2 => 0.22222, 1 => 0.55555)],
+    "minimal_critical_shock_magnitude" => [Dict(1 => Inf), Dict(2 => 2.0, 1 => 1.0)],
+    "median_convergence_time" => [Dict(1 => 1.0), Dict(2 => 1.0, 1 => 1.0)],
+    "maximal_convergence_time" => [Dict(1 => 1.0), Dict(2 => 1.0, 1 => 1.0)],
+    "mean_noncritical_shock_magnitude" => [Dict(1 => 1.07298), Dict(2 => 0.33333, 1 => 0.85003)],
+    "characteristic_return_time" => [Dict(1 => NaN), Dict(2 => NaN, 1 => NaN)],
+    "reactivity" => [Dict(1 => NaN), Dict(2 => NaN, 1 => NaN)],
+    "maximal_amplification" => [Dict(1 => NaN), Dict(2 => NaN, 1 => NaN)],
+    "maximal_amplification_time" => [Dict(1 => NaN), Dict(2 => NaN, 1 => NaN)]
 )
 @testset "Accumulator Continuation" begin
     # Validate the results
@@ -153,10 +153,10 @@ results = finalize_accumulator(accumulator)
 
 # Define expected results for the linear system
 results_expected = Dict(
-    "characteristic_return_time" => Dict(1 => 2.0, -1 => NaN),
-    "reactivity" => Dict(1 => -0.5, -1 => NaN),
-    "maximal_amplification" => Dict(1 => 1.0, -1 => NaN),
-    "maximal_amplification_time" => Dict(1 => 0.0, -1 => NaN)
+    "characteristic_return_time" => Dict(1 => 2.0),
+    "reactivity" => Dict(1 => -0.5),
+    "maximal_amplification" => Dict(1 => 1.0),
+    "maximal_amplification_time" => Dict(1 => 0.0)
 )
 @testset "Local Stability Measures Accumulator" begin
     # Validate the results
@@ -187,10 +187,10 @@ measures_cont_local = stability_measures_along_continuation(
 )
 
 measures_cont_local_expected = Dict(
-    "characteristic_return_time" => [Dict(1 => Inf, -1 => NaN), Dict(1 => 2.0, -1 => NaN)],
-    "reactivity" => [Dict(1 => 1.0, -1 => NaN), Dict(1 => -0.5, -1 => NaN)],
-    "maximal_amplification" => [Dict(1 => Inf, -1 => NaN), Dict(1 => 1.0, -1 => NaN)],
-    "maximal_amplification_time" => [Dict(1 => Inf, -1 => NaN), Dict(1 => 0.0, -1 => NaN)]
+    "characteristic_return_time" => [Dict(1 => Inf), Dict(1 => 2.0)],
+    "reactivity" => [Dict(1 => 1.0), Dict(1 => -0.5)],
+    "maximal_amplification" => [Dict(1 => Inf), Dict(1 => 1.0)],
+    "maximal_amplification_time" => [Dict(1 => Inf), Dict(1 => 0.0)]
 )
 @testset "Local Stability Measures Continuation" begin
     # Validate the results
@@ -277,10 +277,9 @@ end
     @testset "continuation" begin
         rs = [0.5, 1.0]
         gca = AttractorSeedContinueMatch(accumulator)
-        measures_cont, attractors_cont = global_continuation(gca, prange, 1, A)
-
+        measures_cont, attractors_cont = global_continuation(gca, rs, 1, A)
+        @test measures_cont["extra"] == [Dict(1 => 0, 2 => 3), Dict(1 => 0, 2 => 0)]
     end
-
 end
 
 
@@ -291,15 +290,23 @@ end
     ics = ics_from_grid(grid)
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison()
-    mapper = AttractorsViaFeaturizing(ds, featurizer, gconfig)
+    mapper = AttractorsViaFeaturizing(dynamics, featurizer, gconfig)
     accumulator = StabilityMeasuresAccumulator(mapper)
 
     @testset "single parameter" begin
-
+        fs, labels = basins_fractions(accumulator, ics)
+        @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
+        measures = finalize_accumulator(accumulator)
+        @test isequal(measures["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
     end
 
     @testset "continuation" begin
+        pcurve = [[1 => r] for r in rs]
+        acsm = AttractorSeedContinueMatch(accumulator)
+        measures_cont, attractors_cont = global_continuation(acsm, pcurve, ics)
 
+        @test isequal(measures_cont["minimal_critical_shock_magnitude"][2], Dict(2 => 2.0, 1 => 1.0))
+        fs = measures_cont["basin_fraction"][1]
+        @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
     end
-
 end
