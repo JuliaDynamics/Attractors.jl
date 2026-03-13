@@ -16,6 +16,8 @@ Given the dynamical system `ds` and a initial guess `x0` in a
 region *with no attractors* defined by the membership function 
 `isinside`, the algorithm returns a `StateSpaceState` named `trajectory` 
 of `N` points from the phase space close to the stable manifold. 
+It is important that the stable manifold of the saddle *must* be
+inside the defined region. 
 If we set one of this point as an initial condition of `ds`, 
 the trajectory escape from the region after at least `Tm` 
 steps of `ds`. The search is stochastic and depends on the 
@@ -24,7 +26,9 @@ parameter `δ` defining a (small) neighborhood of search.
 The function `isinside(x)` must return `true` if the point `x` is 
 inside the chosen bounded region and `false` otherwise. See 
 [`statespace_sampler`](@ref) as a helper to construct this 
-function.
+function. For the algorithm to be successful, the bounded 
+region must contain the saddle and attractors must lay 
+outside the bounds. 
 
 ## Keyword arguments
 * `δ = 1e-10`: A small number constraining the random
@@ -85,7 +89,8 @@ searches initial conditions close to the saddle with escapes time
 at which the trajectory with initial condition `x_n` steps out 
 from a region defined by the user (see the argument `isinside`).
 This time is a discrete or continuous variable depending on 
-the dynamical system `ds`.
+the dynamical system `ds`. In the case of a continuous dynamical
+system, a fixed times step Δt is recommended.
 
 Given the dynamical mapping `F`, if the step `x_{n+1} = 
 F(x_n)` fulfills the condition `T(x_{n+1}) > Tm` we accept 
