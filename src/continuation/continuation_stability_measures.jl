@@ -9,7 +9,7 @@ function global_continuation(
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
         length(pcurve);
-        desc = "Continuing attractors and quantifiers:", enabled = show_progress
+        desc = "Global continuation (accumulator):", PMKWARGS..., enabled = show_progress
     )
     mapper = ascm.mapper
     prev_attractors = empty(extract_attractors(mapper))
@@ -33,13 +33,13 @@ function global_continuation(
         end
         # difference two: we don't care about the return of basins_fractions
         # as initial condition mapping is accumulated anyways
-        basins_fractions(mapper, pics; N, additional_ics, show_progress = false)
+        basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
         prev_attractors = deepcopy(extract_attractors(mapper))
         push!(attractors_cont, prev_attractors)
         # difference three:
         measures = finalize_accumulator(mapper)
         push!(measures_cont, measures)
-        ProgressMeter.next!(progress)
+        ProgressMeter.next!(progress; showvalues = [("p", p)])
     end
 
     rmaps = match_sequentially!(
