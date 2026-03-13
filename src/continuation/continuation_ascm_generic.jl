@@ -123,7 +123,7 @@ function global_continuation(
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
         length(pcurve);
-        desc = "Continuing attractors and basins:", enabled = show_progress
+        desc = "Global continuation:", PMKWARGS..., enabled = show_progress
     )
     mapper = ascm.mapper
     prev_attractors = empty(extract_attractors(mapper))
@@ -156,7 +156,7 @@ function global_continuation(
         end
         # and finally call basin fractions; it knows how to do all calculations given the mapper
         # TODO: Would be nice to enable nested progress meters here!
-        ret = basins_fractions(mapper, pics; N, additional_ics, show_progress = false)
+        ret = basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
         fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(mapper))
@@ -164,7 +164,7 @@ function global_continuation(
         # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
-        ProgressMeter.next!(progress)
+        ProgressMeter.next!(progress; showvalues = [("p", p)])
     end
     rmaps = match_sequentially!(
         attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)

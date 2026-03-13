@@ -133,11 +133,14 @@ function basins_fractions(
         show_progress = true, N = 1000,
         # this is an internal keyword used in the ASCM global conitnuation
         additional_ics = [],
+        # and this is another internal keyword for the offset of the progress bar
+        # for when this function is called in global continuation
+        offset = 0,
     )
     used_container = ics isa AbstractVector
     N = used_container ? length(ics) : N
     progress = ProgressMeter.Progress(N;
-        desc = "Mapping i.c. to attractors:", enabled = show_progress
+        desc = "Mapping i.c. to attractors:", PMKWARGS..., offset, enabled = show_progress
     )
     labels = Vector{Int}(undef, used_container ? N : 0)
     ffs = if allows_mapper_u0(mapper)

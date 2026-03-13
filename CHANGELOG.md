@@ -1,6 +1,8 @@
 # v1.34
 
 - `StabilityMeasuresAccumulator` is now compatible with _all_ attractor mappers.
+- `global_continuation` now has a nested progress bar displaying the progress bar of the
+  whole continuation as well as the individual mapping step.
 
 # v1.33
 
