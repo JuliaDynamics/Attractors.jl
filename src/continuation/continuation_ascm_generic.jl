@@ -131,7 +131,6 @@ function global_continuation(
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict[]
-    ProgressMeter.next!(progress)
     # Continue loop over all remaining parameters
     for p in pcurve
         set_parameters!(referenced_dynamical_system(mapper), p)
