@@ -59,8 +59,13 @@ to accelerate estimation of stability measures.
 `AttractorMapper` and implement [`extract_attractors`](@ref), `id = mapper(u0)`
 and the internal function `Attractors.referenced_dynamical_system(mapper)`.
 From these, everything else in the entire rest of the library just works!
+
 If it is not possible to implement `id = mapper(u0)`, then instead extend
-`basins_fractions(mapper, ics)` with `ics` a vector of initial conditions.
+the function `basins_fractions_grouped(mapper, ics, progress, labels)`,
+where `ics` is always a `Vector` of initial conditions, `progress` is a preinitialized
+progress bar, and `labels` is a preinitialized container of labels.
+If `!isempty(labels)`, then its full length must be filled with the ids corresponding
+to the first N entries of `ics`.
 """
 abstract type AttractorMapper end
 
