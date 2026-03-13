@@ -27,15 +27,15 @@
 #########################################################################################
 # Basic struct
 #########################################################################################
-struct SparseArray{T,N} <: AbstractArray{T,N}
-    data::Dict{CartesianIndex{N},T}
-    dims::NTuple{N,Int64}
+struct SparseArray{T, N} <: AbstractArray{T, N}
+    data::Dict{CartesianIndex{N}, T}
+    dims::NTuple{N, Int64}
 end
-function SparseArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
-    return SparseArray{T,N}(Dict{CartesianIndex{N},T}(), dims)
+function SparseArray{T, N}(::UndefInitializer, dims::Dims{N}) where {T, N}
+    return SparseArray{T, N}(Dict{CartesianIndex{N}, T}(), dims)
 end
-SparseArray{T}(::UndefInitializer, dims::Dims{N}) where {T,N} =
-    SparseArray{T,N}(undef, dims)
+SparseArray{T}(::UndefInitializer, dims::Dims{N}) where {T, N} =
+    SparseArray{T, N}(undef, dims)
 SparseArray{T}(::UndefInitializer, dims...) where {T} = SparseArray{T}(undef, dims)
 
 Base.empty!(x::SparseArray) = empty!(x.data)
@@ -44,17 +44,46 @@ Base.size(a::SparseArray) = a.dims
 #########################################################################################
 # Indexing
 #########################################################################################
-@inline function Base.getindex(a::SparseArray{T,N}, I::CartesianIndex{N}) where {T,N}
-    return get(a.data, I, zero(T))
+@inline function Base.getindex(a::SparseArray{T, N}, I::CartesianIndex{N}) where {T, N}
+    return get(a.data, I, _zero(T))
 end
-Base.@propagate_inbounds Base.getindex(a::SparseArray{T,N}, I::Vararg{Int,N}) where {T,N} =
-                                        getindex(a, CartesianIndex(I))
+# To avoid type piracy for zero of Set:
+_zero(T) = zero(T)
+_zero(::Type{Set{X}}) where {X <: AbstractArray} = Set{X}()
 
-@inline function Base.setindex!(a::SparseArray{T,N}, v, I::CartesianIndex{N}) where {T,N}
+Base.@propagate_inbounds Base.getindex(a::SparseArray{T, N}, I::Vararg{Int, N}) where {T, N} =
+    getindex(a, CartesianIndex(I))
+
+@inline function Base.setindex!(a::SparseArray{T, N}, v, I::CartesianIndex{N}) where {T, N}
     a.data[I] = v
     return v
 end
 Base.@propagate_inbounds function Base.setindex!(
-    a::SparseArray{T,N}, v, I::Vararg{Int,N}) where {T,N}
+        a::SparseArray{T, N}, v, I::Vararg{Int, N}
+    ) where {T, N}
     return setindex!(a, v, CartesianIndex(I))
 end
+
+Base.checkbounds(::Type{Bool}, x::SparseArray, k::CartesianIndex) = haskey(x.data, k)
+
+#########################################################################################
+# Broadcasting
+#########################################################################################
+function sparsebroadcast(f, As...)
+    sidxs = findall(A -> A isa SparseArray, As)
+    if isempty(sidxs)
+        return broadcast(f, As...)
+    end
+    dims = size(As[sidxs[1]])
+    kfirst = first(keys(As[sidxs[1]]))
+    T = typeof(f(map(A -> A isa AbstractArray ? A[kfirst] : A, As)...))
+    out = SparseArray{T, length(dims)}(undef, dims)
+    for k in eachindex(As[sidxs[1]])
+        # function assumes internally all keys are the same
+        args = map(A -> A isa AbstractArray ? A[k] : A, As)
+        out[k] = f(args...)
+    end
+    return out
+end
+
+Base.eachindex(A::SparseArray) = eachindex(A.data)

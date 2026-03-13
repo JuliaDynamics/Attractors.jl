@@ -8,14 +8,19 @@ struct EverywhereUniform end
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
-    StabilityMeasuresAccumulator(mapper::AttractorMapper; kwargs...)
+    StabilityMeasuresAccumulator(mapper::AttractorMapper [, extras]; kwargs...)
 
 A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability measures in the most efficient
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref)
 that implements the `id = mapper(u0)` syntax. This functionality was developed
-as part of [Morr2025](@cite). If you use it, cite this paper along with the Attractors.jl
-publication [Datseris2023](@cite).
+as part of [Morr2026](@cite).
+
+The accummulator records several measures of stability (or resilience) defined
+in [Morr2026](@cite), and a few more related and derived shortly after, see list below.
+However, it also allows computing any additional user-defined quantifier that is
+a function of the attractors and/or their basins of attraction via the `extras`
+argument, see the Extra quantifiers section below.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
@@ -132,19 +137,53 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
+
+### Extra quantifiers
+
+The accumulator produces [`SampledBasinsOfAttraction`](@ref) instances internally.
+Thus, any function of such objects can be estimated at the end of the accumulation
+(at the call of `finalize_accumulator`). To enhance the output of the accumulator
+with arbitrary quantifiers you can provide the optional argument `extras`.
+It is a dictionary mapping additional quantifier names (as `String`s) to functions
+`f(sboa, ds)`. Each function `f` takes as an input the sampled basins
+and the dynamical system and returns a dictionary mapping attractor IDs to an output
+(anything works, but real numbers make most sense).
+Each provided function produces an additional entry in the
+output dictionary of the accumulator, with name provided by its key in the dictionary.
+
+Here's an example `extras` taken from one of the online [examples](@ref user_defined_quantifiers):
+
+```julia
+function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
+    ids = extract_basins(sboa)
+    u0s = extract_domain(sboa)
+    att = extract_attractors(sboa) # we don't need the attractors for this example
+    out = Dict(k => 0.0 for k in unique(ids)) # our function must return a Dict
+    for i in eachindex(ids)
+        id = ids[i]
+        out[id] = max(out[id], u0s[i][2])
+    end
+    return out
+end
+
+# must be dictionary mapping the quantifier name to its function.
+extras = Dict("maxv" => extra_function)
+```
 """
-mutable struct StabilityMeasuresAccumulator{AM<:AttractorMapper, V<:AbstractVector, F, M, W} <: AttractorMapper
+struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
-    bs::Vector{Int}
-    cts::Vector{Float64}
+    bs::Vector{Int} # basins vector
+    cts::Vector{Float64} # convergence times
     finite_time::F
     weighting_distribution::W
     distance::M
+    extras::E
 end
 
-function StabilityMeasuresAccumulator(mapper::AttractorMapper;
-        finite_time=1.0, weighting_distribution=EverywhereUniform(), distance=Centroid()
+function StabilityMeasuresAccumulator(
+        mapper::AttractorMapper, extras = Dict();
+        finite_time = 1.0, weighting_distribution = EverywhereUniform(), distance = Centroid()
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
@@ -153,25 +192,24 @@ function StabilityMeasuresAccumulator(mapper::AttractorMapper;
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    StabilityMeasuresAccumulator{AM, V, F, M, W}(
+    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras)}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
         Vector{Float64}(),
         finite_time,
         weighting_distribution,
-        distance
+        distance,
+        extras
     )
 end
 
 # Function to reset the accumulator
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
-    ds = referenced_dynamical_system(a.mapper)
-    V = typeof(current_state(ds))
-    a.u0s = Vector{V}()
-    a.bs = Vector{Int}()
-    a.cts = Vector{Float64}()
+    empty!(a.u0s)
+    empty!(a.bs)
+    empty!(a.cts)
     return
 end
 
@@ -218,28 +256,28 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
     for i in 1:length(u0s)
         for j in js
             if ids[j] == -1
-              d[i, j] = Inf
+                d[i, j] = Inf
             else
-              d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]], accumulator.distance)
+                d[i, j] = set_distance(StateSpaceSet([u0s[i]]), attractors[ids[j]], accumulator.distance)
             end
         end
     end
 
     if (isa(accumulator.mapper, AttractorsViaProximity) && accumulator.mapper.ε != nothing)
-      ε = accumulator.mapper.ε
+        ε = accumulator.mapper.ε
     else
-      ε = 0.0
+        ε = 0.0
     end
 
     cps = zeros(length(cts))
     for i in 1:length(cts)
-      j = ids_to_js[bs[i]]
-      if d[i, j] > ε
-          cps[i] = cts[i] / d[i, j]
-      else
-          cts[i] = 0.0
-          cps[i] = 0.0
-      end
+        j = ids_to_js[bs[i]]
+        if d[i, j] > ε
+            cps[i] = cts[i] / d[i, j]
+        else
+            cts[i] = 0.0
+            cps[i] = 0.0
+        end
     end
     if isdiscretetime(ds)
       cts .*= discrete_time_Δt
@@ -261,37 +299,37 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
     ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
 
     for i in 1:length(u0s)
-      id = bs[i]
-      j = ids_to_js[id]
-      w = ws[i] > probability_cutoff ? ws[i] : 0.0
-      ct = cts[i]
-      cp = cps[i]
+      	id = bs[i]
+      	j = ids_to_js[id]
+      	w = ws[i] > probability_cutoff ? ws[i] : 0.0
+      	ct = cts[i]
+      	cp = cps[i]
 
-      basin_frac[id] += 1 / N
-      basin_stab[id] += w / N
-      if ct <= accumulator.finite_time
-          finite_time_basin_stab[id] += w / N
-      end
+        basin_frac[id] += 1 / N
+        basin_stab[id] += w / N
+        if ct <= accumulator.finite_time
+            finite_time_basin_stab[id] += w / N
+        end
 
-      mean_convergence_time[id] += w * ct / N
+        mean_convergence_time[id] += w * ct / N
 
-      mean_convergence_pace[id] += w * cp / N
+        mean_convergence_pace[id] += w * cp / N
 
-      if w > 0.0
-        maximal_convergence_time[id] = max(
-            maximal_convergence_time[id], ct
-        )
+        if w > 0.0
+            maximal_convergence_time[id] = max(
+                maximal_convergence_time[id], ct
+            )
 
-        maximal_noncritical_shock_magnitude[id] = max(
-            maximal_noncritical_shock_magnitude[id], d[i, j]
-        )
+            maximal_noncritical_shock_magnitude[id] = max(
+                maximal_noncritical_shock_magnitude[id], d[i, j]
+            )
 
-        maximal_convergence_pace[id] = max(
-            maximal_convergence_pace[id], cp
-        )
-      end
+            maximal_convergence_pace[id] = max(
+                maximal_convergence_pace[id], cp
+            )
+        end
 
-      mean_noncritical_shock_magnitude[id] += w * d[i, j] / N
+        mean_noncritical_shock_magnitude[id] += w * d[i, j] / N
     end
 
     normalization = sum(values(basin_stab))
@@ -315,11 +353,13 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
 
     minimal_critical_shock_magnitude = Dict(
         id => minimum(
-            (d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
-            if accumulator.bs[i] != id && ws[i] > 0);
-            init = Inf,
-        )
-        for id in ids
+                (
+                    d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
+                    if accumulator.bs[i] != id && ws[i] > 0
+                );
+                init = Inf,
+            )
+            for id in ids
     )
     minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
     
@@ -359,21 +399,21 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
           H = (J + J') / 2
           evs = real.(eigvals(H))
           reactivity[id] = maximum(evs)
-          f(t) = -opnorm(exp(t*J))
-          T = range(0.0, 10*characteristic_return_time[id], length=20001)
+          f(t) = -opnorm(exp(t * J))
+          T = range(0.0, 10 * characteristic_return_time[id], length = 20001)
           step_length = T[2] - T[1]
           t0 = T[argmin(f.(T))]
-          if t0 == 10*characteristic_return_time[id] # maximum is at the end
-            res = Optim.optimize(f, t0, t0 + 100*characteristic_return_time[id], Brent())
+          if t0 == 10 * characteristic_return_time[id] # maximum is at the end
+              res = Optim.optimize(f, t0, t0 + 100 * characteristic_return_time[id], Brent())
           else
-            res = Optim.optimize(f, max(0.0, t0-step_length), t0+step_length, Brent())
+              res = Optim.optimize(f, max(0.0, t0 - step_length), t0 + step_length, Brent())
           end
           maximal_amplification[id] = (-1) * Optim.minimum(res)
           maximal_amplification_time[id] = Optim.minimizer(res)[1]
       end
     end
 
-    return Dict(
+    output = Dict{String, Any}(
         "characteristic_return_time" => characteristic_return_time,
         "reactivity" => reactivity,
         "maximal_amplification" => maximal_amplification,
@@ -391,15 +431,31 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
         "basin_stability" => basin_stab,
         "finite_time_basin_stability" => finite_time_basin_stab,
     )
+
+    # extra quantifiers requested by the user
+    if !isempty(accumulator.extras)
+        sboa = SampledBasinsOfAttraction(bs, attractors, u0s)
+        for (key, f) in accumulator.extras
+            output[key] = f(sboa, ds)
+        end
+    end
+
+    return output
 end
 
 # Weighted median: smallest x with cumulative weight ≥ 0.5.
-function weighted_median(vals::AbstractVector{<:Real},
-                         w::AbstractVector{<:Real})
+function weighted_median(
+        vals::AbstractVector{<:Real},
+        w::AbstractVector{<:Real}
+    )
     @assert length(vals) == length(w)
-    if isempty(vals); return NaN; end
+    if isempty(vals)
+        return NaN
+    end
     s = sum(w)
-    if s == 0.0; return NaN; end
+    if s == 0.0
+        return NaN
+    end
     wn = w ./ s
     p = sortperm(vals)
     cum = 0.0

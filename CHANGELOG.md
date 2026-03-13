@@ -1,8 +1,18 @@
+# v1.33
+
+- New enhancement for `StabilityMeasuresAccumulator`: now arbitrary user-defined functions of the basins and attractors can be given.
+
+# v1.32
+
+- `automatic_Δt_basins` deprecated for `automatic_Δt_recurrences`. The new name better conveys that the function targets the recurrences mapper, not a generic basins application.
+- More options for `automatic_Δt_recurrences`.
+- `automatic_Δt_recurrences` now allows providing the grid as a tuple.
+
 # v1.31
 
 - New `BasinsOfAttraction` type and subtypes, containing "basins" as an array or vector, attractors, and a "spatial domain" i.e. a `Grid` or sampled points.
-- All functions using "basins" can now also be called with these new types. 
-- Type is decomposible such that `basins, attractors = boa` which ensures backwards compatibility.
+- All functions using "basins" can now also be called with these new types.
+- Type is decomposable such that `basins, attractors = boa` which ensures backwards compatibility.
 - `map_to_basin` function allows interpolating points to basins.
 
 # v1.30

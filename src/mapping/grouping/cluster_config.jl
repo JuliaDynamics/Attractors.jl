@@ -88,7 +88,7 @@ distances, sorted in ascending order. This distance is chosen as the optimal rad
 described in [Ester1996](@cite) and [Schubert2017](@cite). It typically performs considerably worse
 than the `"silhouette"` methods.
 """
-struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingConfig
+struct GroupViaClustering{R <: Union{Real, String}, M, F <: Function} <: GroupingConfig
     clust_distance_metric::M
     min_neighbors::Int
     rescale_features::Bool
@@ -100,8 +100,8 @@ struct GroupViaClustering{R<:Union{Real, String}, M, F<:Function} <: GroupingCon
 end
 
 function GroupViaClustering(;
-        clust_distance_metric=Euclidean(), min_neighbors = 10,
-        rescale_features=true, num_attempts_radius=100,
+        clust_distance_metric = Euclidean(), min_neighbors = 10,
+        rescale_features = true, num_attempts_radius = 100,
         optimal_radius_method::Union{Real, String} = "silhouettes_optim",
         silhouette_statistic = mean, max_used_features = 0,
         use_mmap = false,
@@ -127,10 +127,14 @@ function group_features(
     )
     nfeats = length(features); dimfeats = length(features[1])
     if dimfeats ≥ nfeats
-        throw(ArgumentError("""
-        Not enough features. The algorithm needs the number of features
-        $nfeats to be greater or equal than the number of dimensions $dimfeats
-        """))
+        throw(
+            ArgumentError(
+                """
+                Not enough features. The algorithm needs the number of features
+                $nfeats to be greater or equal than the number of dimensions $dimfeats
+                """
+            )
+        )
     end
     if config.rescale_features
         features = _rescale_to_01(features)
@@ -141,7 +145,8 @@ function group_features(
     return labels
 end
 
-function _distance_matrix(features, config::GroupViaClustering;
+function _distance_matrix(
+        features, config::GroupViaClustering;
         par_weight::Real = 0, plength::Int = 1, spp::Int = 1
     )
     metric = config.clust_distance_metric
@@ -171,10 +176,10 @@ function _distance_matrix(features, config::GroupViaClustering;
             # We can optimize the loop here due to symmetry of the metric.
             # Instead of going over all `j` we go over `(k+1)` to end,
             # and also add value to transpose. (also assume that if j=k, distance is 0)
-            for j in (k+1):size(dists, 1)
-                pdist = par_weight*abs(par_vector[k] - par_vector[j])
-                dists[k,j] += pdist
-                dists[j,k] += pdist
+            for j in (k + 1):size(dists, 1)
+                pdist = par_weight * abs(par_vector[k] - par_vector[j])
+                dists[k, j] += pdist
+                dists[j, k] += pdist
             end
         end
     end
@@ -182,8 +187,10 @@ function _distance_matrix(features, config::GroupViaClustering;
 end
 
 function _extract_ϵ_optimal(features, config::GroupViaClustering)
-    (; min_neighbors, clust_distance_metric, optimal_radius_method,
-    num_attempts_radius, silhouette_statistic, max_used_features) = config
+    (;
+        min_neighbors, clust_distance_metric, optimal_radius_method,
+        num_attempts_radius, silhouette_statistic, max_used_features,
+    ) = config
 
     if optimal_radius_method isa String
         # subsample features to accelerate optimal radius search
@@ -208,7 +215,7 @@ end
 
 # Already expecting the distance matrix, the output of `pairwise`
 function _cluster_distances_into_labels(distances, ϵ_optimal, min_neighbors)
-    dbscanresult = dbscan(distances, ϵ_optimal; min_neighbors, metric=nothing)
+    dbscanresult = dbscan(distances, ϵ_optimal; min_neighbors, metric = nothing)
     cluster_labels = cluster_assignment(dbscanresult)
     return cluster_labels
 end
@@ -230,7 +237,7 @@ end
 Util function for `classify_features`. Returns the assignment vector, in which the i-th
 component is the cluster index of the i-th feature.
 """
-function cluster_assignment(clusters, data; include_boundary=true)
+function cluster_assignment(clusters, data; include_boundary = true)
     assign = zeros(Int, size(data)[2])
     for (idx, cluster) in enumerate(clusters)
         assign[cluster.core_indices] .= idx
@@ -246,10 +253,10 @@ function cluster_assignment(clusters, data; include_boundary=true)
 end
 function cluster_assignment(dbscanresult::Clustering.DbscanResult)
     labels = dbscanresult.assignments
-    return replace!(labels, 0=>-1)
+    return replace!(labels, 0 => -1)
 end
 
 #####################################################################################
 # Finding optimal ϵ
 #####################################################################################
-include("cluster_optimal_ϵ.jl")
+include("cluster_optimal_epsilon.jl")

@@ -42,17 +42,17 @@ have a fractal boundary, for a more precise test see [`basins_fractal_test`](@re
 An important feature of the basin entropy is that it allows
 comparisons between different basins using the same box size `ε`.
 """
-function basin_entropy(basins::AbstractArray{<:Integer, D}, ε::Integer = size(basins, 1)÷10) where {D}
+function basin_entropy(basins::AbstractArray{<:Integer, D}, ε::Integer = size(basins, 1) ÷ 10) where {D}
     es = ntuple(i -> ε, Val(D))
     return basin_entropy(basins, es)
 end
 
-function basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, ε::Integer = size(BoA.basins, 1)÷10) 
+function basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, ε::Integer = size(BoA.basins, 1) ÷ 10)
     es = ntuple(i -> ε, Val(ndims(BoA.basins)))
-    return basin_entropy(BoA,es) 
+    return basin_entropy(BoA, es)
 end
 
-function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Integer}) where {D}
+function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <:Integer}) where {D}
     if size(basins) .% es ≠ ntuple(i -> 0, D)
         throw(ArgumentError("The basins are not fully divisible by the sizes `ε`"))
     end
@@ -60,7 +60,7 @@ function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Int
     εranges = map((d, ε) -> 1:ε:d, size(basins), es)
     box_iterator = Iterators.product(εranges...)
     for box_start in box_iterator
-        box_ranges = map((d, ε) -> d:(d+ε-1), box_start, es)
+        box_ranges = map((d, ε) -> d:(d + ε - 1), box_start, es)
         box_values = view(basins, box_ranges...)
         uvals = unique(box_values)
         if length(uvals) > 1
@@ -70,20 +70,19 @@ function basin_entropy(basins::AbstractArray{<:Integer, D}, es::NTuple{D, <: Int
             Sb = Sb + _box_entropy(box_values, uvals)
         end
     end
-    return Sb/length(box_iterator), Sb/Nb
+    return Sb / length(box_iterator), Sb / Nb
 end
 
-basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, es::NTuple{D, <: Integer}) where {D} = basin_entropy(BoA.basins, es)
+basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, es::NTuple{D, <:Integer}) where {D} = basin_entropy(BoA.basins, es)
 
 function _box_entropy(box_values, unique_vals = unique(box_values))
     h = 0.0
     for v in unique_vals
-        p = count(x -> (x == v), box_values)/length(box_values)
-        h += -p*log(p)
+        p = count(x -> (x == v), box_values) / length(box_values)
+        h += -p * log(p)
     end
     return h
 end
-
 
 
 """
@@ -123,7 +122,7 @@ the estimated value of the boundary basin entropy with the sampling method.
 function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     dims = size(basins)
     # Sanity check.
-    if minimum(dims)/ε < 50
+    if minimum(dims) / ε < 50
         @warn "Maybe the size of the grid is not fine enough."
     end
     if Ntotal < 100
@@ -132,15 +131,15 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
 
     v_pts = zeros(Float64, length(dims), prod(dims))
     I = CartesianIndices(basins)
-    for (k,coord) in enumerate(I)
-         v_pts[:, k] = [Tuple(coord)...]
+    for (k, coord) in enumerate(I)
+        v_pts[:, k] = [Tuple(coord)...]
     end
     tree = searchstructure(KDTree, v_pts, Euclidean())
     # Now get the values in the boxes.
     Nb = 1
     N_stat = zeros(Ntotal)
     while Nb < Ntotal
-        p = [rand()*(sz-ε)+ε for sz in dims]
+        p = [rand() * (sz - ε) + ε for sz in dims]
         idxs = isearch(tree, p, WithinRange(ε))
         box_values = basins[idxs]
         bx_ent = _box_entropy(box_values)
@@ -151,16 +150,16 @@ function basins_fractal_test(basins; ε = 20, Ntotal = 1000)
     end
 
     Ŝbb = mean(N_stat)
-    σ_sbb = std(N_stat)/sqrt(Nb)
+    σ_sbb = std(N_stat) / sqrt(Nb)
     # Table of boundary basin entropy of a smooth boundary for dimension 1 to 5:
     Sbb_tab = [0.499999, 0.4395093, 0.39609176, 0.36319428, 0.33722572]
     if length(dims) ≤ 5
         Sbb_s = Sbb_tab[length(dims)]
     else
-        Sbb_s = 0.898*length(dims)^-0.4995
+        Sbb_s = 0.898 * length(dims)^-0.4995
     end
     # Systematic error approximation for the disk of radius ε
-    δub = 0.224*ε^-1.006
+    δub = 0.224 * ε^-1.006
 
     tst_res = :smooth
     if Ŝbb < (Sbb_s - σ_sbb) ||  Ŝbb > (σ_sbb + Sbb_s + δub)
@@ -206,7 +205,7 @@ It is the implementation of the popular algorithm of the estimation of the box-c
 dimension. The algorithm search for a covering the boundary with `N_ε` boxes of size
 `ε` in pixels.
 """
-function basins_fractal_dimension(basins::AbstractArray; range_ε = 3:maximum(size(basins))÷20)
+function basins_fractal_dimension(basins::AbstractArray; range_ε = 3:(maximum(size(basins)) ÷ 20))
 
     dims = size(basins)
     num_step = length(range_ε)
@@ -215,16 +214,16 @@ function basins_fractal_dimension(basins::AbstractArray; range_ε = 3:maximum(si
     V_ε = zeros(1, num_step) # resolution
 
     # Naive box counting estimator
-    for (k,eps) in enumerate(range_ε)
+    for (k, eps) in enumerate(range_ε)
         Nb, Nu = 0, 0
         # get indices of boxes
-        bx_tuple = ntuple(i -> range(1, dims[i] - rem(dims[i],eps), step = eps), length(dims))
+        bx_tuple = ntuple(i -> range(1, dims[i] - rem(dims[i], eps), step = eps), length(dims))
         box_indices = CartesianIndices(bx_tuple)
         for box in box_indices
             # compute the range of indices for the current box
-            ind = CartesianIndices(ntuple(i -> range(box[i], box[i]+eps-1, step = 1), length(dims)))
+            ind = CartesianIndices(ntuple(i -> range(box[i], box[i] + eps - 1, step = 1), length(dims)))
             c = basins[ind]
-            if length(unique(c))>1
+            if length(unique(c)) > 1
                 Nu = Nu + 1
             end
             Nb += 1
@@ -243,7 +242,7 @@ function basins_fractal_dimension(basins::AbstractArray; range_ε = 3:maximum(si
     return V_ε, N_ε, d
 end
 
-basins_fractal_dimension(BoA::ArrayBasinsOfAttraction; range_ε = 3:maximum(size(BoA.basins))÷20) = basins_fractal_dimension(BoA.basins; range_ε=range_ε)
+basins_fractal_dimension(BoA::ArrayBasinsOfAttraction; range_ε = 3:(maximum(size(BoA.basins)) ÷ 20)) = basins_fractal_dimension(BoA.basins; range_ε = range_ε)
 """
     uncertainty_exponent(BoA::ArrayBasinsOfAttraction; kwargs...) -> ε, N_ε, α
     uncertainty_exponent(basins; kwargs...) -> ε, N_ε, α
@@ -282,9 +281,9 @@ related. We have `Δ₀ = D - α` where `Δ₀` is the box counting dimension co
 The algorithm first estimates the box counting dimension of the boundary and
 returns the uncertainty exponent.
 """
-function uncertainty_exponent(basins::AbstractArray; range_ε = 2:maximum(size(basins))÷20)
+function uncertainty_exponent(basins::AbstractArray; range_ε = 2:(maximum(size(basins)) ÷ 20))
     V_ε, N_ε, d = basins_fractal_dimension(basins; range_ε)
     return V_ε, N_ε, length(size(basins)) - d
 end
 
-uncertainty_exponent(BoA::ArrayBasinsOfAttraction; range_ε = 2:maximum(size(BoA.basins))÷20) = uncertainty_exponent(BoA.basins, range_ε = range_ε)
+uncertainty_exponent(BoA::ArrayBasinsOfAttraction; range_ε = 2:(maximum(size(BoA.basins)) ÷ 20)) = uncertainty_exponent(BoA.basins, range_ε = range_ε)

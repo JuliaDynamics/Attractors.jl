@@ -22,8 +22,10 @@ struct EdgeTrackingResults{D, T}
     success::Bool
 end
 
-EdgeTrackingResults(nothing) = EdgeTrackingResults(StateSpaceSet([NaN]),
-    StateSpaceSet([NaN]), StateSpaceSet([NaN]), [NaN], [0], false)
+EdgeTrackingResults(nothing) = EdgeTrackingResults(
+    StateSpaceSet([NaN]),
+    StateSpaceSet([NaN]), StateSpaceSet([NaN]), [NaN], [0], false
+)
 
 """
     edgetracking(ds::DynamicalSystem, attractors::Dict; kwargs...)
@@ -103,25 +105,28 @@ Sometimes, the AttractorMapper used in the algorithm may erroneously identify bo
 `u1` and `u2` with the same basin of attraction due to being very close to the basin
 boundary. If this happens, a warning is raised and `EdgeTrackingResults.success = false`.
 """
-function edgetracking(ds::DynamicalSystem, attractors::Dict;
-    bisect_thresh=1e-6,
-    diverge_thresh=1e-5,
-    u1=collect(values(attractors))[1][1],
-    u2=collect(values(attractors))[2][1],
-    maxiter=100,
-    abstol=1e-9,
-    T_transient=0.0,
-    tmax=Inf,
-    Δt=0.01,
-    show_progress=true,
-    verbose=true,
-    ϵ_mapper=nothing, # deprecated keyword
-    kwargs...)
+function edgetracking(
+        ds::DynamicalSystem, attractors::Dict;
+        bisect_thresh = 1.0e-6,
+        diverge_thresh = 1.0e-5,
+        u1 = collect(values(attractors))[1][1],
+        u2 = collect(values(attractors))[2][1],
+        maxiter = 100,
+        abstol = 1.0e-9,
+        T_transient = 0.0,
+        tmax = Inf,
+        Δt = 0.01,
+        show_progress = true,
+        verbose = true,
+        ϵ_mapper = nothing, # deprecated keyword
+        kwargs...
+    )
 
     pds = ParallelDynamicalSystem(ds, [u1, u2])
     mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
 
-    edgetracking(pds, mapper;
+    return edgetracking(
+        pds, mapper;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
         show_progress, verbose
     )
@@ -136,7 +141,8 @@ for a description, keyword arguments and output type.
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
 `AttractorMapper` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
 =#
-function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
+function edgetracking(
+        pds::ParallelDynamicalSystem, mapper::AttractorMapper;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
         show_progress, verbose
     )
@@ -150,11 +156,13 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     if !success
         return EdgeTrackingResults(nothing)
     end
-    edgestate = (u1 + u2)/2
+    edgestate = (u1 + u2) / 2
     track1, track2 = [u1], [u2]
     time, bisect_idx = Float64[], Int[1]
-    progress = ProgressMeter.Progress(maxiter; desc = "Running edge tracking algorithm",
-        enabled = show_progress)
+    progress = ProgressMeter.Progress(
+        maxiter; desc = "Running edge tracking algorithm",
+        enabled = show_progress
+    )
 
     # edge track iteration loop
     displacement, counter, T = Inf, 1, 0.0
@@ -182,19 +190,22 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             track2 = StateSpaceSet(track2)
 
             return EdgeTrackingResults(
-                StateSpaceSet((track1 .+ track2)./2),
-                track1, track2, time, bisect_idx, false)
+                StateSpaceSet((track1 .+ track2) ./ 2),
+                track1, track2, time, bisect_idx, false
+            )
         end
         T += Δt
         if T >= T_transient
             push!(bisect_idx, length(time))
         end
-        displacement = diffnorm(edgestate, (u1 + u2)/2)
-        edgestate = (u1 + u2)/2
+        displacement = diffnorm(edgestate, (u1 + u2) / 2)
+        edgestate = (u1 + u2) / 2
         counter += 1
 
-        ProgressMeter.next!(progress;
-            showvalues = [(:Iteration, counter), (:"Edge point", edgestate)])
+        ProgressMeter.next!(
+            progress;
+            showvalues = [(:Iteration, counter), (:"Edge point", edgestate)]
+        )
         if verbose && (counter == maxiter)
             @warn("Reached maximum number of $(maxiter) iterations.")
         end
@@ -208,7 +219,7 @@ function edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
     track2 = StateSpaceSet(track2)
 
     return EdgeTrackingResults(
-        StateSpaceSet((track1 .+ track2)./2),
+        StateSpaceSet((track1 .+ track2) ./ 2),
         track1,
         track2,
         time,
@@ -242,9 +253,11 @@ in which case a warning is raised).
     exist, one of the two returned states may belong to a different basin than the initial
     conditions `u1` and `u2`. A warning is raised if the bisection involves a third basin.
 """
-function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
-    bisect_thresh=1e-6,
-    verbose=true)
+function bisect_to_edge(
+        pds::ParallelDynamicalSystem, mapper::AttractorMapper;
+        bisect_thresh = 1.0e-6,
+        verbose = true
+    )
 
     u1, u2 = current_states(pds)
     idx1, idx2 = mapper(u1), mapper(u2)
@@ -255,7 +268,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             Try changing the settings of the `AttractorMapper` or increasing bisect_thresh, diverge_thresh.")
         else
             if verbose
-            @warn "Both initial conditions belong to the same basin of attraction.
+                @warn "Both initial conditions belong to the same basin of attraction.
                 Attractor label: $(idx1)
                 u1 = $(u1)
                 u2 = $(u2)"
@@ -266,7 +279,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
 
     distance = diffnorm(u1, u2)
     while distance > bisect_thresh
-        u_new = (u1 + u2)/2
+        u_new = (u1 + u2) / 2
         idx_new = mapper(u_new)
         # slightly shift u_new if it lands too close to the boundary
         retry_counter = 1
@@ -274,7 +287,7 @@ function bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper;
             if verbose
                 @warn "Shifting new point slightly because AttractorMapper returned -1"
             end
-            u_new += bisect_thresh*(u1 - u2)
+            u_new += bisect_thresh * (u1 - u2)
             idx_new = mapper(u_new)
             retry_counter += 1
         end
@@ -304,9 +317,9 @@ function diffnorm(u1, u2)
     @inbounds for i in eachindex(u1)
         d += (u1[i] - u2[i])^2
     end
-    sqrt(d)
+    return sqrt(d)
 end
 
 function diffnorm(pds::ParallelDynamicalSystem)
-    diffnorm(current_state(pds, 1), current_state(pds, 2))
+    return diffnorm(current_state(pds, 1), current_state(pds, 2))
 end

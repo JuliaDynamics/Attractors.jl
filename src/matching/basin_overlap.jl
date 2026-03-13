@@ -56,11 +56,13 @@ See [`MatchByBasinOverlap`](@ref) for how matching works.
 """
 function matching_map(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; kw...)
     a₊, a₋ = _basin_to_dict.((b₊, b₋))
-    matching_map(a₊, a₋, matcher; kw...)
+    return matching_map(a₊, a₋, matcher; kw...)
 end
 
-matching_map(BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction, 
-    matcher::MatchByBasinOverlap; kw...) = matching_map(BoA₊.basins, BoA₋.basins, matcher; kw...)
+matching_map(
+    BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction,
+    matcher::MatchByBasinOverlap; kw...
+) = matching_map(BoA₊.basins, BoA₋.basins, matcher; kw...)
 
 function matching_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchByBasinOverlap; kw...)
     rmap = matching_map(b₊, b₋, matcher; kw...)
@@ -68,8 +70,10 @@ function matching_map!(b₊::AbstractArray, b₋::AbstractArray, matcher::MatchB
     return rmap
 end
 
-matching_map!(BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction, 
-    matcher::MatchByBasinOverlap; kw...) = matching_map!(BoA₊.basins, BoA₋.basins, matcher; kw...)
+matching_map!(
+    BoA₊::ArrayBasinsOfAttraction, BoA₋::ArrayBasinsOfAttraction,
+    matcher::MatchByBasinOverlap; kw...
+) = matching_map!(BoA₊.basins, BoA₋.basins, matcher; kw...)
 
 # actual implementation
 function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap; kw...)
@@ -94,12 +98,12 @@ function matching_map(a₊::AbstractDict, a₋, matcher::MatchByBasinOverlap; kw
         # Compute normalized overlaps of each basin with each other basis
         for j in keys₋
             Bj = a₋[j]
-            overlap = length(Bi ∩ Bj)/length(Bj)
+            overlap = length(Bi ∩ Bj) / length(Bj)
             d[j] = 1 / overlap # distance is inverse overlap
         end
         distances[i] = d
     end
-    _matching_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
+    return _matching_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
 end
 
 function _basin_to_dict(b::AbstractArray{Int})

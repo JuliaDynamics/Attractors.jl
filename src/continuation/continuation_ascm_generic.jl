@@ -101,7 +101,7 @@ end
 const ASCM = AttractorSeedContinueMatch
 
 ASCM(mapper, matcher = MatchBySSSetDistance(); seeding = _default_seeding) =
-ASCM(mapper, matcher, seeding)
+    ASCM(mapper, matcher, seeding)
 
 # TODO: This is currently not used, and not sure if it has to be.
 function _scaled_seeding(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
@@ -116,12 +116,14 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
     return (attractor[1],) # must be iterable
 end
 
-function global_continuation(acam::AttractorSeedContinueMatch, pcurve, ics;
+function global_continuation(
+        acam::AttractorSeedContinueMatch, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
-    progress = ProgressMeter.Progress(length(pcurve);
-        desc = "Continuing attractors and basins:", enabled=show_progress
+    progress = ProgressMeter.Progress(
+        length(pcurve);
+        desc = "Continuing attractors and basins:", enabled = show_progress
     )
     mapper = acam.mapper
     reset_mapper!(mapper)
@@ -188,11 +190,13 @@ function seed_attractors_to_fractions_individual(mapper, prev_attractors, ics, N
     # Now perform basin fractions estimation as normal, utilizing found attractors
     # (the function comes from attractor_mapping.jl)
     if ics isa Function
-        fs = basins_fractions(mapper, ics;
+        fs = basins_fractions(
+            mapper, ics;
             additional_fs = seeded_fs, show_progress = false, N
         )
     else
-        fs, = basins_fractions(mapper, ics;
+        fs, = basins_fractions(
+            mapper, ics;
             additional_fs = seeded_fs, show_progress = false
         )
     end
