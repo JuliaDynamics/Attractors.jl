@@ -1,3 +1,7 @@
+# v1.34
+
+- `StabilityMeasuresAccumulator` is now compatible with _all_ attractor mappers.
+
 # v1.33
 
 - New enhancement for `StabilityMeasuresAccumulator`: now arbitrary user-defined functions of the basins and attractors can be given.
