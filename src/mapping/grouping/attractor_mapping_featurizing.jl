@@ -92,7 +92,7 @@ function reset_mapper!(mapper::AttractorsViaFeaturizing)
     return
 end
 function (mapper::AttractorsViaFeaturizing)(u0)
-    f = extract_feature(referrenced_dynamical_system(mapper), u0, mapper)
+    f = extract_feature(referenced_dynamical_system(mapper), u0, mapper)
     return feature_to_group(f, mapper.group_config)
 end
 
