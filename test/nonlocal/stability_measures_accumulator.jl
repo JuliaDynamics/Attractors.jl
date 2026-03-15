@@ -170,7 +170,6 @@ end
         end
     end
 
-
     @testset "continuation" begin
         pcurve_local = [[1 => p] for p in [-1.0, 1.0]]
         attractors_cont_local = [
@@ -187,10 +186,10 @@ end
         )
 
         measures_cont_local_expected = Dict(
-            "characteristic_return_time" => [Dict(1 => Inf), Dict(1 => 2.0)],
-            "reactivity" => [Dict(1 => 1.0), Dict(1 => -0.5)],
-            "maximal_amplification" => [Dict(1 => Inf), Dict(1 => 1.0)],
-            "maximal_amplification_time" => [Dict(1 => Inf), Dict(1 => 0.0)]
+            "characteristic_return_time" => [Dict(-1=>NaN, 1 => Inf), Dict(1 => 2.0)],
+            "reactivity" => [Dict(-1=>NaN, 1 => 1.0), Dict(1 => -0.5)],
+            "maximal_amplification" => [Dict(-1=>NaN, 1 => Inf), Dict(1 => 1.0)],
+            "maximal_amplification_time" => [Dict(-1=>NaN, 1 => Inf), Dict(1 => 0.0)]
         )
 
         for (key, value) in measures_cont_local_expected
@@ -204,11 +203,8 @@ end
                 )
             end
         end
-
     end
-
 end
-
 
 
 @testset "Discrete time" begin
