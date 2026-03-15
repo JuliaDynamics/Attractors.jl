@@ -47,7 +47,7 @@ end
     feature_to_group(feature::AbstractVector, group_config::GroupingConfig) → group_label
 
 Map the given feature vector to its group label (integer).
-This is an internal function. It is strongly recommended that `feature isa SVector`.
+This is an internal function. It is recommended that `feature isa SVector`.
 """
 function feature_to_group(feature, group_config::GroupingConfig)
     throw(

@@ -1,83 +1,74 @@
 export stability_measures_along_continuation
 
+# This function is practically identical with the original one in
+# `continuation_ascm_generic.jl`; only small differences exist
 function global_continuation(
-        acam::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
+        ascm::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
-        length(pcurve); desc = "Continuing attractors and stability:", enabled = show_progress
+        length(pcurve);
+        desc = "Global continuation (accumulator):", PMKWARGS..., enabled = show_progress
     )
-    mapper = acam.mapper
-    reset_mapper!(mapper)
-
-    set_parameters!(referenced_dynamical_system(mapper), pcurve[1])
-    if ics isa Function
-        fs = basins_fractions(mapper, ics; show_progress = false, N = samples_per_parameter)
-    else # we ignore labels in this continuation algorithm
-        fs, = basins_fractions(mapper, ics; show_progress = false)
-    end
-
-    # this is the first difference with the standard continuation: we have to call finalize.
-    measures = finalize_accumulator(mapper)
-    measures_cont = [measures]
-
-    prev_attractors = deepcopy(extract_attractors(mapper))
-    attractors_cont = [deepcopy(prev_attractors)] # we need the copy
-    ProgressMeter.next!(progress)
-
-    # Continue loop over all remaining parameters
-    for p in @view(pcurve[2:end])
+    mapper = ascm.mapper
+    prev_attractors = empty(extract_attractors(mapper))
+    additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
+    attractors_cont = Dict[]
+    # difference one: this isn't fractions
+    measures_cont = []
+    for p in pcurve
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
-        if typeof(mapper.mapper) <: AttractorsViaRecurrences
-            fs = if allows_mapper_u0(mapper)
-                seed_attractors_to_fractions_individual(
-                    mapper,
-                    prev_attractors, ics, N, acam.seeding
-                )
-            else
-                seed_attractors_to_fractions_grouped(
-                    mapper,
-                    prev_attractors, ics, N, acam.seeding
-                )
+        empty!(additional_ics)
+        for att in values(prev_attractors)
+            for u0 in ascm.seeding(att)
+                push!(additional_ics, u0)
             end
-            current_attractors = deepcopy(extract_attractors(mapper))
-        else
-            error("Unsupported mapper type: $(typeof(mapper.mapper))")
         end
-        push!(attractors_cont, current_attractors)
-        overwrite_dict!(prev_attractors, current_attractors)
-        ProgressMeter.next!(progress)
-
-        # this is the second difference in global continuation
+        if ics isa PerParameterInitialConditions
+            pics = ics.generator(p, N)
+        else
+            pics = ics
+        end
+        # difference two: we don't care about the return of basins_fractions
+        # as initial condition mapping is accumulated anyways
+        basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
+        prev_attractors = deepcopy(extract_attractors(mapper))
+        push!(attractors_cont, prev_attractors)
+        # difference three:
         measures = finalize_accumulator(mapper)
         push!(measures_cont, measures)
+        ProgressMeter.next!(progress; showvalues = [("p", p)])
     end
 
     rmaps = match_sequentially!(
-        attractors_cont, acam.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
     )
+    # and difference four, a bit more involved matching for measures:
+    transposed = accumulator_continuation_output(measures_cont, rmaps)
+    return transposed, attractors_cont
+end
 
-    # This is the third difference in global continuation
-    for i in 2:length(pcurve)
-        for dict in values(measures_cont[i])
-            swap_dict_keys!(dict, rmaps[i - 1])
+function accumulator_continuation_output(measures_cont, rmaps)
+    # match
+    for (i, rmap) in enumerate(rmaps)
+        for dict in values(measures_cont[i + 1])
+            swap_dict_keys!(dict, rmap)
         end
     end
-    transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
+    # "transpose" (i.e., swap nesting order)
+    transposed = Dict{String, Vector{Dict{Int64, Any}}}()
     for measure in measures_cont[1]
         measure_name = measure[1]
-        transposed[measure_name] = Vector{Dict{Int64, Float64}}()
+        transposed[measure_name] = Vector{Dict{Int64, Any}}()
     end
-
     for measures in measures_cont
         for (measure_name, measure_dict) in measures
             push!(transposed[measure_name], measure_dict)
         end
     end
-
-    return transposed, attractors_cont
+    return transposed
 end
 
 
@@ -97,15 +88,16 @@ This method is special because it always creates an [`AttractorsViaProximity`](@
 mapper for the attractors at a given point along the global continuation,
 and then estimates the stability measures using [`StabilityMeasuresAccumulator`](@ref)
 and the proximity mapper.
-Realistically you only want to use this method if you are interested in measures
-related to the convergence time, which is defined
-more rirogously and is estimated more accurately for a proximity mapper.
+
+There are two reasons to use this method:
+
+1. You are interested in measures related to the convergence time, which is defined
+   more rirogously and is estimated more accurately for a proximity mapper.
+2. You want more control over the values of `ε, finite_time, weighting_distribution`,
+   all of which are allowed to be `Vector`s with the same length as `pcurve`.
+   (they can always be functions)
 
 ## Keyword arguments
-
-Keywords `ε, finite_time, weighting_distribution` are allowed to be `Vector`s
-with the same length as `pcurve` for providing different values for different
-continuation steps.
 
 - `ε = nothing`: given to [`AttractorsViaProximity`](@ref).
 - `proximity_mapper_options = NamedTuple()`: extra keywords for `AttractorsViaProximity`.
@@ -127,8 +119,9 @@ function stability_measures_along_continuation(
         show_progress = true
     )
     progress = ProgressMeter.Progress(
-        length(pcurve); desc = "Continuing stability measures:", enabled = show_progress
+        length(pcurve); desc = "Continuing accumulator quantifiers:", enabled = show_progress
     )
+    N = samples_per_parameter
     measures_cont = []
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -167,11 +160,13 @@ function stability_measures_along_continuation(
             weighting_distribution = wd, finite_time = ft,
             distance = d
         )
-        N = ics isa Function ? samples_per_parameter : length(ics)
-        for i in 1:N
-            ic = _get_ic(ics, i)
-            id = accumulator(ic) # accumulate stability measures for given i.c.
+
+        if ics isa PerParameterInitialConditions
+            pics = ics.generator(p, N)
+        else
+            pics = ics
         end
+        basins_fractions(accumulator, pics; N, show_progress = false)
         push!(measures_cont, finalize_accumulator(accumulator))
         ProgressMeter.next!(progress)
     end
@@ -182,7 +177,6 @@ function stability_measures_along_continuation(
         measure_name = measure[1]
         transposed[measure_name] = Vector{Dict{Int64, Float64}}()
     end
-
     for measures in measures_cont
         for (measure_name, measure_dict) in measures
             push!(transposed[measure_name], measure_dict)

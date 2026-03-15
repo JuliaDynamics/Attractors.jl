@@ -142,9 +142,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     return ε
 end
 
-
-# TODO: Implement `show_progress`
-function (mapper::AttractorsViaProximity)(u0; show_progress = false)
+function (mapper::AttractorsViaProximity)(u0)
     ds = referenced_dynamical_system(mapper)
     reinit!(ds, u0)
     t0 = current_time(ds)
