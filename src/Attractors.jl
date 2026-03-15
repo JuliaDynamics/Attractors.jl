@@ -13,8 +13,9 @@ using Reexport
 @reexport using DynamicalSystemsBase
 
 using ProgressMeter
-const PMKWARGS = (showspeed = true, color = :magenta,
-    barglyphs = ProgressMeter.BarGlyphs('|','█', ['▁' ,'▂' ,'▃' ,'▄' ,'▅' ,'▆', '▇'],' ','|',),
+const PMKWARGS = (
+    showspeed = true, color = :magenta,
+    barglyphs = ProgressMeter.BarGlyphs('|', '█', ['▁', '▂', '▃', '▄', '▅', '▆', '▇'], ' ', '|'),
 ) # default options for progress
 # color can be 21, 63 is another to consider, 105 as well.
 

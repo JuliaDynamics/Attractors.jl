@@ -10,7 +10,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
         any instance of `AttractorMapper`. The `AttractorMapper` itself requires as
         input an kind of dynamical system the user wants, like a `StroboscopicMap` or
         `CoupledODEs` or `DeterministicIteratedMap` etc.
-
+        
         For now, we do the following for you:
         ```
         mapper = AttractorsViaRecurrences(ds, grid; sparse = false)
@@ -18,7 +18,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
         ```
         and we are completely ignoring any keywords you provided (which could be about the
         differential equation solve, or the metaparameters of the recurrences algorithm).
-
+        
         We strongly recommend that you study the documentation of Attractors.jl
         and update your code. The only reason we provide this backwards compatibility
         is because our first paper "Effortless estimation of basins of attraction"

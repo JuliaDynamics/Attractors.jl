@@ -53,7 +53,7 @@ end
 function accumulator_continuation_output(measures_cont, rmaps)
     # match
     for (i, rmap) in enumerate(rmaps)
-        for dict in values(measures_cont[i+1])
+        for dict in values(measures_cont[i + 1])
             swap_dict_keys!(dict, rmap)
         end
     end

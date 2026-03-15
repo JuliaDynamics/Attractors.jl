@@ -139,7 +139,8 @@ function basins_fractions(
     )
     used_container = ics isa AbstractVector
     N = used_container ? length(ics) : N
-    progress = ProgressMeter.Progress(N;
+    progress = ProgressMeter.Progress(
+        N;
         desc = "Mapping i.c. to attractors:", PMKWARGS..., offset, enabled = show_progress
     )
     labels = Vector{Int}(undef, used_container ? N : 0)

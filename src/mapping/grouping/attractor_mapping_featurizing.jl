@@ -136,11 +136,13 @@ Return a vector of the features of each initial condition in `ics` (as in
 [`basins_fractions`](@ref)), using the configuration of `mapper::AttractorsViaFeaturizing`.
 Keyword `N` is ignored if `ics isa StateSpaceSet`.
 """
-function extract_features(mapper::AttractorsViaFeaturizing, ics;
-        show_progress = true, progress = nothing,  N = 1000
+function extract_features(
+        mapper::AttractorsViaFeaturizing, ics;
+        show_progress = true, progress = nothing, N = 1000
     )
     if isnothing(progress)
-        progress = ProgressMeter.Progress(N;
+        progress = ProgressMeter.Progress(
+            N;
             desc = "Integrating trajectories:", enabled = show_progress
         )
     end
