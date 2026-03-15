@@ -265,7 +265,6 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
     end
 
-
     # convergence paces
     if (isa(accumulator.mapper, AttractorsViaProximity) && !isnothing(accumulator.mapper.ε))
         ε = accumulator.mapper.ε

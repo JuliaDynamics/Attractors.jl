@@ -92,8 +92,15 @@ function reset_mapper!(mapper::AttractorsViaFeaturizing)
     return
 end
 function (mapper::AttractorsViaFeaturizing)(u0)
-    f = extract_feature(referenced_dynamical_system(mapper), u0, mapper)
-    return feature_to_group(f, mapper.group_config)
+    ds = referenced_dynamical_system(mapper)
+    A, t = trajectory(ds, mapper.total, u0; Ttr = mapper.Ttr, Δt = mapper.Δt)
+    f = mapper.featurizer(A, t)
+    id = feature_to_group(f, mapper.group_config)
+    # store attractor if this is the first id
+    if !haskey(mapper.attractors, id) && id > 0
+        mapper.attractors[id] = A
+    end
+    return id
 end
 
 DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsBase.rulestring(m.ds)
@@ -154,12 +161,12 @@ end
 
 function extract_features_single(mapper, ics; progress, N)
     N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
-    first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
-    feature_vector = Vector{typeof(first_feature)}(undef, N)
-    feature_vector[1] = first_feature
-    for i in 1:N
+    ds = referenced_dynamical_system(mapper)
+    feature_vector = [extract_feature(ds, _get_ic(ics, 1), mapper)]
+    hintsize!(feature_vector, N)
+    for i in 2:N
         ic = _get_ic(ics, i)
-        feature_vector[i] = extract_feature(mapper.ds, ic, mapper)
+        push!(feature_vector[i], extract_feature(ds, ic, mapper))
         ProgressMeter.next!(progress)
     end
     return feature_vector
