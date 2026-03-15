@@ -123,7 +123,7 @@ function basins_fractions_grouped(mapper::AttractorsViaFeaturizing, ics, progres
     features = extract_features(mapper, ics; progress)
     glabels = group_features(features, mapper.group_config)
     if !isempty(labels)
-        labels .= glabels
+        labels .= @view(glabels[1:length(labels)])
     end
     extract_attractors!(mapper, glabels, ics)
     fs = basins_fractions(glabels) # Vanilla fractions method with Array input

@@ -193,7 +193,8 @@ Must be extended for new mappers that fall under this category.
 `ics` is the initial conditions already collected into vector,
 `progress` is an initialized progress bar of appropriate size,
 `labels` is an initialized container of labels that should be overwritten
-in the function call.
+in the function call if it is not `empty`.
+See the implementation of `AttractorsViaFeaturizing` for an example.
 """
 function basins_fractions_grouped(mapper, ics, progress, labels)
     error("Must be implemented for mapper of type $(nameof(typeof(mapper)))")
