@@ -252,6 +252,7 @@ end
     end
 
     r = 0.5
+    grid = ([-1, 0, 1], [-1, 0, 1])
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
     mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
