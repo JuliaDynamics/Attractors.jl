@@ -215,7 +215,7 @@ function convergence_and_basins_fractions(
 
     for i in 1:N
         ic = _get_ic(ics, i)
-        label = mapper(ic; show_progress = false)
+        label = mapper(ic)
         fs[label] = get(fs, label, 0) + 1
         labels[i] = label
         iterations[i] = convergence_time(mapper)
