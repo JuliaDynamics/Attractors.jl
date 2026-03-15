@@ -122,7 +122,9 @@ end
     gca = AttractorSeedContinueMatch(mapper; seeding = A -> [])
 
     pcurve = [Dict(1 => r) for r in rs]
-    fractions_cont, attractors_cont = global_continuation(gca, pcurve, icsgen; samples_per_parameter = 25)
+    fractions_cont, attractors_cont = global_continuation(
+        gca, pcurve, icsgen; samples_per_parameter = 25, show_progress = false
+    )
 
     # all times 2 attractors, never the 0.0 attractor
     @test all(A -> length(A) == 2, attractors_cont)
