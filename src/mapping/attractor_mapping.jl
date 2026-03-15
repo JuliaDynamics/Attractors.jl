@@ -58,8 +58,12 @@ to accelerate estimation of stability measures.
 ## For developers
 
 `AttractorMapper` defines an extendable interface. A new type needs to subtype
-`AttractorMapper` and implement [`extract_attractors`](@ref), `id = mapper(u0)`
-and the internal function `Attractors.referenced_dynamical_system(mapper)`.
+`AttractorMapper` and implement the following:
+
+- [`extract_attractors`](@ref)
+- `id = mapper(u0)`
+- the internal function `Attractors.referenced_dynamical_system(mapper)`.
+
 From these, everything else in the entire rest of the library just works!
 
 If it is not possible to implement `id = mapper(u0)`, then instead extend
@@ -166,12 +170,12 @@ end
 function basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
     fs = Dict{Int, Int}()
     for u0 in additional_ics
-        label = mapper(u0; show_progress = false)
+        label = mapper(u0)
         fs[label] = get(fs, label, 0) + 1
     end
     for i in 1:N
         ic = _get_ic(ics, i)
-        label = mapper(ic; show_progress = false)
+        label = mapper(ic)
         fs[label] = get(fs, label, 0) + 1
         !isempty(labels) && (labels[i] = label)
         ProgressMeter.next!(progress)

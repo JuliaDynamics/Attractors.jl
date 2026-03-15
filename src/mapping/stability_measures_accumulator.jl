@@ -226,7 +226,7 @@ function convergence_time(accumulator::StabilityMeasuresAccumulator)
 end
 
 # Function to update the accumulator with a new state
-function (accumulator::StabilityMeasuresAccumulator)(u0; show_progress = false)
+function (accumulator::StabilityMeasuresAccumulator)(u0)
     id = accumulator.mapper(u0)
     push!(accumulator.u0s, u0)
     push!(accumulator.bs, id)

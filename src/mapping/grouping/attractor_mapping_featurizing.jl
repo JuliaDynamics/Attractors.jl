@@ -128,7 +128,6 @@ end
 #####################################################################################
 import ProgressMeter
 
-# TODO: This functionality should be a generic parallel evolving function...
 """
     extract_features(mapper, ics; N = 1000, show_progress = true)
 
