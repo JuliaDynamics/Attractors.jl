@@ -89,7 +89,7 @@ at which the trajectory with initial condition `x_n` steps out
 from a region defined by the user (see the argument `isinside`).
 This time is a discrete or continuous variable depending on 
 the dynamical system `ds`. In the case of a continuous dynamical
-system, a fixed times step Δt is recommended.
+system, a fixed timestep Δt is recommended.
 
 Given the dynamical mapping `F`, if the step `x_{n+1} = 
 F(x_n)` fulfills the condition `T(x_{n+1}) > Tm` we accept 

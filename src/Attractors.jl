@@ -12,6 +12,13 @@ using Reexport
 @reexport using StateSpaceSets
 @reexport using DynamicalSystemsBase
 
+using ProgressMeter
+const PMKWARGS = (
+    showspeed = true, color = :magenta,
+    barglyphs = ProgressMeter.BarGlyphs('|', '█', ['▁', '▂', '▃', '▄', '▅', '▆', '▇'], ' ', '|'),
+) # default options for progress
+# color can be 21, 63 is another to consider, 105 as well.
+
 # main files that import other files
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")

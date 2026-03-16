@@ -371,7 +371,7 @@ end
     mapper = AttractorsViaRecurrences(ds, grid; sparse = false)
     basins, atts = basins_of_attraction(mapper; show_progress = false)
     ics = [ [x, 1.0] for x in range(-3, 3, length = 20)]
-    fractions, labels = basins_fractions(mapper, ics)
+    fractions, labels = basins_fractions(mapper, ics; show_progress = false)
 
     @test 0 ∉ keys(fractions)
 end

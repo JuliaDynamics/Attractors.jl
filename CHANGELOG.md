@@ -1,3 +1,11 @@
+# v1.34
+
+- `StabilityMeasuresAccumulator` is now compatible with _all_ attractor mappers.
+- `StabilityMeasuresAccumulator` output no longer contains the `id = -1` if this `id`
+  was not actually mapped during the mapping (this is considered a bugfix).
+- `global_continuation` now has a nested progress bar displaying the progress bar of the
+  whole continuation as well as the individual mapping step.
+
 # v1.33
 
 - New enhancement for `StabilityMeasuresAccumulator`: now arbitrary user-defined functions of the basins and attractors can be given.
