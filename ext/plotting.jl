@@ -98,7 +98,6 @@ function Attractors.heatmap_basins_attractors!(
         sckwargs = (strokewidth = 1.5, strokecolor = :white)
     )
 
-    grid = hasfield(typeof(grid), :grid) ? grid.grid : grid
     sort!(ukeys) # necessary because colormap is ordered
     # Set up the (categorical) color map and colormap values
     cmap = cgrad([colors[k] for k in ukeys], length(ukeys); categorical = true)
@@ -180,7 +179,6 @@ function Attractors.shaded_basins_heatmap!(
         maxit = maximum(iterations)
     )
 
-    grid = hasfield(typeof(grid), :grid) ? grid.grid : grid
     sort!(ukeys) # necessary because colormap is ordered
     ids = 1:length(ukeys)
     replace_dict = Dict(k => i for (i, k) in enumerate(ukeys))
