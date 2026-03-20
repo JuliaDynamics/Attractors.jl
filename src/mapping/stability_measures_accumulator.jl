@@ -85,7 +85,6 @@ These measures apply only to fixed point attractors.
 Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
 there for example), a value `Inf` is assigned to all measures.
-Currently linear measures for discrete time systems are not computed.
 
 * `characteristic_return_time`: The reciprocal of the largest real part of the
   eigenvalues of the Jacobian matrix at the fixed point.
@@ -241,7 +240,7 @@ Return a dictionary mapping stability measures (strings) to dictionaries
 mapping attractor IDs to corresponding measure values.
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 """
-function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discrete_time_Δt = 1.0, probability_cutoff = 0.0)
+function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ds = referenced_dynamical_system(accumulator)
     attractors = extract_attractors(accumulator.mapper)
     u0s = accumulator.u0s
@@ -281,10 +280,6 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
             cps[i] = 0.0
         end
     end
-    if isdiscretetime(ds)
-      cts .*= discrete_time_Δt
-      cps .*= discrete_time_Δt
-    end
 
     # now perform the bulk of nonlocal stability estimation
     basin_frac = Dict(id => 0.0 for id in ids)
@@ -304,7 +299,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
     for i in 1:length(u0s)
       	id = bs[i]
       	j = ids_to_js[id]
-      	w = ws[i] > probability_cutoff ? ws[i] : 0.0
+      	w = ws[i]
       	ct = cts[i]
       	cp = cps[i]
 
@@ -384,9 +379,9 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; discret
       end
       if isdiscretetime(ds)
           try
-              J = log(J)/discrete_time_Δt
+              J = log(J)
           catch
-              J = (J - I)/discrete_time_Δt
+              J = J - I
           end
       end
       λ = min(0, maximum(real.(eigvals(J))))
