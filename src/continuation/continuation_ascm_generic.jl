@@ -132,7 +132,7 @@ function global_continuation(
     attractors_cont = Dict[]
     fractions_cont = Dict[]
     # Continue loop over all remaining parameters
-    for p in pcurve
+    for (i, p) in enumerate(pcurve)
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
         # Seed initial conditions from previous attractors.
@@ -155,7 +155,6 @@ function global_continuation(
             pics = ics
         end
         # and finally call basin fractions; it knows how to do all calculations given the mapper
-        # TODO: Would be nice to enable nested progress meters here!
         ret = basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
         fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
         # deepcopy is important here as attractor container always referrenced
@@ -164,7 +163,8 @@ function global_continuation(
         # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
-        ProgressMeter.next!(progress; showvalues = [("p", p)])
+        showvalues = i < length(pcurve) ? [("pcurve index", i+1)] : []
+        ProgressMeter.next!(progress; showvalues)
     end
     rmaps = match_sequentially!(
         attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
