@@ -7,21 +7,22 @@ export aggregate_attractor_fractions
 
 Aggregate the already-estimated curves of fractions of basins of attraction of similar
 attractors using the same pipeline used by [`GroupingConfig`](@ref).
-The most typical application of this function is to transform the output of a [`global_continuation`](@ref) with
-[`RecurrencesFindAndMatch`](@ref) so that similar attractors, even across parameter
-space, are grouped into one "attractor". Thus, the fractions of their basins are aggregated.
+The most typical application of this function is to transform the output of a
+[`global_continuation`](@ref) with [`AttractorSeedContinueMatch`](@ref) so that similar
+attractors, even across parameter space, are grouped into one "attractor".
+Thus, the fractions of their basins are aggregated (joined).
 
 You could also use this function to aggregate attractors and their fractions even in
 a single parameter configuration, i.e., using the output of [`basins_fractions`](@ref).
 
 This function is useful in cases where you want the accuracy and performance of
 [`AttractorsViaRecurrences`](@ref), but you also want the convenience of "grouping"
-similar attractrors like in [`AttractorsViaFeaturizing`](@ref) for presentation or
+similar attractors like in [`AttractorsViaFeaturizing`](@ref) for presentation or
 analysis purposes. For example, a high dimensional model of competition dynamics
-across multispecies may have extreme multistability. After finding this multistability
+with multiple species may have extreme multistability. After finding this multistability
 however, one may care about aggregating all attractors into two groups: where a given
 species is extinct or not. This is the example highlighted in our documentation,
-in [Extinction of a species in a multistable competition model](@ref).
+in [Extinction of a species in a multistable competition model](@ref aggregation_example).
 
 ## Input
 
