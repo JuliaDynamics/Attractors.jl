@@ -1,7 +1,5 @@
 export intermingledness
 
-
-
 """
     intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
 
@@ -29,9 +27,14 @@ to summarize the intermingedness statistic across other groups (see description 
 For example,
 `us` can be initial conditions fed into [`basin_fractions`](@ref), and `labels` the output.
 Or, `us` can be feature vectors and `labels` the output of the [`group_features`](@ref) function.
+
+
+!!! note "Expensive!"
+    This function becomes quite expensive to compute as the number of initial conditions
+    increase due to the square scaling with `length(points)`.
 """
 function intermingledness(
-        us::AbstractStateSpaceSet, labels::AbstractVector{<:Int},
+        us::AbstractVector{<:AbstractArray}, labels::AbstractVector{<:Int},
         distance = Euclidean(); summarizer = maximum
     )
     ukeys = unique(labels)
@@ -39,7 +42,7 @@ function intermingledness(
     return _intermingledness(ukeys, groups, distance, summarizer)
 end
 function intermingledness(
-        us::AbstractStateSpaceSet, labels::AbstractVector{<:Int},
+        us::AbstractVector{<:AbstractArray}, labels::AbstractVector{<:Int},
         distances::AbstractVector; summarizer = maximum
     )
     ukeys = unique(labels)
@@ -61,7 +64,8 @@ function _intermingledness(ukeys, groups, distance, summarizer)
         # First we drop the same group entry (which is 1 by definition)
         deleteat!(imetrics, gi)
         # and then summarize
-        return ukeys[gi] => summarizer(imetrics)
+        value = isempty(imetrics) ? NaN : summarizer(imetrics) # in case of only 1 attractor
+        return ukeys[gi] => value
     end
     return Dict(imetric) # make sure this is a dictionary so that labels are respected
 end

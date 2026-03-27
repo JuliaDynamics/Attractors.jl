@@ -142,8 +142,10 @@ The word "distance" here refers to the distance established by the `distance` ke
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
 * `intermingledness\$(i)`: intermingledness of the basins of attraction corresponding to the
-  `i`-th distance function given to the `idistances` keyword. See [`intermingedness`](@ref)
-  for more information. (multiple entries may be produced, each ending with the number `i`)
+  `i`-th distance function given to the `idistances` keyword. Multiple entries may be
+  be produced, each ending with the number `i`. Because intermingledness is expensive to
+  compute for a large number of initial conditions, you can disable this by providing
+  an empty vector to `idistances`. See [`intermingedness`](@ref) for more information.
 
 ### Extra quantifiers
 
@@ -201,7 +203,7 @@ function StabilityMeasuresAccumulator(
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras)}(
+    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
@@ -436,7 +438,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     # add intermingledness
     imetrics = intermingledness(u0s, bs, accumulator.idistances)
-    for m in imetrics
+    for (i, m) in enumerate(imetrics)
         output["intermingledness$(i)"] = m
     end
 

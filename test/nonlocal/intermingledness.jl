@@ -43,8 +43,43 @@ using Distances: WeightedEuclidean
 end
 
 @testset "intermingledness accumulator" begin
+    # we'll use a modified dumb map that is intermingled when projected to second dimension
+    function dumb_map(z, p, n)
+        x, y = z
+        r = p[1]
+        if r < 0.5
+            return SVector(0.0, 0.0)
+        else
+            if x ≥ 0
+                return SVector(r, 0)
+            else
+                return SVector(-r, 0)
+            end
+        end
+    end
+    dynamics = DiscreteDynamicalSystem(dumb_map, [0.0, 1.0], [0.9])
+    grid = (-1:0.1:1, -1:0.1:1)
+    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false, Ttr = 2)
+    distances = [
+        Euclidean(),
+        WeightedEuclidean([0, 1]) # distance of x dimension only
+    ]
+    accumulator = StabilityMeasuresAccumulator(mapper; idistances = distances)
 
+    A = ics_from_grid(grid)
+    for u0 in A
+        id = accumulator(u0) # run this to accumulate measures
+    end
+
+    results = finalize_accumulator(accumulator)
+
+    @test haskey(results, "intermingledness1")
+    @test haskey(results, "intermingledness2")
+
+    i1 = results["intermingledness1"]
+    i2 = results["intermingledness2"]
+
+    @test i1[1] ≈ i1[2] atol = 1e-1
+    @test i1[1] ≈ 0.66 atol = 1e-1
+    @test i2[1] == i2[2] == 1
 end
-
-
-
