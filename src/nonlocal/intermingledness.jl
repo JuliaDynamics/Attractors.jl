@@ -1,0 +1,47 @@
+"""
+    intermingledness(us::StatesSpaceSet, labels; kw...)
+
+Return the intermingledness [Datseris2026](@cite) of the points in `us`
+which have been divided into groups (typically attractors) as dictated by the `labels`.
+
+
+## Keyword arguments
+
+- `distance = Euclidean():` How to estimate distances between points in `us`.
+- `summarizer = maximum:` How to summarise the intermingedness statistic
+  across other groups (see description below).
+
+## Description
+
+For example,
+`us` can be initial conditions fed into [`basin_fractions`](@ref), and `labels` the output.
+Or, `us` can be feature vectors and `labels` the output of the [`group_features`](@ref) function.
+"""
+function intermingledness(
+        us::StateSpaceSet, labels::AbstractVector{<:Int};
+        distance = Euclidean(), summarizer = maximum
+    )
+    groups = [us[findall(isequal(gi), labels)] for gi in unique(labels)]
+    return _intermingledness(groups, distance, summarizer)
+end
+
+function _intermingledness(groups, distance, summarizer)
+    # for each group...
+    imetric = map(eachindex(groups)) do gi
+        g = groups[gi]
+        # mean distance of current group to all groups (including self)
+        ds = mean_distance.(Ref(g), groups, Ref(distance))
+        # the metric is now the distance of own group divided
+        # by distance to any other cluster
+        imetrics = ds[gi] ./ ds
+        # Right, but now we still need to return a summarizing number across
+        # all other groups beyond self group.
+        # First we drop the same group entry (which is 1 by definition)
+        deleteat!(imetrics, gi)
+        # and then summarize
+        return gi => summarizer(imetrics)
+    end
+    return Dict(imetric) # make sure this is a dictionary so that labels are respected
+end
+
+mean_distance(xs, ys, distance) = mean(distance(x, y) for x in xs for y in ys)
