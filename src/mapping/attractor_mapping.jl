@@ -251,10 +251,8 @@ include("../basins/basins_types.jl")
 include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")
-include("stability_measures_accumulator.jl")
 
 "internal function for whether the mapper can map individual i.c."
-allows_mapper_u0(a::StabilityMeasuresAccumulator) = allows_mapper_u0(a.mapper)
 allows_mapper_u0(::AttractorMapper) = true
 function allows_mapper_u0(mapper::AttractorsViaFeaturizing)
     if mapper.group_config isa GroupViaClustering

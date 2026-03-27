@@ -18,7 +18,8 @@ although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make
 This functionality was developed as part of [Morr2026](@cite) and has now been extended
 to work for any `AttractorMapper` current or future.
 The accummulator records several measures of stability (or resilience) defined
-in [Morr2026](@cite), and a few more related and derived shortly after, see list below.
+in [Morr2026](@cite), and a few more related and derived shortly after,
+including the recent intermingledness metric [Datseris2026](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
@@ -205,7 +206,8 @@ function StabilityMeasuresAccumulator(
     )
 end
 
-# Function to reset the accumulator
+# Extend `AttractorMapper` API:
+
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     empty!(a.u0s)
@@ -225,7 +227,8 @@ function convergence_time(accumulator::StabilityMeasuresAccumulator)
     return convergence_time(accumulator.mapper)
 end
 
-# Function to update the accumulator with a new state
+allows_mapper_u0(a::StabilityMeasuresAccumulator) = allows_mapper_u0(a.mapper)
+
 function (accumulator::StabilityMeasuresAccumulator)(u0)
     id = accumulator.mapper(u0)
     push!(accumulator.u0s, u0)
