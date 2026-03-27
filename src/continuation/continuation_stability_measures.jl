@@ -17,7 +17,7 @@ function global_continuation(
     attractors_cont = Dict[]
     # difference one: this isn't fractions
     measures_cont = []
-    for p in pcurve
+    for (i, p) in enumerate(pcurve)
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
         empty!(additional_ics)
@@ -39,7 +39,8 @@ function global_continuation(
         # difference three:
         measures = finalize_accumulator(mapper)
         push!(measures_cont, measures)
-        ProgressMeter.next!(progress; showvalues = [("p", p)])
+        showvalues = i < length(pcurve) ? [("pcurve index", i+1)] : []
+        ProgressMeter.next!(progress; showvalues)
     end
 
     rmaps = match_sequentially!(
