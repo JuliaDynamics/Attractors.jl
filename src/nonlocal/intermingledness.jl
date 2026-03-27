@@ -1,17 +1,28 @@
 export intermingledness
 
-"""
-    intermingledness(us::StatesSpaceSet, labels [, distance]; kw...)
 
-Return the intermingledness [Datseris2026](@cite) of the points in `us`
+
+"""
+    intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
+
+Return the intermingledness [Datseris2026](@cite) of the `points`
 which have been divided into groups (typically attractors) as dictated by the `labels`.
 
 The optional `distance = Euclidean()` argument dictates how to estimate distances
-between points in `us`.
-A vector of distances can also be given as `distance`, in which case a vector of
-intermingledness is return corresponding to each distance version.
+between points.
+A vector of distance functions can also be given as `distance`, in which case a vector of
+intermingledness is returned corresponding to each distance version.
+In [Datseris2026](@cite) intermingledness was estimated individually per dimension
+of `points`, which you can achieve by e.g.,
+```julia
+using Distances: WeightedEuclidean
+D = dimension(points)
+weights = [(1:D .== j) for j in 1:D]
+distances = WeightedEuclidean.(weights)
+```
+with `D` is the state space dimension.
 
-The `summarizer = maximum` keyword argument ditactes how
+The `summarizer = maximum` keyword argument dictates how
 to summarize the intermingedness statistic across other groups (see description below).
 
 ## Description
