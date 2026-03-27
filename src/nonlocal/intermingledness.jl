@@ -5,7 +5,11 @@ Return the intermingledness [Datseris2026](@cite) of the points in `us`
 which have been divided into groups (typically attractors) as dictated by the `labels`.
 
 The optional `distance = Euclidean()` argument dictates how to estimate distances
-between points in `us`. The `summarizer = maximum` keyword argument ditactes how
+between points in `us`.
+A vector of distances can also be given as `distance`, in which case a vector of
+intermingledness is return corresponding to each distance version.
+
+The `summarizer = maximum` keyword argument ditactes how
 to summarize the intermingedness statistic across other groups (see description below).
 
 ## Description
@@ -15,12 +19,20 @@ For example,
 Or, `us` can be feature vectors and `labels` the output of the [`group_features`](@ref) function.
 """
 function intermingledness(
-        us::AbstractStateSpaceSet, labels::AbstractVector{<:Int};
-        distance = Euclidean(), summarizer = maximum
+        us::AbstractStateSpaceSet, labels::AbstractVector{<:Int},
+        distance = Euclidean(); summarizer = maximum
     )
     ukeys = unique(labels)
     groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
     return _intermingledness(ukeys, groups, distance, summarizer)
+end
+function intermingledness(
+        us::AbstractStateSpaceSet, labels::AbstractVector{<:Int},
+        distances::AbstractVector; summarizer = maximum
+    )
+    ukeys = unique(labels)
+    groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
+    return map(d -> _intermingledness(ukeys, groups, d, summarizer), distances)
 end
 
 function _intermingledness(ukeys, groups, distance, summarizer)
