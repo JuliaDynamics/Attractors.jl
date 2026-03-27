@@ -15,8 +15,6 @@ while _at the same time_ calculating many stability measures in the most efficie
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref),
 although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make sense.
 
-This functionality was developed as part of [Morr2026](@cite) and has now been extended
-to work for any `AttractorMapper` current or future.
 The accummulator records several measures of stability (or resilience) defined
 in [Morr2026](@cite), and a few more related and derived shortly after,
 including the recent intermingledness metric [Datseris2026](@cite), see list below.
@@ -31,18 +29,20 @@ of all stability measures estimated by the accumulator.
 Each dictionary maps the stability measure description (`String`) to a dictionary
 mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
+This functionality was developed as part of [Morr2026](@cite) and has now been extended
+to work for any `AttractorMapper`, current or future.
 
 **Using with [`global_continuation`](@ref)**:
 Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `mapper` input
-to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation` as normal.
+to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
 The only difference now is that `global_continuation` will not return just one
 measure of stability (the basin fraction). Rather,
 now the first return argument of `global_continuation` will be a
 `measures_cont`, a dictionary mapping stability measures (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
-of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
-to the corresponding nonlocal stability measure.
+of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
+to the corresponding nonlocal stability measures.
 
 Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
 on the basis of an `AttractorsViaProximity` mapper from already found attractors.
@@ -60,6 +60,7 @@ more rirogously and is estimated more accurately for a proximity mapper.
   distribution everywhere in the state space.\
 * `distance = Centroid()`: How to compute the distance between an initial condition `u0`
   and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
+* `idistances = [distance, ]`: Distances given to the [`intermingedness`](@ref) estimation.
 
 ## Description
 
@@ -139,6 +140,9 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
+* `intermingledness<i>`: intermingledness corresponding to the `i`-th distance
+  function given to the `idistances` keyword. See [`intermingedness`](@ref)
+  for more information. (`i` entries are produced, each ending with the number `i`)
 
 ### Extra quantifiers
 

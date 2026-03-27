@@ -8,7 +8,7 @@ using Distances: WeightedEuclidean
     randompoint() = (rand([-1, 1]) + 0.05randn(), 0.05randn())
     features = [randompoint() for _ in 1:1000]
     features = [SVector(x, y + (x > 0 ? rand([-0.5, 0.5]) : 0)) for (x, y) in features]
-    # sort by x dimension so that key 1 is the left cluster
+    # sort by x dimension so that key 1 is the left cluster always
     sort!(features)
     features = StateSpaceSet(features)
 

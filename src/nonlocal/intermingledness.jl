@@ -1,3 +1,5 @@
+export intermingledness
+
 """
     intermingledness(us::StatesSpaceSet, labels [, distance]; kw...)
 
