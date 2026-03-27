@@ -17,10 +17,9 @@ of `points`, which you can achieve by e.g.,
 ```julia
 using Distances: WeightedEuclidean
 D = dimension(points)
-weights = [(1:D .== j) for j in 1:D]
+weights = [(1:D .== i) for i in 1:D]
 distances = WeightedEuclidean.(weights)
 ```
-with `D` is the state space dimension.
 
 The `summarizer = maximum` keyword argument dictates how
 to summarize the intermingedness statistic across other groups (see description below).

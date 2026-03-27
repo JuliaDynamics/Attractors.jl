@@ -17,7 +17,7 @@ although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make
 
 The accummulator records several measures of stability (or resilience) defined
 in [Morr2026](@cite), and a few more related and derived shortly after,
-including the recent intermingledness metric [Datseris2026](@cite), see list below.
+including the intermingledness of basins of attraction [Datseris2026](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
@@ -60,7 +60,8 @@ more rirogously and is estimated more accurately for a proximity mapper.
   distribution everywhere in the state space.\
 * `distance = Centroid()`: How to compute the distance between an initial condition `u0`
   and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
-* `idistances = [distance, ]`: Distances given to the [`intermingedness`](@ref) estimation.
+* `idistances = [Euclidean()]`: A vector of point distances given to [`intermingedness`](@ref)
+  for calculating the intermingledness of basins of attraction.
 
 ## Description
 
@@ -140,8 +141,8 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
-* `intermingledness<i>`: intermingledness corresponding to the `i`-th distance
-  function given to the `idistances` keyword. See [`intermingedness`](@ref)
+* `intermingledness<i>`: intermingledness of the basins of attraction corresponding to the
+  `i`-th distance function given to the `idistances` keyword. See [`intermingedness`](@ref)
   for more information. (`i` entries are produced, each ending with the number `i`)
 
 ### Extra quantifiers
@@ -176,7 +177,7 @@ end
 extras = Dict("maxv" => extra_function)
 ```
 """
-struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict} <: AttractorMapper
+struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict, X} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
@@ -185,11 +186,13 @@ struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, 
     weighting_distribution::W
     distance::M
     extras::E
+    idistances::X
 end
 
 function StabilityMeasuresAccumulator(
         mapper::AttractorMapper, extras = Dict();
-        finite_time = 1.0, weighting_distribution = EverywhereUniform(), distance = Centroid()
+        finite_time = 1.0, weighting_distribution = EverywhereUniform(),
+        distance = Centroid(), idistances = [Euclidean()],
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
@@ -206,12 +209,12 @@ function StabilityMeasuresAccumulator(
         finite_time,
         weighting_distribution,
         distance,
-        extras
+        extras,
+        idistances
     )
 end
 
 # Extend `AttractorMapper` API:
-
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     empty!(a.u0s)
@@ -220,7 +223,6 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     return
 end
 
-# extensions
 function extract_attractors(accumulator::StabilityMeasuresAccumulator)
     return extract_attractors(accumulator.mapper)
 end
