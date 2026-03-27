@@ -141,9 +141,9 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
-* `intermingledness<i>`: intermingledness of the basins of attraction corresponding to the
+* `intermingledness\$(i)`: intermingledness of the basins of attraction corresponding to the
   `i`-th distance function given to the `idistances` keyword. See [`intermingedness`](@ref)
-  for more information. (`i` entries are produced, each ending with the number `i`)
+  for more information. (multiple entries may be produced, each ending with the number `i`)
 
 ### Extra quantifiers
 
@@ -433,6 +433,12 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         "basin_stability" => basin_stab,
         "finite_time_basin_stability" => finite_time_basin_stab,
     )
+
+    # add intermingledness
+    imetrics = intermingledness(u0s, bs, accumulator.idistances)
+    for m in imetrics
+        output["intermingledness$(i)"] = m
+    end
 
     # extra quantifiers requested by the user
     if !isempty(accumulator.extras)
