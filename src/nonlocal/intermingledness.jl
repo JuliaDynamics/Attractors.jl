@@ -1,15 +1,12 @@
 """
-    intermingledness(us::StatesSpaceSet, labels; kw...)
+    intermingledness(us::StatesSpaceSet, labels [, distance]; kw...)
 
 Return the intermingledness [Datseris2026](@cite) of the points in `us`
 which have been divided into groups (typically attractors) as dictated by the `labels`.
 
-
-## Keyword arguments
-
-- `distance = Euclidean():` How to estimate distances between points in `us`.
-- `summarizer = maximum:` How to summarise the intermingedness statistic
-  across other groups (see description below).
+The optional `distance = Euclidean()` argument dictates how to estimate distances
+between points in `us`. The `summarizer = maximum` keyword argument ditactes how
+to summarize the intermingedness statistic across other groups (see description below).
 
 ## Description
 
@@ -18,14 +15,15 @@ For example,
 Or, `us` can be feature vectors and `labels` the output of the [`group_features`](@ref) function.
 """
 function intermingledness(
-        us::StateSpaceSet, labels::AbstractVector{<:Int};
+        us::AbstractStateSpaceSet, labels::AbstractVector{<:Int};
         distance = Euclidean(), summarizer = maximum
     )
-    groups = [us[findall(isequal(gi), labels)] for gi in unique(labels)]
-    return _intermingledness(groups, distance, summarizer)
+    ukeys = unique(labels)
+    groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
+    return _intermingledness(ukeys, groups, distance, summarizer)
 end
 
-function _intermingledness(groups, distance, summarizer)
+function _intermingledness(ukeys, groups, distance, summarizer)
     # for each group...
     imetric = map(eachindex(groups)) do gi
         g = groups[gi]
@@ -39,7 +37,7 @@ function _intermingledness(groups, distance, summarizer)
         # First we drop the same group entry (which is 1 by definition)
         deleteat!(imetrics, gi)
         # and then summarize
-        return gi => summarizer(imetrics)
+        return ukeys[gi] => summarizer(imetrics)
     end
     return Dict(imetric) # make sure this is a dictionary so that labels are respected
 end
