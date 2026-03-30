@@ -5,6 +5,7 @@ export intermingledness
 
 Return the intermingledness [Datseris2026](@cite) of the `points`
 which have been divided into groups (typically attractors) as dictated by the `labels`.
+Return a dictionary mapping unique labels to their intermingledness.
 
 The optional `distance = Euclidean()` argument dictates how to estimate distances
 between points.
@@ -19,23 +20,28 @@ weights = [(1:D .== i) for i in 1:D]
 distances = WeightedEuclidean.(weights)
 ```
 
-The `summarizer = maximum` keyword argument dictates how
-to summarize the intermingedness statistic across other groups (see description below).
+The `summarizer = mean` keyword argument dictates how
+to summarize the intermingedness statistic across other groups.
 
 ## Description
 
-For example,
-`us` can be initial conditions fed into [`basin_fractions`](@ref), and `labels` the output.
-Or, `us` can be feature vectors and `labels` the output of the [`group_features`](@ref) function.
+Intermingledness is a way to quantify similarity or dissimilarity between the different
+groups that `points` was grouped in. For example, `points`
+can be initial conditions fed into [`basin_fractions`](@ref), and `labels` the output.
+Or, `points` can be feature vectors and `labels` the output of [`group_features`](@ref).
 
+Intermingledness is effectively the ratio of the pairwise-averaged inter-group distance
+divided by the pairwise-averaged intra-group distance.
+See [Datseris2026](@cite) for examples using intermingledness and the detailed definition
+or honestly, just look at the source code, it is only 10 lines!
 
 !!! note "Expensive!"
-    This function becomes quite expensive to compute as the number of initial conditions
-    increase due to the square scaling with `length(points)`.
+    This function becomes quite expensive to compute for many points
+    because it scales as ~ `length(unique(labels))^2 * length(points)^2`
 """
 function intermingledness(
         us::AbstractVector{<:AbstractArray}, labels::AbstractVector{<:Int},
-        distance = Euclidean(); summarizer = maximum
+        distance = Euclidean(); summarizer = mean
     )
     ukeys = unique(labels)
     groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
@@ -43,7 +49,7 @@ function intermingledness(
 end
 function intermingledness(
         us::AbstractVector{<:AbstractArray}, labels::AbstractVector{<:Int},
-        distances::AbstractVector; summarizer = maximum
+        distances::AbstractVector; summarizer = mean
     )
     ukeys = unique(labels)
     groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
@@ -64,7 +70,7 @@ function _intermingledness(ukeys, groups, distance, summarizer)
         # First we drop the same group entry (which is 1 by definition)
         deleteat!(imetrics, gi)
         # and then summarize
-        value = isempty(imetrics) ? NaN : summarizer(imetrics) # in case of only 1 attractor
+        value = isempty(imetrics) ? NaN : summarizer(imetrics) # NaN if only 1 group
         return ukeys[gi] => value
     end
     return Dict(imetric) # make sure this is a dictionary so that labels are respected
