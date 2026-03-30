@@ -386,7 +386,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
                 maximal_amplification_time[id] = Inf
             else
                 characteristic_return_time[id] = abs(1 / log(λ))
-                reactivity[id] = λ
+                reactivity[id] = λ - 1
                 maximal_amplification[id] = 1
                 maximal_amplification_time[id] = 0
             end
