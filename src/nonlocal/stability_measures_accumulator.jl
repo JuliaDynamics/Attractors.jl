@@ -15,10 +15,9 @@ while _at the same time_ calculating many stability measures in the most efficie
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref),
 although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make sense.
 
-This functionality was developed as part of [Morr2026](@cite) and has now been extended
-to work for any `AttractorMapper` current or future.
 The accummulator records several measures of stability (or resilience) defined
-in [Morr2026](@cite), and a few more related and derived shortly after, see list below.
+in [Morr2026](@cite), and a few more related and derived shortly after,
+including the intermingledness of basins of attraction [Datseris2026](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
@@ -30,18 +29,20 @@ of all stability measures estimated by the accumulator.
 Each dictionary maps the stability measure description (`String`) to a dictionary
 mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
+This functionality was developed as part of [Morr2026](@cite) and has now been extended
+to work for any `AttractorMapper`, current or future.
 
 **Using with [`global_continuation`](@ref)**:
 Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `mapper` input
-to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation` as normal.
+to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
 The only difference now is that `global_continuation` will not return just one
 measure of stability (the basin fraction). Rather,
 now the first return argument of `global_continuation` will be a
 `measures_cont`, a dictionary mapping stability measures (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
-of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
-to the corresponding nonlocal stability measure.
+of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
+to the corresponding nonlocal stability measures.
 
 Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
 on the basis of an `AttractorsViaProximity` mapper from already found attractors.
@@ -59,6 +60,8 @@ more rirogously and is estimated more accurately for a proximity mapper.
   distribution everywhere in the state space.\
 * `distance = Centroid()`: How to compute the distance between an initial condition `u0`
   and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
+* `idistances = [Euclidean()]`: A vector of point distances given to [`intermingedness`](@ref)
+  for calculating the intermingledness of basins of attraction.
 
 ## Description
 
@@ -85,7 +88,6 @@ These measures apply only to fixed point attractors.
 Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
 there for example), a value `Inf` is assigned to all measures.
-Currently linear measures for discrete time systems are not computed.
 
 * `characteristic_return_time`: The reciprocal of the largest real part of the
   eigenvalues of the Jacobian matrix at the fixed point.
@@ -138,6 +140,11 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
+* `intermingledness\$(i)`: intermingledness of the basins of attraction corresponding to the
+  `i`-th distance function given to the `idistances` keyword. Multiple entries may be
+  be produced, each ending with the number `i`. Because intermingledness is expensive to
+  compute for a large number of initial conditions, you can disable this by providing
+  an empty vector to `idistances`. See [`intermingedness`](@ref) for more information.
 
 ### Extra quantifiers
 
@@ -171,7 +178,7 @@ end
 extras = Dict("maxv" => extra_function)
 ```
 """
-struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict} <: AttractorMapper
+struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict, X} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
@@ -180,11 +187,13 @@ struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, 
     weighting_distribution::W
     distance::M
     extras::E
+    idistances::X
 end
 
 function StabilityMeasuresAccumulator(
         mapper::AttractorMapper, extras = Dict();
-        finite_time = 1.0, weighting_distribution = EverywhereUniform(), distance = Centroid()
+        finite_time = 1.0, weighting_distribution = EverywhereUniform(),
+        distance = Centroid(), idistances = [Euclidean()],
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
@@ -193,7 +202,7 @@ function StabilityMeasuresAccumulator(
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras)}(
+    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
@@ -201,11 +210,12 @@ function StabilityMeasuresAccumulator(
         finite_time,
         weighting_distribution,
         distance,
-        extras
+        extras,
+        idistances
     )
 end
 
-# Function to reset the accumulator
+# Extend `AttractorMapper` API:
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     empty!(a.u0s)
@@ -214,7 +224,6 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     return
 end
 
-# extensions
 function extract_attractors(accumulator::StabilityMeasuresAccumulator)
     return extract_attractors(accumulator.mapper)
 end
@@ -225,7 +234,8 @@ function convergence_time(accumulator::StabilityMeasuresAccumulator)
     return convergence_time(accumulator.mapper)
 end
 
-# Function to update the accumulator with a new state
+allows_mapper_u0(a::StabilityMeasuresAccumulator) = allows_mapper_u0(a.mapper)
+
 function (accumulator::StabilityMeasuresAccumulator)(u0)
     id = accumulator.mapper(u0)
     push!(accumulator.u0s, u0)
@@ -247,7 +257,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
-    ids = unique(bs)
+    ids = vcat(collect(keys(attractors)), -1) # Output stability also for attractors with no basin points
     js = 1:length(ids)
     ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
     N = length(u0s)
@@ -298,11 +308,11 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
 
     for i in 1:length(u0s)
-        id = bs[i]
-        j = ids_to_js[id]
-        w = ws[i]
-        ct = cts[i]
-        cp = cps[i]
+      	id = bs[i]
+      	j = ids_to_js[id]
+      	w = ws[i]
+      	ct = cts[i]
+      	cp = cps[i]
 
         basin_frac[id] += 1 / N
         basin_stab[id] += w / N
@@ -335,6 +345,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     for id in ids
         basin_stab[id] /= normalization
+        finite_time_basin_stab[id] /= normalization
         mean_convergence_time[id] /= normalization
         mean_convergence_pace[id] /= normalization
         mean_noncritical_shock_magnitude[id] /= normalization
@@ -359,38 +370,49 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     if -1 ∈ ids
         minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
     end
-
     # linear measures
     characteristic_return_time = Dict(id => NaN for id in ids)
     reactivity = Dict(id => NaN for id in ids)
     maximal_amplification = Dict(id => NaN for id in ids)
     maximal_amplification_time = Dict(id => NaN for id in ids)
-    # TODO: This can be updated to work also for discrete time systems
-    if !isdiscretetime(ds)
-        jac = jacobian(ds)
-        for (id, A) in attractors
-            if length(A) > 1
-                continue
-            end
-            # Get the Jacobian matrix at the fixed point
-            if isinplace(ds)
-                # For in-place systems, pre-allocate J and then compute it
-                J = Array{Float64}(undef, length(A[1]), length(A[1]))
-                jac(J, Array(A[1]), current_parameters(ds), 0)
-            else
-                # For out-of-place systems, compute J directly
-                J = jac(Array(A[1]), current_parameters(ds), 0)
-            end
-
-            λ = min(0, maximum(real.(eigvals(J))))
-            characteristic_return_time[id] = abs(1 / λ)
-            H = (J + J') / 2
-            evs = real.(eigvals(H))
-            reactivity[id] = maximum(evs)
-            if λ == 0
+    jac = jacobian(ds)
+    for (id, A) in attractors
+      if length(A) > 1
+          continue
+      end
+      if isinplace(ds)
+            # For in-place systems, pre-allocate J and then compute it
+            J = Array{Float64}(undef, length(A[1]), length(A[1]))
+            jac(J, Array(A[1]), current_parameters(ds), 0)
+      else
+            # For out-of-place systems, compute J directly
+            J = jac(Array(A[1]), current_parameters(ds), 0)
+      end
+      if isdiscretetime(ds)
+            λ = maximum(abs.(eigvals(J)))
+            if λ >= 1
+                characteristic_return_time[id] = Inf
+                reactivity[id] = Inf
                 maximal_amplification[id] = Inf
                 maximal_amplification_time[id] = Inf
             else
+                characteristic_return_time[id] = abs(1 / log(λ))
+                reactivity[id] = λ - 1
+                maximal_amplification[id] = 1
+                maximal_amplification_time[id] = 0
+            end
+      else
+            λ = maximum(real.(eigvals(J)))
+            if λ >= 0
+                characteristic_return_time[id] = Inf
+                reactivity[id] = Inf
+                maximal_amplification[id] = Inf
+                maximal_amplification_time[id] = Inf
+            else
+                characteristic_return_time[id] = abs(1 / λ)
+                H = (J + J') / 2
+                evs = real.(eigvals(H))
+                reactivity[id] = maximum(evs)
                 f(t) = -opnorm(exp(t * J))
                 T = range(0.0, 10 * characteristic_return_time[id], length = 20001)
                 step_length = T[2] - T[1]
@@ -403,7 +425,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
                 maximal_amplification[id] = (-1) * Optim.minimum(res)
                 maximal_amplification_time[id] = Optim.minimizer(res)[1]
             end
-        end
+      end
     end
 
     output = Dict{String, Any}(
@@ -424,6 +446,12 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         "basin_stability" => basin_stab,
         "finite_time_basin_stability" => finite_time_basin_stab,
     )
+
+    # add intermingledness
+    imetrics = intermingledness(u0s, bs, accumulator.idistances)
+    for (i, m) in enumerate(imetrics)
+        output["intermingledness$(i)"] = m
+    end
 
     # extra quantifiers requested by the user
     if !isempty(accumulator.extras)
