@@ -30,27 +30,27 @@ groups that `points` was grouped in. For example, `points`
 can be initial conditions fed into [`basin_fractions`](@ref), and `labels` the output.
 Or, `points` can be feature vectors and `labels` the output of [`group_features`](@ref).
 
-Intermingledness is effectively the ratio of the pairwise-averaged inter-group distance
-divided by the pairwise-averaged intra-group distance.
+Intermingledness is effectively the ratio of the pairwise-averaged intra-group distance
+divided by the pairwise-averaged inter-group distance. If it is 1, points are as
+close to points in their own group as they are to points in other groups.
 See [Datseris2026](@cite) for examples using intermingledness and the detailed definition
 or honestly, just look at the source code, it is only 10 lines!
 
 !!! note "Expensive!"
-    This function becomes quite expensive to compute for many points
+    This function becomes expensive to compute for many points
     because it scales as ~ `length(unique(labels))^2 * length(points)^2`
 """
 function intermingledness(
         us::AbstractVector{<:AbstractArray}, labels::AbstractVector{<:Int},
         distance = Euclidean(); summarizer = mean
     )
-    ukeys = unique(labels)
-    groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
-    return _intermingledness(ukeys, groups, distance, summarizer)
+    return intermingledness(us, labels, [distance]; summarizer)[1]
 end
 function intermingledness(
         us::AbstractVector{<:AbstractArray}, labels::AbstractVector{<:Int},
         distances::AbstractVector; summarizer = mean
     )
+    length(us) ≠ length(labels) && error("points and labels must be same length.")
     ukeys = unique(labels)
     groups = [us[findall(isequal(gi), labels)] for gi in ukeys]
     return map(d -> _intermingledness(ukeys, groups, d, summarizer), distances)
