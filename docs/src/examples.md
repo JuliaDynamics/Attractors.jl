@@ -106,22 +106,16 @@ Then, we create a projected system on the x-y plane
 psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 ```
 
-For this systems we know the attractors are close to the magnet positions. The positions can be obtained from the equations of the system, provided that one has seen the source code (not displayed here), like so:
+and create an attractor mapper that will map initial conditions to attractors like before
 ```@example MAIN
-attractors = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
-```
-
-and then create a
-```@example MAIN
-mapper = AttractorsViaProximity(psys, attractors)
+xg = yg = range(-4, 4; length = 201)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(psys, grid; Δt = 1.0)
 ```
 
 and as before, get the basins of attraction
 ```@example MAIN
-xg = yg = range(-4, 4; length = 201)
-grid = (xg, yg)
-basins, = basins_of_attraction(mapper, grid; show_progress = false)
-
+basins, attractors = basins_of_attraction(mapper, grid; show_progress = false)
 heatmap_basins_attractors(grid, basins, attractors)
 ```
 
@@ -169,6 +163,44 @@ find the 3rd because it has such a small basin).
 Also, the first row of `P` is 50% probability to each other magnet, as it should be due to
 the system's symmetry.
 
+## Intermingledness
+
+Continuing from the above example, we can use it as a demonstration of the
+concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026](@cite).
+
+First, let's generate another basins of attraction for the magnetic pendulum at a different
+decay rate where the basins will be less fractal:
+
+```@example MAIN
+set_parameter!(psys, :γs, [1.0, 1.0, 1.0])
+set_parameter!(psys, :α, 0.5)
+mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+basins2, attractors2 = basins_of_attraction(mapper, grid; show_progress = false)
+```
+
+then calculate intermingledness for both basins
+```@example MAIN
+# we need points of the grid as a vector
+points = ics_from_grid(grid)
+i1 = intermingledness(points, basins)
+i2 = intermingledness(points, basins2)
+
+
+
+```
+
+and visualize
+
+```@example MAIN
+fig = Figure()
+ax1, ax2 = [Axis(fig[1,i]) for i in 1:2]
+
+
+heatmap_basins_attractors!(ax1, grid, basins, attractors)
+heatmap_basins_attractors!(ax2, grid, basins2, attractors2)
+
+
+```
 
 ## 3D basins via recurrences
 
