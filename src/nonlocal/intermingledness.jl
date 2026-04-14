@@ -7,10 +7,10 @@ Return the intermingledness [Datseris2026](@cite) of the `points`
 which have been divided into groups (typically attractors) as dictated by the `labels`.
 Return a dictionary mapping unique labels to their intermingledness.
 
-The optional `distance = Euclidean()` argument dictates how to estimate distances
-between points.
+The optional `distance = Euclidean()` argument is a function dictating
+how to estimate distances between points.
 A vector of distance functions can also be given as `distance`, in which case a vector of
-intermingledness is returned corresponding to each distance version.
+intermingledness is returned corresponding to each distance function.
 In [Datseris2026](@cite) intermingledness was estimated individually per dimension
 of `points`, which you can achieve by e.g.,
 ```julia

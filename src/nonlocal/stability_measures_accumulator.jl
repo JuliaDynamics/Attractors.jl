@@ -58,8 +58,8 @@ more rirogously and is estimated more accurately for a proximity mapper.
 * `weighting_distribution::Distribution`: Distribution of uncertain initial conditions
   used for example in the computation of `basin_stability`. By default it is a uniform
   distribution everywhere in the state space.\
-* `distance = Centroid()`: How to compute the distance between an initial condition `u0`
-  and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
+* `distance = Centroid()`: Set-distance for how to compute the distance between an initial
+  condition `u0` and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
 * `idistances = [Euclidean()]`: A vector of point distances given to [`intermingedness`](@ref)
   for calculating the intermingledness of basins of attraction.
 
