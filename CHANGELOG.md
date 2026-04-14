@@ -1,3 +1,7 @@
+# v1.35
+
+- New measure called "intermingledness" has been incorporated into the stability measures accumulator, see Datseris 2026 for more, or the `intermingledness` function.
+
 # v1.34
 
 - `StabilityMeasuresAccumulator` is now compatible with _all_ attractor mappers.
