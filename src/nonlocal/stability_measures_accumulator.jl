@@ -15,10 +15,9 @@ while _at the same time_ calculating many stability measures in the most efficie
 way possible. `mapper` is any instance of an [`AttractorMapper`](@ref),
 although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make sense.
 
-This functionality was developed as part of [Morr2026](@cite) and has now been extended
-to work for any `AttractorMapper` current or future.
 The accummulator records several measures of stability (or resilience) defined
-in [Morr2026](@cite), and a few more related and derived shortly after, see list below.
+in [Morr2026](@cite), and a few more related and derived shortly after,
+including the intermingledness of basins of attraction [Datseris2026](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
@@ -30,18 +29,20 @@ of all stability measures estimated by the accumulator.
 Each dictionary maps the stability measure description (`String`) to a dictionary
 mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
+This functionality was developed as part of [Morr2026](@cite) and has now been extended
+to work for any `AttractorMapper`, current or future.
 
 **Using with [`global_continuation`](@ref)**:
 Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `mapper` input
-to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation` as normal.
+to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
 The only difference now is that `global_continuation` will not return just one
 measure of stability (the basin fraction). Rather,
 now the first return argument of `global_continuation` will be a
 `measures_cont`, a dictionary mapping stability measures (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
-of the typical [`global_continuation`](@ref): each dictionary maps attractor ID
-to the corresponding nonlocal stability measure.
+of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
+to the corresponding nonlocal stability measures.
 
 Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
 on the basis of an `AttractorsViaProximity` mapper from already found attractors.
@@ -57,8 +58,10 @@ more rirogously and is estimated more accurately for a proximity mapper.
 * `weighting_distribution::Distribution`: Distribution of uncertain initial conditions
   used for example in the computation of `basin_stability`. By default it is a uniform
   distribution everywhere in the state space.\
-* `distance = Centroid()`: How to compute the distance between an initial condition `u0`
-  and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
+* `distance = Centroid()`: Set-distance for how to compute the distance between an initial
+  condition `u0` and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
+* `idistances = [Euclidean()]`: A vector of point distances given to [`intermingedness`](@ref)
+  for calculating the intermingledness of basins of attraction.
 
 ## Description
 
@@ -138,6 +141,11 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `finite_time_basin_stability`: The fraction of initial conditions that
   converge to the attractor within the time horizon `finite_time`, weighted by
   `weighting_distribution`.
+* `intermingledness\$(i)`: intermingledness of the basins of attraction corresponding to the
+  `i`-th distance function given to the `idistances` keyword. Multiple entries may be
+  be produced, each ending with the number `i`. Because intermingledness is expensive to
+  compute for a large number of initial conditions, you can disable this by providing
+  an empty vector to `idistances`. See [`intermingedness`](@ref) for more information.
 
 ### Extra quantifiers
 
@@ -171,7 +179,7 @@ end
 extras = Dict("maxv" => extra_function)
 ```
 """
-struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict} <: AttractorMapper
+struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict, X} <: AttractorMapper
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
@@ -180,11 +188,13 @@ struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, 
     weighting_distribution::W
     distance::M
     extras::E
+    idistances::X
 end
 
 function StabilityMeasuresAccumulator(
         mapper::AttractorMapper, extras = Dict();
-        finite_time = 1.0, weighting_distribution = EverywhereUniform(), distance = Centroid()
+        finite_time = 1.0, weighting_distribution = EverywhereUniform(),
+        distance = Centroid(), idistances = [Euclidean()],
     )
     reset_mapper!(mapper)
     ds = referenced_dynamical_system(mapper)
@@ -193,7 +203,7 @@ function StabilityMeasuresAccumulator(
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras)}(
+    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
         mapper,
         Vector{V}(),
         Vector{Int}(),
@@ -201,11 +211,12 @@ function StabilityMeasuresAccumulator(
         finite_time,
         weighting_distribution,
         distance,
-        extras
+        extras,
+        idistances
     )
 end
 
-# Function to reset the accumulator
+# Extend `AttractorMapper` API:
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     empty!(a.u0s)
@@ -214,7 +225,6 @@ function reset_mapper!(a::StabilityMeasuresAccumulator)
     return
 end
 
-# extensions
 function extract_attractors(accumulator::StabilityMeasuresAccumulator)
     return extract_attractors(accumulator.mapper)
 end
@@ -225,7 +235,8 @@ function convergence_time(accumulator::StabilityMeasuresAccumulator)
     return convergence_time(accumulator.mapper)
 end
 
-# Function to update the accumulator with a new state
+allows_mapper_u0(a::StabilityMeasuresAccumulator) = allows_mapper_u0(a.mapper)
+
 function (accumulator::StabilityMeasuresAccumulator)(u0)
     id = accumulator.mapper(u0)
     push!(accumulator.u0s, u0)
@@ -424,6 +435,12 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         "basin_stability" => basin_stab,
         "finite_time_basin_stability" => finite_time_basin_stab,
     )
+
+    # add intermingledness
+    imetrics = intermingledness(u0s, bs, accumulator.idistances)
+    for (i, m) in enumerate(imetrics)
+        output["intermingledness$(i)"] = m
+    end
 
     # extra quantifiers requested by the user
     if !isempty(accumulator.extras)

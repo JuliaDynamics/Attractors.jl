@@ -106,22 +106,16 @@ Then, we create a projected system on the x-y plane
 psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 ```
 
-For this systems we know the attractors are close to the magnet positions. The positions can be obtained from the equations of the system, provided that one has seen the source code (not displayed here), like so:
+and create an attractor mapper that will map initial conditions to attractors like before
 ```@example MAIN
-attractors = Dict(i => StateSpaceSet([dynamic_rule(ds).magnets[i]]) for i in 1:3)
-```
-
-and then create a
-```@example MAIN
-mapper = AttractorsViaProximity(psys, attractors)
+xg = yg = range(-4, 4; length = 201)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(psys, grid; Δt = 1.0)
 ```
 
 and as before, get the basins of attraction
 ```@example MAIN
-xg = yg = range(-4, 4; length = 201)
-grid = (xg, yg)
-basins, = basins_of_attraction(mapper, grid; show_progress = false)
-
+basins, attractors = basins_of_attraction(mapper, grid; show_progress = false)
 heatmap_basins_attractors(grid, basins, attractors)
 ```
 
@@ -168,6 +162,49 @@ in the system (3 still exist but our state space discretization isn't fine enoug
 find the 3rd because it has such a small basin).
 Also, the first row of `P` is 50% probability to each other magnet, as it should be due to
 the system's symmetry.
+
+## Intermingledness
+
+Continuing from the above example, we can use it as a demonstration of the
+concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026](@cite).
+
+To do this well, we will generate two more basins of attraction for the magnetic pendulum
+at different parameters:
+
+```@example MAIN
+set_parameter!(psys, :γs, [1.0, 1.0, 1.0])
+set_parameter!(psys, :α, 1.0)
+mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+basins2, attractors2 = basins_of_attraction(mapper, grid; show_progress = false)
+
+set_parameter!(psys, :α, 2.0)
+set_parameter!(psys, :d, 0.45)
+mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+basins3, attractors3 = basins_of_attraction(mapper, grid; show_progress = false)
+```
+
+then calculate intermingledness and plot it over the basins
+```@example MAIN
+# we need points of the grid as a vector
+points = ics_from_grid(grid)
+
+fig = Figure()
+
+using Statistics: mean
+for (i, b) in enumerate((basins, basins2, basins3))
+    ax = Axis(fig[1,i])
+    heatmap!(ax, xg, yg, b)
+    i = intermingledness(points, vec(b)) # points and labels must have same layout
+    v = mean(values(i))
+    ax.title = "intermingl. = $(round(v; digits = 3))"
+end
+
+resize!(fig, 800, 300)
+fig
+```
+
+As you can see, intermingledness is _not_ a measure of fractality. Even perfectly smooth basins can have very high intermingledness close to 1.
+It really is about how close points from one basin are to another, on average.
 
 
 ## 3D basins via recurrences
