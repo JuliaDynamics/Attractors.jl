@@ -168,39 +168,44 @@ the system's symmetry.
 Continuing from the above example, we can use it as a demonstration of the
 concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026](@cite).
 
-First, let's generate another basins of attraction for the magnetic pendulum at a different
-decay rate where the basins will be less fractal:
+To do this well, we will generate two more basins of attraction for the magnetic pendulum
+at different parameters:
 
 ```@example MAIN
 set_parameter!(psys, :γs, [1.0, 1.0, 1.0])
-set_parameter!(psys, :α, 0.5)
+set_parameter!(psys, :α, 1.0)
 mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
 basins2, attractors2 = basins_of_attraction(mapper, grid; show_progress = false)
+
+set_parameter!(psys, :α, 2.0)
+set_parameter!(psys, :d, 0.45)
+mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+basins3, attractors3 = basins_of_attraction(mapper, grid; show_progress = false)
 ```
 
-then calculate intermingledness for both basins
+then calculate intermingledness and plot it over the basins
 ```@example MAIN
 # we need points of the grid as a vector
 points = ics_from_grid(grid)
-i1 = intermingledness(points, basins)
-i2 = intermingledness(points, basins2)
 
-
-
-```
-
-and visualize
-
-```@example MAIN
 fig = Figure()
-ax1, ax2 = [Axis(fig[1,i]) for i in 1:2]
 
+using Statistics: mean
+for (i, b) in enumerate((basins, basins2, basins3))
+    ax = Axis(fig[1,i])
+    heatmap!(ax, xg, yg, b)
+    i = intermingledness(points, vec(b)) # points and labels must have same layout
+    v = mean(values(i))
+    ax.title = "intermingl. = $(round(v; digits = 3))"
+end
 
-heatmap_basins_attractors!(ax1, grid, basins, attractors)
-heatmap_basins_attractors!(ax2, grid, basins2, attractors2)
-
-
+resize!(fig, 800, 300)
+fig
 ```
+
+As you can see, intermingledness is _not_ a measure of fractality. Even perfectly smooth basins can have very high intermingledness close to 1.
+It really is about how close points from one basin are to another, on average.
+
 
 ## 3D basins via recurrences
 

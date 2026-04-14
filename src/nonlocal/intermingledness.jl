@@ -4,7 +4,7 @@ export intermingledness
     intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
 
 Calculate the intermingledness [Datseris2026](@cite) of the `points`
-which have been divided into groups (typically attractors) as dictated by the `labels`.
+which have been divided into groups (typically attractors) indicated by `labels`.
 Return a dictionary mapping unique labels to their intermingledness.
 
 The optional `distance = Euclidean()` argument is a function dictating
@@ -41,13 +41,13 @@ or honestly, just look at the source code, it is only 10 lines!
     because it scales as ~ `length(unique(labels))^2 * length(points)^2`
 """
 function intermingledness(
-        us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Int},
+        us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Integer},
         distance = Euclidean(); summarizer = mean
     )
     return intermingledness(us, labels, [distance]; summarizer)[1]
 end
 function intermingledness(
-        us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Int},
+        us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Integer},
         distances::AbstractVector; summarizer = mean
     )
     length(us) ≠ length(labels) && error("points and labels must be same length.")
