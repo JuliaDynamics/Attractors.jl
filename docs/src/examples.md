@@ -108,7 +108,7 @@ psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 
 and create an attractor mapper that will map initial conditions to attractors like before
 ```@example MAIN
-xg = yg = range(-4, 4; length = 201)
+xg = yg = range(-4, 4; length = 200)
 grid = (xg, yg)
 mapper = AttractorsViaRecurrences(psys, grid; Δt = 1.0)
 ```
@@ -163,10 +163,11 @@ find the 3rd because it has such a small basin).
 Also, the first row of `P` is 50% probability to each other magnet, as it should be due to
 the system's symmetry.
 
-## Intermingledness
+## Intermingledness and basin entropy
 
-Continuing from the above example, we can use it as a demonstration of the
-concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026](@cite).
+Continuing from the above example of the magnetic pendulum, we can use it as a demonstration of the
+concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026](@cite)
+and compare it with the established notion of [`basin_entropy`](@ref).
 
 To do this well, we will generate two more basins of attraction for the magnetic pendulum
 at different parameters:
@@ -183,7 +184,7 @@ mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
 basins3, attractors3 = basins_of_attraction(mapper, grid; show_progress = false)
 ```
 
-then calculate intermingledness and plot it over the basins
+then calculate intermingledness and basin entropy
 ```@example MAIN
 # we need points of the grid as a vector
 points = ics_from_grid(grid)
@@ -196,7 +197,8 @@ for (i, b) in enumerate((basins, basins2, basins3))
     heatmap!(ax, xg, yg, b)
     i = intermingledness(points, vec(b)) # points and labels must have same layout
     v = mean(values(i))
-    ax.title = "intermingl. = $(round(v; digits = 3))"
+    be = basin_entropy(b, 5)[1]
+    ax.title = "intermingl. = $(round(v; digits = 2))\nbasin ent. = $(round(be; digits = 2))"
 end
 
 resize!(fig, 800, 300)
@@ -205,7 +207,12 @@ fig
 
 As you can see, intermingledness is _not_ a measure of fractality. Even perfectly smooth basins can have very high intermingledness close to 1.
 It really is about how close points from one basin are to another, on average.
-
+Furthermore, it is really difficult for intermingledness to be 0 for well covered basins,
+unlike basin entropy that covers the range of 0-1 more easily.
+In [Datseris2026](@cite) intermingledness is introduced primarily for sparse data,
+and for focusing on specific dimensions.
+Moreover, intermingledness is defined _per_ basin, while basin entropy is
+a quantity characterizing the whole basin structure.
 
 ## 3D basins via recurrences
 
