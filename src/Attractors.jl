@@ -23,12 +23,12 @@ const PMKWARGS = (
 include("dict_utils.jl")
 include("mapping/attractor_mapping.jl")
 include("basins/basins.jl")
+include("nonlocal/nonlocal.jl")
 include("continuation/global_continuation_api.jl")
 include("matching/matching_interface.jl")
 include("boundaries/edgetracking.jl")
 include("boundaries/stagger_and_step.jl")
 include("deprecated.jl")
-include("tipping/tipping.jl")
 
 # Visualization (export names extended in the extension package)
 include("plotting.jl")

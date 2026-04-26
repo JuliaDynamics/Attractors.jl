@@ -1,6 +1,5 @@
 # API
 
-
 ## Finding attractors
 
 Attractors.jl defines a generic interface for finding attractors of dynamical systems. One first decides the instance of [`DynamicalSystem`](@ref) they need. Then, an instance of [`AttractorMapper`](@ref) is created from this dynamical system. This `mapper` instance can be used to compute e.g., [`basins_of_attraction`](@ref), and the output can be further analyzed to get e.g., the [`basin_entropy`](@ref).
@@ -65,7 +64,7 @@ extract_features
 
 ## Basins of attraction
 The basins of attraction are often represented as an array or vector. We also provide a convenient extendable structure
-that contains the basins themselves, attractors, and the domains on which the basins are defined. All standard basin-related 
+that contains the basins themselves, attractors, and the domains on which the basins are defined. All standard basin-related
 functions are compatible with this alternate representation.
 
 ```@docs
@@ -143,7 +142,6 @@ MCSBlackBoxOptim
 MCSBruteForce
 ```
 
-
 ## Global continuation
 
 ```@docs
@@ -214,12 +212,18 @@ swap_dict_keys!
 next_free_id
 ```
 
-## Stability measures
+## Stability measures/quantifiers
 
 ```@docs
 StabilityMeasuresAccumulator
 finalize_accumulator
 stability_measures_along_continuation
+```
+
+### Intermingledness
+
+```@docs
+intermingledness
 ```
 
 ## Visualization utilities
