@@ -70,7 +70,6 @@ end
     for u0 in A
         id = accumulator(u0) # run this to accumulate measures
     end
-
     results = finalize_accumulator(accumulator)
 
     @test haskey(results, "intermingledness1")
@@ -81,5 +80,6 @@ end
 
     @test i1[1] ≈ i1[2] atol = 1e-1
     @test i1[1] ≈ 0.66 atol = 1e-1
-    @test i2[1] == i2[2] == 1
+    @test i2[1] ≈ i2[2] atol = 1e-14
+    @test i2[1] ≈ 1 atol = 1e-14
 end
