@@ -308,11 +308,11 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ws = [pdf(accumulator.weighting_distribution, u0) for u0 in u0s]
 
     for i in 1:length(u0s)
-      	id = bs[i]
-      	j = ids_to_js[id]
-      	w = ws[i]
-      	ct = cts[i]
-      	cp = cps[i]
+        id = bs[i]
+        j = ids_to_js[id]
+        w = ws[i]
+        ct = cts[i]
+        cp = cps[i]
 
         basin_frac[id] += 1 / N
         basin_stab[id] += w / N
