@@ -246,18 +246,33 @@ function (accumulator::StabilityMeasuresAccumulator)(u0)
 end
 
 """
-    finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+    finalize_accumulator(accumulator::StabilityMeasuresAccumulator; aggregation = nothing)
 
 Return a dictionary mapping stability measures (strings) to dictionaries
 mapping attractor IDs to corresponding measure values.
 See [`StabilityMeasuresAccumulator`](@ref) for more.
+
+## Keyword arguments
+
+* `aggregation`: An optional `Dict` mapping new attractor IDs (integers) to vectors of
+  existing attractor IDs to be merged. For example,
+  `aggregation = Dict(1 => [1, 3], 2 => [2])` merges attractors 1 and 3 into a single
+  new attractor with ID 1, while attractor 2 remains on its own. The merged attractor is
+  the union of all points of the constituent attractors, and the merged basin of attraction
+  is the union of all basins. Stability measures are then computed for the merged attractors
+  and their combined basins. Attractor IDs not listed in `aggregation` are left unchanged.
+  Linear stability measures (e.g. `characteristic_return_time`) are always `NaN`
+  for merged attractors because they are not fixed points.
 """
-function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; aggregation = nothing)
     ds = referenced_dynamical_system(accumulator)
     attractors = extract_attractors(accumulator.mapper)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
+    if !isnothing(aggregation)
+        bs, attractors = _apply_aggregation(bs, attractors, aggregation)
+    end
     ids = unique(bs)
     js = 1:length(ids)
     ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
@@ -360,8 +375,8 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     minimal_critical_shock_magnitude = Dict(
         id => minimum(
                 (
-                    d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
-                    if accumulator.bs[i] != id && ws[i] > 0
+                    d[i, ids_to_js[id]] for i in eachindex(bs)
+                    if bs[i] != id && ws[i] > 0
                 );
                 init = Inf,
             )
@@ -476,6 +491,33 @@ function weighted_median(
         end
     end
     return float(vals[p[end]])
+end
+
+# Remap basins vector and merge attractors according to aggregation dict.
+# `aggregation` maps new_id => [old_id1, old_id2, ...]
+function _apply_aggregation(bs, attractors, aggregation::Dict)
+    old_to_new = Dict{Int, Int}()
+    for (new_id, old_ids) in aggregation
+        for old_id in old_ids
+            old_to_new[old_id] = new_id
+        end
+    end
+    bs_new = [get(old_to_new, id, id) for id in bs]
+    # merge attractor sets for each new group
+    new_attractors = Dict{keytype(attractors), valtype(attractors)}()
+    covered = Set{Int}()
+    for (new_id, old_ids) in aggregation
+        parts = [attractors[id] for id in old_ids if haskey(attractors, id)]
+        if !isempty(parts)
+            new_attractors[new_id] = StateSpaceSet(reduce(vcat, collect.(parts)))
+        end
+        union!(covered, old_ids)
+    end
+    # preserve any attractor not listed in aggregation (e.g., -1 or unmatched IDs)
+    for (old_id, att) in attractors
+        old_id ∈ covered || (new_attractors[old_id] = att)
+    end
+    return bs_new, new_attractors
 end
 
 # Extension function to allow accumulator to work also with non-single-u0 mappers

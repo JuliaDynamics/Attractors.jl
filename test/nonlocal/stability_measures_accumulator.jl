@@ -122,6 +122,46 @@ using Random
             end
         end
     end
+
+    @testset "continuation with aggregation" begin
+        # Same setup as above.
+        pcurve = [[1 => p] for p in [-1.0, 1.0]]
+        attractors_cont = [
+            Dict(1 => StateSpaceSet([SVector(0.0, 0.0)])),
+            Dict(2 => StateSpaceSet([SVector(1.0, 1.0)]), 1 => StateSpaceSet([SVector(-1.0, -1.0)])),
+        ]
+        proximity_mapper_options = (
+            Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
+        )
+
+        # Merge both attractors into ID 1 at every step.
+        # At step 1 attractor 2 doesn't exist, so the aggregation just maps 1 -> [1].
+        agg = Dict(1 => [1, 2])
+        measures_agg = stability_measures_along_continuation(
+            dynamics, attractors_cont, pcurve, ics_from_grid(grid);
+            ε = 0.1, finite_time = 0.5,
+            proximity_mapper_options, aggregation = agg
+        )
+
+        # At both steps all ICs belong to the merged attractor → basin fraction == 1
+        @test measures_agg["basin_fraction"][1][1] ≈ 1.0
+        @test measures_agg["basin_fraction"][2][1] ≈ 1.0
+        # With only one aggregated group, no critical shock at either step
+        @test measures_agg["minimal_critical_shock_magnitude"][1][1] == Inf
+        @test measures_agg["minimal_critical_shock_magnitude"][2][1] == Inf
+
+        # Per-step aggregation: at step 2, merge; at step 1, no aggregation
+        agg_vector = [nothing, Dict(1 => [1, 2])]
+        measures_vec = stability_measures_along_continuation(
+            dynamics, attractors_cont, pcurve, ics_from_grid(grid);
+            ε = 0.1, finite_time = 0.5,
+            proximity_mapper_options, aggregation = agg_vector
+        )
+        # Step 1 unchanged (two separate attractors treated as one by default → 1 attractor)
+        @test measures_vec["basin_fraction"][1][1] ≈ 1.0
+        # Step 2: merged
+        @test measures_vec["basin_fraction"][2][1] ≈ 1.0
+    end
 end
 
 
@@ -338,4 +378,49 @@ end
         fs = measures_cont["basin_fraction"][1]
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
     end
+end
+
+@testset "aggregation" begin
+    function dumb_map(z, p, n)
+        x, y = z
+        r = p[1]
+        if r < 0.5
+            return SVector(0.0, 0.0)
+        else
+            x ≥ 0 ? SVector(r, r) : SVector(-r, -r)
+        end
+    end
+    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
+    grid = ([-1, 0, 1.0], [-1, 0, 1.0])
+    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
+    A = ics_from_grid(grid)
+    for u0 in A
+        mapper(u0)
+    end
+    attractors = extract_attractors(mapper)
+    mapper2 = AttractorsViaProximity(dynamics, attractors, 0.01, Ttr = 0)
+    accumulator = StabilityMeasuresAccumulator(mapper2)
+    for u0 in A
+        accumulator(u0)
+    end
+
+    # Merge both attractors (IDs 1 and 2) into a single group with new ID 1
+    ids = sort!(collect(keys(extract_attractors(accumulator))))
+    @assert length(ids) == 2
+    agg = Dict(1 => ids)
+    results_agg = finalize_accumulator(accumulator; aggregation = agg)
+
+    # All initial conditions belong to the merged attractor, so basin fraction == 1
+    @test results_agg["basin_fraction"][1] ≈ 1.0
+    @test length(results_agg["basin_fraction"]) == 1
+    # Only one group means no critical shock
+    @test results_agg["minimal_critical_shock_magnitude"][1] == Inf
+    # Linear measures are NaN for the merged (non-fixed-point) attractor
+    @test isnan(results_agg["characteristic_return_time"][1])
+
+    # Identity aggregation should give the same basin fractions
+    results_plain = finalize_accumulator(accumulator)
+    agg_identity = Dict(ids[1] => [ids[1]], ids[2] => [ids[2]])
+    results_identity = finalize_accumulator(accumulator; aggregation = agg_identity)
+    @test results_identity["basin_fraction"] == results_plain["basin_fraction"]
 end
