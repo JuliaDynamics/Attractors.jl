@@ -163,7 +163,7 @@ function global_continuation(
         # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
-        showvalues = i < length(pcurve) ? [("pcurve index", i+1)] : []
+        showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
     rmaps = match_sequentially!(

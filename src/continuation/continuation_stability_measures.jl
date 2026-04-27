@@ -39,7 +39,7 @@ function global_continuation(
         # difference three:
         measures = finalize_accumulator(mapper)
         push!(measures_cont, measures)
-        showvalues = i < length(pcurve) ? [("pcurve index", i+1)] : []
+        showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
 
