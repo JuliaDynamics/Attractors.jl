@@ -69,6 +69,13 @@ Base.checkbounds(::Type{Bool}, x::SparseArray, k::CartesianIndex) = haskey(x.dat
 #########################################################################################
 # Broadcasting
 #########################################################################################
+"""
+    Attractors.sparsebroadcast(f, As...)
+
+Same as `Base.broadcast` but for the special type `SparseArray`.
+If any of the inputs `As` is a `SparseArray`, the output will be as well.
+It is assummed that all sparse arrays have the same stored indices.
+"""
 function sparsebroadcast(f, As...)
     sidxs = findall(A -> A isa SparseArray, As)
     if isempty(sidxs)
