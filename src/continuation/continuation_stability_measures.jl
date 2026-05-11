@@ -39,7 +39,7 @@ function global_continuation(
         # difference three:
         measures = finalize_accumulator(mapper)
         push!(measures_cont, measures)
-        showvalues = i < length(pcurve) ? [("pcurve index", i+1)] : []
+        showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
 
@@ -124,9 +124,17 @@ function stability_measures_along_continuation(
     )
     N = samples_per_parameter
     measures_cont = []
+    measure_names = nothing
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
+
+        if isempty(attractors)
+            push!(measures_cont, Dict{String, Dict{Int64, Float64}}())
+            ProgressMeter.next!(progress)
+            continue
+        end
+
         if ε isa AbstractVector
             ε_ = ε[i]
         elseif ε isa Function
@@ -168,19 +176,25 @@ function stability_measures_along_continuation(
             pics = ics
         end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        push!(measures_cont, finalize_accumulator(accumulator))
+        measures = finalize_accumulator(accumulator)
+        if measure_names === nothing
+            measure_names = collect(keys(measures))
+        end
+        push!(measures_cont, measures)
         ProgressMeter.next!(progress)
     end
 
     # change the measures format to the expected output
     transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
-    for measure in measures_cont[1]
-        measure_name = measure[1]
+    if measure_names === nothing
+        return transposed
+    end
+    for measure_name in measure_names
         transposed[measure_name] = Vector{Dict{Int64, Float64}}()
     end
     for measures in measures_cont
-        for (measure_name, measure_dict) in measures
-            push!(transposed[measure_name], measure_dict)
+        for measure_name in measure_names
+            push!(transposed[measure_name], get(measures, measure_name, Dict{Int64, Float64}()))
         end
     end
     return transposed

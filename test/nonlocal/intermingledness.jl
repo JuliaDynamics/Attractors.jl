@@ -23,12 +23,12 @@ using Distances: WeightedEuclidean
     @test sort!(collect(keys(mingle))) == [2, 3, 5]
     @test all(<(0.1), values(mingle))
     @test mingle[5] < mingle[2]
-    @test mingle[2] ≈ mingle[3] atol = 1e-2 rtol = 1e-2
+    @test mingle[2] ≈ mingle[3] atol = 1.0e-2 rtol = 1.0e-2
 
     # now multidim
     distances = [
         Euclidean(),
-        WeightedEuclidean([1, 0]) # distance of x dimension only
+        WeightedEuclidean([1, 0]), # distance of x dimension only
     ]
 
     mingles = intermingledness(features, labels, distances)
@@ -37,8 +37,8 @@ using Distances: WeightedEuclidean
 
     xmingle = mingles[2]
     @test xmingle[5] < 0.1
-    @test xmingle[2] ≈ xmingle[3] atol = 1e-1 rtol = 1e-1
-    @test xmingle[2] ≈ 1 atol = 1e-1 rtol = 1e-1
+    @test xmingle[2] ≈ xmingle[3] atol = 1.0e-1 rtol = 1.0e-1
+    @test xmingle[2] ≈ 1 atol = 1.0e-1 rtol = 1.0e-1
 
 end
 
@@ -62,7 +62,7 @@ end
     mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false, Ttr = 2)
     distances = [
         Euclidean(),
-        WeightedEuclidean([0, 1]) # distance of x dimension only
+        WeightedEuclidean([0, 1]), # distance of x dimension only
     ]
     accumulator = StabilityMeasuresAccumulator(mapper; idistances = distances)
 
@@ -78,8 +78,8 @@ end
     i1 = results["intermingledness1"]
     i2 = results["intermingledness2"]
 
-    @test i1[1] ≈ i1[2] atol = 1e-1
-    @test i1[1] ≈ 0.66 atol = 1e-1
-    @test i2[1] ≈ i2[2] atol = 1e-14
-    @test i2[1] ≈ 1 atol = 1e-14
+    @test i1[1] ≈ i1[2] atol = 1.0e-1
+    @test i1[1] ≈ 0.66 atol = 1.0e-1
+    @test i2[1] ≈ i2[2] atol = 1.0e-14
+    @test i2[1] ≈ 1 atol = 1.0e-14
 end
