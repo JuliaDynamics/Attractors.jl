@@ -88,16 +88,19 @@ These measures apply only to fixed point attractors.
 Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
 there for example), a value `Inf` is assigned to all measures.
-Currently linear measures for discrete time systems are not computed.
 
 * `characteristic_return_time`: The reciprocal of the largest real part of the
-  eigenvalues of the Jacobian matrix at the fixed point.
-* `reactivity`: The largest growth rate of the linearized system at the fixed point.
+  eigenvalues of the Jacobian matrix at the fixed point (continuous time), or
+  `1/|log(ρ)|` where `ρ` is the spectral radius (discrete time).
+* `reactivity`: The largest growth rate of the linearized system at the fixed point
+  (continuous time), or the spectral radius `ρ` (discrete time).
   See also [Krakovska2024ResilienceDynamicalSystems](@cite).
 * `maximal_amplification`: The maximal (with respect to disturbances) amplification of the
-  linearized system at the attractor over all time.
+  linearized system at the attractor over all time (continuous time). Always 1 for
+  discrete time systems, as the linearized map does not amplify disturbances beyond
+  their initial norm when the fixed point is stable.
 * `maximal_amplification_time`: The time at which the maximal amplification
-  occurs.
+  occurs (continuous time). Always 0 for discrete time systems.
 
 ### Nonlocal stability measures
 
@@ -258,7 +261,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
-    ids = unique(bs)
+        ids = vcat(collect(keys(attractors)), -1)
     js = 1:length(ids)
     ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
     N = length(u0s)
@@ -346,6 +349,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
     for id in ids
         basin_stab[id] /= normalization
+        finite_time_basin_stab[id] /= normalization
         mean_convergence_time[id] /= normalization
         mean_convergence_pace[id] /= normalization
         mean_noncritical_shock_magnitude[id] /= normalization
@@ -376,32 +380,44 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     reactivity = Dict(id => NaN for id in ids)
     maximal_amplification = Dict(id => NaN for id in ids)
     maximal_amplification_time = Dict(id => NaN for id in ids)
-    # TODO: This can be updated to work also for discrete time systems
-    if !isdiscretetime(ds)
-        jac = jacobian(ds)
-        for (id, A) in attractors
-            if length(A) > 1
-                continue
-            end
-            # Get the Jacobian matrix at the fixed point
-            if isinplace(ds)
-                # For in-place systems, pre-allocate J and then compute it
-                J = Array{Float64}(undef, length(A[1]), length(A[1]))
-                jac(J, Array(A[1]), current_parameters(ds), 0)
-            else
-                # For out-of-place systems, compute J directly
-                J = jac(Array(A[1]), current_parameters(ds), 0)
-            end
-
-            λ = min(0, maximum(real.(eigvals(J))))
-            characteristic_return_time[id] = abs(1 / λ)
-            H = (J + J') / 2
-            evs = real.(eigvals(H))
-            reactivity[id] = maximum(evs)
-            if λ == 0
+    jac = jacobian(ds)
+    for (id, A) in attractors
+      if length(A) > 1
+          continue
+      end
+      if isinplace(ds)
+            # For in-place systems, pre-allocate J and then compute it
+            J = Array{Float64}(undef, length(A[1]), length(A[1]))
+            jac(J, Array(A[1]), current_parameters(ds), 0)
+      else
+            # For out-of-place systems, compute J directly
+            J = jac(Array(A[1]), current_parameters(ds), 0)
+      end
+      if isdiscretetime(ds)
+            λ = maximum(abs.(eigvals(J)))
+            if λ >= 1
+                characteristic_return_time[id] = Inf
+                reactivity[id] = Inf
                 maximal_amplification[id] = Inf
                 maximal_amplification_time[id] = Inf
             else
+                characteristic_return_time[id] = abs(1 / log(λ))
+                reactivity[id] = λ - 1
+                maximal_amplification[id] = 1
+                maximal_amplification_time[id] = 0
+            end
+      else
+            λ = maximum(real.(eigvals(J)))
+            if λ >= 0
+                characteristic_return_time[id] = Inf
+                reactivity[id] = Inf
+                maximal_amplification[id] = Inf
+                maximal_amplification_time[id] = Inf
+            else
+                characteristic_return_time[id] = abs(1 / λ)
+                H = (J + J') / 2
+                evs = real.(eigvals(H))
+                reactivity[id] = maximum(evs)
                 f(t) = -opnorm(exp(t * J))
                 T = range(0.0, 10 * characteristic_return_time[id], length = 20001)
                 step_length = T[2] - T[1]
