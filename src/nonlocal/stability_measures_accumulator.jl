@@ -260,7 +260,8 @@ See [`StabilityMeasuresAccumulator`](@ref) for more.
   new attractor with ID 1, while attractor 2 remains on its own. The merged attractor is
   the union of all points of the constituent attractors, and the merged basin of attraction
   is the union of all basins. Stability measures are then computed for the merged attractors
-  and their combined basins. Attractor IDs not listed in `aggregation` are left unchanged.
+  and their combined basins. Every attractor ID must appear in exactly one group;
+  an error is thrown otherwise.
   Linear stability measures (e.g. `characteristic_return_time`) are always `NaN`
   for merged attractors because they are not fixed points.
 """
@@ -496,6 +497,15 @@ end
 # Remap basins vector and merge attractors according to aggregation dict.
 # `aggregation` maps new_id => [old_id1, old_id2, ...]
 function _apply_aggregation(bs, attractors, aggregation::Dict)
+    attractor_ids = collect(keys(attractors))
+    for id in attractor_ids
+        count = sum(old_ids -> id ∈ old_ids, values(aggregation); init = 0)
+        if count == 0
+            error("Attractor ID $id is not listed in any aggregated group. Every attractor must appear in exactly one group.")
+        elseif count > 1
+            error("Attractor ID $id appears in more than one aggregated group. Every attractor must appear in exactly one group.")
+        end
+    end
     old_to_new = Dict{Int, Int}()
     for (new_id, old_ids) in aggregation
         for old_id in old_ids
@@ -512,6 +522,7 @@ function _apply_aggregation(bs, attractors, aggregation::Dict)
             new_attractors[new_id] = StateSpaceSet(reduce(vcat, collect.(parts)))
         end
         union!(covered, old_ids)
+        push!(covered, new_id)
     end
     # preserve any attractor not listed in aggregation (e.g., -1 or unmatched IDs)
     for (old_id, att) in attractors
