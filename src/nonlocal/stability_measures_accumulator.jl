@@ -382,18 +382,18 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     maximal_amplification_time = Dict(id => NaN for id in ids)
     jac = jacobian(ds)
     for (id, A) in attractors
-      if length(A) > 1
-          continue
-      end
-      if isinplace(ds)
+        if length(A) > 1
+            continue
+        end
+        if isinplace(ds)
             # For in-place systems, pre-allocate J and then compute it
             J = Array{Float64}(undef, length(A[1]), length(A[1]))
             jac(J, Array(A[1]), current_parameters(ds), 0)
-      else
+        else
             # For out-of-place systems, compute J directly
             J = jac(Array(A[1]), current_parameters(ds), 0)
-      end
-      if isdiscretetime(ds)
+        end
+        if isdiscretetime(ds)
             λ = maximum(abs.(eigvals(J)))
             if λ >= 1
                 characteristic_return_time[id] = Inf
@@ -406,7 +406,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
                 maximal_amplification[id] = 1
                 maximal_amplification_time[id] = 0
             end
-      else
+        else
             λ = maximum(real.(eigvals(J)))
             if λ >= 0
                 characteristic_return_time[id] = Inf
