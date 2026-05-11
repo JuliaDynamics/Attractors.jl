@@ -88,16 +88,32 @@ These measures apply only to fixed point attractors.
 Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
 there for example), a value `Inf` is assigned to all measures.
-Currently linear measures for discrete time systems are not computed.
+
+The interpretation of the measures differs between continuous and discrete time systems,
+because the stability of a fixed point is governed by different spectral conditions.
+For **continuous time** systems, stability requires all eigenvalues of the Jacobian `J`
+to have negative real parts; the relevant quantity is the largest real part `λ`.
+For **discrete time** systems, stability requires all eigenvalues of `J` to lie strictly
+inside the unit circle; the relevant quantity is the spectral radius `ρ = max|eigenvalues|`.
+The discrete-time `characteristic_return_time` is derived via `1/|log(ρ)|`, mapping the
+multiplicative eigenvalue decay to an equivalent continuous-time scale.
+`reactivity` and `maximal_amplification` also differ: in continuous time they capture
+transient growth of the linearized flow; in discrete time `reactivity` is simply `ρ`
+and `maximal_amplification` is 1 (no transient amplification beyond the initial norm
+in the linearized map).
 
 * `characteristic_return_time`: The reciprocal of the largest real part of the
-  eigenvalues of the Jacobian matrix at the fixed point.
-* `reactivity`: The largest growth rate of the linearized system at the fixed point.
+  eigenvalues of the Jacobian matrix at the fixed point (continuous time), or
+  `1/|log(ρ)|` where `ρ` is the spectral radius (discrete time).
+* `reactivity`: The largest growth rate of the linearized system at the fixed point
+  (continuous time), or the spectral radius `ρ` (discrete time).
   See also [Krakovska2024ResilienceDynamicalSystems](@cite).
 * `maximal_amplification`: The maximal (with respect to disturbances) amplification of the
-  linearized system at the attractor over all time.
+  linearized system at the attractor over all time (continuous time). Always 1 for
+  discrete time systems, as the linearized map does not amplify disturbances beyond
+  their initial norm when the fixed point is stable.
 * `maximal_amplification_time`: The time at which the maximal amplification
-  occurs.
+  occurs (continuous time). Always 0 for discrete time systems.
 
 ### Nonlocal stability measures
 
