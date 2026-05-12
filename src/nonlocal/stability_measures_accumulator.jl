@@ -532,18 +532,11 @@ function _apply_aggregation(bs, attractors, aggregation::Dict)
     bs_new = [get(old_to_new, id, id) for id in bs]
     # merge attractor sets for each new group
     new_attractors = Dict{keytype(attractors), valtype(attractors)}()
-    covered = Set{Int}()
     for (new_id, old_ids) in aggregation
         parts = [attractors[id] for id in old_ids if haskey(attractors, id)]
         if !isempty(parts)
             new_attractors[new_id] = StateSpaceSet(reduce(vcat, collect.(parts)))
         end
-        union!(covered, old_ids)
-        push!(covered, new_id)
-    end
-    # preserve any attractor not listed in aggregation (e.g., -1 or unmatched IDs)
-    for (old_id, att) in attractors
-        old_id ∈ covered || (new_attractors[old_id] = att)
     end
     return bs_new, new_attractors
 end
