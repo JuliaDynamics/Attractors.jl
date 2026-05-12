@@ -412,7 +412,7 @@ end
 
     # All initial conditions belong to the merged attractor, so basin fraction == 1
     @test results_agg["basin_fraction"][1] ≈ 1.0
-    @test length(results_agg["basin_fraction"]) == 1
+    @test length(results_agg["basin_fraction"]) == 2 # attractor 1 and -1
     # Only one group means no critical shock
     @test results_agg["minimal_critical_shock_magnitude"][1] == Inf
     # Linear measures are NaN for the merged (non-fixed-point) attractor
