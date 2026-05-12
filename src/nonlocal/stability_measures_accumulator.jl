@@ -94,7 +94,7 @@ there for example), a value `Inf` is assigned to all measures.
   eigenvalues of the Jacobian matrix at the fixed point (continuous time), or
   `1/|log(ρ)|` where `ρ` is the spectral radius (discrete time).
 * `reactivity`: The largest growth rate of the linearized system at the fixed point
-  (continuous time), or the spectral radius `ρ` (discrete time).
+  (continuous time), or `ρ - 1` where `ρ` is the spectral radius (discrete time).
   See also [Krakovska2024ResilienceDynamicalSystems](@cite).
 * `maximal_amplification`: The maximal (with respect to disturbances) amplification of the
   linearized system at the attractor over all time (continuous time). Always 1 for
