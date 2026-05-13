@@ -134,33 +134,23 @@ using Random
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
 
-        # Merge both attractors into ID 1 at every step.
-        # At step 1 attractor 2 doesn't exist, so the aggregation just maps 1 -> [1].
-        agg = Dict(1 => [1, 2])
+        # Merge all attractors at every step via a large threshold on the x-coordinate.
+        featurizer = A -> SVector(first(A)[1])
+        merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
         measures_agg = stability_measures_along_continuation(
             dynamics, attractors_cont, pcurve, ics_from_grid(grid);
             ε = 0.1, finite_time = 0.5,
-            proximity_mapper_options, aggregation = agg
+            proximity_mapper_options, featurizer, group_config = merge_config
         )
 
         # At both steps all ICs belong to the merged attractor → basin fraction == 1
-        @test measures_agg["basin_fraction"][1][1] ≈ 1.0
-        @test measures_agg["basin_fraction"][2][1] ≈ 1.0
+        merged_id_1 = first(k for k in keys(measures_agg["basin_fraction"][1]) if k != -1)
+        merged_id_2 = first(k for k in keys(measures_agg["basin_fraction"][2]) if k != -1)
+        @test measures_agg["basin_fraction"][1][merged_id_1] ≈ 1.0
+        @test measures_agg["basin_fraction"][2][merged_id_2] ≈ 1.0
         # With only one aggregated group, no critical shock at either step
-        @test measures_agg["minimal_critical_shock_magnitude"][1][1] == Inf
-        @test measures_agg["minimal_critical_shock_magnitude"][2][1] == Inf
-
-        # Per-step aggregation: at step 2, merge; at step 1, no aggregation
-        agg_vector = [nothing, Dict(1 => [1, 2])]
-        measures_vec = stability_measures_along_continuation(
-            dynamics, attractors_cont, pcurve, ics_from_grid(grid);
-            ε = 0.1, finite_time = 0.5,
-            proximity_mapper_options, aggregation = agg_vector
-        )
-        # Step 1 unchanged (two separate attractors treated as one by default → 1 attractor)
-        @test measures_vec["basin_fraction"][1][1] ≈ 1.0
-        # Step 2: merged
-        @test measures_vec["basin_fraction"][2][1] ≈ 1.0
+        @test measures_agg["minimal_critical_shock_magnitude"][1][merged_id_1] == Inf
+        @test measures_agg["minimal_critical_shock_magnitude"][2][merged_id_2] == Inf
     end
 end
 
@@ -404,23 +394,26 @@ end
         accumulator(u0)
     end
 
-    # Merge both attractors (IDs 1 and 2) into a single group with new ID 1
-    ids = sort!(collect(keys(extract_attractors(accumulator))))
-    @assert length(ids) == 2
-    agg = Dict(1 => ids)
-    results_agg = finalize_accumulator(accumulator; aggregation = agg)
+    # featurizer: x-coordinate of the attractor's (single) point
+    featurizer = A -> SVector(first(A)[1])
 
+    # Large threshold merges both attractors (at [1,1] and [-1,-1], x-distance = 2) into one
+    merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
+    results_agg = finalize_accumulator(accumulator; featurizer, group_config = merge_config)
+
+    merged_id = first(k for k in keys(results_agg["basin_fraction"]) if k != -1)
     # All initial conditions belong to the merged attractor, so basin fraction == 1
-    @test results_agg["basin_fraction"][1] ≈ 1.0
-    @test length(results_agg["basin_fraction"]) == 2 # attractor 1 and -1
+    @test results_agg["basin_fraction"][merged_id] ≈ 1.0
+    @test length(results_agg["basin_fraction"]) == 2 # merged attractor and -1
     # Only one group means no critical shock
-    @test results_agg["minimal_critical_shock_magnitude"][1] == Inf
+    @test results_agg["minimal_critical_shock_magnitude"][merged_id] == Inf
     # Linear measures are NaN for the merged (non-fixed-point) attractor
-    @test isnan(results_agg["characteristic_return_time"][1])
+    @test isnan(results_agg["characteristic_return_time"][merged_id])
 
-    # Identity aggregation should give the same basin fractions
+    # Small threshold keeps attractors separate: fractions should match plain finalization
+    separate_config = GroupViaPairwiseComparison(threshold = 0.5, rescale_features = false)
     results_plain = finalize_accumulator(accumulator)
-    agg_identity = Dict(ids[1] => [ids[1]], ids[2] => [ids[2]])
-    results_identity = finalize_accumulator(accumulator; aggregation = agg_identity)
-    @test results_identity["basin_fraction"] == results_plain["basin_fraction"]
+    results_separate = finalize_accumulator(accumulator; featurizer, group_config = separate_config)
+    @test sort!(collect(values(results_separate["basin_fraction"]))) ≈
+          sort!(collect(values(results_plain["basin_fraction"])))
 end

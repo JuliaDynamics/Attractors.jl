@@ -105,9 +105,10 @@ There are two reasons to use this method:
 - `distance, finite_time, weighting_distribution`: given to [`StabilityMeasuresAccumulator`](@ref).
 - `samples_per_parameter = 1000`: how many samples to use when estimating stability measures
   via [`StabilityMeasuresAccumulator`](@ref). Ignored when `ics` is not a function.
-- `aggregation = nothing`: passed to [`finalize_accumulator`](@ref). Can be a `Dict`
-  (applied at every parameter step), a `Vector` of `Dict`s (one per step), or a function
-  `(p, attractors) -> Dict` that returns the aggregation for each step.
+- `featurizer = nothing`, `group_config = nothing`: passed to [`finalize_accumulator`](@ref).
+  When both are provided, attractors with similar features are merged before computing
+  stability measures at each parameter step. See [`aggregate_attractor_fractions`](@ref)
+  for the same interface.
 """
 function stability_measures_along_continuation(
         ds::DynamicalSystem,
@@ -120,7 +121,8 @@ function stability_measures_along_continuation(
         samples_per_parameter = 1000,
         distance = Centroid(),
         proximity_mapper_options = NamedTuple(),
-        aggregation = nothing,
+        featurizer = nothing,
+        group_config = nothing,
         show_progress = true
     )
     progress = ProgressMeter.Progress(
@@ -179,15 +181,8 @@ function stability_measures_along_continuation(
         else
             pics = ics
         end
-        if aggregation isa AbstractVector
-            agg = aggregation[i]
-        elseif aggregation isa Function
-            agg = aggregation(p, attractors)
-        else
-            agg = aggregation
-        end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        measures = finalize_accumulator(accumulator; aggregation = agg)
+        measures = finalize_accumulator(accumulator; featurizer, group_config)
         if measure_names === nothing
             measure_names = collect(keys(measures))
         end

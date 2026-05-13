@@ -250,7 +250,7 @@ function (accumulator::StabilityMeasuresAccumulator)(u0)
 end
 
 """
-    finalize_accumulator(accumulator::StabilityMeasuresAccumulator; aggregation = nothing)
+    finalize_accumulator(accumulator::StabilityMeasuresAccumulator; featurizer = nothing, group_config = nothing)
 
 Return a dictionary mapping stability measures (strings) to dictionaries
 mapping attractor IDs to corresponding measure values.
@@ -258,25 +258,28 @@ See [`StabilityMeasuresAccumulator`](@ref) for more.
 
 ## Keyword arguments
 
-* `aggregation`: An optional `Dict` mapping new attractor IDs (integers) to vectors of
-  existing attractor IDs to be merged. For example,
-  `aggregation = Dict(1 => [1, 3], 2 => [2])` merges attractors 1 and 3 into a single
-  new attractor with ID 1, while attractor 2 remains on its own. The merged attractor is
-  the union of all points of the constituent attractors, and the merged basin of attraction
-  is the union of all basins. Stability measures are then computed for the merged attractors
-  and their combined basins. Every attractor ID must appear in exactly one group;
-  an error is thrown otherwise.
-  Linear stability measures (e.g. `characteristic_return_time`) are always `NaN`
-  for merged attractors because they are not fixed points.
+* `featurizer`: an optional 1-argument function mapping an attractor (`StateSpaceSet`)
+  to a feature vector (typically an `SVector`) suitable for grouping.
+  When provided together with `group_config`, attractors with similar features are merged
+  before computing stability measures. The merged attractor is the union of the constituent
+  attractors, and its basin is the union of their basins. Linear stability measures
+  (e.g. `characteristic_return_time`) are always `NaN` for merged attractors because they
+  are not fixed points. See also [`aggregate_attractor_fractions`](@ref), which provides the
+  same interface for aggregating the output of a [`global_continuation`](@ref).
+* `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
+  Must be provided together with `featurizer`.
 """
-function finalize_accumulator(accumulator::StabilityMeasuresAccumulator; aggregation = nothing)
+function finalize_accumulator(
+        accumulator::StabilityMeasuresAccumulator;
+        featurizer = nothing, group_config = nothing,
+    )
     ds = referenced_dynamical_system(accumulator)
     attractors = extract_attractors(accumulator.mapper)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
-    if !isnothing(aggregation)
-        bs, attractors = _apply_aggregation(bs, attractors, aggregation)
+    if !isnothing(featurizer) && !isnothing(group_config)
+        bs, attractors = _apply_aggregation(bs, attractors, featurizer, group_config)
     end
     ids = vcat(collect(keys(attractors)), -1)
     js = 1:length(ids)
@@ -511,31 +514,22 @@ function weighted_median(
     return float(vals[p[end]])
 end
 
-# Remap basins vector and merge attractors according to aggregation dict.
-# `aggregation` maps new_id => [old_id1, old_id2, ...]
-function _apply_aggregation(bs, attractors, aggregation::Dict)
-    attractor_ids = collect(keys(attractors))
-    for id in attractor_ids
-        count = sum(old_ids -> id ∈ old_ids, values(aggregation); init = 0)
-        if count == 0
-            error("Attractor ID $id is not listed in any aggregated group. Every attractor must appear in exactly one group.")
-        elseif count > 1
-            error("Attractor ID $id appears in more than one aggregated group. Every attractor must appear in exactly one group.")
-        end
-    end
-    old_to_new = Dict{Int, Int}()
-    for (new_id, old_ids) in aggregation
-        for old_id in old_ids
-            old_to_new[old_id] = new_id
-        end
-    end
+# Remap basins vector and merge attractors using featurizer + group_config,
+# following the same interface as `aggregate_attractor_fractions`.
+function _apply_aggregation(bs, attractors, featurizer, group_config)
+    ids = collect(keys(attractors))
+    features = [featurizer(attractors[id]) for id in ids]
+    grouped_labels = group_features(features, group_config)
+    old_to_new = Dict(old_id => new_id for (old_id, new_id) in zip(ids, grouped_labels))
     bs_new = [get(old_to_new, id, id) for id in bs]
-    # merge attractor sets for each new group
     new_attractors = Dict{keytype(attractors), valtype(attractors)}()
-    for (new_id, old_ids) in aggregation
-        parts = [attractors[id] for id in old_ids if haskey(attractors, id)]
-        if !isempty(parts)
-            new_attractors[new_id] = StateSpaceSet(reduce(vcat, collect.(parts)))
+    for (old_id, new_id) in zip(ids, grouped_labels)
+        if haskey(new_attractors, new_id)
+            new_attractors[new_id] = StateSpaceSet(
+                vcat(collect(new_attractors[new_id]), collect(attractors[old_id]))
+            )
+        else
+            new_attractors[new_id] = attractors[old_id]
         end
     end
     return bs_new, new_attractors
