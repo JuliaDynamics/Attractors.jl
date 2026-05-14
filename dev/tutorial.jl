@@ -52,8 +52,8 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
 # ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
-# ## Define key input: an `AttractorMaper` that finds
-# ## attractors of a `DynamicalSystem`
+# ## Define key input: an `AttractorMaper` that maps initial
+# ## conditions to attractors of a `DynamicalSystem`
 # grid = (
 #     range(-15.0, 15.0; length = 150), # x
 #     range(-20.0, 20.0; length = 150), # y
