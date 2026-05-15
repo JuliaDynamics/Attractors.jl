@@ -89,11 +89,12 @@ Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
 there for example), a value `Inf` is assigned to all measures.
 
+
 * `characteristic_return_time`: The reciprocal of the largest real part of the
   eigenvalues of the Jacobian matrix at the fixed point (continuous time), or
   `1/|log(ρ)|` where `ρ` is the spectral radius (discrete time).
 * `reactivity`: The largest growth rate of the linearized system at the fixed point
-  (continuous time), or the spectral radius `ρ` (discrete time).
+  (continuous time), or `ρ - 1` where `ρ` is the spectral radius (discrete time).
   See also [Krakovska2024ResilienceDynamicalSystems](@cite).
 * `maximal_amplification`: The maximal (with respect to disturbances) amplification of the
   linearized system at the attractor over all time (continuous time). Always 1 for
@@ -249,18 +250,37 @@ function (accumulator::StabilityMeasuresAccumulator)(u0)
 end
 
 """
-    finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+    finalize_accumulator(accumulator::StabilityMeasuresAccumulator; featurizer = nothing, group_config = nothing)
 
 Return a dictionary mapping stability measures (strings) to dictionaries
 mapping attractor IDs to corresponding measure values.
 See [`StabilityMeasuresAccumulator`](@ref) for more.
+
+## Keyword arguments
+
+* `featurizer`: an optional 1-argument function mapping an attractor (`StateSpaceSet`)
+  to a feature vector (typically an `SVector`) suitable for grouping.
+  When provided together with `group_config`, attractors with similar features are merged
+  before computing stability measures. The merged attractor is the union of the constituent
+  attractors, and its basin is the union of their basins. Linear stability measures
+  (e.g. `characteristic_return_time`) are always `NaN` for merged attractors because they
+  are not fixed points. See also [`aggregate_attractor_fractions`](@ref), which provides the
+  same interface for aggregating the output of a [`global_continuation`](@ref).
+* `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
+  Must be provided together with `featurizer`.
 """
-function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+function finalize_accumulator(
+        accumulator::StabilityMeasuresAccumulator;
+        featurizer = nothing, group_config = nothing,
+    )
     ds = referenced_dynamical_system(accumulator)
     attractors = extract_attractors(accumulator.mapper)
     u0s = accumulator.u0s
     bs = accumulator.bs
     cts = accumulator.cts
+    if !isnothing(featurizer) && !isnothing(group_config)
+        bs, attractors = _apply_aggregation(bs, attractors, featurizer, group_config)
+    end
     ids = vcat(collect(keys(attractors)), -1)
     js = 1:length(ids)
     ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
@@ -364,8 +384,8 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     minimal_critical_shock_magnitude = Dict(
         id => minimum(
                 (
-                    d[i, ids_to_js[id]] for i in eachindex(accumulator.bs)
-                    if accumulator.bs[i] != id && ws[i] > 0
+                    d[i, ids_to_js[id]] for i in eachindex(bs)
+                    if bs[i] != id && ws[i] > 0
                 );
                 init = Inf,
             )
@@ -492,6 +512,27 @@ function weighted_median(
         end
     end
     return float(vals[p[end]])
+end
+
+# Remap basins vector and merge attractors using featurizer + group_config,
+# following the same interface as `aggregate_attractor_fractions`.
+function _apply_aggregation(bs, attractors, featurizer, group_config)
+    ids = collect(keys(attractors))
+    features = [featurizer(attractors[id]) for id in ids]
+    grouped_labels = group_features(features, group_config)
+    old_to_new = Dict(old_id => new_id for (old_id, new_id) in zip(ids, grouped_labels))
+    bs_new = [get(old_to_new, id, id) for id in bs]
+    new_attractors = Dict{keytype(attractors), valtype(attractors)}()
+    for (old_id, new_id) in zip(ids, grouped_labels)
+        if haskey(new_attractors, new_id)
+            new_attractors[new_id] = StateSpaceSet(
+                vcat(collect(new_attractors[new_id]), collect(attractors[old_id]))
+            )
+        else
+            new_attractors[new_id] = attractors[old_id]
+        end
+    end
+    return bs_new, new_attractors
 end
 
 # Extension function to allow accumulator to work also with non-single-u0 mappers
