@@ -415,5 +415,5 @@ end
     results_plain = finalize_accumulator(accumulator)
     results_separate = finalize_accumulator(accumulator; featurizer, group_config = separate_config)
     @test sort!(collect(values(results_separate["basin_fraction"]))) ≈
-          sort!(collect(values(results_plain["basin_fraction"])))
+        sort!(collect(values(results_plain["basin_fraction"])))
 end
