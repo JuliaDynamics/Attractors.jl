@@ -269,18 +269,22 @@ cannot be fixed points.
 - `featurizer` must be a 1-argument function mapping an attractor (`StateSpaceSet`)
   to a feature vector (typically an `SVector`) suitable for grouping.
 - `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
+
+Both keywords must be specified for this functionality to work.
 """
 function finalize_accumulator(
         accumulator::StabilityMeasuresAccumulator;
         featurizer = nothing, group_config = nothing,
     )
     ds = referenced_dynamical_system(accumulator)
-    attractors = extract_attractors(accumulator.mapper)
+    _attractors = extract_attractors(accumulator.mapper)
     u0s = accumulator.u0s
-    bs = accumulator.bs
+    _bs = accumulator.bs
     cts = accumulator.cts
     if !isnothing(featurizer) && !isnothing(group_config)
-        bs, attractors = _apply_aggregation(bs, attractors, featurizer, group_config)
+        bs, attractors = _apply_aggregation(_bs, _attractors, featurizer, group_config)
+    else
+        bs, attractors = _bs, _attractors
     end
     ids = vcat(collect(keys(attractors)), -1)
     js = 1:length(ids)
