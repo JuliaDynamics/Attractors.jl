@@ -252,8 +252,13 @@ end
 """
     finalize_accumulator(accumulator::StabilityMeasuresAccumulator; featurizer = nothing, group_config = nothing)
 
-Return a dictionary mapping stability measures (strings) to dictionaries
-mapping attractor IDs to corresponding measure values.
+Return two dictionaries:
+1. a dictionary mapping stability measures (strings) to dictionaries
+  mapping attractor IDs to corresponding measure values.
+2. a dictionary mapping attractor IDs to the attractor state space set.
+
+Output 2 will be different than the attractor set found by the `AttractorMapper` utilized
+by the `accumulator` if attractor aggregation is used (see below).
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 
 ## Attractor aggregation
@@ -278,8 +283,8 @@ function finalize_accumulator(
     )
     ds = referenced_dynamical_system(accumulator)
     _attractors = extract_attractors(accumulator.mapper)
-    u0s = accumulator.u0s
     _bs = accumulator.bs
+    u0s = accumulator.u0s
     cts = accumulator.cts
     if !isnothing(featurizer) && !isnothing(group_config)
         bs, attractors = _apply_aggregation(_bs, _attractors, featurizer, group_config)
@@ -491,7 +496,7 @@ function finalize_accumulator(
         end
     end
 
-    return output
+    return output, attractors
 end
 
 # Weighted median: smallest x with cumulative weight ≥ 0.5.
