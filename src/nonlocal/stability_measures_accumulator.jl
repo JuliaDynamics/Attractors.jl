@@ -256,18 +256,19 @@ Return a dictionary mapping stability measures (strings) to dictionaries
 mapping attractor IDs to corresponding measure values.
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 
-## Keyword arguments
+## Attractor aggregation
 
-* `featurizer`: an optional 1-argument function mapping an attractor (`StateSpaceSet`)
+Two optional keywords `featurizer, group_config` can be passed, so that the same type of
+attractor aggregation as in [`aggregate_attractor_fractions`](@ref) is performed.
+When providing `featurizer, group_config` attractors with similar features are merged
+before computing stability measures. The merged attractor is the union the constituent
+attractors, and its basin is the union of their basins. Linear stability measures
+(e.g. `characteristic_return_time`) are always `NaN` for merged attractors because they
+cannot be fixed points.
+
+- `featurizer` must be a 1-argument function mapping an attractor (`StateSpaceSet`)
   to a feature vector (typically an `SVector`) suitable for grouping.
-  When provided together with `group_config`, attractors with similar features are merged
-  before computing stability measures. The merged attractor is the union of the constituent
-  attractors, and its basin is the union of their basins. Linear stability measures
-  (e.g. `characteristic_return_time`) are always `NaN` for merged attractors because they
-  are not fixed points. See also [`aggregate_attractor_fractions`](@ref), which provides the
-  same interface for aggregating the output of a [`global_continuation`](@ref).
-* `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
-  Must be provided together with `featurizer`.
+- `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
 """
 function finalize_accumulator(
         accumulator::StabilityMeasuresAccumulator;
