@@ -24,10 +24,11 @@ argument, see the Extra quantifiers section below.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
-the [`finalize_accumulator`](@ref) function should be called which will return a dictionary
-of all stability measures estimated by the accumulator.
-Each dictionary maps the stability measure description (`String`) to a dictionary
-mapping attractor IDs to the stability measure value.
+the [`finalize_accumulator`](@ref) function should be called which will return two
+dictionaries: (1) a dictionary of all stability measures estimated by the accumulator,
+where each entry maps the stability measure description (`String`) to a dictionary
+mapping attractor IDs to the stability measure value; and (2) a dictionary mapping
+attractor IDs to the corresponding attractor (`StateSpaceSet`).
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
 This functionality was developed as part of [Morr2026](@cite) and has now been extended
 to work for any `AttractorMapper`, current or future.

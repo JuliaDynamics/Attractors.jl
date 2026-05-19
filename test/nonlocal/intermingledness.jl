@@ -70,7 +70,7 @@ end
     for u0 in A
         id = accumulator(u0) # run this to accumulate measures
     end
-    results = finalize_accumulator(accumulator)
+    results, _ = finalize_accumulator(accumulator)
 
     @test haskey(results, "intermingledness1")
     @test haskey(results, "intermingledness2")

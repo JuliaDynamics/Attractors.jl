@@ -34,10 +34,10 @@ function global_continuation(
         # difference two: we don't care about the return of basins_fractions
         # as initial condition mapping is accumulated anyways
         basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
-        prev_attractors = deepcopy(extract_attractors(mapper))
-        push!(attractors_cont, prev_attractors)
         # difference three:
-        measures = finalize_accumulator(mapper)
+        measures, finalized_attractors = finalize_accumulator(mapper)
+        prev_attractors = deepcopy(finalized_attractors)
+        push!(attractors_cont, prev_attractors)
         push!(measures_cont, measures)
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
@@ -182,7 +182,7 @@ function stability_measures_along_continuation(
             pics = ics
         end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        measures = finalize_accumulator(accumulator; featurizer, group_config)
+        measures, _ = finalize_accumulator(accumulator; featurizer, group_config)
         if measure_names === nothing
             measure_names = collect(keys(measures))
         end

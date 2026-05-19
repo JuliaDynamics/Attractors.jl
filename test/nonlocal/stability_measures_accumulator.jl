@@ -37,7 +37,7 @@ using Random
             id = accumulator(u0) # run this to accumulate measures
         end
 
-        results = finalize_accumulator(accumulator)
+        results, _ = finalize_accumulator(accumulator)
 
         # The expected results are computed as in the following example:
         # maximal_noncritical_shock of attractor 2 at [1, 1] is computed as the distance between the
@@ -180,7 +180,7 @@ end
     end
 
     @testset "mapping" begin
-        results = finalize_accumulator(accumulator)
+        results, _ = finalize_accumulator(accumulator)
         # Define expected results for the linear system
         results_expected = Dict(
             "characteristic_return_time" => Dict(1 => 2.0, -1 => NaN),
@@ -254,7 +254,7 @@ end
     for u0 in A
         id = accumulator(u0)
     end
-    stability_measures = finalize_accumulator(accumulator)
+    stability_measures, _ = finalize_accumulator(accumulator)
 
     measures = ["basin_stability", "minimal_critical_shock_magnitude"]
 
@@ -312,7 +312,7 @@ end
         id = accumulator(u0) # run this to accumulate measures
     end
 
-    results = finalize_accumulator(accumulator)
+    results, _ = finalize_accumulator(accumulator)
 
     @test haskey(results, "extra")
     @test results["extra"] isa Dict
@@ -355,7 +355,7 @@ end
     @testset "single parameter" begin
         fs, labels = basins_fractions(accumulator, ics)
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
-        measures = finalize_accumulator(accumulator)
+        measures, _ = finalize_accumulator(accumulator)
         @test isequal(measures["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0, -1 => NaN))
     end
 
@@ -399,7 +399,7 @@ end
 
     # Large threshold merges both attractors (at [1,1] and [-1,-1], x-distance = 2) into one
     merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
-    results_agg = finalize_accumulator(accumulator; featurizer, group_config = merge_config)
+    results_agg, attractors_agg = finalize_accumulator(accumulator; featurizer, group_config = merge_config)
 
     merged_id = first(k for k in keys(results_agg["basin_fraction"]) if k != -1)
     # All initial conditions belong to the merged attractor, so basin fraction == 1
@@ -409,11 +409,13 @@ end
     @test results_agg["minimal_critical_shock_magnitude"][merged_id] == Inf
     # Linear measures are NaN for the merged (non-fixed-point) attractor
     @test isnan(results_agg["characteristic_return_time"][merged_id])
+    # The returned attractors must have the same IDs as the measures dictionaries
+    @test sort(collect(keys(attractors_agg))) == sort([k for k in keys(results_agg["basin_fraction"]) if k != -1])
 
     # Small threshold keeps attractors separate: fractions should match plain finalization
     separate_config = GroupViaPairwiseComparison(threshold = 0.5, rescale_features = false)
-    results_plain = finalize_accumulator(accumulator)
-    results_separate = finalize_accumulator(accumulator; featurizer, group_config = separate_config)
+    results_plain, _ = finalize_accumulator(accumulator)
+    results_separate, _ = finalize_accumulator(accumulator; featurizer, group_config = separate_config)
     @test sort!(collect(values(results_separate["basin_fraction"]))) ≈
         sort!(collect(values(results_plain["basin_fraction"])))
 end

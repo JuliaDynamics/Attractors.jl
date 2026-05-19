@@ -830,7 +830,7 @@ ics = ics_from_grid(grid)
 for u0 in ics
     id = accumulator(u0)
 end
-stability_measures = finalize_accumulator(accumulator)
+stability_measures, attractors = finalize_accumulator(accumulator)
 ```
 
 ## [Enhancing the accumulator with arbitrary user-defined quantifiers](@id user_defined_quantifiers)
@@ -863,7 +863,7 @@ accumulator = StabilityMeasuresAccumulator(mapper, extras;
 for u0 in ics
     id = accumulator(u0)
 end
-stability_measures = finalize_accumulator(accumulator)
+stability_measures, attractors = finalize_accumulator(accumulator)
 stability_measures["maxv"]
 ```
 
