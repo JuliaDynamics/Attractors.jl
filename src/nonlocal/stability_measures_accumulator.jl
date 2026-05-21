@@ -136,7 +136,7 @@ The word "distance" here refers to the distance established by the `distance` ke
   (default `Centroid()`), so for an aggregated attractor this is the distance from
   the non-basin point to the centroid of the merged attractor set, which may not be
   a meaningful state-space point. To instead obtain the minimal distance over all
-  attractor points to any other-basin point, use e.g. `distance = Hausdorff()`.
+  attractor points to any other-basin point, use e.g. `distance = StrictlyMinimumDistance()`.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
   furthest non-zero probability point (under `weighting_distribution`) of its own basin of
   attraction. If only a single attractor exists, the value `Inf` is assigned.
