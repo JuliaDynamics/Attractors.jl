@@ -132,7 +132,11 @@ The word "distance" here refers to the distance established by the `distance` ke
 * `minimal_critical_shock_magnitude`: The minimal distance of the attractor to the
   closest non-zero probability point (under `weighting_distribution`) in a basin of
   attraction of a different attractor. If only a single attractor exists,
-  the value `Inf` is assigned.
+  the value `Inf` is assigned. Distance is computed via the `distance` keyword
+  (default `Centroid()`), so for an aggregated attractor this is the distance from
+  the non-basin point to the centroid of the merged attractor set, which may not be
+  a meaningful state-space point. To instead obtain the minimal distance over all
+  attractor points to any other-basin point, use e.g. `distance = Hausdorff()`.
 * `maximal_noncritical_shock_magnitude`: The distance of the attractor to the
   furthest non-zero probability point (under `weighting_distribution`) of its own basin of
   attraction. If only a single attractor exists, the value `Inf` is assigned.
