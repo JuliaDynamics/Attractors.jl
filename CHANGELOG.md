@@ -1,3 +1,20 @@
+# v1.36
+
+- Local stability measures (`characteristic_return_time`, `reactivity`, `maximal_amplification`,
+  `maximal_amplification_time`) are now computed for discrete-time systems as well.
+  The definitions were adapted to the discrete-time setting (e.g. using the Jacobian of the
+  iterated map and appropriate discrete-time analogues of continuous formulas).
+- `finalize_accumulator` (and `stability_measures_along_continuation`) now accept
+  `featurizer` and `group_config` keyword arguments to aggregate attractors before
+  computing stability measures. Attractors with similar features are merged into a single
+  group, and all measures are re-computed on the merged basins. This mirrors the interface
+  of [`aggregate_attractor_fractions`](@ref).
+- `finalize_accumulator` now returns a second value: a dictionary mapping attractor IDs
+  to the corresponding attractor (`StateSpaceSet`). This is necessary when attractor
+  aggregation is used, because the IDs of the aggregated attractors differ from those
+  of the internal mapper, and there is no other way to recover which attractors were merged.
+  All call sites (continuation functions, tests, docs examples) have been updated accordingly.
+
 # v1.35
 
 - New measure called "intermingledness" has been incorporated into the stability measures accumulator, see Datseris 2026 for more, or the `intermingledness` function.

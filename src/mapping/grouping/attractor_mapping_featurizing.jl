@@ -162,11 +162,12 @@ end
 function extract_features_single(mapper, ics; progress, N)
     N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
     ds = referenced_dynamical_system(mapper)
-    feature_vector = [extract_feature(ds, _get_ic(ics, 1), mapper)]
-    hintsize!(feature_vector, N)
+    first_feature = extract_feature(ds, _get_ic(ics, 1), mapper)
+    feature_vector = Vector{typeof(first_feature)}(undef, N)
+    feature_vector[1] = first_feature
     for i in 2:N
         ic = _get_ic(ics, i)
-        push!(feature_vector[i], extract_feature(ds, ic, mapper))
+        feature_vector[i] = extract_feature(ds, ic, mapper)
         ProgressMeter.next!(progress)
     end
     return feature_vector

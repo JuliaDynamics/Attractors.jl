@@ -830,7 +830,7 @@ ics = ics_from_grid(grid)
 for u0 in ics
     id = accumulator(u0)
 end
-stability_measures = finalize_accumulator(accumulator)
+stability_measures, attractors = finalize_accumulator(accumulator)
 ```
 
 ## [Enhancing the accumulator with arbitrary user-defined quantifiers](@id user_defined_quantifiers)
@@ -863,13 +863,165 @@ accumulator = StabilityMeasuresAccumulator(mapper, extras;
 for u0 in ics
     id = accumulator(u0)
 end
-stability_measures = finalize_accumulator(accumulator)
+stability_measures, attractors = finalize_accumulator(accumulator)
 stability_measures["maxv"]
 ```
 
 Unsurprisingly, the maximum value of the `y` coordinate is ≈2 for all basins, but this we new already due to the symmetries of the system's basins!
 
 Notice that this new extra quantity would also be tracked along a continuation if the accumulator is given to a continuation like in the main tutorial's example.
+
+## [Aggregating attractors before computing stability measures](@id aggregated_stability)
+
+Sometimes a system has multiple attractors that are dynamically distinct but correspond
+to the same *functional state* — e.g. two coexisting surviving-population states in an
+ecological model. In such cases it is meaningful to *aggregate* them into a single
+effective attractor before computing stability measures, so that the resulting measures
+describe the resilience of the functioning state as a whole.
+
+We illustrate this with a two-habitat population model with an Allee effect
+([Schoenmakers & Feudel, Chaos 2021](https://doi.org/10.1063/5.0042755)):
+
+```math
+\dot{X}_1 = r_1 X_1 \left(1 - \frac{X_1}{K_1}\right)(X_1 - a_1) + d(X_2 - X_1)
+```
+```math
+\dot{X}_2 = r_2 X_2 \left(1 - \frac{X_2}{K_2}\right)(X_2 - a_2) + d(X_1 - X_2)
+```
+
+where ``X_1, X_2`` are normalised population densities, ``K_i`` carrying capacities,
+``a_i`` Allee thresholds, ``r_i`` growth rates, and ``d`` the migration rate.
+At ``K_1 = 0.90`` the system has three coexisting attractors: a low-biomass
+surviving state, a high-biomass surviving state, and an extinction state.
+
+```@example MAIN
+using OrdinaryDiffEqVerner: Vern9
+
+function population_rule(X, p, t)
+    X1, X2 = X
+    K1, r1, a1, r2, a2, K2, d = p
+    dX1 = r1*X1*(1 - X1/K1)*(X1 - a1) + d*(X2 - X1)
+    dX2 = r2*X2*(1 - X2/K2)*(X2 - a2) + d*(X1 - X2)
+    return SVector(dX1, dX2)
+end
+
+params = [0.90, 0.8, 0.3, 0.8, 0.8, 0.42, 0.1]
+ds = CoupledODEs(population_rule, [0.7, 0.7], params;
+    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9))
+
+xg = range(-0.001, 1.0; length = 51)
+yg = range(-0.001, 1.0; length = 51)
+grid = (xg, yg)
+```
+
+We first find the attractors using `AttractorsViaRecurrences`, then build an
+`AttractorsViaProximity` mapper and feed it to a `StabilityMeasuresAccumulator`:
+
+```@example MAIN
+mapper_rec = AttractorsViaRecurrences(ds, grid;
+    consecutive_recurrences = 1000, consecutive_attractor_steps = 10,
+    consecutive_lost_steps = 10_000, attractor_locate_steps = 1000,
+)
+ics = ics_from_grid(grid)
+for u0 in ics; mapper_rec(u0); end
+attractors = extract_attractors(mapper_rec)
+
+mapper_prox = AttractorsViaProximity(ds, attractors, 0.05; Ttr = 0, Δt = 0.1,
+    stop_at_Δt = true, consecutive_lost_steps = 10_000)
+accumulator = StabilityMeasuresAccumulator(mapper_prox; finite_time = 100.0, distance = StrictlyMinimumDistance())
+for u0 in ics; accumulator(u0); end
+```
+
+We compute the basins of attraction on the same grid. We first define a helper
+that identifies the extinction attractor (total biomass ≈ 0), then visualize
+with the original per-attractor coloring:
+
+```@example MAIN
+function is_extinction(A; threshold = 0.02)
+    isempty(A) && return false
+    return sum(A[1]) < threshold
+end
+
+basins, attractors = basins_of_attraction(mapper_rec, grid; show_progress = false)
+
+labels_plain = Dict(k => (is_extinction(v) ? "Extinction" : "Surviving ($k)") for (k,v) in attractors)
+fig_plain = heatmap_basins_attractors(grid, basins, attractors; labels = labels_plain,
+    add_legend = false)
+ax_plain = fig_plain.content[1]
+ax_plain.title = "Original attractors"
+ax_plain.xlabel = L"X_1"
+ax_plain.ylabel = L"X_2"
+axislegend(ax_plain; position = :lt)
+fig_plain
+```
+
+Now we aggregate: we define a *featurizer* that maps each attractor to a scalar
+indicating whether it is an extinction state. A `GroupViaPairwiseComparison` with
+a generous threshold merges all non-extinction attractors into a single "functioning"
+group:
+
+```@example MAIN
+pop_featurizer = A -> SVector(Float64(is_extinction(A)))
+agg_config = GroupViaPairwiseComparison(; threshold = 0.5, rescale_features = false)
+
+measures_agg, attractors_agg = finalize_accumulator(accumulator;
+    featurizer = pop_featurizer, group_config = agg_config)
+measures_agg["basin_stability"]
+```
+
+To visualize the aggregated basins we remap basin IDs directly using `is_extinction`,
+assigning all surviving attractors a common new ID and merging their attractor sets:
+
+```@example MAIN
+# Use fixed new IDs for the two functional groups
+const FUNCTIONING_ID = 1
+const EXTINCTION_ID  = 2
+
+# Build aggregated attractor dict
+attractors_agg_plot = Dict{Int, valtype(attractors)}()
+for (k, v) in attractors
+    new_id = is_extinction(v) ? EXTINCTION_ID : FUNCTIONING_ID
+    if haskey(attractors_agg_plot, new_id)
+        attractors_agg_plot[new_id] = StateSpaceSet(
+            vcat(collect(attractors_agg_plot[new_id]), collect(v)))
+    else
+        attractors_agg_plot[new_id] = v
+    end
+end
+
+# Remap each basin grid point
+basins_agg = map(basins) do b
+    b == -1 && return -1
+    is_extinction(attractors[b]) ? EXTINCTION_ID : FUNCTIONING_ID
+end
+
+labels_agg = Dict(FUNCTIONING_ID => "Functioning (aggregated)", EXTINCTION_ID => "Extinction")
+colors_agg = Dict(FUNCTIONING_ID => "#E07143", EXTINCTION_ID => :gray20)
+
+fig_agg = heatmap_basins_attractors(grid, basins_agg, attractors_agg_plot;
+    labels = labels_agg, colors = colors_agg, add_legend = false)
+ax_agg = fig_agg.content[1]
+ax_agg.title = "Aggregated attractors"
+ax_agg.xlabel = L"X_1"
+ax_agg.ylabel = L"X_2"
+axislegend(ax_agg; position = :lt)
+fig_agg
+```
+
+Comparing the two figures: the two surviving states (violet and teal in the left plot)
+collapse into a single orange "functioning" basin in the right plot, making it
+immediately clear how much of the state space supports any form of population survival.
+
+The aggregated basin stability of the functioning mode is the sum of the individual
+surviving-attractor basin stabilities, while the extinction state retains its own
+entry. The aggregated `minimal_critical_shock_magnitude` now reflects the minimum distance
+from any non-functioning initial condition to the nearest point of the merged attractor,
+giving a single scalar measure of resilience for "the system continues to support
+a population":
+
+```@example MAIN
+measures_agg["minimal_critical_shock_magnitude"]
+```
 
 ## Invariant saddle of a dynamical system
 
