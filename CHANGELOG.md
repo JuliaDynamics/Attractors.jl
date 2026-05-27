@@ -7,6 +7,8 @@
   range for optimal radii. This is now fixed by use the mean of the differences.
   Additionally, if an optimal radius of zero is found, it is now preemptively deduced
   that only a single group exists.
+- `AttractorsViaFeaturizing` now allows for the keyword `container` that is propagated
+  to `trajectory`, and by default has the value `Vector` if `dimension(ds) ≥ 32`.
 
 # v1.36
 
