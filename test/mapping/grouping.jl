@@ -1,3 +1,5 @@
+using Attractors, Test
+
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
 @testset "0-dist features" begin
