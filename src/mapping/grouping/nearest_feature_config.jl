@@ -42,7 +42,7 @@ function GroupViaNearestFeature(
     t = use_svector ? map(x -> SVector{D, T}(x), v) : v
     tree = use_kdtree ? searchstructure(KDTree, t, metric) : nothing
     dummy_idxs = [0]; dummy_dist = T[0]
-    return GroupViaNearestFeature(t, tree, T(max_distance), dummy_idxs, dummy_dist, k, metric)
+    return GroupViaNearestFeature(t, tree, max_distance, dummy_idxs, dummy_dist, k, metric)
 end
 
 # The following function comes from the source code of the `bulksearch` function
