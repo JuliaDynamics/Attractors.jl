@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Animation illustrating AttractorsViaRecurrences · Attractors.jl</title><meta name="title" content="Animation illustrating AttractorsViaRecurrences · Attractors.jl"/><meta property="og:title" content="Animation illustrating AttractorsViaRecurrences · Attractors.jl"/><meta property="twitter:title" content="Animation illustrating AttractorsViaRecurrences · Attractors.jl"/><meta name="description" content="Documentation for Attractors.jl."/><meta property="og:description" content="Documentation for Attractors.jl."/><meta property="twitter:description" content="Documentation for Attractors.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro&amp;display=swap" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Attractors.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Attractors.jl</a></li><li><a class="tocitem" href="../tutorial/">Attractors.jl Tutorial</a></li><li><a class="tocitem" href="../api/">API</a></li><li><a class="tocitem" href="../examples/">Examples for Attractors.jl</a></li><li><a class="tocitem" href="../references/">References</a></li><li class="is-active"><a class="tocitem" href>Animation illustrating <code>AttractorsViaRecurrences</code></a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Animation illustrating <code>AttractorsViaRecurrences</code></a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Animation illustrating <code>AttractorsViaRecurrences</code></a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaDynamics/Attractors.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaDynamics/Attractors.jl/blob/main/docs/src/recurrences_animation.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="recurrences_animation"><a class="docs-heading-anchor" href="#recurrences_animation">Animation illustrating <code>AttractorsViaRecurrences</code></a><a id="recurrences_animation-1"></a><a class="docs-heading-anchor-permalink" href="#recurrences_animation" title="Permalink"></a></h1><p>The following Julia script inputs a 2D continuous time dynamical system and animates its time evolution while illustrating how <a href="../api/#Attractors.AttractorsViaRecurrences"><code>AttractorsViaRecurrences</code></a> works.</p><pre><code class="language-julia hljs">using Attractors, CairoMakie
+using PredefinedDynamicalSystems
+using OrdinaryDiffEq
+
+# Set up dynamical system: bi-stable predator pray
+function predator_prey_rule(u, p, t)
+    r, c, μ, ν, α, β, χ, δ = p
+    N, P = u
+    common = α*N*P/(β+N)
+    dN = r*N*(1 - (c/r)*N)*((N-μ)/(N+ν)) - common
+    dP = χ*common - δ*P
+    return SVector(dN, dP)
+end
+
+u0 = SVector(8.0, 0.01)
+r = 2.0
+# r, c, μ, ν, α, β, χ, δ = p
+p = [r, 0.19, 0.03, 0.003, 800, 1.5, 0.004, 2.2]
+
+diffeq = (alg = Rodas5P(), abstol = 1e-9, rtol = 1e-9)
+ds = CoupledODEs(predator_prey_rule, u0, p; diffeq)
+
+u0s = [ # animation will start from these initial conditions
+    [10, 0.012],
+    [15, 0.02],
+    [12, 0.01],
+    [13, 0.015],
+    [5, 0.02],
+]
+
+density = 31
+xg = range(-0.1, 20; length = density)
+yg = range(-0.001, 0.03; length = density)
+Δt = 0.1
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(ds, grid;
+    Δt, consecutive_attractor_steps = 10, consecutive_basin_steps = 10, sparse = false,
+    consecutive_recurrences = 100, attractor_locate_steps = 100,
+)
+
+##########################################################################
+
+function animate_attractors_via_recurrences(
+        mapper::AttractorsViaRecurrences, u0s;
+        colors = [&quot;#FFFFFF&quot;, &quot;#7143E0&quot;,&quot;#0A9A84&quot;,&quot;#AF9327&quot;,&quot;#791457&quot;, &quot;#6C768C&quot;, &quot;#4287f5&quot;,],
+        filename = &quot;recurrence_algorithm.mp4&quot;,
+    )
+
+    grid_nfo = mapper.bsn_nfo.grid_nfo
+
+    fig = Figure()
+    ax = Axis(fig[1,1])
+
+    # Populate the grid with poly! rectangle plots. However! The rectangles
+    # correspond to the same &quot;cells&quot; of the grid. Additionally, all
+    # rectangles are colored with an _observable_, that can be accessed
+    # later using the `basin_cell_index` function. The observable
+    # holds the face color of the rectangle!
+
+    # Only 6 colors; need 3 for base, and extra 2 for each attractor.
+    # will choose initial conditions that are only in the first 2 attractors
+    COLORS = map(c -&gt; Makie.RGBA(Makie.RGB(to_color(c)), 0.9), colors)
+
+    function initialize_cells2!(ax, grid; kwargs...)
+        # These are all possible outputs of the `basin_cell_index` function
+        idxs = all_cartesian_idxs(grid)
+        color_obs = Matrix{Any}(undef, size(idxs)...)
+        # We now need to reverse-engineer
+        for i in idxs
+            rect = cell_index_to_rect(i, grid)
+            color = Observable(COLORS[1])
+            color_obs[i] = color
+            poly!(ax, rect; color = color, strokecolor = :black, strokewidth = 0.5)
+        end
+        # Set the axis limits better
+        mini, maxi = Attractors.minmax_grid_extent(grid)
+        xlims!(ax, mini[1], maxi[1])
+        ylims!(ax, mini[2], maxi[2])
+        return color_obs
+    end
+
+    all_cartesian_idxs(grid::Attractors.RegularGrid) = CartesianIndices(length.(grid.grid))
+
+    # Given a cartesian index, the output of `basin_cell_index`, create
+    # a `Rect` object that corresponds to that grid cell!
+    function cell_index_to_rect(n::CartesianIndex, grid::Attractors.RegularGrid)
+        x = grid.grid[1][n[1]]
+        y = grid.grid[2][n[2]]
+        dx = grid.grid_steps[1]
+        dy = grid.grid_steps[2]
+        rect = Rect(x - dx/2, y - dy/2, dx, dy)
+        return rect
+    end
+
+    color_obs = initialize_cells2!(ax, grid_nfo)
+
+    # plot the trajectory
+    state2marker = Dict(
+        :att_search =&gt; :circle,
+        :att_found =&gt; :dtriangle,
+        :att_hit =&gt; :rect,
+        :lost =&gt; :star5,
+        :bas_hit =&gt; :xcross,
+    )
+
+    # This function gives correct color to search, recurrence, and
+    # the individual attractors. Ignores the lost state.
+    function update_current_cell_color!(cellcolor, bsn_nfo)
+        # We only alter the cell color at specific situations
+        state = bsn_nfo.state
+        if state == :att_search
+            if cellcolor[] == COLORS[1] # empty
+                cellcolor[] = COLORS[2] # visited
+            elseif cellcolor[] == COLORS[2] # visited
+                cellcolor[] = COLORS[3] # recurrence
+            end
+        elseif state == :att_found
+            attidx = (bsn_nfo.current_att_label ÷ 2)
+            attlabel = (attidx - 1)*2 + 1
+            cellcolor[] = COLORS[3+attlabel]
+        end
+        return
+    end
+
+    # Iteration and labelling
+    ds = mapper.ds
+    bsn_nfo = mapper.bsn_nfo
+    u0 = current_state(ds)
+
+    traj = Observable(SVector{2, Float64}[u0])
+    point = Observable([u0])
+
+    marker = Observable(:circle)
+    lines!(ax, traj; color = :black, linewidth = 1)
+    scatter!(ax, point; color = (:black, 0.5), markersize = 20, marker, strokewidth = 1.0, strokecolor = :black)
+
+    stateobs = Observable(:att_search)
+    consecutiveobs = Observable(0)
+    labeltext = @lift(&quot;state: $($(stateobs))\nconsecutive: $($(consecutiveobs))&quot;)
+
+    Label(fig[0, 1][1,1], labeltext; justification = :left, halign = :left, tellwidth = false)
+    # add text  with options
+    kwargstext = prod(&quot;$(p[1])=$(p[2])\n&quot; for p in mapper.kwargs)
+    Label(fig[0, 1][1, 2], kwargstext; justification = :right, halign = :right, tellwidth = false)
+
+
+    # make legend
+    entries = [PolyElement(color = c) for c in COLORS[2:end]]
+    labels = [&quot;visited&quot;, &quot;recurrence&quot;, &quot;attr. 1&quot;, &quot;basin 1&quot;, &quot;attr. 2&quot;, &quot;basin 2&quot;]
+
+    Legend(fig[:, 2][1, 1], entries, labels)
+
+
+    # %% loop
+    # The following code is similar to the source code of `recurrences_map_to_label!`
+
+    cell_label = 0
+    record(fig, filename) do io
+        for u0 in u0s
+            reinit!(ds, copy(u0))
+            traj[] = [copy(u0)]
+
+            while cell_label == 0
+                step!(ds, bsn_nfo.Δt)
+                u = current_state(ds)
+
+                # update FSM
+                n = Attractors.basin_cell_index(u, bsn_nfo.grid_nfo)
+                cell_label = Attractors.finite_state_machine!(bsn_nfo, n, u; mapper.kwargs...)
+
+                state = bsn_nfo.state
+
+                if cell_label ≠ 0 # FSM terminated; we assume no lost/divergence in the system
+                    stateobs[] = :terminated
+
+                    # color-code initial condition if we converged to attractor
+                    # or to basin (even or odd cell label)
+                    u0n = Attractors.basin_cell_index(u0, bsn_nfo.grid_nfo)
+
+                    basidx = (cell_label - 1)
+                    color_obs[u0n][] = COLORS[3+basidx]
+
+                    # Clean up: all &quot;visited&quot; cells become white again
+                    visited_idxs = findall(v -&gt; (v[] == COLORS[2] || v[] == COLORS[3]), color_obs)
+                    for n in visited_idxs
+                        color_obs[n][] = COLORS[1] # empty
+                    end
+                    # clean up trajectory line
+                    traj[] = []
+
+                    for i in 1:15; recordframe!(io); end
+                    cell_label = 0
+                    break
+                end
+
+                # update visuals:
+                point[] = [u]
+                push!(traj[], u)
+                notify(traj)
+                marker[] = state2marker[state]
+                stateobs[] = state
+                consecutiveobs[] = bsn_nfo.consecutive_match
+
+                update_current_cell_color!(color_obs[n], bsn_nfo)
+
+                recordframe!(io)
+            end
+        end
+    end
+end
+
+animate_attractors_via_recurrences(mapper, u0s)</code></pre><video width="75%" height="auto" controls autoplay loop>
+<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/recurrence_algorithm.mp4?raw=true" type="video/mp4">
+</video></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../references/">« References</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.5.0 on <span class="colophon-date" title="Sunday 28 July 2024 18:40">Sunday 28 July 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
