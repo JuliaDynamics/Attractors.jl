@@ -74,6 +74,8 @@ They way we store attractors is by picking the first initial condition that belo
 to the corresponding "attractor group", and then recording its trajectory
 with the same arguments `T, Ttr, Δt`. This is stored as the attractor,
 but of course there is no guarantee that this is actually an attractor.
+
+Note that the convergence time of this mapper is always the constant `T + Ttr`.
 """
 function AttractorsViaFeaturizing(
         ds::DynamicalSystem, featurizer::Function,
@@ -105,6 +107,7 @@ function (mapper::AttractorsViaFeaturizing)(u0)
     end
     return id
 end
+convergence_time(mapper::AttractorsViaFeaturizing) = mapper.Ttr + mapper.total
 
 DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsBase.rulestring(m.ds)
 
