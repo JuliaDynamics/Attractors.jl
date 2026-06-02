@@ -1,3 +1,15 @@
+# v1.37
+
+- Grouping via clustering using DBSCAN has been improved while fixing a critical bug.
+  If there was a feature dimension that was the same across different attractors,
+  the algorithm would return 0 as the optimal radius for DBSCAN. This is because
+  it used the minimum difference across individual dimensions to decide the scan
+  range for optimal radii. This is now fixed by use the mean of the differences.
+  Additionally, if an optimal radius of zero is found, it is now preemptively deduced
+  that only a single group exists.
+- `AttractorsViaFeaturizing` now allows for the keyword `container` that is propagated
+  to `trajectory`, and by default has the value `Vector` if `dimension(ds) ≥ 32`.
+
 # v1.36
 
 - Local stability measures (`characteristic_return_time`, `reactivity`, `maximal_amplification`,

@@ -140,6 +140,9 @@ function group_features(
         features = _rescale_to_01(features)
     end
     ϵ_optimal = _extract_ϵ_optimal(features, config)
+    if iszero(ϵ_optimal) # if this is deduced as zero, all features overlap exactly
+        return fill(1, length(features))
+    end
     distances = _distance_matrix(features, config; par_weight, plength, spp)
     labels = _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
     return labels

@@ -1,4 +1,13 @@
+using Attractors, Test
+
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
+
+@testset "0-dist features" begin
+    clusterspecs = GroupViaClustering(rescale_features = false)
+    features = [SVector(0.1, 0.2) for _ in 1:100]
+    labels = group_features(features, clusterspecs)
+    @test labels == fill(1, 100)
+end
 
 if DO_EXTENSIVE_TESTS
     # The functionality tested here has been resolved and is only added as a test

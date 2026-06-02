@@ -217,7 +217,7 @@ function extract_attractors(mapper::AttractorMapper)
     attractors = _extract_attractors(mapper)
     ds = referenced_dynamical_system(mapper)
     # name attractor variables if possible
-    isnothing(referrenced_sciml_model(ds)) && return attractors
+    isnothing(referenced_sciml_model(ds)) && return attractors
     names = named_variables(ds)
     for (k, A) in attractors
         attractors[k] = StateSpaceSet(A; names)

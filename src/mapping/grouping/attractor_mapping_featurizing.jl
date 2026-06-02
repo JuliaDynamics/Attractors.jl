@@ -8,13 +8,14 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T, SSS <: AbstractStateSpaceSet} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T, C, SSS <: AbstractStateSpaceSet} <: AttractorMapper
     ds::DS
     featurizer::F
     group_config::G
     Ttr::T
     Δt::T
     total::T
+    container::C
     threaded::Bool
     attractors::Dict{Int, SSS}
 end
@@ -45,8 +46,10 @@ which can be utilized when wanting to work directly with features.
 
 ## Keyword arguments
 
-* `T=100, Ttr=100, Δt=1`: Propagated to `DynamicalSystems.trajectory` for integrating
-  an initial condition to yield `A, t`.
+* `T=100, Ttr=100, Δt=1`: Propagated to `DynamicalSystems.trajectory` for
+  integrating an initial condition to yield `A, t`.
+* `container`: Also propagated to `DynamicalSystems.trajectory`, but here its default value
+  is `Vector` if `dimension(ds) ≥ 32`.
 * `threaded = true`: Whether to run the generation of features over threads by integrating
   trajectories in parallel.
 
@@ -74,15 +77,15 @@ but of course there is no guarantee that this is actually an attractor.
 """
 function AttractorsViaFeaturizing(
         ds::DynamicalSystem, featurizer::Function,
-        group_config::GroupingConfig = GroupViaClustering();
-        T = 100, Ttr = 100, Δt = 1, threaded = true,
+        group_config::GroupingConfig = GroupViaClustering(); threaded::Bool = true,
+        T = 100, Ttr = 100, Δt = 1, container = dimension(ds) ≥ 32 ? Vector : SVector,
     )
     D = dimension(ds)
     V = eltype(current_state(ds))
     T, Ttr, Δt = promote(T, Ttr, Δt)
     # For parallelization, the dynamical system is deepcopied.
     return AttractorsViaFeaturizing(
-        ds, featurizer, group_config, Ttr, Δt, T, threaded, Dict{Int, StateSpaceSet{D, V}}(),
+        ds, featurizer, group_config, Ttr, Δt, T, container, threaded, Dict{Int, StateSpaceSet{D, V}}(),
     )
 end
 
@@ -93,7 +96,7 @@ function reset_mapper!(mapper::AttractorsViaFeaturizing)
 end
 function (mapper::AttractorsViaFeaturizing)(u0)
     ds = referenced_dynamical_system(mapper)
-    A, t = trajectory(ds, mapper.total, u0; Ttr = mapper.Ttr, Δt = mapper.Δt)
+    A, t = trajectory(ds, mapper.total, u0; container = mapper.container, Ttr = mapper.Ttr, Δt = mapper.Δt)
     f = mapper.featurizer(A, t)
     id = feature_to_group(f, mapper.group_config)
     # store attractor if this is the first id
@@ -136,10 +139,10 @@ end
 import ProgressMeter
 
 """
-    extract_features(mapper, ics; N = 1000, show_progress = true)
+    extract_features(mapper::AttractorsViaFeaturizing, ics; N = 1000, show_progress = true)
 
 Return a vector of the features of each initial condition in `ics` (as in
-[`basins_fractions`](@ref)), using the configuration of `mapper::AttractorsViaFeaturizing`.
+[`basins_fractions`](@ref)), using the configuration of `mapper`.
 Keyword `N` is ignored if `ics isa StateSpaceSet`.
 """
 function extract_features(
@@ -191,7 +194,9 @@ function extract_features_threaded(mapper, ics; progress, N)
 end
 
 function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper)
-    A, t = trajectory(ds, mapper.total, u0; Ttr = mapper.Ttr, Δt = mapper.Δt)
+    A, t = trajectory(ds, mapper.total, u0;
+        container = mapper.container, Ttr = mapper.Ttr, Δt = mapper.Δt
+    )
     return mapper.featurizer(A, t)
 end
 

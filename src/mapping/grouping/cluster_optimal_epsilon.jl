@@ -79,12 +79,11 @@ function optimal_radius_dbscan_silhouette(
         num_attempts_radius, silhouette_statistic
     )
     feat_ranges = features_ranges(features)
-    ϵ_grid = range(
-        minimum(feat_ranges) / num_attempts_radius, minimum(feat_ranges);
-        length = num_attempts_radius
-    )
+    r = mean(feat_ranges)
+    # Added clause for features that all collapse into a point
+    r == 0 && return zero(eltype(first(feat_ranges))), NaN
+    ϵ_grid = range(r / num_attempts_radius, r; length = num_attempts_radius)
     s_grid = zeros(size(ϵ_grid)) # silhouette statistic values (which we want to maximize)
-
     # vary ϵ to find the best one (which will maximize the mean silhouette)
     dists = pairwise(metric, features)
     for i in eachindex(ϵ_grid)
@@ -113,13 +112,16 @@ function optimal_radius_dbscan_silhouette_optim(
         features, min_neighbors, metric, num_attempts_radius, silhouette_statistic
     )
     feat_ranges = features_ranges(features)
+    r = mean(feat_ranges)
+    # Added clause for features that all collapse into a point
+    r == 0 && return zero(eltype(first(feat_ranges))), NaN
     # vary ϵ to find the best radius (which will maximize the mean silhouette)
     dists = pairwise(metric, features)
     f = (ϵ) -> Attractors.silhouettes_from_distances(
         ϵ, dists, min_neighbors, silhouette_statistic
     )
     opt = Optim.optimize(
-        f, minimum(feat_ranges) / 100, minimum(feat_ranges); iterations = num_attempts_radius
+        f, r / 100, r; iterations = num_attempts_radius
     )
     ϵ_optimal = Optim.minimizer(opt)
     optimal_val = -Optim.minimum(opt) # we minimize using `-`
@@ -137,7 +139,7 @@ end
 Find the optimal radius ϵ of a point neighborhood for use in DBSCAN through the elbow method
 (knee method, highest derivative method).
 """
-function optimal_radius_dbscan_knee(_features::Vector, min_neighbors, metric)
+function optimal_radius_dbscan_knee(_features::AbstractVector, min_neighbors, metric)
     features = StateSpaceSet(_features)
     tree = searchstructure(KDTree, features, metric)
     # Get distances, excluding distance to self (hence the Theiler window)
