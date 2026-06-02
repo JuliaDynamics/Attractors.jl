@@ -1,19 +1,20 @@
 using Neighborhood, Distances
 export GroupViaNearestFeature
 
+# TODO: allow brute force option
+# TODO: allow templates to be dict
+
+
+
 """
     GroupViaNearestFeature(templates; kwargs...)
 
 Initialize a struct that contains instructions on how to group features in
 [`AttractorsViaFeaturizing`](@ref). `GroupViaNearestFeature` accepts a `template`,
-which is a vector of features. Then, generated features from initial conditions in
-[`AttractorsViaFeaturizing`](@ref) are labelled according to the feature in
-`templates` that is closest (the label is the index of the closest template).
-
-`templates` can be a vector or dictionary mapping keys to templates. Internally
-all templates are converted to `SVector` for performance. Hence, it is strongly recommended
-that both `templates` and the output of the `featurizer` function in
-[`AttractorsViaFeaturizing`](@ref) return `SVector` types.
+which is a dictionary mapping unique labels to unique feature vectors.
+Then, generated feature vectors from initial conditions in
+[`AttractorsViaFeaturizing`](@ref) are labelled according to the feature vector in
+`templates` that is closest (the label is the key of the closest template).
 
 ## Keyword arguments
 - `metric = Euclidean()`: metric to be used to quantify distances in the feature space.
@@ -21,6 +22,7 @@ that both `templates` and the output of the `featurizer` function in
   template for it to be assigned to that template. By default, `Inf` guarantees that a
   feature is assigned to its nearest template regardless of the distance.
   Features that exceed `max_distance` to their nearest template get labelled `-1`.
+- `use_svector = true`: Convert template vectors to `SVector`.
 """
 struct GroupViaNearestFeature{D, T, K <: KDTree, X} <: GroupingConfig
     templates::Vector{SVector{D, T}}
@@ -31,12 +33,16 @@ struct GroupViaNearestFeature{D, T, K <: KDTree, X} <: GroupingConfig
     keys::X
 end
 function GroupViaNearestFeature(
-        templates; metric = Euclidean(), max_distance = Inf
+        templates; metric = Euclidean(), max_distance = Inf, use_svector = true
     )
     k, v = collect(keys(templates)), values(templates)
     x = first(v)
     D = length(x); T = eltype(x)
-    t = map(x -> SVector{D, T}(x), v)
+    if use_svector
+        t = map(x -> SVector{D, T}(x), v)
+    else
+        t = v
+    end
     # The tree performs the nearest neighbor searches efficiently
     tree = searchstructure(KDTree, t, metric)
     dummy_idxs = [0]; dummy_dist = T[0]
