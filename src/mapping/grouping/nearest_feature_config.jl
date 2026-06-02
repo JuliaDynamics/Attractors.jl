@@ -33,11 +33,8 @@ struct GroupViaNearestFeature{D, T, K, X, M} <: GroupingConfig
     metric::M
 end
 function GroupViaNearestFeature(
-        templates;
-        metric = Euclidean(),
-        max_distance = Inf,
-        use_svector = true,
-        use_kdtree = true,
+        templates; metric = Euclidean(), max_distance = Inf,
+        use_svector = true, use_kdtree = true,
     )
     k, v = collect(keys(templates)), values(templates)
     x = first(v)
