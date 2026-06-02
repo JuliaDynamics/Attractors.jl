@@ -23,10 +23,10 @@ Then, generated feature vectors from initial conditions in
 - `use_kdtree = true`: If `true`, use a KDTree for nearest-neighbor lookup.
   If `false`, use brute-force search over all template vectors.
 """
-struct GroupViaNearestFeature{D, T, K, X, M} <: GroupingConfig
+struct GroupViaNearestFeature{D, T, K, R, X, M} <: GroupingConfig
     templates::Vector{SVector{D, T}}
     tree::K
-    max_distance::T
+    max_distance::R
     dummy_idxs::Vector{Int}
     dummy_dist::Vector{T}
     keys::X
