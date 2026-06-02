@@ -296,7 +296,7 @@ function finalize_accumulator(
     else
         bs, attractors = _bs, _attractors
     end
-    ids = vcat(collect(keys(attractors)), -1)
+    ids = unique(bs)
     js = 1:length(ids)
     ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
     N = length(u0s)
