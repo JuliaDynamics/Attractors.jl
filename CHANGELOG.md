@@ -1,3 +1,11 @@
+# v1.38
+
+- Grouping via nearest feature has been improved; allows for two new keywords
+  `use_svector, use_kdtree`.
+- Various bug fixes with using `AttractorsViaFeaturizing` in global continuation
+  with `StabilityMeasuresAccumulator` and in global continuation.
+- New `IDMatcher`: `DontMatch`, that does no matching.
+
 # v1.37
 
 - Grouping via clustering using DBSCAN has been improved while fixing a critical bug.

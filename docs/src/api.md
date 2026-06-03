@@ -183,6 +183,7 @@ The available matchers are:
 MatchBySSSetDistance
 MatchByBasinEnclosure
 MatchByBasinOverlap
+DontMatch
 ```
 
 ### Matching interface
@@ -249,6 +250,7 @@ Common keywords for plotting functions in Attractors.jl are:
 - `markers`: dictionary mapping attractor ids to markers they should be plotted as
 - `labels = Dict(ukeys .=> ukeys)`: how to label each attractor.
 - `add_legend = length(ukeys) < 7`: whether to add a legend mapping colors to labels.
+- `axislegend_kwargs = (position = :lt,)`: propagated to `axislegend` if a legend is added
 
 ### Basins related
 
