@@ -112,7 +112,7 @@ function SampledBasinsOfAttraction(
     D != length(first(sampled_points)) && error(
         "The attractor points and sampled points must have same dimension"
     )
-    return SampledBasinsOfAttraction(points_ids, attractors, S(sampled_set); ss_kwargs...)
+    return SampledBasinsOfAttraction(points_ids, attractors, S(sampled_points); ss_kwargs...)
 end
 
 #########################################################################################
