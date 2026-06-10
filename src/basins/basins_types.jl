@@ -54,7 +54,7 @@ struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S
         length(grid.grid) != ndims(basins) && error("The basins and the grid must have the same number of dimensions")
         # Attractor state space sets have the same type so same dimensions, can compare grid with any of them
         if !isempty(attractors) #
-            length(grid.grid) != length(valtype(collect(values(attractors))[1])) && error("The attractor points and the grid must have the same number of dimensions")
+            length(grid.grid) != dimension(first(values(attractors))) && error("The attractor points and the grid must have the same number of dimensions")
         end
         B = typeof(basins)
         return new{ID, D, B, G, K, S}(basins, attractors, grid)
@@ -167,7 +167,7 @@ function Base.show(io::IO, BoA::SampledBasinsOfAttraction)
     ps = 14
     println(io, "$(nameof(typeof(BoA)))")
     println(io, rpad(" ID type: ", ps), typeof(BoA).parameters[1])
-    println(io, rpad(" basin length: ", ps), length(BoA))
+    println(io, rpad(" basin length: ", ps), length(BoA.points_ids))
     attstrings = split(sprint(show, MIME"text/plain"(), extract_attractors(BoA)), '\n')
     println(io, rpad(" attractors: ", ps), attstrings[1])
     for j in 2:size(attstrings, 1)
