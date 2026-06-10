@@ -108,7 +108,7 @@ end
 function SampledBasinsOfAttraction(
         points_ids::Vector{ID}, attractors::Dict{AK, S}, sampled_points::AbstractVector{U};
         ss_kwargs...
-    ) where {ID, D, T, U <: AbstractVector, AK, S <: StateSpaceSet{D, T}}
+    ) where {ID, D, U <: AbstractVector, AK, S <: StateSpaceSet{D}}
     D != length(first(sampled_points)) && error(
         "The attractor points and sampled points must have same dimension"
     )
