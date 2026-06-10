@@ -1,37 +1,6 @@
 using Neighborhood
 export ics_from_grid, map_to_basin
 
-#########################################################################################
-# Basins of Attraction Constructors - docs in basin_types.jl
-#########################################################################################
-# ArrayBasinsOfAttraction with grid as tuple
-function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, AK, S <: AbstractStateSpaceSet}
-    size(basins) != length.(grid_tup) && error("The size of the grid must be equal to the size of the basins array")
-    if all(t -> t isa AbstractRange, grid_tup) && all(axis -> issorted(axis), grid_tup) # regular
-        grid = RegularGrid(grid_tup)
-    elseif any(t -> t isa AbstractVector, grid_tup) && all(axis -> issorted(axis), grid_tup) # irregular
-        grid = IrregularGrid(grid_tup)
-    else
-        error("Incorrect grid specification!")
-    end
-    return ArrayBasinsOfAttraction(basins, attractors, grid)
-end
-# Sampled Basin of Attraction with sampled points as a vector of vectors
-function SampledBasinsOfAttraction(
-        points_ids::Vector{ID}, attractors::Dict{AK, S}, sampled_points::Vector{U};
-        ss_kwargs...
-    ) where {ID, D, T, V <: AbstractVector, U <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
-    sampled_set = StateSpaceSet(sampled_points)
-    eltype(S) != V && error(
-        "The attractor points and sampled points must be represented " *
-            "by the same type of vector, that is they must have the same element type and length"
-    )
-    return SampledBasinsOfAttraction(points_ids, attractors, sampled_set; ss_kwargs...)
-end
-
-#########################################################################################
-# Other utilities
-#########################################################################################
 """
     basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → boa
 

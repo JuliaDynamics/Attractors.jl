@@ -54,13 +54,24 @@ struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S
         length(grid.grid) != ndims(basins) && error("The basins and the grid must have the same number of dimensions")
         # Attractor state space sets have the same type so same dimensions, can compare grid with any of them
         if !isempty(attractors) #
-            length(grid.grid) != length(valtype(collect(values(attractors))[1])) && error("The attractor points and the grid must have the same number of dimensions")
+            length(grid.grid) != dimension(first(values(attractors))) && error("The attractor points and the grid must have the same number of dimensions")
         end
         B = typeof(basins)
         return new{ID, D, B, G, K, S}(basins, attractors, grid)
     end
 end
-# The definition of other constructors can be found in `basins/basins_utilities.jl`.
+# ArrayBasinsOfAttraction with grid as tuple
+function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, AK, S <: AbstractStateSpaceSet}
+    size(basins) != length.(grid_tup) && error("The size of the grid must be equal to the size of the basins array")
+    if all(t -> t isa AbstractRange, grid_tup) && all(axis -> issorted(axis), grid_tup) # regular
+        grid = RegularGrid(grid_tup)
+    elseif any(t -> t isa AbstractVector, grid_tup) && all(axis -> issorted(axis), grid_tup) # irregular
+        grid = IrregularGrid(grid_tup)
+    else
+        error("Incorrect grid specification!")
+    end
+    return ArrayBasinsOfAttraction(basins, attractors, grid)
+end
 
 """
     SampledBasinsOfAttraction(basins, attractors, sampled_points)
@@ -79,20 +90,30 @@ uses to interpolate state space points to their nearest basin. These arguments a
 * `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`).
 * `searchstructure_kwargs...`: additional keyword arguments propagated to `Neighborhood.searchstructure`.
 """
-struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}, ss} <: BasinsOfAttraction{ID}
+struct SampledBasinsOfAttraction{ID, D, T, AK, S <: StateSpaceSet{D, T}, ss} <: BasinsOfAttraction{ID}
     points_ids::Vector{ID}
     attractors::Dict{AK, S}
     sampled_points::S
     search_struct::ss
 
     function SampledBasinsOfAttraction(basins::Vector{ID}, attractors::Dict{AK, S}, sampled_points::S; tree = KDTree, metric = Euclidean(), ss_kwargs...) where
-        {ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+        {ID, D, T, AK, S <: StateSpaceSet{D, T}}
         length(basins) != length(sampled_points) && error("The basins and the sampled points must have equal length")
         search_struct = searchstructure(tree, sampled_points, metric; ss_kwargs...)
-        return new{ID, D, T, V, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
+        return new{ID, D, T, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
     end
 end
-# The definition of other constructors can be found in `basins/basins_utilities.jl`.
+
+# Sampled Basin of Attraction with sampled points as a vector of vectors
+function SampledBasinsOfAttraction(
+        points_ids::Vector{ID}, attractors::Dict{AK, S}, sampled_points::AbstractVector{U};
+        ss_kwargs...
+    ) where {ID, D, U <: AbstractVector, AK, S <: StateSpaceSet{D}}
+    D != length(first(sampled_points)) && error(
+        "The attractor points and sampled points must have same dimension"
+    )
+    return SampledBasinsOfAttraction(points_ids, attractors, S(sampled_points); ss_kwargs...)
+end
 
 #########################################################################################
 # Basins of Attraction Convenience functions
@@ -102,7 +123,7 @@ Base.iterate(BoA::BasinsOfAttraction, state = 1) = state == 1 ? (extract_basins(
 """
     extract_basins(BoA::BasinsOfAttraction) → basins
 
-Returns the basins component of a `BasinsOfAttraction` object.
+Return the basins component of a `BasinsOfAttraction` object.
 """
 extract_basins(BoA::ArrayBasinsOfAttraction) = BoA.basins
 extract_basins(BoA::SampledBasinsOfAttraction) = BoA.points_ids
@@ -110,7 +131,7 @@ extract_basins(BoA::SampledBasinsOfAttraction) = BoA.points_ids
 """
     extract_attractors(BoA::BasinsOfAttraction) → attractors
 
-Returns the attractors component of a `BasinsOfAttraction` object. Which is a dictionary mapping
+Return the attractors component of a `BasinsOfAttraction` object, a dictionary mapping
 attractor labels to attractors represented as `StateSpaceSet`'s.
 """
 extract_attractors(BoA::ArrayBasinsOfAttraction) = BoA.attractors
@@ -119,7 +140,7 @@ extract_attractors(BoA::SampledBasinsOfAttraction) = BoA.attractors
 """
     extract_domain(BoA::BasinsOfAttraction) → domain
 
-Returns the domain component of a `BasinsOfAttraction` object.
+Return the domain component of a `BasinsOfAttraction` object.
 """
 extract_domain(BoA::SampledBasinsOfAttraction) = BoA.sampled_points
 extract_domain(BoA::ArrayBasinsOfAttraction) = BoA.grid
@@ -146,7 +167,7 @@ function Base.show(io::IO, BoA::SampledBasinsOfAttraction)
     ps = 14
     println(io, "$(nameof(typeof(BoA)))")
     println(io, rpad(" ID type: ", ps), typeof(BoA).parameters[1])
-    println(io, rpad(" basin length: ", ps), length(BoA))
+    println(io, rpad(" basin length: ", ps), length(BoA.points_ids))
     attstrings = split(sprint(show, MIME"text/plain"(), extract_attractors(BoA)), '\n')
     println(io, rpad(" attractors: ", ps), attstrings[1])
     for j in 2:size(attstrings, 1)
