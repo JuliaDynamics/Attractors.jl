@@ -90,17 +90,17 @@ uses to interpolate state space points to their nearest basin. These arguments a
 * `metric`: distance metric (e.g. `Euclidean()`, `Chebyshev()`).
 * `searchstructure_kwargs...`: additional keyword arguments propagated to `Neighborhood.searchstructure`.
 """
-struct SampledBasinsOfAttraction{ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}, ss} <: BasinsOfAttraction{ID}
+struct SampledBasinsOfAttraction{ID, D, T, AK, S <: StateSpaceSet{D, T}, ss} <: BasinsOfAttraction{ID}
     points_ids::Vector{ID}
     attractors::Dict{AK, S}
     sampled_points::S
     search_struct::ss
 
     function SampledBasinsOfAttraction(basins::Vector{ID}, attractors::Dict{AK, S}, sampled_points::S; tree = KDTree, metric = Euclidean(), ss_kwargs...) where
-        {ID, D, T, V <: AbstractVector, AK, S <: StateSpaceSet{D, T, V}}
+        {ID, D, T, AK, S <: StateSpaceSet{D, T}}
         length(basins) != length(sampled_points) && error("The basins and the sampled points must have equal length")
         search_struct = searchstructure(tree, sampled_points, metric; ss_kwargs...)
-        return new{ID, D, T, V, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
+        return new{ID, D, T, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
     end
 end
 
