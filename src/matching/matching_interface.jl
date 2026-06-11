@@ -3,7 +3,7 @@
 # interface to the users. Perhaps in the future we will expose this!
 
 # For now, the only parts exposed are these functions:
-export matching_map, matching_map!, match_sequentially!, IDMatcher
+export matching_map, matching_map!, match_sequentially!, IDMatcher, DontMatch
 # all of which take as input the treshold and distance of the
 # `MatchBySSSetDistance` matcher.
 
@@ -16,6 +16,7 @@ Currently available matchers:
 - [`MatchBySSSetDistance`](@ref)
 - [`MatchByBasinEnclosure`](@ref)
 - [`MatchByBasinOverlap`](@ref)
+- [`DontMatch`](@ref)
 
 Matchers implement an extendable interface based on the function [`matching_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref),
@@ -23,6 +24,14 @@ which can be called after any call to a global continuation to match attractors
 differently, if the matching used originally during the continuation was not the best.
 """
 abstract type IDMatcher end
+
+"""
+    DontMatch <: IDMatcher
+    DontMatch()
+
+Do no matching, i.e. return an empty dictionary when called in [`matching_map`](@ref).
+"""
+struct DontMatch <: IDMatcher end
 
 """
     matching_map(
@@ -60,10 +69,10 @@ while other matchers like [`MatchByBasinEnclosure`](@ref) do, and those require
 expliticly giving values to `ds, p, pprev` as their default values
 is just `nothing`.
 """
-function matching_map(a₊, a₋, matcher::IDMatcher; kw...)
-    # For developers: a private keyword `next_id` is also given to `matching_map`
+function matching_map(a₊::AbstractDict, a₋::AbstractDict, matcher::DontMatch; kw...)
+    # For developers: a private keyword `next_id` can be given to `matching_map`
     # that is utilized in the `match_sequentially!` function.
-    throw(ArgumentError("Not implemented for $(typeof(matcher))"))
+    return Dict{keytype(a₊), keytype(a₋)}()
 end
 
 """
