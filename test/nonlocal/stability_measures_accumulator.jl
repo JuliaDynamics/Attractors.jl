@@ -216,10 +216,10 @@ end
         )
 
         measures_cont_local_expected = Dict(
-            "characteristic_return_time" => [Dict(1 => Inf), Dict(1 => 2.0)],
-            "reactivity" => [Dict(1 => Inf), Dict(1 => -0.5)],
-            "maximal_amplification" => [Dict(1 => Inf), Dict(1 => 1.0)],
-            "maximal_amplification_time" => [Dict(1 => Inf), Dict(1 => 0.0)]
+            "characteristic_return_time" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => 2.0)],
+            "reactivity" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => -0.5)],
+            "maximal_amplification" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => 1.0)],
+            "maximal_amplification_time" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => 0.0)]
         )
 
         for (key, value) in measures_cont_local_expected
@@ -404,7 +404,7 @@ end
     merged_id = first(k for k in keys(results_agg["basin_fraction"]) if k != -1)
     # All initial conditions belong to the merged attractor, so basin fraction == 1
     @test results_agg["basin_fraction"][merged_id] ≈ 1.0
-    @test length(results_agg["basin_fraction"]) == 2 # merged attractor and -1
+    @test length(results_agg["basin_fraction"]) == 1 # thre is no -1 for this system
     # Only one group means no critical shock
     @test results_agg["minimal_critical_shock_magnitude"][merged_id] == Inf
     # Linear measures are NaN for the merged (non-fixed-point) attractor
