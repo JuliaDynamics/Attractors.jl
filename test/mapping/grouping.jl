@@ -9,6 +9,52 @@ DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
     @test labels == fill(1, 100)
 end
 
+@testset "nearest feature" begin
+    templates = Dict(
+        10 => SVector(0.0, 0.0),
+        20 => SVector(5.0, 5.0),
+        30 => SVector(10.0, -2.0),
+    )
+    features = [
+        SVector(0.1, -0.2),
+        SVector(4.7, 5.2),
+        SVector(9.5, -2.2),
+    ]
+
+    @testset "dictionary templates + group_features" begin
+        cfg = GroupViaNearestFeature(templates)
+        labels = group_features(features, cfg)
+        @test labels == [10, 20, 30]
+    end
+
+    @testset "kdtree and brute-force agree" begin
+        cfg_tree = GroupViaNearestFeature(templates; use_kdtree = true)
+        cfg_brute = GroupViaNearestFeature(templates; use_kdtree = false)
+        @test group_features(features, cfg_tree) == group_features(features, cfg_brute)
+    end
+
+    @testset "max_distance assigns -1 when too far" begin
+        cfg = GroupViaNearestFeature(templates; max_distance = 0.6)
+        labels = group_features([
+            SVector(0.2, 0.2),
+            SVector(40.0, 40.0),
+        ], cfg)
+        @test labels == [10, -1]
+    end
+
+    @testset "vector templates use positional labels" begin
+        template_vec = [SVector(1.0, 1.0), SVector(-3.0, 2.0)]
+        cfg = GroupViaNearestFeature(template_vec; use_kdtree = true)
+        labels = group_features([
+            SVector(1.1, 1.1),
+            SVector(-2.9, 2.1),
+        ], cfg)
+        @test labels == [1, 2]
+    end
+
+end
+
+
 if DO_EXTENSIVE_TESTS
     # The functionality tested here has been resolved and is only added as a test
     # for future security. It has no need to be tested in every commit.
