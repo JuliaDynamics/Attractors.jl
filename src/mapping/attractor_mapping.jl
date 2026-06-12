@@ -217,7 +217,13 @@ function extract_attractors(mapper::AttractorMapper)
     attractors = _extract_attractors(mapper)
     ds = DynamicalSystemsBase.referenced_dynamical_system(mapper)
     # name attractor variables if possible
-    isnothing(DynamicalSystemsBase.referenced_sciml_model(ds)) && return attractors
+    # add prior compat entry to fix some incompat version bugs
+    if isdefined(DynamicalSystemsBase, :referenced_sciml_model)
+        check = isnothing(DynamicalSystemsBase.referenced_sciml_model(ds))
+    else
+        check = isnothing(DynamicalSystemsBase.referrenced_sciml_model(ds))
+    end
+    check && return attractors
     names = named_variables(ds)
     for (k, A) in attractors
         attractors[k] = StateSpaceSet(A; names)
