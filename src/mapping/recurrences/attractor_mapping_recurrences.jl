@@ -13,16 +13,16 @@ exposition to the algorithm than the paper.
 so that a finite state machine can operate on top of it. Possibilities are:
 
 1. A tuple of sorted `AbstractRange`s for a regular grid.
-  Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`
-  for a two-dimensional system.
+   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`
+   for a two-dimensional system.
 2. A tuple of sorted `AbstractVector`s for an irregular grid, for example
-  `grid = (xg, yg)` with `xg = range(0, 10.0^(1/2); length = 200).^2,
-  yg = range(-5, 5; length = 100)`.
+   `grid = (xg, yg)` with `xg = range(0, 10.0^(1/2); length = 200).^2,
+   yg = range(-5, 5; length = 100)`.
 3. An instance of the special grid type
-  [`SubdivisionBasedGrid`](@ref), which can be created either manually or by using
-  [`subdivision_based_grid`](@ref).
-  This automatically analyzes and adapts grid discretization
-  levels in accordance with state space flow speed in different regions.
+   [`SubdivisionBasedGrid`](@ref), which can be created either manually or by using
+   [`subdivision_based_grid`](@ref).
+   This automatically analyzes and adapts grid discretization
+   levels in accordance with state space flow speed in different regions.
 
 The grid has to be the same dimensionality as
 the state space, use a [`ProjectedDynamicalSystem`](@ref) if you
