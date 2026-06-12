@@ -215,9 +215,9 @@ For developing a new mapper: extend the internal function `_extract_attractors`.
 """
 function extract_attractors(mapper::AttractorMapper)
     attractors = _extract_attractors(mapper)
-    ds = referenced_dynamical_system(mapper)
+    ds = DynamicalSystemsBase.referenced_dynamical_system(mapper)
     # name attractor variables if possible
-    isnothing(referenced_sciml_model(ds)) && return attractors
+    isnothing(DynamicalSystemsBase.referenced_sciml_model(ds)) && return attractors
     names = named_variables(ds)
     for (k, A) in attractors
         attractors[k] = StateSpaceSet(A; names)
