@@ -166,7 +166,7 @@ the system's symmetry.
 ## Intermingledness and basin entropy
 
 Continuing from the above example of the magnetic pendulum, we can use it as a demonstration of the
-concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026](@cite)
+concept of [`intermingledness`](@ref) that was recently introduced in [Datseris2026Intermingled](@cite)
 and compare it with the established notion of [`basin_entropy`](@ref).
 
 To do this well, we will generate two more basins of attraction for the magnetic pendulum
@@ -209,7 +209,7 @@ As you can see, intermingledness is _not_ a measure of fractality. Even perfectl
 It really is about how close points from one basin are to another, on average.
 Furthermore, it is really difficult for intermingledness to be 0 for well covered basins,
 unlike basin entropy that covers the range of 0-1 more easily.
-In [Datseris2026](@cite) intermingledness is introduced primarily for sparse data,
+In [Datseris2026Intermingled](@cite) intermingledness is introduced primarily for sparse data,
 and for focusing on specific dimensions.
 Moreover, intermingledness is defined _per_ basin, while basin entropy is
 a quantity characterizing the whole basin structure.
@@ -1082,7 +1082,7 @@ scatter!(ax, v[:,1], v[:,3]; markersize = 3)
 fig
 ```
 
-## Matching limit cycles and fixed points in a system with heterogeneous state space
+## Matching limit cycles and fixed points in a system with named heterogeneous state space
 
 This example discusses the situation of a dynamical system that during a global continuation
 it transitions from a fixed point `A` to a limit cycle `B` and then to another fixed point `C` that is far away (in statespace) from `A` but very close to `B`.
@@ -1091,25 +1091,25 @@ match the fixed points with the limit cycle during the continuation.
 Furthermore, this particular dynamical system has a heterogeneous state space:
 the different dynamic variables have wildly different units, and there is no sensible transformation
 that would bring all variables to the same units.
+Lastly, this example is based on a dynamical system that was generated with
+ModelingToolkit.jl, and hence its dynamic variables and parameters are all named.
 
-We will showcase how one can achieve match attractors in this system simply by defining a
-special distance function that is given to [`MatchBySSSetDistance`](@ref). This is:
+The system we will utilize in this example is a five-dimensional model
+for cloud transitions developed in [Datseris2026IntermingledClouds](@cite).
+Its variables are named `s_b, q_b, z_b, C, SST`.
+We will showcase how one can match attractors in this system simply by defining a
+special distance function that is given to [`MatchBySSSetDistance`](@ref).
+This is:
 
-```@example MAIN
+```julia
 function centroid_and_length(A, B)
-    # first check we are comparing a fixed point and limit cycle. We do this by
-    # checking if the lengths of attractors A and B are different and if one
-    # the two has length 1 (i.e., it is a fixed point)
     if length(A) != length(B) && any(isequal(1), length.((A, B)))
         return Inf
     end
-    # otherwise both sets are similar in nature (both limit cycle or fixed points)
-    # in which case we use a weighted centroid distance
-    scales = (300.0, 1.0, 1200.0, 300.0, 10.0)
-    d = maximum(i -> abs( ( mean(A[:, i]) - mean(B[:, i]) )/scales[i] ), 1:5)
+    weights = Dict(:s_b => 300.0, :C => 1.0, :z_b => 1000.0, :SST => 300.0, :q_b => 10.0)
+    d = maximum(i -> abs((mean(A[:, i]) - mean(B[:, i]))/weights[i]), keys(weights))
     return d
 end
-
 matcher = MatchBySSSetDistance(; distance = centroid_and_length, threshold = 0.2)
 ```
 
@@ -1127,4 +1127,66 @@ This special `matcher` achieves the following:
   centroid difference of less than 20% of the typical size for each dimension,
   the attractors are matched!
 
-This was the matching procedure used in the cloud critical transition model of [Datseris2025](@cite).
+
+## Performing multiple global continuations to incorporate prescribed parameter changes and parameter uncertainty
+
+In this example we continue with the same model used in the previous example,
+the cloud model of [Datseris2026IntermingledClouds](@cite).
+In that model there are some key parameters that must be studied, all of
+which affect transitions between different cloud states.
+They are named as `D, U, δ_Δ₊T, RH₊, δ_FTR`.
+Crucially, each of these parameters have some uncertainty. In the context of the
+model this uncertainty reflects environmental variability.
+In addition, some of these parameters change with a prescribed trend in time,
+reflecting climate change.
+
+We want to perform global continuation that incorporates both the prescribed trends,
+and uncertainty. We will do this by performing multiple continuations
+that start with randomly sampled parameters, and then continue along a curve
+in parameter space reflecting the chosen trends.
+We first make the following helper function that will be generating parameter curves
+(and remember, all parameters are named due to using ModelingToolkit.jl):
+
+```@example MAIN
+using Distributions: Uniform
+
+function sample_pcurve(time = 0:14)
+    # inputs
+    uncertainty = Dict(
+        :D => Uniform(1e-6, 5e-6),
+        :U => Uniform(5.0, 9.0),
+        :δ_Δ₊T => Uniform(1, 10),
+        :RH₊ => Uniform(0.1, 0.4),
+        :δ_FTR => Uniform(0, 10),
+        :CO2 => Uniform(400, 400), # no uncertainty
+    )
+    rates = Dict(:CO2 => 100, :D => -0.05e-6, :U => -0.1)
+
+    # generate the curve: starting parameters
+    starts = Dict(p => rand(dist) for (p, dist) in uncertainty)
+    # generate the curve: prescribed trends
+    pcurve = [Dict{Symbol, Float64}() for t in time]
+    for (p, t) in zip(pcurve, time)
+        for k in keys(uncertainty)
+            rate = get(rates, k, 0.0) # parameters with no rate are constant
+            p[k] = starts[k] + rate*t
+        end
+    end
+end
+```
+
+let's see a curve that this function generates:
+
+```@example MAIN
+pcurve = sample_pcurve(0:2)
+```
+
+With global continuation you can run through all of these
+generated `pcurves` and analyze accordingly!
+
+Each continuation result will be matched
+across the `time` axis. But the individual continuations may not
+be matched with each other! That means that for example a "high cloud fraction attractor"
+will have a consistent ID through one continuation, but between
+different continuations it may not have the same ID!
+The easiest way to resolve this is to transform each continuation to a series using [`continuation_series`](@ref). Then, use a dedicated classification function that analyses a particular series (i.e., a single and specific attractor continuation) and assigns to it a particular, context-related label, instead of the random integer it obtains by default.

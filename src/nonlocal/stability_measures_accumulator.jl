@@ -17,7 +17,7 @@ although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make
 
 The accummulator records several measures of stability (or resilience) defined
 in [Morr2026](@cite), and a few more related and derived shortly after,
-including the intermingledness of basins of attraction [Datseris2026](@cite), see list below.
+including the intermingledness of basins of attraction [Datseris2026Intermingled](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
