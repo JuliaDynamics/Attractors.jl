@@ -1,5 +1,5 @@
 using LinearAlgebra
-using Optim
+import Optim
 using Distributions
 
 # helper type for not computing any weights for uniform distribution
