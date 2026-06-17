@@ -44,7 +44,7 @@ function intermingledness(
         us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Integer},
         distance = Euclidean(); summarizer = mean
     )
-    return intermingledness(us, labels, [distance]; summarizer)[1]
+    return only(intermingledness(us, labels, [distance]; summarizer))
 end
 function intermingledness(
         us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Integer},
