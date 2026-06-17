@@ -114,7 +114,7 @@ opts_br = BK.ContinuationPar(
 # orbit finding algorithm. Here we will use an optimized Jacobian
 # for a collocation problem (advised via BifurcationKit.jl)
 
-periodic_orbit_algo = BK.PeriodicOrbitOCollProblem(40, 4; jacobian = BK.DenseAnalyticalInplace())
+periodic_orbit_algo = BK.Collocation(40, 4; jacobian = BK.DenseAnalyticalInplace())
 
 # and creating the problem type giving the period guess 19.0
 
