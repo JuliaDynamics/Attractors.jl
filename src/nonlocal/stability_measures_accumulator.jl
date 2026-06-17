@@ -458,9 +458,9 @@ function finalize_accumulator(
                 step_length = T[2] - T[1]
                 t0 = T[argmin(f.(T))]
                 if t0 == 10 * characteristic_return_time[id] # maximum is at the end
-                    res = Optim.optimize(f, t0, t0 + 100 * characteristic_return_time[id], Brent())
+                    res = Optim.optimize(f, t0, t0 + 100 * characteristic_return_time[id], Optim.Brent())
                 else
-                    res = Optim.optimize(f, max(0.0, t0 - step_length), t0 + step_length, Brent())
+                    res = Optim.optimize(f, max(0.0, t0 - step_length), t0 + step_length, Optim.Brent())
                 end
                 maximal_amplification[id] = (-1) * Optim.minimum(res)
                 maximal_amplification_time[id] = Optim.minimizer(res)[1]
