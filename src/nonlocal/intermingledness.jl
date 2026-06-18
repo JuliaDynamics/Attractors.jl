@@ -12,13 +12,8 @@ how to estimate distances between points.
 A vector of distance functions can also be given as `distance`, in which case a vector of
 intermingledness is returned corresponding to each distance function.
 In [Datseris2026](@cite) intermingledness was estimated individually per dimension
-of `points`, which you can achieve by e.g.,
-```julia
-using Distances: WeightedEuclidean
-D = dimension(points)
-weights = [(1:D .== i) for i in 1:D]
-distances = WeightedEuclidean.(weights)
-```
+of `points`. You can achieve this by simply passing in `points[:, x]` with `x`
+the dimension's index you care about.
 
 The `summarizer = mean` keyword argument dictates how
 to summarize the intermingedness statistic across other groups.
@@ -76,4 +71,78 @@ function _intermingledness(ukeys, groups, distance, summarizer)
     return Dict(imetric) # make sure this is a dictionary so that labels are respected
 end
 
+# Pairwise average distance between all points in xs and ys
 mean_distance(xs, ys, distance) = mean(distance(x, y) for x in xs for y in ys)
+
+function boundary_intermingledness(
+        us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Integer},
+        distance = Euclidean(); summarizer = mean
+    )
+
+    # Unique group labels and the point indices belonging to each label.
+    ulabels = unique(labels)
+    L = length(ulabels)
+    group_indices = Dict(l => findall(isequal(l), labels) for l in ulabels)
+    bsets = boundary_sets(us, ulabels, group_indices, distance)
+    group_sizes = Dict(l => length(v) for (l, v) in group_indices)
+
+    # diagonals by definition zero
+    imatrix = zeros(L, L)
+    for i in 1:L-1
+        la = ulabels[i]
+        for j in i+1:L
+            lb = ulabels[j]
+            v = length(bsets[(la,lb)])/(group_sizes[la] + group_sizes[lb])
+            imatrix[i, j] = v
+            imatrix[j, i] = v
+        end
+    end
+    # summarize per label
+    return Dict(ulabels[i] => summarizer(imatrix[i, setdiff(1:L, i)]) for i in 1:L)
+end
+
+import NearestNeighbors
+function boundary_sets(points, ulabels, group_indices, distance)
+
+    L = length(ulabels)
+    label_type = eltype(ulabels)
+
+    # Precompute per-label indices, point subsets and KD-trees once.
+    idxs = [group_indices[l] for l in ulabels]
+    groups = [points[idx] for idx in idxs]
+    trees = [NearestNeighbors.KDTree(X, distance) for X in groups]
+
+    # For each label pair (la, lb), store a single (symmetric) boundary index set.
+    boundary_sets = Dict{Tuple{label_type, label_type}, Vector{Int}}()
+    sizehint!(boundary_sets, L * (L - 1) ÷ 2)
+
+    # Iterate over all unique unordered label pairs.
+    for i in 1:L-1
+        la = ulabels[i]
+        idxA = idxs[i]
+        XA = groups[i]
+        treeA = trees[i]
+
+        for j in i+1:L
+            lb = ulabels[j]
+            idxB = idxs[j]
+            XB = groups[j]
+            treeB = trees[j]
+
+            # A -> B -> A:
+            # 1) for each A-point, find its nearest neighbor in B
+            # 2) keep unique B neighbors
+            # 3) map those B neighbors back to their nearest in A
+            # Under symmetry, this defines the single boundary set for pair (la, lb).
+            b_nns, _ = NearestNeighbors.nn(treeB, XA)
+            b_unique = unique!(b_nns)
+            a_back, _ = NearestNeighbors.nn(treeA, @view XB[b_unique])
+            boundaryA = unique!(idxA[a_back])
+
+            # Include both sides participating in the same boundary relation.
+            boundary_sets[(la, lb)] = unique!(vcat(boundaryA, idxB[b_unique]))
+        end
+    end
+
+    return boundary_sets
+end
