@@ -45,6 +45,13 @@ to vectors of dictionaries. Each vector of dictionaries is similar to `fractions
 of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
 to the corresponding nonlocal stability measures.
 
+`global_continuation` also accepts the keyword arguments `featurizer` and `group_config`
+(both `nothing` by default). When both are provided, the same attractor aggregation as in
+[`finalize_accumulator`](@ref) is applied at each parameter step before storing results,
+and [`MatchByFeatureDistance`](@ref) is used to match grouped attractor labels across steps
+in feature space. Seeding of initial conditions for the next parameter step is always
+performed from the raw (non-aggregated) attractors, regardless of grouping.
+
 Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
 on the basis of an `AttractorsViaProximity` mapper from already found attractors.
 This is useful to do for measures related to the convergence time, which is defined

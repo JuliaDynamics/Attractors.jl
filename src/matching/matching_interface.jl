@@ -14,6 +14,7 @@ Supertype of all "matchers" that match can IDs labelling attractors.
 Currently available matchers:
 
 - [`MatchBySSSetDistance`](@ref)
+- [`MatchByFeatureDistance`](@ref)
 - [`MatchByBasinEnclosure`](@ref)
 - [`MatchByBasinOverlap`](@ref)
 - [`DontMatch`](@ref)
@@ -223,3 +224,4 @@ _use_vanished(matcher) = false
 include("basin_overlap.jl")
 include("sssdistance.jl")
 include("basin_enclosure.jl")
+include("feature_distance.jl")

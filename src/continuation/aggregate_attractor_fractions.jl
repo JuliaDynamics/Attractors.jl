@@ -63,85 +63,71 @@ function aggregate_attractor_fractions(
         fractions_cont::Vector, attractors_cont::Vector, featurizer, group_config,
         info_extraction = mean_across_features # function from grouping continuation
     )
+    P = length(fractions_cont)
 
-    original_labels, unlabeled_fractions, parameter_idxs, features =
-        refactor_into_sequential_features(fractions_cont, attractors_cont, featurizer)
+    # Aggregate at each parameter step independently using featurizer + group_config.
+    agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
+    agg_attractors_cont = Dict[]
+    for i in 1:P
+        agg_fractions_cont[i], agg_atts_i = _aggregate_fractions_at_step(
+            fractions_cont[i], attractors_cont[i], featurizer, group_config
+        )
+        push!(agg_attractors_cont, agg_atts_i)
+    end
 
-    grouped_labels = group_features(features, group_config)
+    # Match group labels across parameter steps using feature-space distances.
+    if P > 1
+        rmaps = match_sequentially!(agg_attractors_cont, MatchByFeatureDistance(featurizer))
+        match_sequentially!(agg_fractions_cont, rmaps)
+    end
 
-    aggregated_fractions = reconstruct_joint_fractions(
-        fractions_cont, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
+    remove_minus_1_if_possible!(agg_fractions_cont)
+
+    # Compute representative descriptors for each group across all steps.
+    ids = setdiff(unique_keys(agg_attractors_cont), [-1])
+    aggregated_info = Dict(
+        id => info_extraction([
+            featurizer(agg_attractors_cont[i][id])
+            for i in 1:P if haskey(agg_attractors_cont[i], id)
+        ])
+        for id in ids
     )
-    remove_minus_1_if_possible!(aggregated_fractions)
-    aggregated_info = info_of_grouped_features(features, grouped_labels, info_extraction)
-    return aggregated_fractions, aggregated_info
+
+    return agg_fractions_cont, aggregated_info
 end
+
 # convenience wrapper for only single input
 function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args...)
     aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
         [fractions], [attractors], args...
     )
-    return aggregated_fractions[1], aggregated_info[1]
+    return aggregated_fractions[1], aggregated_info
 end
 
-
-function refactor_into_sequential_features(fractions_cont, attractors_cont, featurizer)
-    # Set up containers
-    P = length(fractions_cont)
-    example_feature = featurizer(first(values(attractors_cont[1])))
-    features = typeof(example_feature)[]
-    original_labels = keytype(first(fractions_cont))[]
-    parameter_idxs = Int[]
-    unlabeled_fractions = zeros(P)
-    # Transform original data into sequential vectors
-    for i in eachindex(fractions_cont)
-        fs = fractions_cont[i]
-        ai = attractors_cont[i]
-        A = length(ai)
-        append!(parameter_idxs, (i for _ in 1:A))
-        unlabeled_fractions[i] = get(fs, -1, 0.0)
-        for k in keys(ai)
-            push!(original_labels, k)
-            push!(features, featurizer(ai[k]))
+# Aggregate fractions and merge attractors at a single parameter step.
+function _aggregate_fractions_at_step(fractions, attractors, featurizer, group_config)
+    ids = filter(!isequal(-1), collect(keys(attractors)))
+    if isempty(ids)
+        return copy(fractions), copy(attractors)
+    end
+    features = [featurizer(attractors[id]) for id in ids]
+    grouped_labels = group_features(features, group_config)
+    agg_attractors = Dict{keytype(attractors), valtype(attractors)}()
+    agg_fractions = Dict{Int, Float64}()
+    for (old_id, new_id) in zip(ids, grouped_labels)
+        if haskey(agg_attractors, new_id)
+            agg_attractors[new_id] = StateSpaceSet(
+                vcat(collect(agg_attractors[new_id]), collect(attractors[old_id]))
+            )
+        else
+            agg_attractors[new_id] = attractors[old_id]
         end
+        agg_fractions[new_id] = get(agg_fractions, new_id, 0.0) + get(fractions, old_id, 0.0)
     end
-    # `parameter_idxs` is the indices of the parameter a given feature maps to.
-    # necessary because for some parameter values we may have more or less attractors
-    # and hence more or less features
-    return original_labels, unlabeled_fractions, parameter_idxs, features
-end
-
-function reconstruct_joint_fractions(
-        fractions_cont, original_labels, grouped_labels, parameter_idxs, unlabeled_fractions
-    )
-    aggregated_fractions = [Dict{Int, Float64}() for _ in 1:length(fractions_cont)]
-    current_p_idx = 0
-    for j in eachindex(grouped_labels)
-        new_label = grouped_labels[j]
-        p_idx = parameter_idxs[j]
-        if p_idx > current_p_idx
-            current_p_idx += 1
-            aggregated_fractions[current_p_idx][-1] = unlabeled_fractions[current_p_idx]
-        end
-        d = aggregated_fractions[current_p_idx]
-        orig_frac = get(fractions_cont[current_p_idx], original_labels[j], 0)
-        d[new_label] = get(d, new_label, 0) + orig_frac
+    if haskey(fractions, -1)
+        agg_fractions[-1] = fractions[-1]
     end
-    return aggregated_fractions
-end
-
-function info_of_grouped_features(features, grouped_labels, info_extraction)
-    ids = sort!(unique(grouped_labels))
-    # remove -1 if it's there
-    if ids[1] == -1
-        popfirst!(ids)
-    end
-    # extract the infos
-    return Dict(
-        id => info_extraction(
-                view(features, findall(isequal(id), grouped_labels))
-            ) for id in ids
-    )
+    return agg_fractions, agg_attractors
 end
 
 function remove_minus_1_if_possible!(afs)

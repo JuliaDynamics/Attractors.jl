@@ -5,6 +5,7 @@ export stability_measures_along_continuation
 function global_continuation(
         ascm::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
+        featurizer = nothing, group_config = nothing,
     )
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
@@ -34,19 +35,25 @@ function global_continuation(
         # difference two: we don't care about the return of basins_fractions
         # as initial condition mapping is accumulated anyways
         basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
-        # difference three:
-        measures, finalized_attractors = finalize_accumulator(mapper)
-        prev_attractors = deepcopy(finalized_attractors)
-        push!(attractors_cont, prev_attractors)
+        # difference three: finalize with optional aggregation for output, but always
+        # seed from raw attractors so that seeding is unaffected by grouping.
+        measures, agg_attractors = finalize_accumulator(mapper; featurizer, group_config)
+        prev_attractors = deepcopy(extract_attractors(mapper))
+        push!(attractors_cont, agg_attractors)
         push!(measures_cont, measures)
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
 
-    rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
-    )
-    # and difference four, a bit more involved matching for measures:
+    # difference four: when grouping is active match in feature space; otherwise
+    # fall back to the user-supplied state-space matcher.
+    if !isnothing(featurizer) && !isnothing(group_config)
+        rmaps = match_sequentially!(attractors_cont, MatchByFeatureDistance(featurizer))
+    else
+        rmaps = match_sequentially!(
+            attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+        )
+    end
     transposed = accumulator_continuation_output(measures_cont, rmaps)
     return transposed, attractors_cont
 end
@@ -109,6 +116,10 @@ There are two reasons to use this method:
   When both are provided, attractors with similar features are merged before computing
   stability measures at each parameter step. See [`aggregate_attractor_fractions`](@ref)
   for the same interface.
+  Additionally, when both are given, [`MatchByFeatureDistance`](@ref) is automatically
+  applied after the loop to ensure that the grouped attractor labels are consistent
+  across the parameter curve: groups at consecutive parameter steps are matched by
+  minimising the Euclidean distance between their `featurizer` outputs.
 """
 function stability_measures_along_continuation(
         ds::DynamicalSystem,
@@ -130,6 +141,7 @@ function stability_measures_along_continuation(
     )
     N = samples_per_parameter
     measures_cont = []
+    aggregated_attractors_cont = Dict[]
     measure_names = nothing
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -137,6 +149,7 @@ function stability_measures_along_continuation(
 
         if isempty(attractors)
             push!(measures_cont, Dict{String, Dict{Int64, Float64}}())
+            push!(aggregated_attractors_cont, Dict{Int, StateSpaceSet}())
             ProgressMeter.next!(progress)
             continue
         end
@@ -182,12 +195,25 @@ function stability_measures_along_continuation(
             pics = ics
         end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        measures, _ = finalize_accumulator(accumulator; featurizer, group_config)
+        measures, agg_attractors = finalize_accumulator(accumulator; featurizer, group_config)
         if measure_names === nothing
             measure_names = collect(keys(measures))
         end
         push!(measures_cont, measures)
+        push!(aggregated_attractors_cont, agg_attractors)
         ProgressMeter.next!(progress)
+    end
+
+    # When featurizer-based grouping is active, match grouped attractor labels across
+    # parameter steps in feature space to ensure a consistent labelling.
+    if !isnothing(featurizer) && !isnothing(group_config) && length(aggregated_attractors_cont) > 1
+        feature_matcher = MatchByFeatureDistance(featurizer)
+        rmaps = match_sequentially!(aggregated_attractors_cont, feature_matcher)
+        for (i, rmap) in enumerate(rmaps)
+            for dict in values(measures_cont[i + 1])
+                swap_dict_keys!(dict, rmap)
+            end
+        end
     end
 
     # change the measures format to the expected output
