@@ -130,6 +130,37 @@ function _aggregate_fractions_at_step(fractions, attractors, featurizer, group_c
     return agg_fractions, centroids
 end
 
+# Like `_aggregate_fractions_at_step` but also builds merged attractors per group.
+# Returns (agg_fractions, agg_attractors, centroids).
+function _aggregate_step_full(fractions, attractors, featurizer, group_config)
+    ids = filter(!isequal(-1), collect(keys(attractors)))
+    if isempty(ids)
+        return copy(fractions), empty(attractors), Dict{Int, Any}()
+    end
+    features = [featurizer(attractors[id]) for id in ids]
+    grouped_labels = group_features(features, group_config)
+    agg_fractions = Dict{Int, Float64}()
+    agg_attractors = Dict{Int, valtype(attractors)}()
+    feature_sums = Dict{Int, typeof(features[1])}()
+    counts = Dict{Int, Int}()
+    for (old_id, new_id, f) in zip(ids, grouped_labels, features)
+        agg_fractions[new_id] = get(agg_fractions, new_id, 0.0) + get(fractions, old_id, 0.0)
+        if haskey(agg_attractors, new_id)
+            agg_attractors[new_id] = StateSpaceSet(
+                vcat(collect(agg_attractors[new_id]), collect(attractors[old_id])))
+        else
+            agg_attractors[new_id] = attractors[old_id]
+        end
+        feature_sums[new_id] = get(feature_sums, new_id, zero(f)) + f
+        counts[new_id] = get(counts, new_id, 0) + 1
+    end
+    if haskey(fractions, -1)
+        agg_fractions[-1] = fractions[-1]
+    end
+    centroids = Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
+    return agg_fractions, agg_attractors, centroids
+end
+
 function remove_minus_1_if_possible!(afs)
     isthere = false
     for fs in afs
