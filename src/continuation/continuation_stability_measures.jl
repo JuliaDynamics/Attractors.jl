@@ -18,6 +18,7 @@ function global_continuation(
     attractors_cont = Dict[]
     # difference one: this isn't fractions
     measures_cont = []
+    centroids_cont = Dict[]
     for (i, p) in enumerate(pcurve)
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
@@ -41,20 +42,27 @@ function global_continuation(
         prev_attractors = deepcopy(extract_attractors(mapper))
         push!(attractors_cont, agg_attractors)
         push!(measures_cont, measures)
+        # Centroids from raw attractors: centroid = mean of constituent feature vectors,
+        # not the feature of the merged StateSpaceSet.
+        if !isnothing(featurizer) && !isnothing(group_config)
+            push!(centroids_cont, _feature_centroids(prev_attractors, featurizer, group_config))
+        end
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
 
-    # difference four: when grouping is active match in feature space; otherwise
-    # fall back to the user-supplied state-space matcher.
+    # difference four: when grouping is active match in feature space by centroid distance;
+    # otherwise fall back to the user-supplied state-space matcher.
     if !isnothing(featurizer) && !isnothing(group_config)
-        rmaps = match_sequentially!(attractors_cont, MatchByFeatureDistance(featurizer))
+        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
+        match_sequentially!(attractors_cont, rmaps)
+        transposed = accumulator_continuation_output(measures_cont, rmaps)
     else
         rmaps = match_sequentially!(
             attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
         )
+        transposed = accumulator_continuation_output(measures_cont, rmaps)
     end
-    transposed = accumulator_continuation_output(measures_cont, rmaps)
     return transposed, attractors_cont
 end
 
@@ -141,7 +149,7 @@ function stability_measures_along_continuation(
     )
     N = samples_per_parameter
     measures_cont = []
-    aggregated_attractors_cont = Dict[]
+    centroids_cont = Dict[]
     measure_names = nothing
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -149,7 +157,7 @@ function stability_measures_along_continuation(
 
         if isempty(attractors)
             push!(measures_cont, Dict{String, Dict{Int64, Float64}}())
-            push!(aggregated_attractors_cont, Dict{Int, StateSpaceSet}())
+            push!(centroids_cont, Dict{Int, Any}())
             ProgressMeter.next!(progress)
             continue
         end
@@ -195,20 +203,21 @@ function stability_measures_along_continuation(
             pics = ics
         end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        measures, agg_attractors = finalize_accumulator(accumulator; featurizer, group_config)
+        measures, _ = finalize_accumulator(accumulator; featurizer, group_config)
         if measure_names === nothing
             measure_names = collect(keys(measures))
         end
         push!(measures_cont, measures)
-        push!(aggregated_attractors_cont, agg_attractors)
+        if !isnothing(featurizer) && !isnothing(group_config)
+            push!(centroids_cont, _feature_centroids(attractors, featurizer, group_config))
+        end
         ProgressMeter.next!(progress)
     end
 
     # When featurizer-based grouping is active, match grouped attractor labels across
-    # parameter steps in feature space to ensure a consistent labelling.
-    if !isnothing(featurizer) && !isnothing(group_config) && length(aggregated_attractors_cont) > 1
-        feature_matcher = MatchByFeatureDistance(featurizer)
-        rmaps = match_sequentially!(aggregated_attractors_cont, feature_matcher)
+    # parameter steps by minimising centroid distance in feature space.
+    if !isnothing(featurizer) && !isnothing(group_config) && length(centroids_cont) > 1
+        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
         for (i, rmap) in enumerate(rmaps)
             for dict in values(measures_cont[i + 1])
                 swap_dict_keys!(dict, rmap)

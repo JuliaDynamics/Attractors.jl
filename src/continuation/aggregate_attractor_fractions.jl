@@ -66,29 +66,30 @@ function aggregate_attractor_fractions(
     P = length(fractions_cont)
 
     # Aggregate at each parameter step independently using featurizer + group_config.
+    # centroids_cont[i] maps group ID → centroid of the constituent attractors' features.
     agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
-    agg_attractors_cont = Dict[]
+    centroids_cont = Dict[]
     for i in 1:P
-        agg_fractions_cont[i], agg_atts_i = _aggregate_fractions_at_step(
+        agg_fractions_cont[i], centroids_i = _aggregate_fractions_at_step(
             fractions_cont[i], attractors_cont[i], featurizer, group_config
         )
-        push!(agg_attractors_cont, agg_atts_i)
+        push!(centroids_cont, centroids_i)
     end
 
-    # Match group labels across parameter steps using feature-space distances.
+    # Match group labels across steps by minimising centroid distance in feature space.
     if P > 1
-        rmaps = match_sequentially!(agg_attractors_cont, MatchByFeatureDistance(featurizer))
+        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
         match_sequentially!(agg_fractions_cont, rmaps)
     end
 
     remove_minus_1_if_possible!(agg_fractions_cont)
 
-    # Compute representative descriptors for each group across all steps.
-    ids = setdiff(unique_keys(agg_attractors_cont), [-1])
+    # Compute representative descriptors as info_extraction over per-step centroids.
+    ids = setdiff(unique_keys(centroids_cont), [-1])
     aggregated_info = Dict(
         id => info_extraction([
-            featurizer(agg_attractors_cont[i][id])
-            for i in 1:P if haskey(agg_attractors_cont[i], id)
+            centroids_cont[i][id]
+            for i in 1:P if haskey(centroids_cont[i], id)
         ])
         for id in ids
     )
@@ -104,30 +105,29 @@ function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args..
     return aggregated_fractions[1], aggregated_info
 end
 
-# Aggregate fractions and merge attractors at a single parameter step.
+# Aggregate fractions at a single parameter step and compute per-group feature centroids.
+# Returns (agg_fractions, centroids) where centroids maps group ID → mean of constituent
+# attractors' feature vectors. Does NOT build merged StateSpaceSets.
 function _aggregate_fractions_at_step(fractions, attractors, featurizer, group_config)
     ids = filter(!isequal(-1), collect(keys(attractors)))
     if isempty(ids)
-        return copy(fractions), copy(attractors)
+        return copy(fractions), Dict{Int, Any}()
     end
     features = [featurizer(attractors[id]) for id in ids]
     grouped_labels = group_features(features, group_config)
-    agg_attractors = Dict{keytype(attractors), valtype(attractors)}()
     agg_fractions = Dict{Int, Float64}()
-    for (old_id, new_id) in zip(ids, grouped_labels)
-        if haskey(agg_attractors, new_id)
-            agg_attractors[new_id] = StateSpaceSet(
-                vcat(collect(agg_attractors[new_id]), collect(attractors[old_id]))
-            )
-        else
-            agg_attractors[new_id] = attractors[old_id]
-        end
+    feature_sums = Dict{Int, typeof(features[1])}()
+    counts = Dict{Int, Int}()
+    for (old_id, new_id, f) in zip(ids, grouped_labels, features)
         agg_fractions[new_id] = get(agg_fractions, new_id, 0.0) + get(fractions, old_id, 0.0)
+        feature_sums[new_id] = get(feature_sums, new_id, zero(f)) + f
+        counts[new_id] = get(counts, new_id, 0) + 1
     end
     if haskey(fractions, -1)
         agg_fractions[-1] = fractions[-1]
     end
-    return agg_fractions, agg_attractors
+    centroids = Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
+    return agg_fractions, centroids
 end
 
 function remove_minus_1_if_possible!(afs)

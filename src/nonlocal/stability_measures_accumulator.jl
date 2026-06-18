@@ -557,6 +557,23 @@ function _apply_aggregation(bs, attractors, featurizer, group_config)
     return bs_new, new_attractors
 end
 
+# Compute the centroid in feature space for each group produced by featurizer + group_config.
+# The centroid of a group is the mean of featurizer(A) over all constituent attractors A,
+# NOT the featurizer applied to the merged StateSpaceSet.
+function _feature_centroids(attractors, featurizer, group_config)
+    ids = filter(!isequal(-1), collect(keys(attractors)))
+    isempty(ids) && return Dict{Int, Any}()
+    features = [featurizer(attractors[id]) for id in ids]
+    grouped_labels = group_features(features, group_config)
+    feature_sums = Dict{Int, typeof(features[1])}()
+    counts = Dict{Int, Int}()
+    for (f, label) in zip(features, grouped_labels)
+        feature_sums[label] = get(feature_sums, label, zero(f)) + f
+        counts[label] = get(counts, label, 0) + 1
+    end
+    return Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
+end
+
 # Extension function to allow accumulator to work also with non-single-u0 mappers
 function basins_fractions_grouped(accumulator::StabilityMeasuresAccumulator, ics, progress::Progress, labels)
     # note that ics is always collected into vector, cascaded by `basins_fraction`.
