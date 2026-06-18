@@ -1,4 +1,4 @@
-export aggregate_attractor_fractions
+export aggregate_attractor_fractions, aggregate_continuation
 
 """
     aggregate_attractor_fractions(
@@ -87,6 +87,50 @@ function aggregate_attractor_fractions(
     )
 
     return agg_fractions_cont, aggregated_info
+end
+
+"""
+    aggregate_continuation(fractions_cont, attractors_cont, featurizer, group_config [, info_extraction])
+
+Like [`aggregate_attractor_fractions`](@ref) but also returns the merged attractors per group at
+each parameter step. Useful when you need the aggregated `StateSpaceSet`s alongside the fractions,
+e.g. for plotting or further analysis.
+
+Returns:
+1. `agg_fractions_cont`: same as the first return of [`aggregate_attractor_fractions`](@ref).
+2. `agg_attractors_cont`: vector of dictionaries mapping group IDs to merged `StateSpaceSet`s.
+3. `aggregated_info`: same as the second return of [`aggregate_attractor_fractions`](@ref).
+
+All three share consistent group IDs across the parameter curve.
+"""
+function aggregate_continuation(
+        fractions_cont::Vector, attractors_cont::Vector, featurizer, group_config,
+        info_extraction = mean_across_features
+    )
+    P = length(fractions_cont)
+    agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
+    agg_attractors_cont = Dict[]
+    centroids_cont = Dict[]
+    for i in 1:P
+        agg_fs, agg_attrs, centroids = _aggregate_step_full(
+            fractions_cont[i], attractors_cont[i], featurizer, group_config
+        )
+        agg_fractions_cont[i] = agg_fs
+        push!(agg_attractors_cont, agg_attrs)
+        push!(centroids_cont, centroids)
+    end
+    if P > 1
+        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
+        match_sequentially!(agg_fractions_cont, rmaps)
+        match_sequentially!(agg_attractors_cont, rmaps)
+    end
+    remove_minus_1_if_possible!(agg_fractions_cont)
+    ids = setdiff(unique_keys(centroids_cont), [-1])
+    aggregated_info = Dict(
+        id => info_extraction([centroids_cont[i][id] for i in 1:P if haskey(centroids_cont[i], id)])
+        for id in ids
+    )
+    return agg_fractions_cont, agg_attractors_cont, aggregated_info
 end
 
 # convenience wrapper for only single input
