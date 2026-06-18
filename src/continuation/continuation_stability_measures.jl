@@ -36,14 +36,11 @@ function global_continuation(
         # difference two: we don't care about the return of basins_fractions
         # as initial condition mapping is accumulated anyways
         basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
-        # difference three: finalize with optional aggregation for output, but always
-        # seed from raw attractors so that seeding is unaffected by grouping.
+        # difference three: finalize with optional aggregation for output
         measures, agg_attractors = finalize_accumulator(mapper; featurizer, group_config)
         prev_attractors = deepcopy(extract_attractors(mapper))
         push!(attractors_cont, agg_attractors)
         push!(measures_cont, measures)
-        # Centroids from raw attractors: centroid = mean of constituent feature vectors,
-        # not the feature of the merged StateSpaceSet.
         if !isnothing(featurizer) && !isnothing(group_config)
             push!(centroids_cont, _feature_centroids(prev_attractors, featurizer, group_config))
         end
@@ -51,8 +48,7 @@ function global_continuation(
         ProgressMeter.next!(progress; showvalues)
     end
 
-    # difference four: when grouping is active match in feature space by centroid distance;
-    # otherwise fall back to the user-supplied state-space matcher.
+    # difference four: match by feature centroid when grouping, else use user's matcher
     if !isnothing(featurizer) && !isnothing(group_config)
         rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
         match_sequentially!(attractors_cont, rmaps)
@@ -214,8 +210,6 @@ function stability_measures_along_continuation(
         ProgressMeter.next!(progress)
     end
 
-    # When featurizer-based grouping is active, match grouped attractor labels across
-    # parameter steps by minimising centroid distance in feature space.
     if !isnothing(featurizer) && !isnothing(group_config) && length(centroids_cont) > 1
         rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
         for (i, rmap) in enumerate(rmaps)

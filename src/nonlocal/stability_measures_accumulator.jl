@@ -536,8 +536,7 @@ function weighted_median(
     return float(vals[p[end]])
 end
 
-# Remap basins vector and merge attractors using featurizer + group_config,
-# following the same interface as `aggregate_attractor_fractions`.
+# Remap basins vector and merge attractors using featurizer + group_config.
 function _apply_aggregation(bs, attractors, featurizer, group_config)
     ids = collect(keys(attractors))
     features = [featurizer(attractors[id]) for id in ids]
@@ -557,9 +556,7 @@ function _apply_aggregation(bs, attractors, featurizer, group_config)
     return bs_new, new_attractors
 end
 
-# Compute the centroid in feature space for each group produced by featurizer + group_config.
-# The centroid of a group is the mean of featurizer(A) over all constituent attractors A,
-# NOT the featurizer applied to the merged StateSpaceSet.
+# Centroid of each group: mean of featurizer(A) over constituent attractors.
 function _feature_centroids(attractors, featurizer, group_config)
     ids = filter(!isequal(-1), collect(keys(attractors)))
     isempty(ids) && return Dict{Int, Any}()

@@ -168,8 +168,6 @@ function global_continuation(
         ProgressMeter.next!(progress; showvalues)
     end
     if !isnothing(featurizer) && !isnothing(group_config)
-        # Aggregate at each step: merge attractors by group, accumulate fractions,
-        # compute centroids (mean of constituent feature vectors).
         P = length(fractions_cont)
         agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
         agg_attractors_cont = Dict[]
@@ -182,7 +180,6 @@ function global_continuation(
             push!(agg_attractors_cont, agg_attrs)
             push!(centroids_cont, centroids)
         end
-        # Match group labels across steps by centroid distance in feature space.
         if P > 1
             rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
             match_sequentially!(agg_fractions_cont, rmaps)

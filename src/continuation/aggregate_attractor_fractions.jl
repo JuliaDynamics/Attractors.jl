@@ -64,9 +64,6 @@ function aggregate_attractor_fractions(
         info_extraction = mean_across_features # function from grouping continuation
     )
     P = length(fractions_cont)
-
-    # Aggregate at each parameter step independently using featurizer + group_config.
-    # centroids_cont[i] maps group ID → centroid of the constituent attractors' features.
     agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
     centroids_cont = Dict[]
     for i in 1:P
@@ -75,16 +72,11 @@ function aggregate_attractor_fractions(
         )
         push!(centroids_cont, centroids_i)
     end
-
-    # Match group labels across steps by minimising centroid distance in feature space.
     if P > 1
         rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
         match_sequentially!(agg_fractions_cont, rmaps)
     end
-
     remove_minus_1_if_possible!(agg_fractions_cont)
-
-    # Compute representative descriptors as info_extraction over per-step centroids.
     ids = setdiff(unique_keys(centroids_cont), [-1])
     aggregated_info = Dict(
         id => info_extraction([
@@ -105,9 +97,7 @@ function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args..
     return aggregated_fractions[1], aggregated_info
 end
 
-# Aggregate fractions at a single parameter step and compute per-group feature centroids.
-# Returns (agg_fractions, centroids) where centroids maps group ID → mean of constituent
-# attractors' feature vectors. Does NOT build merged StateSpaceSets.
+# Returns (agg_fractions, centroids) per step; centroids are means of constituent feature vectors.
 function _aggregate_fractions_at_step(fractions, attractors, featurizer, group_config)
     ids = filter(!isequal(-1), collect(keys(attractors)))
     if isempty(ids)
@@ -131,7 +121,6 @@ function _aggregate_fractions_at_step(fractions, attractors, featurizer, group_c
 end
 
 # Like `_aggregate_fractions_at_step` but also builds merged attractors per group.
-# Returns (agg_fractions, agg_attractors, centroids).
 function _aggregate_step_full(fractions, attractors, featurizer, group_config)
     ids = filter(!isequal(-1), collect(keys(attractors)))
     if isempty(ids)
