@@ -1,9 +1,10 @@
 export stability_measures_along_continuation
 
+# This function is practically identical with the original one in
+# `continuation_ascm_generic.jl`; only small differences exist
 function global_continuation(
         ascm::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
-        featurizer = nothing, group_config = nothing,
     )
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
@@ -14,9 +15,8 @@ function global_continuation(
     prev_attractors = empty(extract_attractors(mapper))
     additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
     attractors_cont = Dict[]
-    # a dict of stability measures (not basin fractions) is stored per parameter
+    # difference one: this isn't fractions
     measures_cont = []
-    centroids_cont = Dict[]
     for (i, p) in enumerate(pcurve)
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
@@ -31,38 +31,23 @@ function global_continuation(
         else
             pics = ics
         end
-        # the return is unused; the accumulator records every mapped initial condition itself
+        # difference two: we don't care about the return of basins_fractions
+        # as initial condition mapping is accumulated anyways
         basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
-        # finalize with optional aggregation. When grouping, group once and reuse the same
-        # labels for both the merged measures and the centroids that match groups across
-        # parameters.
-        if !isnothing(featurizer) && !isnothing(group_config)
-            group_map, centroids = _group_and_centroids(
-                extract_attractors(mapper), featurizer, group_config
-            )
-            measures, agg_attractors = finalize_accumulator(mapper; group_map)
-            push!(centroids_cont, centroids)
-        else
-            measures, agg_attractors = finalize_accumulator(mapper)
-        end
-        prev_attractors = deepcopy(extract_attractors(mapper))
-        push!(attractors_cont, agg_attractors)
+        # difference three:
+        measures, finalized_attractors = finalize_accumulator(mapper)
+        prev_attractors = deepcopy(finalized_attractors)
+        push!(attractors_cont, prev_attractors)
         push!(measures_cont, measures)
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
 
-    # match by feature centroid when grouping, else use the user's matcher
-    if !isnothing(featurizer) && !isnothing(group_config)
-        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
-        match_sequentially!(attractors_cont, rmaps)
-        transposed = accumulator_continuation_output(measures_cont, rmaps)
-    else
-        rmaps = match_sequentially!(
-            attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
-        )
-        transposed = accumulator_continuation_output(measures_cont, rmaps)
-    end
+    rmaps = match_sequentially!(
+        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+    )
+    # and difference four, a bit more involved matching for measures:
+    transposed = accumulator_continuation_output(measures_cont, rmaps)
     return transposed, attractors_cont
 end
 
@@ -120,14 +105,15 @@ There are two reasons to use this method:
 - `distance, finite_time, weighting_distribution`: given to [`StabilityMeasuresAccumulator`](@ref).
 - `samples_per_parameter = 1000`: how many samples to use when estimating stability measures
   via [`StabilityMeasuresAccumulator`](@ref). Ignored when `ics` is not a function.
-- `featurizer = nothing`, `group_config = nothing`: passed to [`finalize_accumulator`](@ref).
-  When both are provided, attractors with similar features are merged before computing
-  stability measures at each parameter step. See [`aggregate_attractor_fractions`](@ref)
-  for the same interface.
-  Additionally, when both are given, [`MatchByFeatureDistance`](@ref) is automatically
-  applied after the loop to ensure that the grouped attractor labels are consistent
-  across the parameter curve: groups at consecutive parameter steps are matched by
-  minimising the Euclidean distance between their `featurizer` outputs.
+
+## Aggregating attractors
+
+This function computes stability measures for whatever attractors it is given. To obtain
+measures for *aggregated* groups of attractors, first merge them with
+[`aggregate_continuation`](@ref) and pass the resulting `agg_attractors_cont` here:
+each merged group is then treated as a single attractor, so all measures (including those
+that need the raw basin data, like medians and critical shock magnitudes) are computed
+correctly for the group, with IDs that stay consistent along the parameter axis.
 """
 function stability_measures_along_continuation(
         ds::DynamicalSystem,
@@ -140,8 +126,6 @@ function stability_measures_along_continuation(
         samples_per_parameter = 1000,
         distance = Centroid(),
         proximity_mapper_options = NamedTuple(),
-        featurizer = nothing,
-        group_config = nothing,
         show_progress = true
     )
     progress = ProgressMeter.Progress(
@@ -149,7 +133,6 @@ function stability_measures_along_continuation(
     )
     N = samples_per_parameter
     measures_cont = []
-    centroids_cont = Dict[]
     measure_names = nothing
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -157,7 +140,6 @@ function stability_measures_along_continuation(
 
         if isempty(attractors)
             push!(measures_cont, Dict{String, Dict{Int64, Float64}}())
-            push!(centroids_cont, Dict{Int, Any}())
             ProgressMeter.next!(progress)
             continue
         end
@@ -203,29 +185,12 @@ function stability_measures_along_continuation(
             pics = ics
         end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        # When grouping, group once and reuse the same labels for both the merged measures
-        # and the centroids that match groups across parameters.
-        if !isnothing(featurizer) && !isnothing(group_config)
-            group_map, centroids = _group_and_centroids(attractors, featurizer, group_config)
-            measures, _ = finalize_accumulator(accumulator; group_map)
-            push!(centroids_cont, centroids)
-        else
-            measures, _ = finalize_accumulator(accumulator)
-        end
+        measures, _ = finalize_accumulator(accumulator)
         if measure_names === nothing
             measure_names = collect(keys(measures))
         end
         push!(measures_cont, measures)
         ProgressMeter.next!(progress)
-    end
-
-    if !isnothing(featurizer) && !isnothing(group_config) && length(centroids_cont) > 1
-        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
-        for (i, rmap) in enumerate(rmaps)
-            for dict in values(measures_cont[i + 1])
-                swap_dict_keys!(dict, rmap)
-            end
-        end
     end
 
     # change the measures format to the expected output

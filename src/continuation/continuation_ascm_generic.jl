@@ -119,7 +119,6 @@ end
 function global_continuation(
         ascm::AttractorSeedContinueMatch, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
-        featurizer = nothing, group_config = nothing,
     )
     N = samples_per_parameter
     progress = ProgressMeter.Progress(
@@ -167,31 +166,9 @@ function global_continuation(
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
-    if !isnothing(featurizer) && !isnothing(group_config)
-        P = length(fractions_cont)
-        agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
-        agg_attractors_cont = Dict[]
-        centroids_cont = Dict[]
-        for i in 1:P
-            agg_fs, agg_attrs, centroids = _aggregate_step_full(
-                fractions_cont[i], attractors_cont[i], featurizer, group_config
-            )
-            agg_fractions_cont[i] = agg_fs
-            push!(agg_attractors_cont, agg_attrs)
-            push!(centroids_cont, centroids)
-        end
-        if P > 1
-            rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
-            match_sequentially!(agg_fractions_cont, rmaps)
-            match_sequentially!(agg_attractors_cont, rmaps)
-        end
-        remove_minus_1_if_possible!(agg_fractions_cont)
-        return agg_fractions_cont, agg_attractors_cont
-    else
-        rmaps = match_sequentially!(
-            attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
-        )
-        match_sequentially!(fractions_cont, rmaps)
-        return fractions_cont, attractors_cont
-    end
+    rmaps = match_sequentially!(
+        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+    )
+    match_sequentially!(fractions_cont, rmaps)
+    return fractions_cont, attractors_cont
 end

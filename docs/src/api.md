@@ -165,6 +165,7 @@ RecurrencesFindAndMatch
 ### Aggregating attractors and fractions
 
 ```@docs
+aggregate_continuation
 aggregate_attractor_fractions
 ```
 
@@ -181,6 +182,7 @@ The available matchers are:
 
 ```@docs
 MatchBySSSetDistance
+MatchByFeatureDistance
 MatchByBasinEnclosure
 MatchByBasinOverlap
 DontMatch

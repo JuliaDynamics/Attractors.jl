@@ -1,197 +1,162 @@
 export aggregate_attractor_fractions, aggregate_continuation
 
 """
-    aggregate_attractor_fractions(
+    aggregate_continuation(
         fractions_cont, attractors_cont, featurizer, group_config [, info_extraction]
     )
 
-Aggregate the already-estimated curves of fractions of basins of attraction of similar
-attractors using the same pipeline used by [`GroupingConfig`](@ref).
-The most typical application of this function is to transform the output of a
-[`global_continuation`](@ref) with [`AttractorSeedContinueMatch`](@ref) so that similar
-attractors, even across parameter space, are grouped into one "attractor".
-Thus, the fractions of their basins are aggregated (joined).
+Aggregate the output of a [`global_continuation`](@ref) by merging similar attractors into
+groups across the parameter range, returning the grouped basin fractions, the merged
+attractors, and a per-group descriptor.
 
-You could also use this function to aggregate attractors and their fractions even in
-a single parameter configuration, i.e., using the output of [`basins_fractions`](@ref).
+This is the post-processing companion of [`global_continuation`](@ref): run the continuation
+as usual to obtain `fractions_cont` and `attractors_cont`, then call this function to "group"
+similar attractors (for example all states in which a given species is extinct) into a single
+aggregated attractor whose basin fraction is the sum of its members'. It is the single entry
+point for aggregation; it serves both basin-fraction continuations and, via its merged
+attractors, stability-measure continuations (see below).
 
-This function is useful in cases where you want the accuracy and performance of
-[`AttractorsViaRecurrences`](@ref), but you also want the convenience of "grouping"
-similar attractors like in [`AttractorsViaFeaturizing`](@ref) for presentation or
-analysis purposes. For example, a high dimensional model of competition dynamics
-with multiple species may have extreme multistability. After finding this multistability
-however, one may care about aggregating all attractors into two groups: where a given
-species is extinct or not. This is the example highlighted in our documentation,
-in [Extinction of a species in a multistable competition model](@ref aggregation_example).
+## How grouping works
+
+At each parameter step the attractors are turned into feature vectors with `featurizer` and
+partitioned into groups with `group_config` (a [`GroupingConfig`](@ref)); the members of a
+group are merged into a single `StateSpaceSet` and their basin fractions are summed. Each
+group is summarised by the centroid of its members' feature vectors, and these centroids are
+matched between consecutive parameter steps with [`MatchByFeatureDistance`](@ref), so that a
+group keeps the same ID along the parameter axis (it is tracked by the continuity of its
+feature centroid). Because matching is centroid-based, `featurizer` must return *numeric*
+feature vectors (e.g. `SVector`s).
 
 ## Input
 
-1. `fractions_cont`: a vector of dictionaries mapping labels to basin fractions.
-2. `attractors_cont`: a vector of dictionaries mapping labels to attractors.
-   1st and 2nd argument are exactly like the return values of
-   [`global_continuation`](@ref) with [`RecurrencesFindAndMatch`](@ref)
-   (or, they can be the return of [`basins_fractions`](@ref)).
-3. `featurizer`: a 1-argument function to map an attractor into an appropriate feature
-   to be grouped later. Features expected by [`GroupingConfig`](@ref) are `SVector`.
+1. `fractions_cont`: a vector of dictionaries mapping IDs to basin fractions.
+2. `attractors_cont`: a vector of dictionaries mapping IDs to attractors (`StateSpaceSet`s).
+   The first two arguments are exactly the return value of [`global_continuation`](@ref)
+   with [`AttractorSeedContinueMatch`](@ref) (or of [`basins_fractions`](@ref)).
+3. `featurizer`: a 1-argument function mapping an attractor to a numeric feature vector.
+   Features expected by [`GroupingConfig`](@ref) are typically `SVector`s.
 4. `group_config`: a subtype of [`GroupingConfig`](@ref).
-5. `info_extraction`: a function accepting a vector of features and returning a description
-   of the features. I.e., exactly as in [`FeaturizeGroupAcrossParameter`](@ref).
-   The 5th argument is optional and defaults to the centroid of the features.
+5. `info_extraction`: a function mapping the vector of a group's per-step centroids to a
+   descriptor of the group. Optional; defaults to the mean centroid.
 
 ## Return
 
-1. `aggregated_fractions`: same as `fractions_cont` but now contains the fractions of the
-   aggregated attractors.
-2. `aggregated_info`: dictionary mapping the new labels of `aggregated_fractions` to the
-   extracted information using `info_extraction`.
+1. `agg_fractions_cont`: like `fractions_cont`, but holding the fractions of the aggregated
+   groups.
+2. `agg_attractors_cont`: like `attractors_cont`, but mapping each group ID to the merged
+   `StateSpaceSet` of its members.
+3. `aggregated_info`: a dictionary mapping each group ID to its `info_extraction` descriptor.
 
-## Clustering attractors directly
+All three share consistent group IDs along the parameter axis.
 
-_(this is rather advanced)_
+## Aggregating stability measures
 
-You may also use the DBSCAN clustering approach here to group attractors
-based on their state space distance (the [`set_distance`](@ref)) by making a distance
-matrix as expected by the DBSCAN implementation.
-For this, use `identity` as `featurizer`, and choose [`GroupViaClustering`](@ref)
-as the `group_config` with `clust_distance_metric = set_distance` and provide a numerical
-value for `optimal_radius_method` when initializing the [`GroupViaClustering`](@ref),
-and also, for the `info_extraction` argument, you now need to provide a function that
-expects a _vector of `StateSpaceSet`s_ and outputs a descriptor.
-E.g., `info_extraction = vector -> mean(mean(x) for x in vector)`.
-"""
-function aggregate_attractor_fractions(
-        fractions_cont::Vector, attractors_cont::Vector, featurizer, group_config,
-        info_extraction = mean_across_features # function from grouping continuation
-    )
-    P = length(fractions_cont)
-    agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
-    centroids_cont = Dict[]
-    for i in 1:P
-        agg_fractions_cont[i], centroids_i = _aggregate_fractions_at_step(
-            fractions_cont[i], attractors_cont[i], featurizer, group_config
-        )
-        push!(centroids_cont, centroids_i)
-    end
-    if P > 1
-        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
-        match_sequentially!(agg_fractions_cont, rmaps)
-    end
-    remove_minus_1_if_possible!(agg_fractions_cont)
-    ids = setdiff(unique_keys(centroids_cont), [-1])
-    aggregated_info = Dict(
-        id => info_extraction([
-            centroids_cont[i][id]
-            for i in 1:P if haskey(centroids_cont[i], id)
-        ])
-        for id in ids
-    )
-
-    return agg_fractions_cont, aggregated_info
-end
-
-"""
-    aggregate_continuation(fractions_cont, attractors_cont, featurizer, group_config [, info_extraction])
-
-Like [`aggregate_attractor_fractions`](@ref) but also returns the merged attractors per group at
-each parameter step. Useful when you need the aggregated `StateSpaceSet`s alongside the fractions,
-e.g. for plotting or further analysis.
-
-Returns:
-1. `agg_fractions_cont`: same as the first return of [`aggregate_attractor_fractions`](@ref).
-2. `agg_attractors_cont`: vector of dictionaries mapping group IDs to merged `StateSpaceSet`s.
-3. `aggregated_info`: same as the second return of [`aggregate_attractor_fractions`](@ref).
-
-All three share consistent group IDs across the parameter curve.
+To obtain stability measures for the aggregated groups, pass `agg_attractors_cont` to
+[`stability_measures_along_continuation`](@ref). Each merged group is then treated as a
+single attractor, so every measure — including those that need the raw basin data, such as
+medians and critical shock magnitudes — is computed correctly for the group.
 """
 function aggregate_continuation(
         fractions_cont::Vector, attractors_cont::Vector, featurizer, group_config,
-        info_extraction = mean_across_features
+        info_extraction = mean_across_features, # function from grouping continuation
     )
     P = length(fractions_cont)
     agg_fractions_cont = Vector{Dict{Int, Float64}}(undef, P)
     agg_attractors_cont = Dict[]
     centroids_cont = Dict[]
     for i in 1:P
-        agg_fs, agg_attrs, centroids = _aggregate_step_full(
+        agg_fractions_cont[i], agg_attractors, centroids = _aggregate_step(
             fractions_cont[i], attractors_cont[i], featurizer, group_config
         )
-        agg_fractions_cont[i] = agg_fs
-        push!(agg_attractors_cont, agg_attrs)
+        push!(agg_attractors_cont, agg_attractors)
         push!(centroids_cont, centroids)
     end
+    # match groups across steps by the Euclidean distance of their feature centroids
     if P > 1
         rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
         match_sequentially!(agg_fractions_cont, rmaps)
         match_sequentially!(agg_attractors_cont, rmaps)
     end
     remove_minus_1_if_possible!(agg_fractions_cont)
-    ids = setdiff(unique_keys(centroids_cont), [-1])
-    aggregated_info = Dict(
-        id => info_extraction([centroids_cont[i][id] for i in 1:P if haskey(centroids_cont[i], id)])
-        for id in ids
-    )
+    aggregated_info = _aggregated_info(centroids_cont, info_extraction)
     return agg_fractions_cont, agg_attractors_cont, aggregated_info
 end
 
+"""
+    aggregate_attractor_fractions(
+        fractions_cont, attractors_cont, featurizer, group_config [, info_extraction]
+    )
+
+Like [`aggregate_continuation`](@ref), but returns only the aggregated basin fractions and the
+per-group info, without the merged attractors:
+
+    agg_fractions_cont, aggregated_info = aggregate_attractor_fractions(...)
+
+See [`aggregate_continuation`](@ref) for the description of the arguments and of how attractors
+are grouped at each parameter step and matched across the parameter axis.
+"""
+function aggregate_attractor_fractions(
+        fractions_cont::Vector, attractors_cont::Vector, featurizer, group_config,
+        info_extraction = mean_across_features,
+    )
+    agg_fractions_cont, _, aggregated_info = aggregate_continuation(
+        fractions_cont, attractors_cont, featurizer, group_config, info_extraction
+    )
+    return agg_fractions_cont, aggregated_info
+end
 # convenience wrapper for only single input
 function aggregate_attractor_fractions(fractions::Dict, attractors::Dict, args...)
-    aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
+    agg_fractions_cont, aggregated_info = aggregate_attractor_fractions(
         [fractions], [attractors], args...
     )
-    return aggregated_fractions[1], aggregated_info
+    return agg_fractions_cont[1], aggregated_info
 end
 
-# Returns (agg_fractions, centroids) per step; centroids are means of constituent feature vectors.
-function _aggregate_fractions_at_step(fractions, attractors, featurizer, group_config)
-    ids = filter(!isequal(-1), collect(keys(attractors)))
-    if isempty(ids)
-        return copy(fractions), Dict{Int, Any}()
-    end
-    features = [featurizer(attractors[id]) for id in ids]
-    grouped_labels = group_features(features, group_config)
-    agg_fractions = Dict{Int, Float64}()
-    feature_sums = Dict{Int, typeof(features[1])}()
-    counts = Dict{Int, Int}()
-    for (old_id, new_id, f) in zip(ids, grouped_labels, features)
-        agg_fractions[new_id] = get(agg_fractions, new_id, 0.0) + get(fractions, old_id, 0.0)
-        feature_sums[new_id] = get(feature_sums, new_id, zero(f)) + f
-        counts[new_id] = get(counts, new_id, 0) + 1
-    end
-    if haskey(fractions, -1)
-        agg_fractions[-1] = fractions[-1]
-    end
-    centroids = Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
-    return agg_fractions, centroids
-end
-
-# Like `_aggregate_fractions_at_step` but also builds merged attractors per group.
-function _aggregate_step_full(fractions, attractors, featurizer, group_config)
+# Group one parameter step's attractors. Returns `(agg_fractions, agg_attractors, centroids)`:
+# the members of a group are merged into one `StateSpaceSet`, their fractions are summed, and
+# `centroids` maps each group to the mean of its members' feature vectors (used to match groups
+# across parameter steps).
+function _aggregate_step(fractions, attractors, featurizer, group_config)
     ids = filter(!isequal(-1), collect(keys(attractors)))
     if isempty(ids)
         return copy(fractions), empty(attractors), Dict{Int, Any}()
     end
     features = [featurizer(attractors[id]) for id in ids]
-    grouped_labels = group_features(features, group_config)
+    labels = group_features(features, group_config)
     agg_fractions = Dict{Int, Float64}()
-    agg_attractors = Dict{Int, valtype(attractors)}()
-    feature_sums = Dict{Int, typeof(features[1])}()
+    agg_attractors = Dict{keytype(attractors), valtype(attractors)}()
+    feature_sums = Dict{Int, eltype(features)}()
     counts = Dict{Int, Int}()
-    for (old_id, new_id, f) in zip(ids, grouped_labels, features)
-        agg_fractions[new_id] = get(agg_fractions, new_id, 0.0) + get(fractions, old_id, 0.0)
-        if haskey(agg_attractors, new_id)
-            agg_attractors[new_id] = StateSpaceSet(
-                vcat(collect(agg_attractors[new_id]), collect(attractors[old_id])))
+    for (id, label, f) in zip(ids, labels, features)
+        agg_fractions[label] = get(agg_fractions, label, 0.0) + get(fractions, id, 0.0)
+        if haskey(agg_attractors, label)
+            agg_attractors[label] = StateSpaceSet(
+                vcat(collect(agg_attractors[label]), collect(attractors[id]))
+            )
         else
-            agg_attractors[new_id] = attractors[old_id]
+            agg_attractors[label] = attractors[id]
         end
-        feature_sums[new_id] = get(feature_sums, new_id, zero(f)) + f
-        counts[new_id] = get(counts, new_id, 0) + 1
+        feature_sums[label] = get(feature_sums, label, zero(f)) + f
+        counts[label] = get(counts, label, 0) + 1
     end
     if haskey(fractions, -1)
         agg_fractions[-1] = fractions[-1]
     end
     centroids = Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
     return agg_fractions, agg_attractors, centroids
+end
+
+# Summarise each group across the continuation by applying `info_extraction` to the vector of
+# the group's per-step centroids.
+function _aggregated_info(centroids_cont, info_extraction)
+    ids = setdiff(unique_keys(centroids_cont), [-1])
+    return Dict(
+        id => info_extraction([
+            centroids_cont[i][id]
+            for i in eachindex(centroids_cont) if haskey(centroids_cont[i], id)
+        ])
+        for id in ids
+    )
 end
 
 function remove_minus_1_if_possible!(afs)
