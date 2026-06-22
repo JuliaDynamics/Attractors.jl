@@ -6,6 +6,7 @@ export intermingledness
 Calculate the intermingledness [Datseris2026](@cite) of the `points`
 which have been divided into groups (typically attractors) indicated by `labels`.
 Return a dictionary mapping unique labels to their intermingledness.
+See also [`boundary_intermingledness`](@ref).
 
 The optional `distance = Euclidean()` argument is a function dictating
 how to estimate distances between points.
@@ -74,6 +75,21 @@ end
 # Pairwise average distance between all points in xs and ys
 mean_distance(xs, ys, distance) = mean(distance(x, y) for x in xs for y in ys)
 
+
+"""
+    boundary_intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
+
+Calculate the boundary intermingledness [Datseris2026](@cite) of the `points`
+which have been divided into groups (typically attractors) indicated by `labels`.
+Return a dictionary mapping unique labels to their b-intermingledness.
+See also [`boundary_intermingledness`](@ref).
+
+Boundary interminglendess is an alternative to intermingledness focused on the boundary
+set, see appendix C of [Datseris2026inter](@cite) for more.
+
+!!! note "Expensive!"
+    This function is even more expensive than [`intermingledness`](@ref).
+"""
 function boundary_intermingledness(
         us::AbstractArray{<:AbstractArray}, labels::AbstractArray{<:Integer},
         distance = Euclidean(); summarizer = mean
@@ -133,7 +149,7 @@ function boundary_sets(points, ulabels, group_indices, distance)
             # 1) for each A-point, find its nearest neighbor in B
             # 2) keep unique B neighbors
             # 3) map those B neighbors back to their nearest in A
-            # Under symmetry, this defines the single boundary set for pair (la, lb).
+            # Under symmetry, this defines the boundary set for pair (la, lb).
             b_nns, _ = NearestNeighbors.nn(treeB, XA)
             b_unique = unique!(b_nns)
             a_back, _ = NearestNeighbors.nn(treeA, @view XB[b_unique])
