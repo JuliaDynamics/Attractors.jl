@@ -106,6 +106,8 @@ mapping attractor IDs to values of same type as `fillval`) to a dictionary of ve
 where the `k` dictionary entry is the series of the continuation quantity corresponding to
 attractor with ID `k`. `fillval` denotes the value to assign in the series
 if the attractor with ID `k` does not exist at this particular series index.
+If the `continuation_info` is the attractors themselves, you likely want to
+use as `fillval` some empty state space set such as `StateSpaceSet{D}()`.
 """
 function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, fillval = NaN, ukeys = unique_keys(continuation_info))
     series = Dict(k => fill(fillval, length(continuation_info)) for k in ukeys)

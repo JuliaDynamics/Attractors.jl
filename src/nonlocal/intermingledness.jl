@@ -3,7 +3,7 @@ export intermingledness
 """
     intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
 
-Calculate the intermingledness [Datseris2026](@cite) of the `points`
+Calculate the intermingledness [Datseris2026Intermingled](@cite) of the `points`
 which have been divided into groups (typically attractors) indicated by `labels`.
 Return a dictionary mapping unique labels to their intermingledness.
 
@@ -11,7 +11,7 @@ The optional `distance = Euclidean()` argument is a function dictating
 how to estimate distances between points.
 A vector of distance functions can also be given as `distance`, in which case a vector of
 intermingledness is returned corresponding to each distance function.
-In [Datseris2026](@cite) intermingledness was estimated individually per dimension
+In [Datseris2026Intermingled](@cite) intermingledness was estimated individually per dimension
 of `points`, which you can achieve by e.g.,
 ```julia
 using Distances: WeightedEuclidean
@@ -33,7 +33,7 @@ Or, `points` can be feature vectors and `labels` the output of [`group_features`
 Intermingledness is effectively the ratio of the pairwise-averaged intra-group distance
 divided by the pairwise-averaged inter-group distance. If it is 1, points are as
 close to points in their own group as they are to points in other groups.
-See [Datseris2026](@cite) for examples using intermingledness and the detailed definition
+See [Datseris2026Intermingled](@cite) for examples using intermingledness and the detailed definition
 or honestly, just look at the source code, it is only 10 lines!
 
 !!! note "Expensive!"
