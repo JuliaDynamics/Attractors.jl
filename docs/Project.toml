@@ -18,4 +18,3 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [compat]
 BifurcationKit = "0.8"
-# KrylovKit = "0.8"
