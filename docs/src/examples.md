@@ -1095,7 +1095,7 @@ Lastly, this example is based on a dynamical system that was generated with
 ModelingToolkit.jl, and hence its dynamic variables and parameters are all named.
 
 The system we will utilize in this example is a five-dimensional model
-for cloud transitions developed in [Datseris2026IntermingledClouds](@cite).
+for cloud transitions developed in [Datseris2026Clouds](@cite).
 Its variables are named `s_b, q_b, z_b, C, SST`.
 We will showcase how one can match attractors in this system simply by defining a
 special distance function that is given to [`MatchBySSSetDistance`](@ref).
@@ -1131,7 +1131,7 @@ This special `matcher` achieves the following:
 ## Performing multiple global continuations to incorporate prescribed parameter changes and parameter uncertainty
 
 In this example we continue with the same model used in the previous example,
-the cloud model of [Datseris2026IntermingledClouds](@cite).
+the cloud model of [Datseris2026Clouds](@cite).
 In that model there are some key parameters that must be studied, all of
 which affect transitions between different cloud states.
 They are named as `D, U, δ_Δ₊T, RH₊, δ_FTR`.
