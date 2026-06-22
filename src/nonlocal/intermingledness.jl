@@ -1,4 +1,4 @@
-export intermingledness
+export intermingledness, boundary_intermingledness
 
 """
     intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
@@ -84,13 +84,18 @@ mean_distance(xs, ys, distance) = mean(distance(x, y) for x in xs for y in ys)
 """
     boundary_intermingledness(points::StatesSpaceSet, labels [, distance]; kw...)
 
-Calculate the boundary intermingledness [Datseris2026](@cite) of the `points`
+Calculate the boundary intermingledness [Datseris2026Intermingled](@cite) of the `points`
 which have been divided into groups (typically attractors) indicated by `labels`.
 Return a dictionary mapping unique labels to their b-intermingledness.
 See also [`boundary_intermingledness`](@ref).
 
+The `summarizer = mean` keyword argument dictates how
+to summarize the b-intermingedness statistic across other groups.
+
+## Description
+
 Boundary interminglendess is an alternative to intermingledness focused on the boundary
-set, see appendix C of [Datseris2026inter](@cite) for more.
+set, see appendix C of [Datseris2026Intermingled](@cite) for more.
 
 !!! note "Expensive!"
     This function is even more expensive than [`intermingledness`](@ref).
