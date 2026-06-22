@@ -37,9 +37,8 @@ to work for any `AttractorMapper`, current or future.
 Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `mapper` input
 to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
-The only difference now is that `global_continuation` will not return just one
-measure of stability (the basin fraction). Rather,
-now the first return argument of `global_continuation` will be a
+Used this way, `global_continuation` does not return just one
+measure of stability (the basin fraction). Instead, its first return argument is a
 `measures_cont`, a dictionary mapping stability measures (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
 of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
@@ -288,17 +287,25 @@ cannot be fixed points.
 - `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
 
 Both keywords must be specified for this functionality to work.
+
+The advanced keyword `group_map` (a `Dict` mapping each original attractor ID to a group ID)
+may be given instead of `featurizer`/`group_config` to apply a precomputed grouping directly.
+This is used internally by the continuation routines, which group once across all parameter
+steps and inject the same labels here so that the merged measures and the centroids used for
+cross-parameter matching stay consistent. It takes precedence over `featurizer`/`group_config`.
 """
 function finalize_accumulator(
         accumulator::StabilityMeasuresAccumulator;
-        featurizer = nothing, group_config = nothing,
+        featurizer = nothing, group_config = nothing, group_map = nothing,
     )
     ds = referenced_dynamical_system(accumulator)
     _attractors = extract_attractors(accumulator.mapper)
     _bs = accumulator.bs
     u0s = accumulator.u0s
     cts = accumulator.cts
-    if !isnothing(featurizer) && !isnothing(group_config)
+    if !isnothing(group_map)
+        bs, attractors = _apply_group_map(_bs, _attractors, group_map)
+    elseif !isnothing(featurizer) && !isnothing(group_config)
         bs, attractors = _apply_aggregation(_bs, _attractors, featurizer, group_config)
     else
         bs, attractors = _bs, _attractors
@@ -536,39 +543,49 @@ function weighted_median(
     return float(vals[p[end]])
 end
 
-# Remap basins vector and merge attractors using featurizer + group_config.
-function _apply_aggregation(bs, attractors, featurizer, group_config)
-    ids = collect(keys(attractors))
-    features = [featurizer(attractors[id]) for id in ids]
-    grouped_labels = group_features(features, group_config)
-    old_to_new = Dict(old_id => new_id for (old_id, new_id) in zip(ids, grouped_labels))
-    bs_new = [get(old_to_new, id, id) for id in bs]
-    new_attractors = Dict{keytype(attractors), valtype(attractors)}()
-    for (old_id, new_id) in zip(ids, grouped_labels)
-        if haskey(new_attractors, new_id)
-            new_attractors[new_id] = StateSpaceSet(
-                vcat(collect(new_attractors[new_id]), collect(attractors[old_id]))
-            )
-        else
-            new_attractors[new_id] = attractors[old_id]
-        end
-    end
-    return bs_new, new_attractors
-end
-
-# Centroid of each group: mean of featurizer(A) over constituent attractors.
-function _feature_centroids(attractors, featurizer, group_config)
+# Group attractors once via `featurizer` + `group_config`. Returns `(group_map, centroids)`,
+# where `group_map` maps each original attractor ID to its group ID and `centroids` maps each
+# group ID to the mean of `featurizer` over the group's members. Both come from a single
+# `group_features` call, so the merged measures and the centroids used for matching across
+# parameters are guaranteed to share labels.
+function _group_and_centroids(attractors, featurizer, group_config)
     ids = filter(!isequal(-1), collect(keys(attractors)))
-    isempty(ids) && return Dict{Int, Any}()
+    isempty(ids) && return Dict{Int, Int}(), Dict{Int, Any}()
     features = [featurizer(attractors[id]) for id in ids]
     grouped_labels = group_features(features, group_config)
-    feature_sums = Dict{Int, typeof(features[1])}()
+    group_map = Dict(id => label for (id, label) in zip(ids, grouped_labels))
+    feature_sums = Dict{Int, eltype(features)}()
     counts = Dict{Int, Int}()
     for (f, label) in zip(features, grouped_labels)
         feature_sums[label] = get(feature_sums, label, zero(f)) + f
         counts[label] = get(counts, label, 0) + 1
     end
-    return Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
+    centroids = Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
+    return group_map, centroids
+end
+
+# Relabel the basins vector and merge attractors using a precomputed `group_map`
+# (original ID => group ID). IDs absent from the map (e.g. -1) are left unchanged.
+function _apply_group_map(bs, attractors, group_map)
+    bs_new = [get(group_map, id, id) for id in bs]
+    new_attractors = Dict{keytype(attractors), valtype(attractors)}()
+    for (old_id, A) in attractors
+        new_id = get(group_map, old_id, old_id)
+        if haskey(new_attractors, new_id)
+            new_attractors[new_id] = StateSpaceSet(
+                vcat(collect(new_attractors[new_id]), collect(A))
+            )
+        else
+            new_attractors[new_id] = A
+        end
+    end
+    return bs_new, new_attractors
+end
+
+# Group and apply the grouping in one go, used for standalone (single-step) finalization.
+function _apply_aggregation(bs, attractors, featurizer, group_config)
+    group_map, _ = _group_and_centroids(attractors, featurizer, group_config)
+    return _apply_group_map(bs, attractors, group_map)
 end
 
 # Extension function to allow accumulator to work also with non-single-u0 mappers

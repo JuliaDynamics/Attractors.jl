@@ -3,36 +3,39 @@ export MatchByFeatureDistance
 using LinearAlgebra: norm
 
 """
-    MatchByFeatureDistance(featurizer; threshold = Inf)
+    MatchByFeatureDistance(; threshold = Inf)
 
-A matcher that matches attractors by their Euclidean distance in feature space.
-`featurizer` is a 1-argument function mapping a `StateSpaceSet` to a feature vector
-(the same featurizer used when aggregating attractors, e.g. in [`finalize_accumulator`](@ref)).
+A matcher that matches IDs by the Euclidean distance between feature vectors.
 
-The distance between two attractors `A` and `B` is `norm(featurizer(A) - featurizer(B))`.
-Matching then follows the same greedy minimum-distance assignment as
-[`MatchBySSSetDistance`](@ref): all pairs of (old, new) attractors are sorted by their
-feature-space distance, the closest pair is matched first, and matched IDs are removed
-from the pool to ensure a unique one-to-one assignment.
+Like any [`IDMatcher`](@ref), it is used as `match_sequentially!(dicts, matcher)`, where
+`dicts` is a vector holding one dictionary per parameter step, each mapping an integer ID to
+a value. What the value is depends on the matcher: for [`MatchBySSSetDistance`](@ref) the
+values are attractors (`StateSpaceSet`s), whereas for `MatchByFeatureDistance` **the values
+must be feature vectors** `v` (e.g. `SVector`s). The distance between two IDs is then simply
+`norm(v₊ - v₋)`.
 
-This is the natural matcher for grouped/aggregated attractors produced by
-[`finalize_accumulator`](@ref) with `featurizer` and `group_config` keywords, since those
-groups are precisely characterised by their feature vectors.
-[`stability_measures_along_continuation`](@ref) uses this matcher automatically
-when `featurizer` and `group_config` are provided.
+In practice the vectors you pass are the per-group feature centroids produced when
+aggregating attractors: each group is summarised by the mean of `featurizer(A)` over its
+member attractors, and `match_sequentially!` matches those centroids from one parameter step
+to the next. This is how [`stability_measures_along_continuation`](@ref) and
+[`aggregate_attractor_fractions`](@ref) keep group IDs consistent along the parameter axis.
+The centroids are computed by the aggregation code and handed in as the dictionary values, so
+this matcher never featurizes a merged attractor set itself.
+
+Matching uses the same greedy minimum-distance assignment as [`MatchBySSSetDistance`](@ref):
+all pairs of (old, new) IDs are sorted by their feature-space distance, the closest pair is
+matched first, and matched IDs are removed from the pool to ensure a unique one-to-one
+assignment.
 
 ## Keyword arguments
 
 - `threshold = Inf`: if the feature-space distance between the best-matching pair exceeds
-  `threshold`, the attractor in `a₊` is guaranteed to receive a new unique ID rather than
-  being matched to an existing one.
+  `threshold`, the ID in `a₊` is guaranteed to receive a new unique ID rather than being
+  matched to an existing one.
 """
-struct MatchByFeatureDistance{F, T <: Real} <: IDMatcher
-    featurizer::F
-    threshold::T
+@kwdef struct MatchByFeatureDistance{T <: Real} <: IDMatcher
+    threshold::T = Inf
 end
-
-MatchByFeatureDistance(featurizer; threshold = Inf) = MatchByFeatureDistance(featurizer, threshold)
 
 _use_vanished(m::MatchByFeatureDistance) = !isinf(m.threshold)
 
@@ -40,10 +43,8 @@ function matching_map(
         a₊::AbstractDict, a₋::AbstractDict, matcher::MatchByFeatureDistance;
         kw...
     )
-    isempty(a₊) || isempty(a₋) && return Dict{keytype(a₊), keytype(a₋)}()
-    f = matcher.featurizer
-    feature_dist = (A, B) -> norm(f(A) - f(B))
-    distances = setsofsets_distances(a₊, a₋, feature_dist)
+    (isempty(a₊) || isempty(a₋)) && return Dict{keytype(a₊), keytype(a₋)}()
+    distances = setsofsets_distances(a₊, a₋, (v₊, v₋) -> norm(v₊ - v₋))
     keys₊, keys₋ = sort.(collect.(keys.((a₊, a₋))))
     return _matching_map_distances(keys₊, keys₋, distances, matcher.threshold; kw...)
 end

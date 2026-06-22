@@ -73,7 +73,7 @@ function aggregate_attractor_fractions(
         push!(centroids_cont, centroids_i)
     end
     if P > 1
-        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
+        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
         match_sequentially!(agg_fractions_cont, rmaps)
     end
     remove_minus_1_if_possible!(agg_fractions_cont)
@@ -120,7 +120,7 @@ function aggregate_continuation(
         push!(centroids_cont, centroids)
     end
     if P > 1
-        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance(identity))
+        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
         match_sequentially!(agg_fractions_cont, rmaps)
         match_sequentially!(agg_attractors_cont, rmaps)
     end
