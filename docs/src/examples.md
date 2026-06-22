@@ -1148,7 +1148,7 @@ We first make the following helper function that will be generating parameter cu
 (and remember, all parameters are named due to using ModelingToolkit.jl):
 
 ```@example MAIN
-using Distributions: Uniform
+using Distributions: Uniform, Normal
 
 function sample_pcurve(time = 0:14)
     # inputs
@@ -1158,7 +1158,7 @@ function sample_pcurve(time = 0:14)
         :δ_Δ₊T => Uniform(1, 10),
         :RH₊ => Uniform(0.1, 0.4),
         :δ_FTR => Uniform(0, 10),
-        :CO2 => Uniform(400, 400), # no uncertainty
+        :CO2 => Normal(400, 0), # no uncertainty
     )
     rates = Dict(:CO2 => 100, :D => -0.05e-6, :U => -0.1)
 
@@ -1172,6 +1172,7 @@ function sample_pcurve(time = 0:14)
             p[k] = starts[k] + rate*t
         end
     end
+    return pcurve
 end
 ```
 
