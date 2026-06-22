@@ -17,8 +17,8 @@ must be feature vectors** `v` (e.g. `SVector`s). The distance between two IDs is
 In practice the vectors you pass are the per-group feature centroids produced when
 aggregating attractors: each group is summarised by the mean of `featurizer(A)` over its
 member attractors, and `match_sequentially!` matches those centroids from one parameter step
-to the next. This is how [`stability_measures_along_continuation`](@ref) and
-[`aggregate_attractor_fractions`](@ref) keep group IDs consistent along the parameter axis.
+to the next. This is how [`aggregate_continuation`](@ref) keeps group IDs consistent along the
+parameter axis.
 The centroids are computed by the aggregation code and handed in as the dictionary values, so
 this matcher never featurizes a merged attractor set itself.
 

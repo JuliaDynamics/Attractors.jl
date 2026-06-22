@@ -162,11 +162,10 @@ AttractorSeedContinueMatch
 RecurrencesFindAndMatch
 ```
 
-### Aggregating attractors and fractions
+### Aggregating attractors
 
 ```@docs
 aggregate_continuation
-aggregate_attractor_fractions
 ```
 
 ### Grouping continuation

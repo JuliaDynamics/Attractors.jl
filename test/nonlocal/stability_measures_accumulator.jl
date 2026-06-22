@@ -130,10 +130,6 @@ using Random
             Dict(1 => StateSpaceSet([SVector(0.0, 0.0)])),
             Dict(2 => StateSpaceSet([SVector(1.0, 1.0)]), 1 => StateSpaceSet([SVector(-1.0, -1.0)])),
         ]
-        fractions_cont = [
-            Dict(1 => 1.0),
-            Dict(2 => 0.5, 1 => 0.5),
-        ]
         proximity_mapper_options = (
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
@@ -142,8 +138,8 @@ using Random
         # compute the stability measures on the merged attractors.
         featurizer = A -> SVector(first(A)[1])
         merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
-        _, agg_attractors_cont, _ = aggregate_continuation(
-            fractions_cont, attractors_cont, featurizer, merge_config
+        agg_attractors_cont, _ = aggregate_continuation(
+            attractors_cont, featurizer, merge_config
         )
         measures_agg = stability_measures_along_continuation(
             dynamics, agg_attractors_cont, pcurve, ics_from_grid(grid);
