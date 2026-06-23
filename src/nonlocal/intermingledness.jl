@@ -129,26 +129,22 @@ end
 
 import NearestNeighbors
 function boundary_sets(points, ulabels, group_indices, distance)
-
     L = length(ulabels)
     label_type = eltype(ulabels)
-
-    # Precompute per-label indices, point subsets and KD-trees once.
     idxs = [group_indices[l] for l in ulabels]
     groups = [points[idx] for idx in idxs]
     trees = [NearestNeighbors.KDTree(X, distance) for X in groups]
 
-    # For each label pair (la, lb), store a single (symmetric) boundary index set.
+    # For each label pair (la, lb), store a single (symmetric) boundary index set
     boundary_sets = Dict{Tuple{label_type, label_type}, Vector{Int}}()
     sizehint!(boundary_sets, L * (L - 1) ÷ 2)
 
-    # Iterate over all unique unordered label pairs.
+    # Iterate over all unique unordered label pairs
     for i in 1:L-1
         la = ulabels[i]
         idxA = idxs[i]
         XA = groups[i]
         treeA = trees[i]
-
         for j in i+1:L
             lb = ulabels[j]
             idxB = idxs[j]
@@ -159,16 +155,15 @@ function boundary_sets(points, ulabels, group_indices, distance)
             # 1) for each A-point, find its nearest neighbor in B
             # 2) keep unique B neighbors
             # 3) map those B neighbors back to their nearest in A
-            # Under symmetry, this defines the boundary set for pair (la, lb).
+            # Under symmetry, this defines the boundary set for pair (la, lb)
             b_nns, _ = NearestNeighbors.nn(treeB, XA)
             b_unique = unique!(b_nns)
             a_back, _ = NearestNeighbors.nn(treeA, @view XB[b_unique])
             boundaryA = unique!(idxA[a_back])
 
-            # Include both sides participating in the same boundary relation.
+            # Include both sides participating in the same boundary relation
             boundary_sets[(la, lb)] = unique!(vcat(boundaryA, idxB[b_unique]))
         end
     end
-
     return boundary_sets
 end
