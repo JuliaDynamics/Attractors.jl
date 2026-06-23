@@ -225,6 +225,7 @@ stability_measures_along_continuation
 
 ```@docs
 intermingledness
+boundary_intermingledness
 ```
 
 ## Visualization utilities

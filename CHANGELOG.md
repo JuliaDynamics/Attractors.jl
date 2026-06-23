@@ -1,3 +1,7 @@
+# v1.39
+
+- New function `boundary_intermingledness`.
+
 # v1.38
 
 - Grouping via nearest feature has been improved; allows for two new keywords

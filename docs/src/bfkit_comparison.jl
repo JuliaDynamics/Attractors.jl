@@ -90,13 +90,13 @@ point_on_lc = [
 
 ode_prob = ODEProblem(modified_lorenz_rule!, point_on_lc, (0.0, 50.0), p0)
 sol = OrdinaryDiffEqVerner.solve(ode_prob; alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9)
-j = length(sol) ÷ 2
+j = length(sol.t) ÷ 2
 fig, ax = lines(sol.t[j:end], sol[1, j:end])
 lines!(ax, sol.t[j:end], sol[2, j:end])
 lines!(ax, sol.t[j:end], sol[3, j:end])
 fig
 
-# We need an estimate of the period besides providing the full DifferentialEquations.jl
+# We also need an estimate of the period besides providing the full DifferentialEquations.jl
 # solution. From the figure this appears to be around 20.0 (note: the periodic
 # orbit wraps around four times before repeating exactly).
 
@@ -119,7 +119,8 @@ periodic_orbit_algo = BK.Collocation(40, 4; jacobian = BK.DenseAnalyticalInplace
 # and creating the problem type giving the period guess 19.0
 
 probpo, cish = BK.generate_ci_problem(
-    periodic_orbit_algo, bf_prob, sol, 19.0
+    periodic_orbit_algo, bf_prob, sol, 19.0;
+    use_adapted_mesh = true,
 )
 
 # To call the continuation we need to also tell it what aspects of the
@@ -150,30 +151,36 @@ predictor = BK.PALC(tangent = BK.Bordered())
     bothside = true,
 )
 
-# The converges within about 2 seconds, ignoring compilation time.
-# Let's plot the result:
+# The converges within about 0.5 seconds, ignoring compilation time.
+# To plot the result we need to extract the branches values,
+# as local continuation uses non trivial constructs (versus `Dict` of global continuation)
 
 stability = branch.stable
+branch_p = getindex.(branch.branch.p, pidx)
+
 fig, ax = scatter(
-    branch.branch.p[stability], branch.branch.min[stability];
+    branch_p[stability], branch.branch.min[stability];
     label = "stable PO", color = "black", marker = :circle
 )
 scatter!(
-    branch.branch.p[.!stability], branch.branch.min[.!stability];
+    branch_p[.!stability], branch.branch.min[.!stability];
     label = "unstable PO", color = "red", marker = :x
 
 )
 axislegend(ax)
 fig
 
-# Even the previous version that did work, did not find a
-# stable limit cycle for parameter less than 5.0,
+# Apparently there is no stable limit cycle for parameter less than 4.95.
 # In the main Tutorial we see that there is a limit cycle for
 # parameter value down to 4.7. Here we see that the limit cycle is actually
-# unstable. So the attractor found in the main Tutorial
-# could be a weakly chaotic attractor with MLE almost 0.
-# Or maybe it is a quasiperiodic attractor. Or maybe it is an alternative limit cycle
-# close to the one tracked here by BifurcationKit.jl.
+# unstable. There are various possibilities:
+# - Local continuation result is wrong/inaccurate (global continuation cannot be, because
+#   it preserves the flow, and because both found attractors are hugely separated).
+# - The attractor found in the main Tutorial could be a weakly chaotic attractor with MLE almost 0.
+# - Or maybe it is a quasiperiodic attractor.
+# - Or maybe it is an alternative limit cycle close to the one tracked here by BifurcationKit.jl
+#   that must be found by tracking another branch.
+#
 # One needs to analyze further!
 
 # %% #src
@@ -214,9 +221,9 @@ mapper = AttractorsViaRecurrences(
 
 sampler, = statespace_sampler(grid)
 
-algo = AttractorSeedContinueMatch(mapper)
+algo = AttractorSeedContinueMatch(StabilityMeasuresAccumulator(mapper))
 
-fractions_cont, attractors_cont = global_continuation(
+@time measures_cont, attractors_cont = global_continuation(
     algo, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
@@ -224,9 +231,12 @@ plot_attractors_curves(
     attractors_cont, A -> minimum(A[:, 1]), prange,
 )
 
-# This code takes about 15 seconds to run.
+# This code takes about 25 seconds to run.
 # This number however is for 1000 initial conditions, not one (i.e., the one
 # branch generated during the traditional continuation).
+# So _per initial condition_, it is actually faster than local continuation.
+# And, the code estimates a plethora of stability quantifiers that if done
+# on their own right, they would add substantially morel computations.
 
 # ## Discussion and comparison
 
