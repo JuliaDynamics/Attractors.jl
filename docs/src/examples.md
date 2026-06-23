@@ -524,7 +524,7 @@ as you can see, two of the three fixed points, and their stability, do not depen
 
 ## [Extinction of a species in a multistable competition model](@id aggregation_example)
 
-In this advanced example we utilize both [`RecurrencesFindAndMatch`](@ref) and [`aggregate_continuation`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
+In this advanced example we utilize both [`RecurrencesFindAndMatch`](@ref) and [`aggregate_attractor_fractions`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
 The final goal is to show the percentage of how much of the state space leads to the extinction or not of a pre-determined species, as we vary a parameter. The model however displays extreme multistability, a feature we want to measure and preserve before aggregating information into "extinct or not".
 
 To measure and preserve this we will apply [`RecurrencesFindAndMatch`](@ref) as-is first. Then we can aggregate information. First we have
@@ -581,19 +581,11 @@ isextinct(A, idx = unitidxs) = all(a -> a <= 1e-2, A[:, idx])
 # `minneighbors = 1` is crucial for grouping single attractors
 groupingconfig = GroupViaClustering(; min_neighbors=1, optimal_radius_method=0.5)
 
-# merge the attractors into "extinct"/"alive" groups, with IDs consistent across `prange`
-agg_attractors_cont, aggregated_info = aggregate_continuation(
-    attractors_cont, featurizer, groupingconfig
+aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
+    fractions_cont, attractors_cont, featurizer, groupingconfig
 )
 
-# the basin fractions of the groups follow from treating each merged group as a single
-# attractor and computing the stability measures on them (`basin_fraction` is the fraction)
-pcurve = [Dict(pidx => p) for p in prange]
-agg_measures = stability_measures_along_continuation(
-    ds, agg_attractors_cont, pcurve, sampler; ε = 1.0, samples_per_parameter,
-)
-
-plot_basins_curves(agg_measures["basin_fraction"], prange;
+plot_basins_curves(aggregated_fractions, prange;
     separatorwidth = 1, colors = ["green", "black"],
     labels = Dict(1 => "extinct", 2 => "alive"),
 )

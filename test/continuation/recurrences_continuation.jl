@@ -1,3 +1,4 @@
+# This file also tests `aggregate_attractor_fractions`!
 
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
@@ -143,7 +144,7 @@ end
     )
     test_fs(fractions_cont, rrange, [4, 12])
 
-    # Then, test the aggregation of attractors via featurizing and histogram
+    # Then, test the aggregation of features via featurizing and histogram
     using Statistics
     featurizer = (x) -> mean(x)
 
@@ -151,13 +152,10 @@ end
         FixedRectangularBinning(range(-4, 4; step = 0.005), 2)
     )
 
-    agg_attractors_cont, agg_info = aggregate_continuation(
-        attractors_cont, featurizer, hconfig
+    aggr_fracs, aggr_info = aggregate_attractor_fractions(
+        fractions_cont, attractors_cont, featurizer, hconfig
     )
-    # same number of parameter steps, and groups carry consistent IDs across them
-    @test length(agg_attractors_cont) == length(attractors_cont)
-    @test all(d -> all(>(0) ∘ Int, keys(d)), agg_attractors_cont)
-    @test keytype(agg_info) == Int
+    test_fs(aggr_fracs, rrange, [4, 12])
 
 end
 

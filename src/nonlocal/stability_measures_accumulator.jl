@@ -269,7 +269,7 @@ See [`StabilityMeasuresAccumulator`](@ref) for more.
 ## Attractor aggregation
 
 Two optional keywords `featurizer, group_config` can be passed, so that the same type of
-attractor aggregation as in [`aggregate_continuation`](@ref) is performed.
+attractor aggregation as in [`aggregate_attractor_fractions`](@ref) is performed.
 When providing `featurizer, group_config` attractors with similar features are merged
 before computing stability measures. The merged attractor is the union the constituent
 attractors, and its basin is the union of their basins. Linear stability measures
@@ -530,7 +530,7 @@ function weighted_median(
 end
 
 # Remap basins vector and merge attractors using featurizer + group_config,
-# following the same interface as `aggregate_continuation`.
+# following the same interface as `aggregate_attractor_fractions`.
 function _apply_aggregation(bs, attractors, featurizer, group_config)
     ids = collect(keys(attractors))
     features = [featurizer(attractors[id]) for id in ids]

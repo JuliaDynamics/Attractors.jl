@@ -5,7 +5,7 @@ export GroupingConfig, group_features
 
 Supertype for configuration structs on how to group features together.
 Used in several occasions such as [`AttractorsViaFeaturizing`](@ref)
-or [`aggregate_continuation`](@ref).
+or [`aggregate_attractor_fractions`](@ref).
 
 Currently available grouping configurations are:
 
