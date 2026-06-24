@@ -1180,7 +1180,7 @@ Lastly, this example is based on a dynamical system that was generated with
 ModelingToolkit.jl, and hence its dynamic variables and parameters are all named.
 
 The system we will utilize in this example is a five-dimensional model
-for cloud transitions developed in [Datseris2026IntermingledClouds](@cite).
+for cloud transitions developed in [Datseris2026Clouds](@cite).
 Its variables are named `s_b, q_b, z_b, C, SST`.
 We will showcase how one can match attractors in this system simply by defining a
 special distance function that is given to [`MatchBySSSetDistance`](@ref).
@@ -1216,7 +1216,7 @@ This special `matcher` achieves the following:
 ## Performing multiple global continuations to incorporate prescribed parameter changes and parameter uncertainty
 
 In this example we continue with the same model used in the previous example,
-the cloud model of [Datseris2026IntermingledClouds](@cite).
+the cloud model of [Datseris2026Clouds](@cite).
 In that model there are some key parameters that must be studied, all of
 which affect transitions between different cloud states.
 They are named as `D, U, δ_Δ₊T, RH₊, δ_FTR`.
@@ -1233,7 +1233,7 @@ We first make the following helper function that will be generating parameter cu
 (and remember, all parameters are named due to using ModelingToolkit.jl):
 
 ```@example MAIN
-using Distributions: Uniform
+using Distributions: Uniform, Normal
 
 function sample_pcurve(time = 0:14)
     # inputs
@@ -1243,7 +1243,7 @@ function sample_pcurve(time = 0:14)
         :δ_Δ₊T => Uniform(1, 10),
         :RH₊ => Uniform(0.1, 0.4),
         :δ_FTR => Uniform(0, 10),
-        :CO2 => Uniform(400, 400), # no uncertainty
+        :CO2 => Normal(400, 0), # no uncertainty
     )
     rates = Dict(:CO2 => 100, :D => -0.05e-6, :U => -0.1)
 
@@ -1257,6 +1257,7 @@ function sample_pcurve(time = 0:14)
             p[k] = starts[k] + rate*t
         end
     end
+    return pcurve
 end
 ```
 
