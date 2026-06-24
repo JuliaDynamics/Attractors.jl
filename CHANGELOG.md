@@ -1,3 +1,21 @@
+# Unreleased
+
+- New function `aggregate_continuation`: a post-processing companion of `global_continuation`
+  that merges similar attractors into groups across a parameter range. At each parameter step
+  attractors are featurized (`featurizer`) and grouped (`group_config`), and the merged groups
+  are matched between consecutive steps *in feature space* using `MatchBySSSetDistance` (the set
+  distance is configurable via the `distance` keyword, defaulting to `Centroid()`). It returns
+  `(agg_attractors_cont, centroids_cont, members_cont)`, all sharing consistent group IDs along
+  the parameter axis. Pass `agg_attractors_cont` to `stability_measures_along_continuation` to
+  obtain stability measures (including basin fractions) for the aggregated groups.
+- New function `aggregate_attractors`: the single-parameter building block of
+  `aggregate_continuation`, aggregating one dictionary of attractors and returning
+  `(agg_attractors, centroids, members)`.
+- Removed the `featurizer` and `group_config` keyword arguments from `finalize_accumulator` and
+  `stability_measures_along_continuation`. Attractor aggregation for stability measures is now
+  done explicitly via `aggregate_continuation` (`finalize_accumulator` still returns its second
+  value, the dictionary of attractors).
+
 # v1.38
 
 - Grouping via nearest feature has been improved; allows for two new keywords

@@ -1,9 +1,9 @@
-export aggregate_continuation
+export aggregate_continuation, aggregate_attractors
 
 """
     aggregate_continuation(
-        attractors_cont, featurizer, group_config [, info_extraction]
-    ) → agg_attractors_cont, aggregated_info
+        attractors_cont, featurizer, group_config; distance = Centroid()
+    ) → agg_attractors_cont, centroids_cont, members_cont
 
 Aggregate the attractors of a [`global_continuation`](@ref) by merging similar ones into groups
 across the parameter range.
@@ -19,11 +19,15 @@ basin fractions of the groups included — for the aggregated groups.
 
 At each parameter step the attractors are turned into feature vectors with `featurizer` and
 partitioned into groups with `group_config` (a [`GroupingConfig`](@ref)); the members of a group
-are merged into a single `StateSpaceSet`. Each group is summarised by the centroid of its
-members' feature vectors, and these centroids are matched between consecutive parameter steps
-with [`MatchByFeatureDistance`](@ref), so that a group keeps the same ID along the parameter axis
-(it is tracked by the continuity of its feature centroid). Because matching is centroid-based,
-`featurizer` must return *numeric* feature vectors (e.g. `SVector`s).
+are merged into a single `StateSpaceSet`. To keep group IDs consistent along the parameter axis,
+groups are matched between consecutive parameter steps *in feature space*: the set of member
+feature vectors of each group is collected into a `StateSpaceSet` and these are matched with
+[`MatchBySSSetDistance`](@ref) using the `distance` keyword. By default `distance = Centroid()`,
+i.e. groups are matched by the distance between their feature-vector centroids; any other
+set-distance accepted by [`setsofsets_distances`](@ref) (e.g. [`Hausdorff`](@ref),
+[`StrictlyMinimumDistance`](@ref), or a custom `f(A, B)`) instead compares the full feature-vector
+sets. Because matching is in feature space, `featurizer` must return *numeric* feature vectors
+(e.g. `SVector`s).
 
 ## Input
 
@@ -32,16 +36,23 @@ with [`MatchByFeatureDistance`](@ref), so that a group keeps the same ID along t
 2. `featurizer`: a 1-argument function mapping an attractor to a numeric feature vector.
    Features expected by [`GroupingConfig`](@ref) are typically `SVector`s.
 3. `group_config`: a subtype of [`GroupingConfig`](@ref).
-4. `info_extraction`: a function mapping the vector of a group's per-step centroids to a
-   descriptor of the group. Optional; defaults to the mean centroid.
+
+## Keyword arguments
+
+- `distance = Centroid()`: the set-distance used to match groups across parameter steps in feature
+  space, forwarded to [`MatchBySSSetDistance`](@ref). Can be any distance accepted by
+  [`setsofsets_distances`](@ref).
 
 ## Return
 
 1. `agg_attractors_cont`: like `attractors_cont`, but mapping each group ID to the merged
    `StateSpaceSet` of its members.
-2. `aggregated_info`: a dictionary mapping each group ID to its `info_extraction` descriptor.
+2. `centroids_cont`: a vector of dictionaries (one per parameter step) mapping each group ID to the
+   centroid (mean) of its members' feature vectors at that step.
+3. `members_cont`: a vector of dictionaries (one per parameter step) mapping each group ID to the
+   vector of original attractor IDs (the keys of `attractors_cont[i]`) merged into it at that step.
 
-Both share consistent group IDs along the parameter axis.
+All three share consistent group IDs along the parameter axis.
 
 ## Aggregating stability measures
 
@@ -51,41 +62,82 @@ then treated as a single attractor, so every measure — including those that ne
 data, such as medians and critical shock magnitudes — is computed correctly for the group.
 """
 function aggregate_continuation(
-        attractors_cont::Vector, featurizer, group_config,
-        info_extraction = mean_across_features, # function from grouping continuation
+        attractors_cont::Vector, featurizer, group_config;
+        distance = Centroid(),
     )
     P = length(attractors_cont)
     agg_attractors_cont = Dict[]
-    centroids_cont = Dict[]
+    feature_sets_cont = Dict[]
+    members_cont = Dict[]
     for i in 1:P
-        agg_attractors, centroids = _aggregate_attractors_step(
+        agg_attractors, feature_sets, members = _aggregate_one_step(
             attractors_cont[i], featurizer, group_config
         )
         push!(agg_attractors_cont, agg_attractors)
-        push!(centroids_cont, centroids)
+        push!(feature_sets_cont, feature_sets)
+        push!(members_cont, members)
     end
-    # match groups across steps by the Euclidean distance of their feature centroids
+    # match groups across steps by the set distance of their feature-vector sets (i.e. in feature
+    # space), then propagate the same ID remapping to the merged attractors and membership dicts
     if P > 1
-        rmaps = match_sequentially!(centroids_cont, MatchByFeatureDistance())
+        rmaps = match_sequentially!(feature_sets_cont, MatchBySSSetDistance(; distance))
         match_sequentially!(agg_attractors_cont, rmaps)
+        match_sequentially!(members_cont, rmaps)
     end
-    aggregated_info = _aggregated_info(centroids_cont, info_extraction)
-    return agg_attractors_cont, aggregated_info
+    centroids_cont = [_feature_centroids(feature_sets) for feature_sets in feature_sets_cont]
+    return agg_attractors_cont, centroids_cont, members_cont
 end
 
-# Group one parameter step's attractors. Returns `(agg_attractors, centroids)`: the members of a
-# group are merged into one `StateSpaceSet`, and `centroids` maps each group to the mean of its
-# members' feature vectors (used to match groups across parameter steps).
-function _aggregate_attractors_step(attractors, featurizer, group_config)
+"""
+    aggregate_attractors(attractors, featurizer, group_config) → agg_attractors, centroids, members
+
+Aggregate the `attractors` of a *single* parameter (a dictionary mapping IDs to
+`StateSpaceSet`s, as returned by [`basins_fractions`](@ref) or one slice of a
+[`global_continuation`](@ref) output) by merging similar ones into groups.
+
+This is the single-parameter building block of [`aggregate_continuation`](@ref); use it directly
+when you only want to group the attractors found at one parameter value and there is nothing to
+continue.
+
+Each attractor is turned into a feature vector with `featurizer` and the attractors are
+partitioned into groups with `group_config` (a [`GroupingConfig`](@ref)). The members of a group
+are merged into a single `StateSpaceSet`.
+
+## Return
+
+1. `agg_attractors`: like `attractors`, but mapping each group ID to the merged `StateSpaceSet`
+   of its members.
+2. `centroids`: a dictionary mapping each group ID to the centroid (mean) of its members' feature
+   vectors. This summarises where each group sits in feature space; the per-step version of this
+   is the second output of [`aggregate_continuation`](@ref).
+3. `members`: a dictionary mapping each group ID to the vector of original attractor IDs (the keys
+   of `attractors`) that were merged into it.
+
+To compute stability measures for the merged groups, pass `agg_attractors` to
+[`stability_measures_along_continuation`](@ref) (wrapping it and the parameter in length-1
+vectors if you have a single parameter).
+"""
+function aggregate_attractors(attractors, featurizer, group_config)
+    agg_attractors, feature_sets, members = _aggregate_one_step(attractors, featurizer, group_config)
+    centroids = _feature_centroids(feature_sets)
+    return agg_attractors, centroids, members
+end
+
+# Group one parameter step's attractors. Returns `(agg_attractors, feature_sets, members)`:
+# the members of a group are merged into one `StateSpaceSet` (`agg_attractors`), the group's
+# member feature vectors are collected into a `StateSpaceSet` (`feature_sets`, used to match
+# groups across steps in feature space), and `members` maps each group to the original IDs.
+function _aggregate_one_step(attractors, featurizer, group_config)
+    K = keytype(attractors)
     ids = filter(!isequal(-1), collect(keys(attractors)))
     if isempty(ids)
-        return empty(attractors), Dict{Int, Any}()
+        return empty(attractors), Dict{K, Any}(), Dict{K, Vector{K}}()
     end
     features = [featurizer(attractors[id]) for id in ids]
     labels = group_features(features, group_config)
-    agg_attractors = Dict{keytype(attractors), valtype(attractors)}()
-    feature_sums = Dict{Int, eltype(features)}()
-    counts = Dict{Int, Int}()
+    agg_attractors = Dict{K, valtype(attractors)}()
+    feature_vecs = Dict{K, Vector{eltype(features)}}()
+    members = Dict{K, Vector{K}}()
     for (id, label, f) in zip(ids, labels, features)
         if haskey(agg_attractors, label)
             agg_attractors[label] = StateSpaceSet(
@@ -94,22 +146,12 @@ function _aggregate_attractors_step(attractors, featurizer, group_config)
         else
             agg_attractors[label] = attractors[id]
         end
-        feature_sums[label] = get(feature_sums, label, zero(f)) + f
-        counts[label] = get(counts, label, 0) + 1
+        push!(get!(feature_vecs, label, eltype(features)[]), f)
+        push!(get!(members, label, K[]), id)
     end
-    centroids = Dict(label => feature_sums[label] / counts[label] for label in keys(feature_sums))
-    return agg_attractors, centroids
+    feature_sets = Dict(label => StateSpaceSet(vecs) for (label, vecs) in feature_vecs)
+    return agg_attractors, feature_sets, members
 end
 
-# Summarise each group across the continuation by applying `info_extraction` to the vector of
-# the group's per-step centroids.
-function _aggregated_info(centroids_cont, info_extraction)
-    ids = setdiff(unique_keys(centroids_cont), [-1])
-    return Dict(
-        id => info_extraction([
-            centroids_cont[i][id]
-            for i in eachindex(centroids_cont) if haskey(centroids_cont[i], id)
-        ])
-        for id in ids
-    )
-end
+# Centroid (mean feature vector) of each group's feature-vector set.
+_feature_centroids(feature_sets) = Dict(g => sum(s) / length(s) for (g, s) in feature_sets)

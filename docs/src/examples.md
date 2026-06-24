@@ -595,6 +595,91 @@ plot_basins_curves(aggregated_fractions, prange;
 
 (in hindsight, the labels are reversed; attractor 1 is the alive one, but oh well)
 
+## [Aggregated stability measures of a population model](@id aggregate_continuation_example)
+
+The example above aggregates *basin fractions* with [`aggregate_attractor_fractions`](@ref).
+Often we instead want the full suite of [stability measures](@ref StabilityMeasuresAccumulator)
+for the aggregated groups, tracked across a parameter. The recipe is: run a normal
+[`global_continuation`](@ref), merge the attractors into groups with
+[`aggregate_continuation`](@ref), and feed the merged attractors to
+[`stability_measures_along_continuation`](@ref).
+
+We use the two-habitat population model with Allee effect of
+[Schoenmakers2021](@cite). The state `X = (X₁, X₂)` are the (normalised) population
+densities of two coupled habitats, and we vary the carrying capacity `K₁` of habitat 1
+(its quality declines as `K₁` decreases). For low enough `K₁` the only surviving state is
+total extinction `X = (0, 0)`.
+
+```@example population_aggregation
+using Attractors
+using OrdinaryDiffEqVerner: Vern9
+using Statistics: mean
+using CairoMakie
+
+function population_rule(X, p, t)
+    X1, X2 = X
+    K1, r1, a1, r2, a2, K2, d = p
+    dX1 = r1 * X1 * (1 - X1/K1) * (X1 - a1) + d * (X2 - X1)
+    dX2 = r2 * X2 * (1 - X2/K2) * (X2 - a2) + d * (X1 - X2)
+    return SVector(dX1, dX2)
+end
+
+p0 = [0.9, 0.8, 0.3, 0.8, 0.8, 0.42, 0.1] # K₁, r₁, a₁, r₂, a₂, K₂, d
+ds = CoupledODEs(population_rule, [0.7, 0.7], p0;
+    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9))
+
+xg = yg = range(-0.001, 1.0; length = 101)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(ds, grid;
+    Δt = 0.1, consecutive_recurrences = 1000, consecutive_lost_steps = 1000)
+
+# A short continuation in K₁ with few samples, to keep the example fast
+prange = range(0.91, 0.89; length = 5)
+pidx = 1
+sampler, = statespace_sampler(grid, 1234)
+alg = RecurrencesFindAndMatch(mapper; distance = StrictlyMinimumDistance())
+fractions_cont, attractors_cont = global_continuation(
+    alg, prange, pidx, sampler; samples_per_parameter = 100, show_progress = false)
+
+length.(values.(attractors_cont)) # number of attractors at each step
+```
+
+Now we aggregate. We do not care which particular non-extinction state the system settles
+into — only whether the species survives at all. So we featurize each attractor by whether
+it is the extinction state and group with [`GroupViaPairwiseComparison`](@ref), collapsing all
+"functioning" attractors into one group while keeping extinction separate. We then pass the
+merged attractors to [`stability_measures_along_continuation`](@ref); each group is treated as a
+single attractor, so its basin fraction is the total fraction of state space leading to it.
+
+```@example population_aggregation
+is_extinction(A; threshold = 0.02) = mean(sum(Array(p)) for p in A) < threshold
+biomass_featurizer = A -> SVector(Float64(is_extinction(A)))
+agg_config = GroupViaPairwiseComparison(; threshold = 0.5, rescale_features = false)
+
+agg_attractors_cont, centroids_cont, members_cont =
+    aggregate_continuation(attractors_cont, biomass_featurizer, agg_config)
+
+pcurve = [Dict(pidx => v) for v in prange]
+ics = [copy(sampler()) for _ in 1:100]
+measures_cont = stability_measures_along_continuation(
+    ds, agg_attractors_cont, pcurve, ics;
+    ε = 0.05, finite_time = 100.0, show_progress = false)
+
+# The extinction group is the one whose feature centroid is 1
+extinct_id = only(id for (id, c) in centroids_cont[end] if c[1] > 0.5)
+alive_id   = only(id for (id, c) in centroids_cont[end] if c[1] < 0.5)
+fig = plot_basins_curves(measures_cont["basin_fraction"], prange;
+    colors = Dict(extinct_id => "black", alive_id => "green"),
+    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
+)
+fig
+```
+
+`measures_cont` holds every other stability measure too (e.g.
+`measures_cont["mean_convergence_time"]`), each computed for the merged groups with IDs that
+stay consistent along the parameter axis. The third output `members_cont` records which original
+attractor IDs were merged into each group at each step.
+
 ## Trivial featurizing and grouping for basins fractions
 
 This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsViaFeaturizing`](@ref) we just create a julia function that returns this last point
