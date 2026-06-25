@@ -37,7 +37,7 @@ using Random
             id = accumulator(u0) # run this to accumulate measures
         end
 
-        results, _ = finalize_accumulator(accumulator)
+        results = finalize_accumulator(accumulator)
 
         # The expected results are computed as in the following example:
         # maximal_noncritical_shock of attractor 2 at [1, 1] is computed as the distance between the
@@ -204,7 +204,7 @@ end
     end
 
     @testset "mapping" begin
-        results, _ = finalize_accumulator(accumulator)
+        results = finalize_accumulator(accumulator)
         # Define expected results for the linear system
         results_expected = Dict(
             "characteristic_return_time" => Dict(1 => 2.0),
@@ -278,7 +278,7 @@ end
     for u0 in A
         id = accumulator(u0)
     end
-    stability_measures, _ = finalize_accumulator(accumulator)
+    stability_measures = finalize_accumulator(accumulator)
 
     measures = ["basin_stability", "minimal_critical_shock_magnitude"]
 
@@ -336,7 +336,7 @@ end
         id = accumulator(u0) # run this to accumulate measures
     end
 
-    results, _ = finalize_accumulator(accumulator)
+    results = finalize_accumulator(accumulator)
 
     @test haskey(results, "extra")
     @test results["extra"] isa Dict
@@ -379,7 +379,7 @@ end
     @testset "single parameter" begin
         fs, labels = basins_fractions(accumulator, ics)
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
-        measures, _ = finalize_accumulator(accumulator)
+        measures = finalize_accumulator(accumulator)
         @test isequal(measures["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
     end
 

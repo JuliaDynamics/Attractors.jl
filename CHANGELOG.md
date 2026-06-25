@@ -13,8 +13,10 @@
   `(agg_attractors, centroids, members)`.
 - Removed the `featurizer` and `group_config` keyword arguments from `finalize_accumulator` and
   `stability_measures_along_continuation`. Attractor aggregation for stability measures is now
-  done explicitly via `aggregate_continuation` (`finalize_accumulator` still returns its second
-  value, the dictionary of attractors).
+  done explicitly via `aggregate_continuation`.
+- `finalize_accumulator` now returns only the dictionary of stability measures (previously it also
+  returned the dictionary of attractors as a second value). The attractors are always those of the
+  accumulator's mapper and can be obtained with `extract_attractors(accumulator)`.
 
 # v1.39
 

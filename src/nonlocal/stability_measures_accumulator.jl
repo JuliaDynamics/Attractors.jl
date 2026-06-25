@@ -24,11 +24,10 @@ argument, see the Extra quantifiers section below.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
-the [`finalize_accumulator`](@ref) function should be called which will return two
-dictionaries: (1) a dictionary of all stability measures estimated by the accumulator,
+the [`finalize_accumulator`](@ref) function should be called which will return a
+dictionary of all stability measures estimated by the accumulator,
 where each entry maps the stability measure description (`String`) to a dictionary
-mapping attractor IDs to the stability measure value; and (2) a dictionary mapping
-attractor IDs to the corresponding attractor (`StateSpaceSet`).
+mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
 This functionality was developed as part of [Morr2026](@cite) and has now been extended
 to work for any `AttractorMapper`, current or future.
@@ -257,10 +256,11 @@ end
 """
     finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
-Return two dictionaries:
-1. a dictionary mapping stability measures (strings) to dictionaries
-  mapping attractor IDs to corresponding measure values.
-2. a dictionary mapping attractor IDs to the attractor state space set.
+Return a dictionary mapping stability measures (strings) to dictionaries
+mapping attractor IDs to corresponding measure values.
+
+The attractors themselves are those of the `accumulator`'s mapper and can be
+obtained with `extract_attractors(accumulator)`.
 
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 
@@ -479,7 +479,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         end
     end
 
-    return output, attractors
+    return output
 end
 
 # Weighted median: smallest x with cumulative weight ≥ 0.5.

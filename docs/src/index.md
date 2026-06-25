@@ -10,6 +10,9 @@ using CairoMakie, Attractors
 
 ## Latest news
 
+- Attractors found by a global continuation can be aggregated into user-defined groups with
+  `aggregate_continuation` (or `aggregate_attractors` for a single parameter) before computing
+  stability measures via `stability_measures_along_continuation`.
 - **v1.36**: Three enhancements to `StabilityMeasuresAccumulator`:
   (1) local stability measures are now estimated for discrete-time systems too;
   (2) attractors can be aggregated before computing measures via `featurizer`/`group_config`
