@@ -593,6 +593,24 @@ agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
 members_cont
 ```
 
+
+```@example MAIN
+
+
+function aggregate_fractions(fractions_cont, members_cont)
+    agg_fractions = map(eachindex(members_cont)) do i
+        fs = fractions_cont[i]
+        members = members_cont[i]
+        Dict(k => sum(fs[mk] for mk in m) for (k, m) in members)
+    end
+    return agg_fractions
+end
+
+aggregate_fractions(fractions_cont, members_cont)
+
+
+```
+
 We then pass the merged attractors to [`stability_measures_along_continuation`](@ref).
 Each group is treated as a single attractor, so its basin fraction is the total fraction of state space leading to it.
 
@@ -611,8 +629,16 @@ fig = plot_basins_curves(measures_cont["basin_fraction"], prange;
 )
 
 # `measures_cont` holds every other stability measure too
-ax = Axis(fig[0,1])
+ax = Axis(fig[0,1]; ylabel = "mct")
 plot_continuation_curves!(ax, measures_cont["mean_convergence_time"], prange;
+    colors = Dict(extinct_id => "black", alive_id => "green"),
+    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
+)
+
+# and for clarity we plot the number of aggregated attractors
+ax = Axis(fig[-1,1]; ylabel = "# aggregates")
+lengths_cont = [Dict(k => length(vals) for (k, vals) in d) for d in members_cont]
+plot_continuation_curves!(ax, lengths_cont, prange;
     colors = Dict(extinct_id => "black", alive_id => "green"),
     labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
 )

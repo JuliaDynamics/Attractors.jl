@@ -1,4 +1,4 @@
-export aggregate_continuation, aggregate_attractors
+export aggregate_continuation, aggregate_attractors, aggregate_fractions
 
 """
     aggregate_continuation(attractors_cont, featurizer, group_config; kw...)
@@ -155,3 +155,19 @@ end
 
 # Centroid (mean feature vector) of each group's feature-vector set.
 _feature_centroids(feature_sets) = Dict(g => sum(s) / length(s) for (g, s) in feature_sets)
+
+"""
+    aggregate_fractions(fractions_cont, members_cont)
+
+Simple convenience function that aggregates the basin fractions resulting from a
+[`global_continuation`](@ref), given the members of each aggregated group.
+The latter is the output of [`aggregate_continuation`](@ref).
+"""
+function aggregate_fractions(fractions_cont, members_cont)
+    agg_fractions = map(eachindex(members_cont)) do i
+        fs = fractions_cont[i]
+        members = members_cont[i]
+        Dict(k => sum(fs[mk] for mk in m) for (k, m) in members)
+    end
+    return agg_fractions
+end
