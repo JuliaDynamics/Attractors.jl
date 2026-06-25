@@ -610,7 +610,7 @@ densities of two coupled habitats, and we vary the carrying capacity `K₁` of h
 (its quality declines as `K₁` decreases). For low enough `K₁` the only surviving state is
 total extinction `X = (0, 0)`.
 
-```@example population_aggregation
+```@example MAIN
 using Attractors
 using OrdinaryDiffEqVerner: Vern9
 using Statistics: mean
@@ -635,35 +635,47 @@ mapper = AttractorsViaRecurrences(ds, grid;
 
 # A short continuation in K₁ with few samples, to keep the example fast
 prange = range(0.91, 0.89; length = 5)
-pidx = 1
+pcurve = [Dict(1 => v) for v in prange]
 sampler, = statespace_sampler(grid, 1234)
 alg = RecurrencesFindAndMatch(mapper; distance = StrictlyMinimumDistance())
 fractions_cont, attractors_cont = global_continuation(
-    alg, prange, pidx, sampler; samples_per_parameter = 100, show_progress = false)
+    alg, pcurve, sampler; samples_per_parameter = 100, show_progress = false
+)
 
 length.(values.(attractors_cont)) # number of attractors at each step
 ```
 
 Now we aggregate. We do not care which particular non-extinction state the system settles
 into — only whether the species survives at all. So we featurize each attractor by whether
-it is the extinction state and group with [`GroupViaPairwiseComparison`](@ref), collapsing all
-"functioning" attractors into one group while keeping extinction separate. We then pass the
-merged attractors to [`stability_measures_along_continuation`](@ref); each group is treated as a
-single attractor, so its basin fraction is the total fraction of state space leading to it.
-
-```@example population_aggregation
+it is the extinction state using the following featurizer:
+```@example MAIN
 is_extinction(A; threshold = 0.02) = mean(sum(Array(p)) for p in A) < threshold
 biomass_featurizer = A -> SVector(Float64(is_extinction(A)))
+```
+We can group the attractors that share similar features with pretty much any [`GroupingConfing`](@ref), here we use
+
+```@example MAIN
 agg_config = GroupViaPairwiseComparison(; threshold = 0.5, rescale_features = false)
+```
 
-agg_attractors_cont, centroids_cont, members_cont =
-    aggregate_continuation(attractors_cont, biomass_featurizer, agg_config)
+and proceed with the aggregation
 
-pcurve = [Dict(pidx => v) for v in prange]
-ics = [copy(sampler()) for _ in 1:100]
+```@example MAIN
+agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
+    attractors_cont, biomass_featurizer, agg_config
+)
+
+members_cont
+```
+
+We then pass the merged attractors to [`stability_measures_along_continuation`](@ref).
+Each group is treated as a single attractor, so its basin fraction is the total fraction of state space leading to it.
+
+```@example MAIN
 measures_cont = stability_measures_along_continuation(
-    ds, agg_attractors_cont, pcurve, ics;
-    ε = 0.05, finite_time = 100.0, show_progress = false)
+    ds, agg_attractors_cont, pcurve, sampler;
+    ε = 0.05, finite_time = 100.0, show_progress = false
+)
 
 # The extinction group is the one whose feature centroid is 1
 extinct_id = only(id for (id, c) in centroids_cont[end] if c[1] > 0.5)
@@ -672,13 +684,16 @@ fig = plot_basins_curves(measures_cont["basin_fraction"], prange;
     colors = Dict(extinct_id => "black", alive_id => "green"),
     labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
 )
+
+# `measures_cont` holds every other stability measure too
+ax = Axis(fig[0,1])
+plot_continuation_curves!(ax, measures_cont["mean_convergence_time"], prange;
+    colors = Dict(extinct_id => "black", alive_id => "green"),
+    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
+)
+
 fig
 ```
-
-`measures_cont` holds every other stability measure too (e.g.
-`measures_cont["mean_convergence_time"]`), each computed for the merged groups with IDs that
-stay consistent along the parameter axis. The third output `members_cont` records which original
-attractor IDs were merged into each group at each step.
 
 ## Trivial featurizing and grouping for basins fractions
 
