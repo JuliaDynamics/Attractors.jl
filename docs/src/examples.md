@@ -521,85 +521,10 @@ fig
 
 as you can see, two of the three fixed points, and their stability, do not depend at all on the parameter value, since this parameter value tunes the magnetic strength of only the third magnet. Nevertheless, the **fractions of basin of attraction** of all attractors depend strongly on the parameter. This is a simple example that highlights excellently how this new approach we propose here should be used even if one has already done a standard linearized bifurcation analysis.
 
-
-## [Extinction of a species in a multistable competition model](@id aggregation_example)
-
-In this advanced example we utilize both [`RecurrencesFindAndMatch`](@ref) and [`aggregate_attractor_fractions`](@ref) in analyzing species extinction in a dynamical model of competition between multiple species.
-The final goal is to show the percentage of how much of the state space leads to the extinction or not of a pre-determined species, as we vary a parameter. The model however displays extreme multistability, a feature we want to measure and preserve before aggregating information into "extinct or not".
-
-To measure and preserve this we will apply [`RecurrencesFindAndMatch`](@ref) as-is first. Then we can aggregate information. First we have
-```julia
-using Attractors, OrdinaryDiffEqVerner
-using PredefinedDynamicalSystems
-using Random: Xoshiro
-# arguments to algorithms
-samples_per_parameter = 1000
-total_parameter_values = 101
-diffeq = (alg = Vern9(), reltol = 1e-9, abstol = 1e-9, maxiters = Inf)
-recurrences_kwargs = (; Δt= 1.0, consecutive_recurrences=9, diffeq);
-# initialize dynamical system and sampler
-ds = PredefinedDynamicalSystems.multispecies_competition() # 8-dimensional
-ds = CoupledODEs(ODEProblem(ds), diffeq)
-# define grid in state space
-xg = range(0, 60; length = 300)
-grid = ntuple(x -> xg, 8)
-prange = range(0.2, 0.3; length = total_parameter_values)
-pidx = :D
-sampler, = statespace_sampler(grid, 1234)
-# initialize mapper
-mapper = AttractorsViaRecurrences(ds, grid; recurrences_kwargs...)
-# perform continuation of attractors and their basins
-alg = RecurrencesFindAndMatch(mapper; threshold = Inf)
-fractions_cont, attractors_cont = global_continuation(
-    alg, prange, pidx, sampler;
-    show_progress = true, samples_per_parameter
-)
-plot_basins_curves(fractions_cont, prange; separatorwidth = 1)
-```
-
-![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions.png)
-
-_this example is not actually run when building the docs, because it takes about 60 minutes to complete depending on the computer; we load precomputed results instead_
-
-As you can see, the system has extreme multistability with 64 unique attractors
-(according to the default matching behavior in [`RecurrencesFindAndMatch`](@ref); a stricter matching with less than `Inf` threshold would generate more "distinct" attractors).
-One could also isolate a specific parameter slice, and do the same as what we do in
-the [Fractality of 2D basins of the (4D) magnetic pendulum](@ref) example, to prove that the basin boundaries are fractal, thereby indeed confirming the paper title "Fundamental Unpredictability".
-
-Regardless, we now want to continue our analysis to provide a figure similar to the
-above but only with two colors: fractions of attractors where a species is extinct or not. Here's how:
-
-```julia
-species = 3 # species we care about its existence
-
-featurizer = (A) -> begin
-    i = isextinct(A, species)
-    return SVector(Int32(i))
-end
-isextinct(A, idx = unitidxs) = all(a -> a <= 1e-2, A[:, idx])
-
-# `minneighbors = 1` is crucial for grouping single attractors
-groupingconfig = GroupViaClustering(; min_neighbors=1, optimal_radius_method=0.5)
-
-aggregated_fractions, aggregated_info = aggregate_attractor_fractions(
-    fractions_cont, attractors_cont, featurizer, groupingconfig
-)
-
-plot_basins_curves(aggregated_fractions, prange;
-    separatorwidth = 1, colors = ["green", "black"],
-    labels = Dict(1 => "extinct", 2 => "alive"),
-)
-```
-
-![](https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/multispecies_competition_fractions_aggr.png)
-
-(in hindsight, the labels are reversed; attractor 1 is the alive one, but oh well)
-
 ## [Aggregated stability measures of a population model](@id aggregate_continuation_example)
 
-The example above aggregates *basin fractions* with [`aggregate_attractor_fractions`](@ref).
-Often we instead want the full suite of [stability measures](@ref StabilityMeasuresAccumulator)
-for the aggregated groups, tracked across a parameter. The recipe is: run a normal
+This example discusses aggregation of continuation results: where a dynamical system may have multiple attractors, but some of them share the same functional/operating state for the context of the system. In such cases, you want to aggregate attractors with similar function.
+The recommended recipe to do this is: run a normal
 [`global_continuation`](@ref) to find attractors, merge the attractors into user defined groups
 with [`aggregate_continuation`](@ref), and feed the merged attractors to
 [`stability_measures_along_continuation`](@ref) for the computation of stability measures.
@@ -645,11 +570,11 @@ fractions_cont, attractors_cont = global_continuation(
 length.(values.(attractors_cont)) # number of attractors at each step
 ```
 
-Now we aggregate. We do not care which particular non-extinction state the system settles
-into — only whether the species survives at all. So we featurize each attractor by whether
-it is the extinction state using the following featurizer:
+Now we aggregate. We do this, because we do not care which particular non-extinction state
+the system settles into — only whether the species survives at all. So we featurize each
+attractor by whether it is the extinction state using the following featurizer:
 ```@example MAIN
-is_extinction(A; threshold = 0.02) = mean(sum(Array(p)) for p in A) < threshold
+is_extinction(A) = mean(sum(Array(p)) for p in A) < 0.02
 biomass_featurizer = A -> SVector(Float64(is_extinction(A)))
 ```
 We can group the attractors that share similar features with pretty much any [`GroupingConfing`](@ref), here we use
