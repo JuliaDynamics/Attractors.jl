@@ -214,6 +214,32 @@ and for focusing on specific dimensions.
 Moreover, intermingledness is defined _per_ basin, while basin entropy is
 a quantity characterizing the whole basin structure.
 
+## Trivial featurizing and grouping for basins fractions
+
+This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsViaFeaturizing`](@ref) we just create a julia function that returns this last point
+
+```@example MAIN
+using Attractors
+using PredefinedDynamicalSystems
+
+ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
+
+function featurizer(X, t)
+    return X[end]
+end
+
+mapper = AttractorsViaFeaturizing(psys, featurizer; Ttr = 200, T = 1)
+
+xg = yg = range(-4, 4; length = 101)
+
+region = HRectangle([-4, 4], [4, 4])
+sampler, = statespace_sampler(region)
+
+fs = basins_fractions(mapper, sampler; show_progress = false)
+```
+As expected, the fractions are each about 1/3 due to the system symmetry.
+
 ## 3D basins via recurrences
 
 To showcase the true power of [`AttractorsViaRecurrences`](@ref) we need to use a system whose attractors span higher-dimensional space. An example is
@@ -646,40 +672,12 @@ plot_continuation_curves!(ax, lengths_cont, prange;
 fig
 ```
 
-## Trivial featurizing and grouping for basins fractions
 
-This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsViaFeaturizing`](@ref) we just create a julia function that returns this last point
-
-```@example MAIN
-using Attractors
-using PredefinedDynamicalSystems
-
-ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
-psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
-
-function featurizer(X, t)
-    return X[end]
-end
-
-mapper = AttractorsViaFeaturizing(psys, featurizer; Ttr = 200, T = 1)
-
-xg = yg = range(-4, 4; length = 101)
-
-region = HRectangle([-4, 4], [4, 4])
-sampler, = statespace_sampler(region)
-
-fs = basins_fractions(mapper, sampler; show_progress = false)
-```
-As expected, the fractions are each about 1/3 due to the system symmetry.
-
-
-## Featurizing and grouping across parameters (MCBB)
+## Featurizing and grouping across parameters (MCBB / FGAP)
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
 For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
 Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
-
- the Henon map and try to group attractors into period 1 (fixed point), period 3, and divergence to infinity. We will also use a pre-determined optimal radius for clustering, as we know a-priory the expected distances of features in feature space (due to the contrived form of the `featurizer` function below).
 
 ```@example MAIN
 using Attractors, Random
