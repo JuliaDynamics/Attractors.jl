@@ -600,12 +600,12 @@ plot_basins_curves(aggregated_fractions, prange;
 The example above aggregates *basin fractions* with [`aggregate_attractor_fractions`](@ref).
 Often we instead want the full suite of [stability measures](@ref StabilityMeasuresAccumulator)
 for the aggregated groups, tracked across a parameter. The recipe is: run a normal
-[`global_continuation`](@ref), merge the attractors into groups with
-[`aggregate_continuation`](@ref), and feed the merged attractors to
-[`stability_measures_along_continuation`](@ref).
+[`global_continuation`](@ref) to find attractors, merge the attractors into user defined groups
+with [`aggregate_continuation`](@ref), and feed the merged attractors to
+[`stability_measures_along_continuation`](@ref) for the computation of stability measures.
 
-We use the two-habitat population model with Allee effect of
-[Schoenmakers2021](@cite). The state `X = (X₁, X₂)` are the (normalised) population
+We use the two-habitat population model with Allee effect, also featured in Schoenmakers and
+Feudel [Schoenmakers2021](@cite). The state `X = (X₁, X₂)` are the (normalised) population
 densities of two coupled habitats, and we vary the carrying capacity `K₁` of habitat 1
 (its quality declines as `K₁` decreases). For low enough `K₁` the only surviving state is
 total extinction `X = (0, 0)`.
