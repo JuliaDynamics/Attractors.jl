@@ -122,6 +122,5 @@ end
 include("continuation_ascm_generic.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
-include("aggregate_attractor_fractions.jl")
 include("aggregate_continuation.jl")
 include("continuation_stability_measures.jl")

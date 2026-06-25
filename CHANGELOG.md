@@ -1,4 +1,12 @@
-# Unreleased
+# v2
+
+## New features
+
+## Breaking
+
+### Aggregation has been reworked and extended
+
+- Function `aggregate_attractor_fractions` removed.
 
 - New function `aggregate_continuation`: a post-processing companion of `global_continuation`
   that merges similar attractors into groups across a parameter range. At each parameter step
