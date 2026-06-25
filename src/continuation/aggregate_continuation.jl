@@ -1,25 +1,44 @@
 export aggregate_continuation, aggregate_attractors
 
 """
-    aggregate_continuation(
-        attractors_cont, featurizer, group_config; distance = Centroid()
-    ) → agg_attractors_cont, centroids_cont, members_cont
+    aggregate_continuation(attractors_cont, featurizer, group_config; kw...)
 
-Aggregate the attractors of a [`global_continuation`](@ref) by merging similar ones into groups
-across the parameter range.
+Aggregate the attractors of a [`global_continuation`](@ref) result.
 
-This is the post-processing companion of [`global_continuation`](@ref): run the continuation as
-usual to obtain `attractors_cont`, then call this function to "group" similar attractors (for
-example all states in which a given species is extinct) into a single merged attractor. The
-merged attractors carry IDs that stay consistent along the parameter axis, so they can be fed
-directly to [`stability_measures_along_continuation`](@ref) to obtain stability measures — the
-basin fractions of the groups included — for the aggregated groups.
+This is the post-processing companion of [`global_continuation`](@ref).
+After a `global_continuation` with [`AttractorSeedContinueMatch`](@ref),
+call this function to "group" attractors that have
+similar features into a single merged attractor. The
+merged attractors carry IDs that stay consistent along the parameter curve.
 
-## How grouping works
+## Arguments
+
+1. `attractors_cont`: a vector of dictionaries mapping IDs to attractors (`StateSpaceSet`s),
+   exactly as returned by [`global_continuation`](@ref) (or [`basins_fractions`](@ref)).
+2. `featurizer`: a 1-argument function mapping an attractor to a numeric feature vector.
+   Features expected by [`GroupingConfig`](@ref) are typically `SVector`s.
+3. `group_config`: a subtype of [`GroupingConfig`](@ref).
+
+All keyword arguments are propagated into [`MatchBySSSetDistance`](@ref). This matcher
+is used to match feature groups along the continuation. This is possible because
+a group of features is a vector of vectors, just like a StateSpaceSet is.
+
+## Return
+
+1. `agg_attractors_cont`: like `attractors_cont`, but mapping each group ID to the merged
+   `StateSpaceSet` of its members. (merged attractors are unions of the individual ones)
+2. `centroids_cont`: a vector of dictionaries mapping each group ID to the
+   centroid (mean) of its members' feature vectors at that step.
+3. `members_cont`: a vector of dictionaries mapping each group ID to the
+   vector of original attractor IDs (the keys of `attractors_cont[i]`) merged into it at that step.
+
+All three share consistent group IDs along the parameter axis.
+
+## Description
 
 At each parameter step the attractors are turned into feature vectors with `featurizer` and
 partitioned into groups with `group_config` (a [`GroupingConfig`](@ref)); the members of a group
-are merged into a single `StateSpaceSet`. To keep group IDs consistent along the parameter axis,
+are merged into a single `StateSpaceSet`. To keep group IDs consistent along the parameter curve,
 groups are matched between consecutive parameter steps *in feature space*: the set of member
 feature vectors of each group is collected into a `StateSpaceSet` and these are matched with
 [`MatchBySSSetDistance`](@ref) using the `distance` keyword. By default `distance = Centroid()`,
@@ -29,42 +48,14 @@ set-distance accepted by [`setsofsets_distances`](@ref) (e.g. [`Hausdorff`](@ref
 sets. Because matching is in feature space, `featurizer` must return *numeric* feature vectors
 (e.g. `SVector`s).
 
-## Input
-
-1. `attractors_cont`: a vector of dictionaries mapping IDs to attractors (`StateSpaceSet`s),
-   exactly as returned by [`global_continuation`](@ref) (or [`basins_fractions`](@ref)).
-2. `featurizer`: a 1-argument function mapping an attractor to a numeric feature vector.
-   Features expected by [`GroupingConfig`](@ref) are typically `SVector`s.
-3. `group_config`: a subtype of [`GroupingConfig`](@ref).
-
-## Keyword arguments
-
-- `distance = Centroid()`: the set-distance used to match groups across parameter steps in feature
-  space, forwarded to [`MatchBySSSetDistance`](@ref). Can be any distance accepted by
-  [`setsofsets_distances`](@ref).
-
-## Return
-
-1. `agg_attractors_cont`: like `attractors_cont`, but mapping each group ID to the merged
-   `StateSpaceSet` of its members.
-2. `centroids_cont`: a vector of dictionaries (one per parameter step) mapping each group ID to the
-   centroid (mean) of its members' feature vectors at that step.
-3. `members_cont`: a vector of dictionaries (one per parameter step) mapping each group ID to the
-   vector of original attractor IDs (the keys of `attractors_cont[i]`) merged into it at that step.
-
-All three share consistent group IDs along the parameter axis.
-
 ## Aggregating stability measures
 
-To obtain stability measures (including the basin fractions) for the aggregated groups, pass
+To obtain stability measures for the aggregated groups, pass
 `agg_attractors_cont` to [`stability_measures_along_continuation`](@ref). Each merged group is
 then treated as a single attractor, so every measure — including those that need the raw basin
 data, such as medians and critical shock magnitudes — is computed correctly for the group.
 """
-function aggregate_continuation(
-        attractors_cont::Vector, featurizer, group_config;
-        distance = Centroid(),
-    )
+function aggregate_continuation(attractors_cont::Vector, featurizer, group_config; kw...)
     P = length(attractors_cont)
     agg_attractors_cont = Dict[]
     feature_sets_cont = Dict[]
@@ -80,7 +71,7 @@ function aggregate_continuation(
     # match groups across steps by the set distance of their feature-vector sets (i.e. in feature
     # space), then propagate the same ID remapping to the merged attractors and membership dicts
     if P > 1
-        rmaps = match_sequentially!(feature_sets_cont, MatchBySSSetDistance(; distance))
+        rmaps = match_sequentially!(feature_sets_cont, MatchBySSSetDistance(; kw...))
         match_sequentially!(agg_attractors_cont, rmaps)
         match_sequentially!(members_cont, rmaps)
     end
