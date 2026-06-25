@@ -89,7 +89,7 @@ function aggregate_continuation(
 end
 
 """
-    aggregate_attractors(attractors, featurizer, group_config) → agg_attractors, centroids, members
+    aggregate_attractors(attractors::Dict, featurizer, group_config) → agg_attractors, centroids, members
 
 Aggregate the `attractors` of a *single* parameter (a dictionary mapping IDs to
 `StateSpaceSet`s, as returned by [`basins_fractions`](@ref) or one slice of a
@@ -117,7 +117,7 @@ To compute stability measures for the merged groups, pass `agg_attractors` to
 [`stability_measures_along_continuation`](@ref) (wrapping it and the parameter in length-1
 vectors if you have a single parameter).
 """
-function aggregate_attractors(attractors, featurizer, group_config)
+function aggregate_attractors(attractors::Dict, featurizer, group_config)
     agg_attractors, feature_sets, members = _aggregate_one_step(attractors, featurizer, group_config)
     centroids = _feature_centroids(feature_sets)
     return agg_attractors, centroids, members
