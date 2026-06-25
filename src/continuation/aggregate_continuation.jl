@@ -15,7 +15,7 @@ merged attractors carry IDs that stay consistent along the parameter curve.
 
 1. `attractors_cont`: a vector of dictionaries mapping IDs to attractors (`StateSpaceSet`s),
    exactly as returned by [`global_continuation`](@ref) (or [`basins_fractions`](@ref)).
-2. `featurizer`: a 1-argument function mapping an attractor to a numeric feature vector.
+2. `featurizer`: a 1-argument function mapping an attractor to a feature vector.
    Features expected by [`GroupingConfig`](@ref) are typically `SVector`s.
 3. `group_config`: a subtype of [`GroupingConfig`](@ref).
 
@@ -54,12 +54,21 @@ To obtain stability measures for the aggregated groups, pass
 `agg_attractors_cont` to [`stability_measures_along_continuation`](@ref). Each merged group is
 then treated as a single attractor, so every measure — including those that need the raw basin
 data, such as medians and critical shock magnitudes — is computed correctly for the group.
+
+See the [aggregation example](@ref aggregate_continuation_example) for an illustration.
+
+!!! note "Aggregating basin fractions only"
+    If you only care about aggregating the basin fractions, there is no reason to
+    go through the route of `stability_measures_along_continuation`.
+    Simply give the returned `members_cont` to XXX.
+    The denser the sampling for the original continuation was, the more accurate
+    the aggregated fractions will be, and there is no reason to re-run a continuation.
 """
 function aggregate_continuation(attractors_cont::Vector, featurizer, group_config; kw...)
     P = length(attractors_cont)
-    agg_attractors_cont = Dict[]
+    agg_attractors_cont = typeof(attractors_cont)()
     feature_sets_cont = Dict[]
-    members_cont = Dict[]
+    members_cont = Dict{Int, Vector{Int}}[]
     for i in 1:P
         agg_attractors, feature_sets, members = _aggregate_one_step(
             attractors_cont[i], featurizer, group_config
