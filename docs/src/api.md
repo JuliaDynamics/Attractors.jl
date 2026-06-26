@@ -162,14 +162,6 @@ AttractorSeedContinueMatch
 RecurrencesFindAndMatch
 ```
 
-### Aggregating attractors and fractions
-
-```@docs
-aggregate_attractor_fractions
-aggregate_attractors
-aggregate_continuation
-```
-
 ### Grouping continuation
 
 ```@docs
@@ -228,6 +220,14 @@ stability_measures_along_continuation
 ```@docs
 intermingledness
 boundary_intermingledness
+```
+
+## Aggregating attractors
+
+```@docs
+aggregate_attractors
+aggregate_continuation
+aggregate_fractions
 ```
 
 ## Visualization utilities

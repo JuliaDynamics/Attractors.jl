@@ -547,132 +547,6 @@ fig
 
 as you can see, two of the three fixed points, and their stability, do not depend at all on the parameter value, since this parameter value tunes the magnetic strength of only the third magnet. Nevertheless, the **fractions of basin of attraction** of all attractors depend strongly on the parameter. This is a simple example that highlights excellently how this new approach we propose here should be used even if one has already done a standard linearized bifurcation analysis.
 
-## [Aggregated stability measures of a population model](@id aggregate_continuation_example)
-
-This example discusses aggregation of continuation results: where a dynamical system may have multiple attractors, but some of them share the same functional/operating state for the context of the system. In such cases, you want to aggregate attractors with similar function.
-The recommended recipe to do this is: run a normal
-[`global_continuation`](@ref) to find attractors, merge the attractors into user defined groups
-with [`aggregate_continuation`](@ref), and feed the merged attractors to
-[`stability_measures_along_continuation`](@ref) for the computation of stability measures.
-
-We use the two-habitat population model with Allee effect, also featured in Schoenmakers and
-Feudel [Schoenmakers2021](@cite). The state `X = (X₁, X₂)` are the (normalised) population
-densities of two coupled habitats, and we vary the carrying capacity `K₁` of habitat 1
-(its quality declines as `K₁` decreases). For low enough `K₁` the only surviving state is
-total extinction `X = (0, 0)`.
-
-```@example MAIN
-using Attractors
-using OrdinaryDiffEqVerner: Vern9
-using Statistics: mean
-using CairoMakie
-
-function population_rule(X, p, t)
-    X1, X2 = X
-    K1, r1, a1, r2, a2, K2, d = p
-    dX1 = r1 * X1 * (1 - X1/K1) * (X1 - a1) + d * (X2 - X1)
-    dX2 = r2 * X2 * (1 - X2/K2) * (X2 - a2) + d * (X1 - X2)
-    return SVector(dX1, dX2)
-end
-
-p0 = [0.9, 0.8, 0.3, 0.8, 0.8, 0.42, 0.1] # K₁, r₁, a₁, r₂, a₂, K₂, d
-ds = CoupledODEs(population_rule, [0.7, 0.7], p0;
-    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9))
-
-xg = yg = range(-0.001, 1.0; length = 101)
-grid = (xg, yg)
-mapper = AttractorsViaRecurrences(ds, grid;
-    Δt = 0.1, consecutive_recurrences = 1000, consecutive_lost_steps = 1000)
-
-# A short continuation in K₁ with few samples, to keep the example fast
-prange = range(0.91, 0.89; length = 5)
-pcurve = [Dict(1 => v) for v in prange]
-sampler, = statespace_sampler(grid, 1234)
-alg = RecurrencesFindAndMatch(mapper; distance = StrictlyMinimumDistance())
-fractions_cont, attractors_cont = global_continuation(
-    alg, pcurve, sampler; samples_per_parameter = 100, show_progress = false
-)
-
-length.(values.(attractors_cont)) # number of attractors at each step
-```
-
-Now we aggregate. We do this, because we do not care which particular non-extinction state
-the system settles into — only whether the species survives at all. So we featurize each
-attractor by whether it is the extinction state using the following featurizer:
-```@example MAIN
-is_extinction(A) = mean(sum(Array(p)) for p in A) < 0.02
-biomass_featurizer = A -> SVector(Float64(is_extinction(A)))
-```
-We can group the attractors that share similar features with pretty much any [`GroupingConfing`](@ref), here we use
-
-```@example MAIN
-agg_config = GroupViaPairwiseComparison(; threshold = 0.5, rescale_features = false)
-```
-
-and proceed with the aggregation
-
-```@example MAIN
-agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
-    attractors_cont, biomass_featurizer, agg_config
-)
-
-members_cont
-```
-
-
-```@example MAIN
-
-
-function aggregate_fractions(fractions_cont, members_cont)
-    agg_fractions = map(eachindex(members_cont)) do i
-        fs = fractions_cont[i]
-        members = members_cont[i]
-        Dict(k => sum(fs[mk] for mk in m) for (k, m) in members)
-    end
-    return agg_fractions
-end
-
-aggregate_fractions(fractions_cont, members_cont)
-
-
-```
-
-We then pass the merged attractors to [`stability_measures_along_continuation`](@ref).
-Each group is treated as a single attractor, so its basin fraction is the total fraction of state space leading to it.
-
-```@example MAIN
-measures_cont = stability_measures_along_continuation(
-    ds, agg_attractors_cont, pcurve, sampler;
-    ε = 0.05, finite_time = 100.0, show_progress = false
-)
-
-# The extinction group is the one whose feature centroid is 1
-extinct_id = only(id for (id, c) in centroids_cont[end] if c[1] > 0.5)
-alive_id   = only(id for (id, c) in centroids_cont[end] if c[1] < 0.5)
-fig = plot_basins_curves(measures_cont["basin_fraction"], prange;
-    colors = Dict(extinct_id => "black", alive_id => "green"),
-    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
-)
-
-# `measures_cont` holds every other stability measure too
-ax = Axis(fig[0,1]; ylabel = "mct")
-plot_continuation_curves!(ax, measures_cont["mean_convergence_time"], prange;
-    colors = Dict(extinct_id => "black", alive_id => "green"),
-    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
-)
-
-# and for clarity we plot the number of aggregated attractors
-ax = Axis(fig[-1,1]; ylabel = "# aggregates")
-lengths_cont = [Dict(k => length(vals) for (k, vals) in d) for d in members_cont]
-plot_continuation_curves!(ax, lengths_cont, prange;
-    colors = Dict(extinct_id => "black", alive_id => "green"),
-    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
-)
-
-fig
-```
-
-
 ## Featurizing and grouping across parameters (MCBB / FGAP)
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
 For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
@@ -1023,6 +897,118 @@ This special `matcher` achieves the following:
 - The `threshold = 0.2` in essence means that if two attractors have a weighted
   centroid difference of less than 20% of the typical size for each dimension,
   the attractors are matched!
+
+
+
+
+## [Aggregated stability measures of a population model](@id aggregate_continuation_example)
+
+This example discusses aggregation of continuation results: where a dynamical system may have multiple attractors, but some of them share the same functional/operating state for the context of the system. In such cases, you want to aggregate attractors with similar function.
+The recommended recipe to do this is: run a normal
+[`global_continuation`](@ref) to find attractors, merge the attractors into user defined groups
+with [`aggregate_continuation`](@ref), and feed the merged attractors to
+[`stability_measures_along_continuation`](@ref) for the computation of stability measures.
+
+We use the two-habitat population model with Allee effect, also featured in Schoenmakers and
+Feudel [Schoenmakers2021](@cite). The state `X = (X₁, X₂)` are the (normalised) population
+densities of two coupled habitats, and we vary the carrying capacity `K₁` of habitat 1
+(its quality declines as `K₁` decreases). For low enough `K₁` the only surviving state is
+total extinction `X = (0, 0)`.
+
+```@example MAIN
+using Attractors
+using OrdinaryDiffEqVerner: Vern9
+using CairoMakie
+
+function population_rule(X, p, t)
+    X1, X2 = X
+    K1, r1, a1, r2, a2, K2, d = p
+    dX1 = r1 * X1 * (1 - X1/K1) * (X1 - a1) + d * (X2 - X1)
+    dX2 = r2 * X2 * (1 - X2/K2) * (X2 - a2) + d * (X1 - X2)
+    return SVector(dX1, dX2)
+end
+
+p0 = [0.9, 0.8, 0.3, 0.8, 0.8, 0.42, 0.1] # K₁, r₁, a₁, r₂, a₂, K₂, d
+ds = CoupledODEs(population_rule, [0.7, 0.7], p0;
+    diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9))
+
+xg = yg = range(-0.001, 1.0; length = 101)
+grid = (xg, yg)
+mapper = AttractorsViaRecurrences(ds, grid;
+    Δt = 0.1, consecutive_recurrences = 1000, consecutive_lost_steps = 1000)
+
+# A short continuation in K₁ with few samples, to keep the example fast
+prange = range(0.91, 0.89; length = 5)
+pcurve = [Dict(1 => v) for v in prange]
+sampler, = statespace_sampler(grid, 1234)
+alg = RecurrencesFindAndMatch(mapper; distance = StrictlyMinimumDistance())
+fractions_cont, attractors_cont = global_continuation(
+    alg, pcurve, sampler; samples_per_parameter = 100, show_progress = false
+)
+
+length.(values.(attractors_cont)) # number of attractors at each step
+```
+
+Now we aggregate. We do this, because we do not care which particular non-extinction state
+the system settles into — only whether the species survives at all. So we featurize each
+attractor by whether it is the extinction state using the following featurizer:
+```@example MAIN
+using Statistics: mean
+function biomass_featurizer(A)
+    extinct = all(<(0.02), mean(A))
+    return SVector(Float64(extinct))
+end
+```
+We can group the attractors that share similar features with pretty much any [`GroupingConfing`](@ref), here we use
+
+```@example MAIN
+agg_config = GroupViaPairwiseComparison(; threshold = 0.5, rescale_features = false)
+```
+
+and proceed with the aggregation
+
+```@example MAIN
+agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
+    attractors_cont, biomass_featurizer, agg_config
+)
+
+members_cont
+```
+
+We then pass the merged attractors to [`stability_measures_along_continuation`](@ref).
+Each group is treated as a single attractor, so its basin fraction is the total fraction of state space leading to it.
+
+```@example MAIN
+measures_cont = stability_measures_along_continuation(
+    ds, agg_attractors_cont, pcurve, sampler;
+    ε = 0.05, finite_time = 100.0, show_progress = false
+)
+
+# The extinction group is the one whose feature centroid is 1
+extinct_id = only(id for (id, c) in centroids_cont[end] if c[1] > 0.5)
+alive_id   = only(id for (id, c) in centroids_cont[end] if c[1] < 0.5)
+fig = plot_basins_curves(measures_cont["basin_fraction"], prange;
+    colors = Dict(extinct_id => "black", alive_id => "green"),
+    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
+)
+
+# `measures_cont` holds every other stability measure too
+ax = Axis(fig[0,1]; ylabel = "mct")
+plot_continuation_curves!(ax, measures_cont["mean_convergence_time"], prange;
+    colors = Dict(extinct_id => "black", alive_id => "green"),
+    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
+)
+
+# and for clarity we plot the number of aggregated attractors
+ax = Axis(fig[-1,1]; ylabel = "# aggregates")
+lengths_cont = [Dict(k => length(vals) for (k, vals) in d) for d in members_cont]
+plot_continuation_curves!(ax, lengths_cont, prange;
+    colors = Dict(extinct_id => "black", alive_id => "green"),
+    labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
+)
+
+fig
+```
 
 
 ## Performing multiple global continuations to incorporate prescribed parameter changes and parameter uncertainty
