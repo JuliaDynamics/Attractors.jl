@@ -123,7 +123,7 @@ timer of the FSM.)
 A video illustrating how the algorithm works can be found in the online documentation,
 under the [recurrences animation](@ref recurrences_animation) page.
 """
-struct AttractorsViaRecurrences{DS <: DynamicalSystem, B, G, K} <: AttractorMapper
+struct AttractorsViaRecurrences{DS <: DynamicalSystem, B, G, K} <: BasinMap
     ds::DS
     bsn_nfo::B
     grid::G

@@ -140,7 +140,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 # and works as follows.
 
 # First, we create an instance of such an "attractor finding algorithm",
-# which we call `AttractorMapper`. For example, [`AttractorsViaRecurrences`](@ref)
+# which we call `BasinMap`. For example, [`AttractorsViaRecurrences`](@ref)
 # requires a tesselated grid of the state space to search for attractors in.
 # It also allows the user to tune some meta parameters, but in our example
 # they are already tuned for the dynamical system at hand. So we initialize
@@ -237,8 +237,8 @@ fs = basins_fractions(mapper, sampler)
 # use [`basins_of_attraction`](@ref).
 
 # You can use alternative algorithms in [`basins_fractions`](@ref), see
-# the documentation of [`AttractorMapper`](@ref) for possible subtypes.
-# [`AttractorMapper`](@ref) defines an extendable interface and can be enriched
+# the documentation of [`BasinMap`](@ref) for possible subtypes.
+# [`BasinMap`](@ref) defines an extendable interface and can be enriched
 # with other methods in the future!
 
 # ## Different Attractor Mapper
@@ -329,7 +329,7 @@ prange = 4.5:0.01:6
 pidx = 1 # index of the parameter
 
 # Then, we may call the [`global_continuation`](@ref) function.
-# We have to provide a continuation algorithm, which itself references an [`AttractorMapper`](@ref).
+# We have to provide a continuation algorithm, which itself references an [`BasinMap`](@ref).
 # In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
 # which is the general [`AttractorSeedContinueMatch`](@ref).
 # This algorithm uses the `mapper` to find all attractors at each parameter value
@@ -593,7 +593,7 @@ fig
 # We've reached the end of the tutorial! Some aspects we haven't highlighted is
 # how most of the infrastructure of Attractors.jl is fully extendable.
 # You will see this when reading the documentation strings of key structures
-# like [`AttractorMapper`](@ref). All documentation strings are in the [API](@ref) page.
+# like [`BasinMap`](@ref). All documentation strings are in the [API](@ref) page.
 # See the [examples](@ref examples) page for more varied applications.
 # And lastly, see the [comparison page](@ref bfkit_comparison) in our docs
 # that attempts to do the same analysis of our Tutorial with traditional local continuation and bifurcation analysis software

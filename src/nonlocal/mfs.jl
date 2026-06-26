@@ -5,11 +5,11 @@ export minimal_critical_shock, MCSBruteForce, MCSBlackBoxOptim
 export excitability_threshold
 
 """
-    minimal_critical_shock(mapper::AttractorMapper, u0, search_area, algorithm; kw...)
+    minimal_critical_shock(mapper::BasinMap, u0, search_area, algorithm; kw...)
 
 Return the _minimal critical shock_ for the initial point `u0` according to the
 specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
-(see [`AttractorMapper`](@ref) if you are not sure which mappers do that).
+(see [`BasinMap`](@ref) if you are not sure which mappers do that).
 The output `mfs` is a vector like `u0`.
 
 The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
@@ -59,7 +59,7 @@ perturbation that brings us into specified basin(s). This is enabled via the key
 `target_id`.
 """
 function minimal_critical_shock(
-        mapper::AttractorMapper, u0, search_area, algorithm;
+        mapper::BasinMap, u0, search_area, algorithm;
         metric = LinearAlgebra.norm, target_id = nothing
     )
     dim = length(u0)
@@ -148,7 +148,7 @@ of the perturbation and compares it to the best perturbation found so far.
 If the norm is smaller, it updates the best perturbation found so far.
 It repeats this process total_iterations times and returns the best perturbation found.
 """
-function crude_initial_radius(mapper::AttractorMapper, u0, search_area, idchecker, metric, total_iterations, seed)
+function crude_initial_radius(mapper::BasinMap, u0, search_area, idchecker, metric, total_iterations, seed)
     best_dist = Inf
     region = StateSpaceSets.HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
     generator, _ = statespace_sampler(region, seed)
@@ -181,7 +181,7 @@ so far and reduces the radius of the sphere. It repeats this process total_itera
 and returns the best perturbation found.
 """
 function mfs_brute_force(
-        mapper::AttractorMapper, u0,
+        mapper::BasinMap, u0,
         best_shock, best_dist, dim, idchecker, metric,
         total_iterations, sphere_decrease_factor, seed
     )
@@ -298,7 +298,7 @@ function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     return best_shock
 end
 
-function mfs_objective(perturbation, u0, idchecker, metric, mapper::AttractorMapper, penalty)
+function mfs_objective(perturbation, u0, idchecker, metric, mapper::BasinMap, penalty)
     dist = metric(perturbation)
     if dist == 0
         return penalty

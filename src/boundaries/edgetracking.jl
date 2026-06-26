@@ -101,7 +101,7 @@ the boundary.
 
 Returns a data type [`EdgeTrackingResults`](@ref) containing the results.
 
-Sometimes, the AttractorMapper used in the algorithm may erroneously identify both states
+Sometimes, the BasinMap used in the algorithm may erroneously identify both states
 `u1` and `u2` with the same basin of attraction due to being very close to the basin
 boundary. If this happens, a warning is raised and `EdgeTrackingResults.success = false`.
 """
@@ -133,16 +133,16 @@ function edgetracking(
 end
 
 #=
-    edgetracking(pds::ParallelDynamicalSystem, mapper::AttractorMapper; kwargs...)
+    edgetracking(pds::ParallelDynamicalSystem, mapper::BasinMap; kwargs...)
 
 Low-level function for running the edge tracking algorithm, see [`edgetracking`](@ref)
 for a description, keyword arguments and output type.
 
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
-`AttractorMapper` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
+`BasinMap` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
 =#
 function edgetracking(
-        pds::ParallelDynamicalSystem, mapper::AttractorMapper;
+        pds::ParallelDynamicalSystem, mapper::BasinMap;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
         show_progress, verbose
     )
@@ -229,7 +229,7 @@ function edgetracking(
 end
 
 """
-    bisect_to_edge(pds::ParallelDynamicalSystem, mapper::AttractorMapper; kwargs...) -> u1, u2
+    bisect_to_edge(pds::ParallelDynamicalSystem, mapper::BasinMap; kwargs...) -> u1, u2
 Finds the basin boundary between two states `u1, u2 = current_states(pds)` by bisecting
 along a straight line in phase space. The states `u1` and `u2` must belong to different
 basins.
@@ -245,7 +245,7 @@ in which case a warning is raised).
 
 ## Description
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
-`AttractorMapper` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
+`BasinMap` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
 
 !!! info
     If the straight line between `u1` and `u2` intersects the basin boundary multiple
@@ -254,7 +254,7 @@ in which case a warning is raised).
     conditions `u1` and `u2`. A warning is raised if the bisection involves a third basin.
 """
 function bisect_to_edge(
-        pds::ParallelDynamicalSystem, mapper::AttractorMapper;
+        pds::ParallelDynamicalSystem, mapper::BasinMap;
         bisect_thresh = 1.0e-6,
         verbose = true
     )
@@ -264,8 +264,8 @@ function bisect_to_edge(
 
     if (idx1 == idx2)
         if idx1 == -1
-            error("AttractorMapper returned label -1 (could not match the initial condition with any attractor).
-            Try changing the settings of the `AttractorMapper` or increasing bisect_thresh, diverge_thresh.")
+            error("BasinMap returned label -1 (could not match the initial condition with any attractor).
+            Try changing the settings of the `BasinMap` or increasing bisect_thresh, diverge_thresh.")
         else
             if verbose
                 @warn "Both initial conditions belong to the same basin of attraction.
@@ -285,7 +285,7 @@ function bisect_to_edge(
         retry_counter = 1
         while (idx_new == -1) && retry_counter < 3 # ToDO: make kwarg
             if verbose
-                @warn "Shifting new point slightly because AttractorMapper returned -1"
+                @warn "Shifting new point slightly because BasinMap returned -1"
             end
             u_new += bisect_thresh * (u1 - u2)
             idx_new = mapper(u_new)
@@ -297,7 +297,7 @@ function bisect_to_edge(
         else
             if idx_new != idx2
                 if idx_new == -1
-                    error("AttractorMapper returned label -1 (could not match the initial condition with any attractor.)
+                    error("BasinMap returned label -1 (could not match the initial condition with any attractor.)
                     Try changing the settings of AttractorsViaProximity or increasing bisect_thresh, diverge_thresh.")
                 else
                     if verbose

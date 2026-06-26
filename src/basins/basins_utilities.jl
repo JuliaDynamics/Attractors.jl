@@ -2,7 +2,7 @@ using Neighborhood
 export ics_from_grid, map_to_basin
 
 """
-    basins_of_attraction(mapper::AttractorMapper, grid::Tuple) → boa
+    basins_of_attraction(mapper::BasinMap, grid::Tuple) → boa
 
 Compute the full basins of attraction as identified by the given `mapper`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
@@ -28,7 +28,7 @@ Note that, to ensure backwards compatibility the return type can be decomposed s
 
 See also [`convergence_and_basins_of_attraction`](@ref).
 """
-function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
+function basins_of_attraction(mapper::BasinMap, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     A = ics_from_grid(grid)
     fs, labels = basins_fractions(mapper, A; kwargs...)
@@ -38,7 +38,7 @@ function basins_of_attraction(mapper::AttractorMapper, grid::Tuple; kwargs...)
 end
 
 """
-    basins_of_attraction(mapper::AttractorMapper, ics; kwargs...) → boa
+    basins_of_attraction(mapper::BasinMap, ics; kwargs...) → boa
 
 Compute the full basins of attraction as identified by the given `mapper`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
@@ -54,7 +54,7 @@ Note that, as with the other `basins_of_attraction` function, the return can be 
 `basins, attractors = boa`.
 
 """
-function basins_of_attraction(mapper::AttractorMapper, ics::ValidICS; show_progress = true, N = 1000)
+function basins_of_attraction(mapper::BasinMap, ics::ValidICS; show_progress = true, N = 1000)
     used_container = ics isa AbstractVector
     ics_vec = used_container ? ics : [ics() for _ in 1:N]
     _, labels = basins_fractions(mapper, ics_vec, show_progress = show_progress)
@@ -114,7 +114,7 @@ end
 basins_fractions(BoA::BasinsOfAttraction, ids = unique(extract_basins(BoA))) = basins_fractions(extract_basins(BoA), ids)
 
 """
-    convergence_and_basins_of_attraction(mapper::AttractorMapper, grid)
+    convergence_and_basins_of_attraction(mapper::BasinMap, grid)
 
 An extension of [`basins_of_attraction`](@ref).
 Return `basins, attractors, convergence`, with `basins, attractors` as in
@@ -132,7 +132,7 @@ backwards compatibility.
 
 - `show_progress = true`: show progress bar.
 """
-function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; show_progress = true)
+function convergence_and_basins_of_attraction(mapper::BasinMap, grid; show_progress = true)
     if length(grid) != dimension(referenced_dynamical_system(mapper))
         @error "The mapper and the grid must have the same dimension"
     end
@@ -155,7 +155,7 @@ function convergence_and_basins_of_attraction(mapper::AttractorMapper, grid; sho
 end
 
 """
-    convergence_and_basins_fractions(mapper::AttractorMapper, ics)
+    convergence_and_basins_fractions(mapper::BasinMap, ics)
 
 An extension of [`basins_fractions`](@ref).
 Return `fs, labels, convergence`. The first two are as in `basins_fractions`,
@@ -170,7 +170,7 @@ See also [`convergence_time`](@ref).
 - `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_fractions(
-        mapper::AttractorMapper, ics::ValidICS;
+        mapper::BasinMap, ics::ValidICS;
         show_progress = true, N = 1000,
     )
     N = ics isa Function ? N : length(ics)

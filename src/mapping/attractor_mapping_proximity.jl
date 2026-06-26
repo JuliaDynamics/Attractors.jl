@@ -41,7 +41,7 @@ an error is thrown.
 The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
 As such, the convergence time is always a float type even for discrete time systems.
 """
-struct AttractorsViaProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpaceSet, N, K, M, SS <: AbstractStateSpaceSet, T} <: AttractorMapper
+struct AttractorsViaProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpaceSet, N, K, M, SS <: AbstractStateSpaceSet, T} <: BasinMap
     ds::DS
     attractors::Dict{AK, SSS}
     ε::Float64

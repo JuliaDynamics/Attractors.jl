@@ -193,7 +193,7 @@ fig
 # the Attractors.jl info:
 
 # 1. A `DynamicalSystem`,
-# 1. an `AttractorMapper` instance (and its meta parameters).
+# 1. an `BasinMap` instance (and its meta parameters).
 #    For the mapper used here, `AttractorsViaRecurrences`, the meta parameters are:
 #    1. A state space tesselation
 #    1. A recurrence threshold

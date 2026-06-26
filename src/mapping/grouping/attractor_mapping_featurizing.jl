@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T, C, SSS <: AbstractStateSpaceSet} <: AttractorMapper
+struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T, C, SSS <: AbstractStateSpaceSet} <: BasinMap
     ds::DS
     featurizer::F
     group_config::G
@@ -29,7 +29,7 @@ end
 Initialize a `mapper` that maps initial conditions to attractors using a featurizing and
 grouping approach. This is a supercase of the featurizing and clustering approach that
 is utilized by bSTAB [Stender2021](@cite) and MCBB [Gelbrecht2020](@cite).
-See [`AttractorMapper`](@ref) for how to use the `mapper`.
+See [`BasinMap`](@ref) for how to use the `mapper`.
 This `mapper` also allows the syntax `mapper(u0)` if the `grouping_config` is
 is _not_ `GroupViaClustering` or `GroupViaPairwiseComparison`.
 
@@ -91,7 +91,7 @@ function AttractorsViaFeaturizing(
     )
 end
 
-# AttractorMapper API:
+# BasinMap API:
 function reset_mapper!(mapper::AttractorsViaFeaturizing)
     empty!(mapper.attractors)
     return
@@ -123,7 +123,7 @@ end
 
 
 #####################################################################################
-# Extension of `AttractorMapper` API: basins_fractions_grouped
+# Extension of `BasinMap` API: basins_fractions_grouped
 #####################################################################################
 function basins_fractions_grouped(mapper::AttractorsViaFeaturizing, ics, progress, labels)
     features = extract_features(mapper, ics; progress)

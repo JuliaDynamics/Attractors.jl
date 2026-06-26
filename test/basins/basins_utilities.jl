@@ -15,7 +15,7 @@ using Test
     @test BoA isa SampledBasinsOfAttraction
 end
 
-@testset "convergence_and_basins_of_attraction(mapper::AttractorMapper)" begin
+@testset "convergence_and_basins_of_attraction(mapper::BasinMap)" begin
 
     # Dynamical system
     test_ds(u, p, t) = SVector(0.5 * u[1] * (1 - u[1]^2))

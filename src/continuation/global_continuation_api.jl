@@ -5,7 +5,7 @@ export PerParameterInitialConditions
     GlobalContinuationAlgorithm
 
 Supertype of all algorithms used in [`global_continuation`](@ref).
-Each algorithm typically references an [`AttractorMapper`](@ref),
+Each algorithm typically references an [`BasinMap`](@ref),
 as well as contains more information for how to continue/track/match attractors
 across a parameter range.
 
@@ -60,7 +60,7 @@ to an alternative format.
 `global_continuation` is the central function of the framework for global stability analysis
 illustrated in [Datseris2023](@cite).
 
-The global continuation algorithm typically references an [`AttractorMapper`](@ref)
+The global continuation algorithm typically references an [`BasinMap`](@ref)
 which is used to find the attractors and basins of a dynamical system. Additional
 arguments that control how to continue/track/match attractors across a parameter range
 are given when creating `gca`.

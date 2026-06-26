@@ -8,11 +8,11 @@ struct EverywhereUniform end
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
-    StabilityMeasuresAccumulator(mapper::AttractorMapper [, extras]; kwargs...)
+    StabilityMeasuresAccumulator(mapper::BasinMap [, extras]; kwargs...)
 
 A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability measures in the most efficient
-way possible. `mapper` is any instance of an [`AttractorMapper`](@ref),
+way possible. `mapper` is any instance of an [`BasinMap`](@ref),
 although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make sense.
 
 The accummulator records several measures of stability (or resilience) defined
@@ -22,7 +22,7 @@ However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
 
-`StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
+`StabilityMeasuresAccumulator` can be used as any `BasinMap` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
 the [`finalize_accumulator`](@ref) function should be called which will return a
 dictionary of all stability measures estimated by the accumulator,
@@ -30,10 +30,10 @@ where each entry maps the stability measure description (`String`) to a dictiona
 mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
 This functionality was developed as part of [Morr2026](@cite) and has now been extended
-to work for any `AttractorMapper`, current or future.
+to work for any `BasinMap`, current or future.
 
 **Using with [`global_continuation`](@ref)**:
-Since `StabilityMeasuresAccumulator` is formally an `AttractorMapper`, it can be
+Since `StabilityMeasuresAccumulator` is formally an `BasinMap`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `mapper` input
 to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
 The only difference now is that `global_continuation` will not return just one
@@ -187,7 +187,7 @@ end
 extras = Dict("maxv" => extra_function)
 ```
 """
-struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, F, M, W, E <: Dict, X} <: AttractorMapper
+struct StabilityMeasuresAccumulator{AM <: BasinMap, V <: AbstractVector, F, M, W, E <: Dict, X} <: BasinMap
     mapper::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
@@ -200,7 +200,7 @@ struct StabilityMeasuresAccumulator{AM <: AttractorMapper, V <: AbstractVector, 
 end
 
 function StabilityMeasuresAccumulator(
-        mapper::AttractorMapper, extras = Dict();
+        mapper::BasinMap, extras = Dict();
         finite_time = 1.0, weighting_distribution = EverywhereUniform(),
         distance = Centroid(), idistances = [Euclidean()],
     )
@@ -224,7 +224,7 @@ function StabilityMeasuresAccumulator(
     )
 end
 
-# Extend `AttractorMapper` API:
+# Extend `BasinMap` API:
 function reset_mapper!(a::StabilityMeasuresAccumulator)
     reset_mapper!(a.mapper)
     empty!(a.u0s)

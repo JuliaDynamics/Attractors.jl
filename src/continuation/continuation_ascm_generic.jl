@@ -6,7 +6,7 @@ using Random: MersenneTwister
     AttractorSeedContinueMatch(mapper, matcher = MatchBySSSetDistance(); seeding)
 
 A global continuation method for [`global_continuation`](@ref).
-`mapper` is any subtype of [`AttractorMapper`](@ref) which implements
+`mapper` is any subtype of [`BasinMap`](@ref) which implements
 [`extract_attractors`](@ref), i.e., it finds the actual attractors.
 `matcher` is a configuration of how to match attractor IDs, see [`IDMatcher`](@ref)
 for more options.
@@ -24,7 +24,7 @@ This is a general/composable global continuation method based on a 4-step proces
 
 At the first parameter slice of the global continuation process, attractors and their fractions
 are found using the given `mapper` and [`basins_fractions`](@ref).
-See the `mapper` documentation and [`AttractorMapper`](@ref)
+See the `mapper` documentation and [`BasinMap`](@ref)
 for details on how this works. Then, from the second parameter onwards the continuation occurs.
 
 ### Step 1 - Seeding initial conditions

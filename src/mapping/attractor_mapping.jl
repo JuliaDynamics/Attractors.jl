@@ -1,7 +1,7 @@
 # Definition of the attracting mapping API and exporting
 # At the end it also includes all files related to mapping
 
-export AttractorMapper,
+export BasinMap,
     AttractorsViaRecurrences,
     AttractorsViaProximity,
     AttractorsViaFeaturizing,
@@ -22,12 +22,12 @@ export AttractorMapper,
 ValidICS = Union{AbstractVector, Function}
 
 #########################################################################################
-# AttractorMapper structure definition
+# BasinMap structure definition
 #########################################################################################
 """
-    AttractorMapper(ds::DynamicalSystem, args...; kwargs...) → mapper
+    BasinMap(ds::DynamicalSystem, args...; kwargs...) → mapper
 
-Subtypes of `AttractorMapper` are structures that map initial conditions of `ds` to
+Subtypes of `BasinMap` are structures that map initial conditions of `ds` to
 attractors. The found attractors are stored inside the `mapper`, and can be obtained
 by calling `attractors = extract_attractors(mapper)`.
 
@@ -37,7 +37,7 @@ Currently available mapping methods:
 * [`AttractorsViaRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref)
 
-All `AttractorMapper` subtypes can be used with [`basins_fractions`](@ref)
+All `BasinMap` subtypes can be used with [`basins_fractions`](@ref)
 or [`basins_of_attraction`](@ref).
 
 In addition, some mappers can be called as a function of an initial condition:
@@ -57,8 +57,8 @@ to accelerate estimation of stability measures.
 
 ## For developers
 
-`AttractorMapper` defines an extendable interface. A new type needs to subtype
-`AttractorMapper` and implement the following:
+`BasinMap` defines an extendable interface. A new type needs to subtype
+`BasinMap` and implement the following:
 
 - [`extract_attractors`](@ref)
 - `id = mapper(u0)`
@@ -73,9 +73,9 @@ progress bar, and `labels` is a preinitialized container of labels.
 If `!isempty(labels)`, then its full length must be filled with the ids corresponding
 to the first N entries of `ics`.
 """
-abstract type AttractorMapper end
+abstract type BasinMap end
 
-referenced_dynamical_system(mapper::AttractorMapper) = mapper.ds
+referenced_dynamical_system(mapper::BasinMap) = mapper.ds
 
 # Generic pretty printing
 function generic_mapper_print(io, mapper)
@@ -84,7 +84,7 @@ function generic_mapper_print(io, mapper)
     println(io, rpad(" system: ", ps), nameof(typeof(referenced_dynamical_system(mapper))))
     return ps
 end
-Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
+Base.show(io::IO, mapper::BasinMap) = generic_mapper_print(io, mapper)
 
 #########################################################################################
 # Generic basin fractions method structure definition
@@ -92,7 +92,7 @@ Base.show(io::IO, mapper::AttractorMapper) = generic_mapper_print(io, mapper)
 # It works for all mappers that define the function-like-object behavior
 """
     basins_fractions(
-        mapper::AttractorMapper,
+        mapper::BasinMap,
         ics::Union{AbstractVector, Function};
         kwargs...
     )
@@ -122,7 +122,7 @@ If `ics` is a `StateSpaceSet` the function will also return `labels`, which is a
 _vector_, of equal length to `ics`, that contains the label each initial
 condition was mapped to.
 
-See [`AttractorMapper`](@ref) for all possible `mapper` types, and use
+See [`BasinMap`](@ref) for all possible `mapper` types, and use
 [`extract_attractors`](@ref) (after calling `basins_fractions`) to extract
 the stored attractors from the `mapper`.
 See also [`convergence_and_basins_fractions`](@ref).
@@ -133,7 +133,7 @@ See also [`convergence_and_basins_fractions`](@ref).
 * `show_progress = true`: Display a progress bar of the process.
 """
 function basins_fractions(
-        mapper::AttractorMapper, ics::ValidICS;
+        mapper::BasinMap, ics::ValidICS;
         show_progress = true, N = 1000,
         # this is an internal keyword used in the ASCM global conitnuation
         additional_ics = [],
@@ -187,7 +187,7 @@ end
 """
     basins_fractions_grouped(mapper, ics, progress, labels)
 
-Internal function called by `basins_fractions` for `AttractorMapper`s that
+Internal function called by `basins_fractions` for `BasinMap`s that
 cannot map individual initial conditions to attractor labels.
 Must be extended for new mappers that fall under this category.
 `ics` is the initial conditions already collected into vector,
@@ -213,7 +213,7 @@ so that the attractors have actually been found first.
 
 For developing a new mapper: extend the internal function `_extract_attractors`.
 """
-function extract_attractors(mapper::AttractorMapper)
+function extract_attractors(mapper::BasinMap)
     attractors = _extract_attractors(mapper)
     ds = referenced_dynamical_system(mapper)
     # name attractor variables if possible
@@ -233,11 +233,11 @@ end
 
 
 """
-    convergence_time(mapper::AttractorMapper) → t
+    convergence_time(mapper::BasinMap) → t
 
 Return the approximate time the `mapper` took to converge to an attractor.
 This function should be called just right after `mapper(u0)` was called with
-`u0` the initial condition of interest. Hence it is only valid with `AttractorMapper`
+`u0` the initial condition of interest. Hence it is only valid with `BasinMap`
 subtypes that support this syntax.
 
 Obtaining the convergence time is computationally free,
@@ -259,7 +259,7 @@ include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")
 
 "internal function for whether the mapper can map individual i.c."
-allows_mapper_u0(::AttractorMapper) = true
+allows_mapper_u0(::BasinMap) = true
 function allows_mapper_u0(mapper::AttractorsViaFeaturizing)
     if mapper.group_config isa GroupViaClustering
         return false

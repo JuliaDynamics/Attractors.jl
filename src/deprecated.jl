@@ -6,8 +6,8 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
         """
         The function `basins_of_attraction(grid::Tuple, ds::DynamicalSystem; ...)` has
         been replaced by the more generic
-        `basins_of_attraction(mapper::AttractorMapper, grid::Tuple)` which works for
-        any instance of `AttractorMapper`. The `AttractorMapper` itself requires as
+        `basins_of_attraction(mapper::BasinMap, grid::Tuple)` which works for
+        any instance of `BasinMap`. The `BasinMap` itself requires as
         input an kind of dynamical system the user wants, like a `StroboscopicMap` or
         `CoupledODEs` or `DeterministicIteratedMap` etc.
 
