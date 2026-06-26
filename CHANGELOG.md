@@ -1,5 +1,18 @@
 # v2
 
+This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
+
+## Renaming into Basin Maps
+
+The `AttractorMapper` constructions have been fully renamed. All following renames are deprecated:
+
+- `AttractorMapper` -> `BasinMap`
+- `AttractorsViaRecurrences` -> `BasinMapRecurrences`
+- `AttractorsViaFeaturizing` -> `BasinMapFeaturizeGroup`
+- `AttractorsViaProximity` -> `BasinMapProximity`
+
+This better represents what these constructs are about, which is also reflected in the updated docstring of `BasinMap`.
+
 ## Aggregation reworked
 
 Aggregation of attractors, also along a continuation, has been reworked.
