@@ -27,9 +27,10 @@ ValidICS = Union{AbstractVector, Function}
 """
     BasinMap(ds::DynamicalSystem, args...; kwargs...) → mapper
 
-Subtypes of `BasinMap` are structures that map initial conditions of `ds` to
-attractors. The found attractors are stored inside the `mapper`, and can be obtained
-by calling `attractors = extract_attractors(mapper)`.
+Subtypes of `BasinMap` are structures that map initial conditions of `ds` to unique IDs.
+These IDs (typically) correspond to the basins of attraction and corresponding attractors of `ds`.
+The found attractors are stored inside the `mapper`, and can be obtained
+by calling `attractors = extract_attractors(mapper)` when applicable.
 
 Currently available mapping methods:
 
@@ -40,7 +41,7 @@ Currently available mapping methods:
 All `BasinMap` subtypes can be used with [`basins_fractions`](@ref)
 or [`basins_of_attraction`](@ref).
 
-In addition, some mappers can be called as a function of an initial condition:
+In addition, most basin maps can be called as a function of an initial condition:
 ```julia
 label = mapper(u0)
 ```
