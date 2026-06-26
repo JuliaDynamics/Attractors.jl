@@ -60,7 +60,8 @@ See the [aggregation example](@ref aggregate_continuation_example) for an illust
 !!! note "Aggregating basin fractions only"
     If you only care about aggregating the basin fractions, there is no reason to
     go through the route of `stability_measures_along_continuation`.
-    Simply give the returned `members_cont` to XXX.
+    Simply give the returned `members_cont`, together with the `fractions_cont` from the
+    continuation, to [`aggregate_fractions`](@ref).
     The denser the sampling for the original continuation was, the more accurate
     the aggregated fractions will be, and there is no reason to re-run a continuation.
 """
