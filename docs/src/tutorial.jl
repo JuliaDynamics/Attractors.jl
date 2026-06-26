@@ -59,7 +59,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 #     range(-20.0, 20.0; length = 150), # y
 #     range(-20.0, 20.0; length = 150), # z
 # )
-# mapper = AttractorsViaRecurrences(ds, grid;
+# mapper = BasinMapRecurrences(ds, grid;
 #     consecutive_recurrences = 1000,
 #     consecutive_lost_steps = 100,
 # )
@@ -130,7 +130,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 # In this tutorial we will utilize two methods for finding attractors in dynamical systems.
 # Explanation of how they work is in their respective docs.
 
-# 1. [`AttractorsViaRecurrences`](@ref).
+# 1. [`BasinMapRecurrences`](@ref).
 # 2. [`AttractorsViaFeaturizing`](@ref).
 
 # You can consult [Datseris2023](@cite) for a comparison between the two.
@@ -140,7 +140,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 # and works as follows.
 
 # First, we create an instance of such an "attractor finding algorithm",
-# which we call `BasinMap`. For example, [`AttractorsViaRecurrences`](@ref)
+# which we call `BasinMap`. For example, [`BasinMapRecurrences`](@ref)
 # requires a tesselated grid of the state space to search for attractors in.
 # It also allows the user to tune some meta parameters, but in our example
 # they are already tuned for the dynamical system at hand. So we initialize
@@ -151,7 +151,7 @@ grid = (
     range(-15.0, 15.0; length = 150), # z
 )
 
-mapper = AttractorsViaRecurrences(
+mapper = BasinMapRecurrences(
     ds, grid;
     consecutive_recurrences = 1000, attractor_locate_steps = 1000,
     consecutive_lost_steps = 100,
@@ -283,7 +283,7 @@ attractors2 = extract_attractors(mapper2)
 plot_attractors(attractors2)
 
 # This mapper also found the attractors, but we should warn you: this mapper is less
-# robust than [`AttractorsViaRecurrences`](@ref). One of the reasons for this is
+# robust than [`BasinMapRecurrences`](@ref). One of the reasons for this is
 # that [`AttractorsViaFeaturizing`](@ref) is not auto-terminating. For example, if we do not
 # have enough transient integration time, the two attractors will get confused into one:
 
@@ -292,7 +292,7 @@ fs3 = basins_fractions(mapper3, sampler)
 attractors3 = extract_attractors(mapper3)
 plot_attractors(attractors3)
 
-# On the other hand, the downside of [`AttractorsViaRecurrences`](@ref) is that
+# On the other hand, the downside of [`BasinMapRecurrences`](@ref) is that
 # it can take quite a while to converge for chaotic high dimensional systems.
 
 # ## [Global continuation](@id global_cont_tutorial)

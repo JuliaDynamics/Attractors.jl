@@ -21,7 +21,7 @@ using Random
     # `StabilityMeasuresAccumulator` for a dumb map.
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1.0], [-1, 0, 1.0])
-    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
+    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     @testset "mapping" begin
@@ -194,7 +194,7 @@ end
 
     dynamics = CoupledODEs(linear_evolution, [1.0, 1.0], [1.0])
     grid = ([-1.0, -0.1, 0.3, 1.0], [-1.0, -0.3, 0.1, 1.0])
-    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
+    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
 
     # Use the StabilityMeasuresAccumulator to compute measures
     accumulator = StabilityMeasuresAccumulator(mapper, finite_time = 0.5)
@@ -271,7 +271,7 @@ end
     yg = range(-3.0, 4.0; length = 101)
     grid = (xg, yg)
 
-    mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+    mapper = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
     accumulator = StabilityMeasuresAccumulator(mapper)
 
     A = ics_from_grid(grid)
@@ -308,7 +308,7 @@ end
     r = 0.5
     grid = ([-1, 0, 1], [-1, 0, 1])
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
-    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
+    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     # this function counts how many points in basin of attraction

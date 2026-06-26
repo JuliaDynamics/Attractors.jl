@@ -27,7 +27,7 @@ using Random
     ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r, q])
     yg = xg = range(-10.0, 10, length = 100)
     grid = (xg, yg)
-    mapper1 = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+    mapper1 = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
 
     sampler, = statespace_sampler(grid, 1234)
 

@@ -13,7 +13,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
 
         For now, we do the following for you:
         ```
-        mapper = AttractorsViaRecurrences(ds, grid; sparse = false)
+        mapper = BasinMapRecurrences(ds, grid; sparse = false)
         basins_of_attraction(mapper)
         ```
         and we are completely ignoring any keywords you provided (which could be about the
@@ -25,7 +25,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
         uses this function signature in the script in the paper (which we can't change anymore).
         """
     )
-    mapper = AttractorsViaRecurrences(ds, grid; sparse = false)
+    mapper = BasinMapRecurrences(ds, grid; sparse = false)
     return basins_of_attraction(mapper)
 end
 

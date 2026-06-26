@@ -2,7 +2,7 @@
 # Type definition and documentation
 #####################################################################################
 """
-    AttractorsViaRecurrences(ds::DynamicalSystem, grid; kwargs...)
+    BasinMapRecurrences(ds::DynamicalSystem, grid; kwargs...)
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
 recurrences in the state space, as outlined in [Datseris2022](@cite).
@@ -86,7 +86,7 @@ want to search for attractors in a lower dimensional subspace.
 
 ## Description
 
-An initial condition given to an instance of `AttractorsViaRecurrences` is iterated
+An initial condition given to an instance of `BasinMapRecurrences` is iterated
 based on the integrator corresponding to `ds`. Enough recurrences in the state space
 (i.e., a trajectory visited a region it has visited before) means
 that the trajectory has converged to an attractor. This is the basis for finding attractors.
@@ -123,21 +123,21 @@ timer of the FSM.)
 A video illustrating how the algorithm works can be found in the online documentation,
 under the [recurrences animation](@ref recurrences_animation) page.
 """
-struct AttractorsViaRecurrences{DS <: DynamicalSystem, B, G, K} <: BasinMap
+struct BasinMapRecurrences{DS <: DynamicalSystem, B, G, K} <: BasinMap
     ds::DS
     bsn_nfo::B
     grid::G
     kwargs::K
 end
 
-function AttractorsViaRecurrences(
+function BasinMapRecurrences(
         ds::DynamicalSystem, grid;
         Dt = nothing, Δt = Dt, sparse = true,
         force_non_adaptive = false, stop_at_Δt = force_non_adaptive, kwargs...
     )
     finalgrid = to_grid_type(grid)
     bsn_nfo = initialize_basin_info(ds, finalgrid, Δt, sparse, stop_at_Δt)
-    return AttractorsViaRecurrences(ds, bsn_nfo, finalgrid, kwargs)
+    return BasinMapRecurrences(ds, bsn_nfo, finalgrid, kwargs)
 end
 
 function to_grid_type(grid)
@@ -157,7 +157,7 @@ function to_grid_type(grid)
     return finalgrid
 end
 
-function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
+function (mapper::BasinMapRecurrences)(u0; show_progress = true)
     # Call low level code. Notice that in this
     # call signature the internal basins info array of the mapper is NOT updated
     # with the basins of attraction info. Only with the attractors info.
@@ -167,16 +167,16 @@ function (mapper::AttractorsViaRecurrences)(u0; show_progress = true)
 end
 
 
-function Base.show(io::IO, mapper::AttractorsViaRecurrences)
+function Base.show(io::IO, mapper::BasinMapRecurrences)
     ps = generic_mapper_print(io, mapper)
     println(io, rpad(" grid: ", ps), mapper.grid)
     println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.BoA.attractors)
     return
 end
 
-_extract_attractors(m::AttractorsViaRecurrences) = m.bsn_nfo.BoA.attractors
+_extract_attractors(m::BasinMapRecurrences) = m.bsn_nfo.BoA.attractors
 
-function convergence_time(m::AttractorsViaRecurrences)
+function convergence_time(m::BasinMapRecurrences)
     i = m.bsn_nfo.safety_counter
     kw = m.kwargs
     if m.bsn_nfo.return_code == :new_att
@@ -196,7 +196,7 @@ end
 
 
 """
-    basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true) → boa
+    basins_of_attraction(mapper::BasinMapRecurrences; show_progress = true) → boa
 
 This is a special method of `basins_of_attraction` that using recurrences does
 _exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@cite).
@@ -207,12 +207,12 @@ basins, making the computation faster as the grid is processed more and more.
 The return has type [`ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = boa`
 ensuring backwards compatibility with the previous return format.
 """
-function basins_of_attraction(mapper::AttractorsViaRecurrences; show_progress = true)
+function basins_of_attraction(mapper::BasinMapRecurrences; show_progress = true)
     if mapper.bsn_nfo.BoA.basins isa SparseArray
         throw(
             ArgumentError(
                 """
-                Sparse version of AttractorsViaRecurrences is incompatible with
+                Sparse version of BasinMapRecurrences is incompatible with
                 `basins_of_attraction(mapper)`."""
             )
         )
@@ -315,7 +315,7 @@ import LinearAlgebra
 """
     automatic_Δt_recurrences(ds::DynamicalSystem, grid; kw...) → Δt
 
-Calculate an optimal `Δt` value for [`AttractorsViaRecurrences`](@ref).
+Calculate an optimal `Δt` value for [`BasinMapRecurrences`](@ref).
 This is done by evaluating the dynamic rule `f` (vector field) at `N` randomly chosen
 points within the bounding box of the grid.
 The aggregated `f` is then compared with the average diagonal length of a grid
@@ -375,7 +375,7 @@ Reset all accumulated information of `mapper` so that it is
 as if it has just been initialized. Useful in `for` loops
 that loop over a parameter of the dynamical system stored in `mapper`.
 """
-function reset_mapper!(mapper::AttractorsViaRecurrences)
+function reset_mapper!(mapper::BasinMapRecurrences)
     empty!(mapper.bsn_nfo.BoA.attractors)
     if mapper.bsn_nfo.BoA.basins isa Array
         mapper.bsn_nfo.BoA.basins .= 0

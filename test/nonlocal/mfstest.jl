@@ -16,7 +16,7 @@ using LinearAlgebra
     ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
     xg = yg = range(-1.5, 1.5; length = 400)
 
-    newton = AttractorsViaRecurrences(
+    newton = BasinMapRecurrences(
         ds, (xg, yg);
         sparse = false, consecutive_lost_steps = 1000
     )
@@ -181,7 +181,7 @@ end
 
     ds = thomas_cyclical(b = 0.1665)
     xg = yg = zg = range(-6.0, 6.0; length = 251)
-    mapper_3d = AttractorsViaRecurrences(ds, (xg, yg, zg))
+    mapper_3d = BasinMapRecurrences(ds, (xg, yg, zg))
 
     ux = SVector(1.5, 0, 0)
     uy = SVector(0, 1.5, 0)

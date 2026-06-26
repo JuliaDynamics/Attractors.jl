@@ -40,7 +40,7 @@ abstract type BasinsOfAttraction{ID} end
 
 A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by an
 `array::AbstractArray`, that has `D` number of dimensions. The `grid` prescribes
-the state space domain that `basins` cover, and can be anything given to [`AttractorsViaRecurrences`](@ref)
+the state space domain that `basins` cover, and can be anything given to [`BasinMapRecurrences`](@ref)
 as a grid, i.e., a tuple of ranges or a `Grid` subtype.
 The `attractors` are the usual form of Attractors.jl, a dictionary labels to `StateSpaceSet`s.
 """

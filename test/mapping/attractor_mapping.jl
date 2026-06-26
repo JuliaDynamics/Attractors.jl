@@ -69,7 +69,7 @@ function test_basins(
     end
 
     @testset "Recurrences" begin
-        mapper = AttractorsViaRecurrences(ds, grid; kwargs...)
+        mapper = BasinMapRecurrences(ds, grid; kwargs...)
         test_basins_fractions(mapper; err = rerr)
     end
 
@@ -368,7 +368,7 @@ end
     ds = DiscreteDynamicalSystem(map_3_states, zeros(2))
     xg = yg = range(-3, 3; length = 20)
     grid = (xg, yg)
-    mapper = AttractorsViaRecurrences(ds, grid; sparse = false)
+    mapper = BasinMapRecurrences(ds, grid; sparse = false)
     basins, atts = basins_of_attraction(mapper; show_progress = false)
     ics = [ [x, 1.0] for x in range(-3, 3, length = 20)]
     fractions, labels = basins_fractions(mapper, ics; show_progress = false)

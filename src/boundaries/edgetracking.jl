@@ -139,7 +139,7 @@ Low-level function for running the edge tracking algorithm, see [`edgetracking`]
 for a description, keyword arguments and output type.
 
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
-`BasinMap` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
+`BasinMap` of subtype `AttractorsViaProximity` or `BasinMapRecurrences`.
 =#
 function edgetracking(
         pds::ParallelDynamicalSystem, mapper::BasinMap;
@@ -245,7 +245,7 @@ in which case a warning is raised).
 
 ## Description
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
-`BasinMap` of subtype `AttractorsViaProximity` or `AttractorsViaRecurrences`.
+`BasinMap` of subtype `AttractorsViaProximity` or `BasinMapRecurrences`.
 
 !!! info
     If the straight line between `u1` and `u2` intersects the basin boundary multiple

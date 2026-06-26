@@ -23,7 +23,7 @@ end
     # Test continuous system
     ds = CoupledODEs(test_ds, [1.0])
     grid = (range(0, 1; length = 5),)
-    mapper = AttractorsViaRecurrences(ds, grid)
+    mapper = BasinMapRecurrences(ds, grid)
 
     basins, attractors, convergence = convergence_and_basins_of_attraction(mapper, grid; show_progress = true)
 
@@ -31,7 +31,7 @@ end
 
     # Test iterated map
     ds = DeterministicIteratedMap(test_ds, [1.0])
-    mapper = AttractorsViaRecurrences(ds, grid)
+    mapper = BasinMapRecurrences(ds, grid)
     basins, attractors, convergence = convergence_and_basins_of_attraction(mapper, grid; show_progress = true)
 
     @test eltype(convergence) == typeof(current_time(ds))

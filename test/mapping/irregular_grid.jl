@@ -34,7 +34,7 @@ end
     grid_subdiv = subdivision_based_grid(ds, grid_reg)
     function test_grid(grid, bool)
         ds = predator_prey_ds()
-        mapper = AttractorsViaRecurrences(
+        mapper = BasinMapRecurrences(
             ds, grid;
             Dt = 0.05, sparse = true, force_non_adaptive = true,
             consecutive_recurrences = 20, attractor_locate_steps = 100,

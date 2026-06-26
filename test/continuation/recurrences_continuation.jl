@@ -30,7 +30,7 @@ using Random
     ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r])
     yg = xg = range(-10.0, 10, length = 100)
     grid = (xg, yg)
-    mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+    mapper = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
 
     sampler, = statespace_sampler(grid, 1234)
 
@@ -136,7 +136,7 @@ end
     rrange = range(0, 2; length = 21)
     ridx = 1
     # First, test the normal function of finding attractors
-    mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false)
+    mapper = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(mapper; threshold = 0.1)
     fractions_cont, attractors_cont = global_continuation(
         rsc, rrange, ridx, sampler;
@@ -208,7 +208,7 @@ if DO_EXTENSIVE_TESTS
         # really small threshold like 0.2 we still get a "single" attractor
         # throughout the range. Now we get one with period 14, a chaotic,
         # and one with period 7 that spans the second half of the parameter range
-        mapper = AttractorsViaRecurrences(
+        mapper = BasinMapRecurrences(
             ds, (xg, yg); sparse = false,
             consecutive_recurrences = 3000,
             attractor_locate_steps = 3000
@@ -255,7 +255,7 @@ if DO_EXTENSIVE_TESTS
         xg = yg = range(-25, -5; length = 500)
         pidx = 1
         sampler, = statespace_sampler(HRectangle([-2, -2], [2, 2]), 1234)
-        mapper = AttractorsViaRecurrences(ds, (xg, yg); sparse = false)
+        mapper = BasinMapRecurrences(ds, (xg, yg); sparse = false)
         rsc = RecurrencesFindAndMatch(mapper)
 
         fractions_cont, attractors_cont = global_continuation(

@@ -66,7 +66,7 @@ sevaral available grouping configurations. Each group is assumed to be a unique 
 and hence each initial condition is labelled according to the group it is part of.
 The method thus relies on the user having at least some basic idea about what attractors
 to expect in order to pick the right features, and the right way to group them,
-in contrast to [`AttractorsViaRecurrences`](@ref).
+in contrast to [`BasinMapRecurrences`](@ref).
 
 Attractors are stored and can be accessed with [`extract_attractors`](@ref),
 however it should be clear that this mapper never actually finds attractors.

@@ -194,7 +194,7 @@ fig
 
 # 1. A `DynamicalSystem`,
 # 1. an `BasinMap` instance (and its meta parameters).
-#    For the mapper used here, `AttractorsViaRecurrences`, the meta parameters are:
+#    For the mapper used here, `BasinMapRecurrences`, the meta parameters are:
 #    1. A state space tesselation
 #    1. A recurrence threshold
 #    1. A lost iterations threshold
@@ -213,7 +213,7 @@ grid = (
     range(-20.0, 20.0; length = 200), # z
 )
 
-mapper = AttractorsViaRecurrences(
+mapper = BasinMapRecurrences(
     ds, grid;
     consecutive_recurrences = 1000,
     consecutive_lost_steps = 100,
@@ -246,7 +246,7 @@ plot_attractors_curves(
 # but only a state space box that may contain attractors.
 # Attractors.jl is extremely robust w.r.t. to its input parameters:
 # the state space box can be arbitrarily large, as long as it is large enough.
-# Similarly, all meta parameters of `AttractorsViaRecurrences` only need to be
+# Similarly, all meta parameters of `BasinMapRecurrences` only need to be
 # large enough; the larger, the more accurate the result.
 # These algorithms are also robust in the sense of working well for
 # many different types of dynamical systems, including discrete ones,

@@ -37,7 +37,7 @@ function recurrences_map_to_label!(
         if bsn_nfo.safety_counter ≥ maximum_iterations
             # TODO: Set up some debugging framework here via environment variable
             # @warn """
-            # `AttractorsViaRecurrences` algorithm exceeded safety count without halting.
+            # `BasinMapRecurrences` algorithm exceeded safety count without halting.
             # It may be that the grid is not fine enough and attractors intersect in the
             # same cell, or `maximum_iterations` is not high enough for a very fine grid.
             # Here are some info on current status:\n

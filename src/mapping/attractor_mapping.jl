@@ -2,7 +2,7 @@
 # At the end it also includes all files related to mapping
 
 export BasinMap,
-    AttractorsViaRecurrences,
+    BasinMapRecurrences,
     AttractorsViaProximity,
     AttractorsViaFeaturizing,
     ClusteringConfig,
@@ -35,7 +35,7 @@ by calling `attractors = extract_attractors(mapper)` when applicable.
 Currently available mapping methods:
 
 * [`AttractorsViaProximity`](@ref)
-* [`AttractorsViaRecurrences`](@ref)
+* [`BasinMapRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref)
 
 All `BasinMap` subtypes can be used with [`basins_fractions`](@ref)
@@ -49,7 +49,7 @@ and this will on the fly compute and return the label of the attractor `u0` conv
 The mappers that can do this are:
 
 * [`AttractorsViaProximity`](@ref)
-* [`AttractorsViaRecurrences`](@ref)
+* [`BasinMapRecurrences`](@ref)
 * [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref)
   or [`GroupViaNearestFeature`](@ref) configurations.
 

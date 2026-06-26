@@ -1,6 +1,6 @@
-# [Animation illustrating `AttractorsViaRecurrences`](@id recurrences_animation)
+# [Animation illustrating `BasinMapRecurrences`](@id recurrences_animation)
 
-The following Julia script inputs a 2D continuous time dynamical system and animates its time evolution while illustrating how [`AttractorsViaRecurrences`](@ref) works.
+The following Julia script inputs a 2D continuous time dynamical system and animates its time evolution while illustrating how [`BasinMapRecurrences`](@ref) works.
 
 ```julia
 using Attractors, CairoMakie
@@ -38,7 +38,7 @@ xg = range(-0.1, 20; length = density)
 yg = range(-0.001, 0.03; length = density)
 Δt = 0.1
 grid = (xg, yg)
-mapper = AttractorsViaRecurrences(ds, grid;
+mapper = BasinMapRecurrences(ds, grid;
     Δt, consecutive_attractor_steps = 10, consecutive_basin_steps = 10, sparse = false,
     consecutive_recurrences = 100, attractor_locate_steps = 100,
 )
@@ -46,7 +46,7 @@ mapper = AttractorsViaRecurrences(ds, grid;
 ##########################################################################
 
 function animate_attractors_via_recurrences(
-        mapper::AttractorsViaRecurrences, u0s;
+        mapper::BasinMapRecurrences, u0s;
         colors = ["#FFFFFF", "#7143E0","#0A9A84","#AF9327","#791457", "#6C768C", "#4287f5",],
         filename = "recurrence_algorithm.mp4",
     )

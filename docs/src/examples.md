@@ -19,7 +19,7 @@ ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
 xg = yg = range(-1.5, 1.5; length = 400)
 grid = (xg, yg)
 # Use non-sparse for using `basins_of_attraction`
-mapper_newton = AttractorsViaRecurrences(ds, grid;
+mapper_newton = BasinMapRecurrences(ds, grid;
     sparse = false, consecutive_lost_steps = 1000
 )
 basins, attractors = basins_of_attraction(mapper_newton; show_progress = false)
@@ -55,7 +55,7 @@ attractors = extract_attractors(mapper_newton)
 Continuing from above, we can utilize the [`convergence_and_basins_of_attraction`](@ref) function, and the [`shaded_basins_heatmap`](@ref) plotting utility function, to shade the basins of attraction based on the convergence time, with lighter colors indicating faster convergence to the attractor.
 
 ```@example MAIN
-mapper_newton = AttractorsViaRecurrences(ds, grid;
+mapper_newton = BasinMapRecurrences(ds, grid;
     sparse = false, consecutive_lost_steps = 1000
 )
 
@@ -110,7 +110,7 @@ and create an attractor mapper that will map initial conditions to attractors li
 ```@example MAIN
 xg = yg = range(-4, 4; length = 200)
 grid = (xg, yg)
-mapper = AttractorsViaRecurrences(psys, grid; Δt = 1.0)
+mapper = BasinMapRecurrences(psys, grid; Δt = 1.0)
 ```
 
 and as before, get the basins of attraction
@@ -135,11 +135,11 @@ The actual uncertainty exponent is the slope of the curve (α) and indeed we get
 We will compute the tipping probabilities using the magnetic pendulum's example
 as the "before" state. For the "after" state we will change the `γ` parameter of the
 third magnet to be so small, its basin of attraction will virtually disappear.
-As we don't know _when_ the basin of the third magnet will disappear, we switch the attractor finding algorithm back to [`AttractorsViaRecurrences`](@ref).
+As we don't know _when_ the basin of the third magnet will disappear, we switch the attractor finding algorithm back to [`BasinMapRecurrences`](@ref).
 
 ```@example MAIN
 set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
-mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+mapper = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
 basins_after, attractors_after = basins_of_attraction(
     mapper, (xg, yg); show_progress = false
 )
@@ -175,12 +175,12 @@ at different parameters:
 ```@example MAIN
 set_parameter!(psys, :γs, [1.0, 1.0, 1.0])
 set_parameter!(psys, :α, 1.0)
-mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+mapper = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
 basins2, attractors2 = basins_of_attraction(mapper, grid; show_progress = false)
 
 set_parameter!(psys, :α, 2.0)
 set_parameter!(psys, :d, 0.45)
-mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+mapper = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
 basins3, attractors3 = basins_of_attraction(mapper, grid; show_progress = false)
 ```
 
@@ -242,7 +242,7 @@ As expected, the fractions are each about 1/3 due to the system symmetry.
 
 ## 3D basins via recurrences
 
-To showcase the true power of [`AttractorsViaRecurrences`](@ref) we need to use a system whose attractors span higher-dimensional space. An example is
+To showcase the true power of [`BasinMapRecurrences`](@ref) we need to use a system whose attractors span higher-dimensional space. An example is
 ```@example MAIN
 using Attractors
 using PredefinedDynamicalSystems
@@ -257,7 +257,7 @@ To compute the basins we define a three-dimensional grid and call on it
 ```julia
 # This computation takes about an hour
 xg = yg = zg = range(-6.0, 6.0; length = 251)
-mapper = AttractorsViaRecurrences(ds, (xg, yg, zg); sparse = false)
+mapper = BasinMapRecurrences(ds, (xg, yg, zg); sparse = false)
 basins, attractors = basins_of_attraction(mapper)
 attractors
 ```
@@ -289,7 +289,7 @@ Then, we visualize the attractors to obtain:
 </video>
 ```
 
-In the animation above, the scattered points are the attractor values the function [`AttractorsViaRecurrences`](@ref) found by itself. Of course, for the periodic orbits these points are incomplete. Once the function's logic understood we are on an attractor, it stops computing. However, we also simulated lines, by evolving initial conditions colored appropriately with the basins output.
+In the animation above, the scattered points are the attractor values the function [`BasinMapRecurrences`](@ref) found by itself. Of course, for the periodic orbits these points are incomplete. Once the function's logic understood we are on an attractor, it stops computing. However, we also simulated lines, by evolving initial conditions colored appropriately with the basins output.
 
 The animation was produced with the code:
 ```julia
@@ -338,7 +338,7 @@ We define the same grid as before, but now only we only use the x-y coordinates.
 ```@example MAIN
 xg = yg = range(-6.0, 6.0; length = 250)
 grid = (xg, yg)
-mapper = AttractorsViaRecurrences(pmap, grid; sparse = false)
+mapper = BasinMapRecurrences(pmap, grid; sparse = false)
 ```
 All that is left to do is to call [`basins_of_attraction`](@ref):
 
@@ -352,8 +352,8 @@ heatmap_basins_attractors(grid, basins, attractors)
 _just like in the example above, there is a fourth attractor with 0 basin fraction. This is an unstable fixed point, and exists exactly because we provided a grid with the unstable fixed point exactly on this grid_
 
 
-## Irregular grid for `AttractorsViaRecurrences`
-It is possible to provide an irregularly spaced grid to `AttractorsViaRecurrences`. This can make algorithm performance better for continuous time systems where the state space flow has significantly different speed in some state space regions versus others.
+## Irregular grid for `BasinMapRecurrences`
+It is possible to provide an irregularly spaced grid to `BasinMapRecurrences`. This can make algorithm performance better for continuous time systems where the state space flow has significantly different speed in some state space regions versus others.
 
 In the following example the dynamical system has only one attractor: a limit cycle. However, near the origin (0, 0) the timescale of the dynamics becomes very slow. As the trajectory is stuck there for quite a while, the recurrences algorithm may identify this region as an "attractor" (incorrectly). The solutions vary and can be to increase drastically the max time checks for finding attractors, or making the grid much more fine. Alternatively, one can provide a grid that is only more fine near the origin and not fine elsewhere.
 
@@ -386,7 +386,7 @@ ax = Axis(fig[1,1])
 # when pow > 1, the grid is finer close to zero
 for pow in (1, 2)
     xg = yg = range(0, 18.0^(1/pow); length = 200).^pow
-    mapper = AttractorsViaRecurrences(ds, (xg, yg);
+    mapper = BasinMapRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
         consecutive_recurrences = 10, attractor_locate_steps = 10,
         maximum_iterations = 1000,
@@ -404,7 +404,7 @@ axislegend(ax)
 fig
 ```
 
-## Subdivision Based Grid for `AttractorsViaRecurrences`
+## Subdivision Based Grid for `BasinMapRecurrences`
 
 To achieve even better results for this kind of problematic systems than with previuosly introduced `Irregular Grids`  we provide a functionality to construct `Subdivision Based Grids` in which
 one can obtain more coarse or dense structure not only along some axis but for a specific regions where the state space flow has
@@ -447,7 +447,7 @@ Now upon the construction of this structure, one can simply pass it into mapper 
 fig = Figure()
 ax = Axis(fig[1,1])
 # passing SubdivisionBasedGrid into mapper
-mapper = AttractorsViaRecurrences(ds, grid;
+mapper = BasinMapRecurrences(ds, grid;
         Dt = 0.1, sparse = true,
         consecutive_recurrences = 10, attractor_locate_steps = 10,
         maximum_iterations = 1000,
@@ -462,7 +462,7 @@ scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 
 # to compare the results we also construct RegularGrid of same length here
 xg = yg = range(0, 18, length = 30)
-mapper = AttractorsViaRecurrences(ds, (xg, yg);
+mapper = BasinMapRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
         consecutive_recurrences = 10, attractor_locate_steps = 10,
         maximum_iterations = 1000,
@@ -494,7 +494,7 @@ ds = Systems.magnetic_pendulum(; d = 0.3, α = 0.2, ω = 0.5)
 xg = yg = range(-3, 3; length = 101)
 ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
 # Choose a mapper via recurrences
-mapper = AttractorsViaRecurrences(ds, (xg, yg); Δt = 1.0)
+mapper = BasinMapRecurrences(ds, (xg, yg); Δt = 1.0)
 # What parameter to change, over what range
 γγ = range(1, 0; length = 101)
 prange = [[1, 1, γ] for γ in γγ]
@@ -657,7 +657,7 @@ Now we compute the fixed points and basins of attraction of the FHN model.
 ```@example MAIN
 xg = yg = range(-1.5, 1.5; length = 201)
 grid = (xg, yg)
-mapper = AttractorsViaRecurrences(ds, grid; sparse=false)
+mapper = BasinMapRecurrences(ds, grid; sparse=false)
 basins, attractors = basins_of_attraction(mapper)
 attractors
 ```
@@ -738,7 +738,7 @@ ds = CoupledODEs(duffing, ones(2), params, diffeq=(; reltol=1e-11))
 n_grid = 201
 grid = (range(-2, 2; length = n_grid),range(-2, 2; length = n_grid),)
 
-mapper = AttractorsViaRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+mapper = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
 
 accumulator = StabilityMeasuresAccumulator(mapper;
     finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
@@ -934,7 +934,7 @@ ds = CoupledODEs(population_rule, [0.7, 0.7], p0;
 
 xg = yg = range(-0.001, 1.0; length = 101)
 grid = (xg, yg)
-mapper = AttractorsViaRecurrences(ds, grid;
+mapper = BasinMapRecurrences(ds, grid;
     Δt = 0.1, consecutive_recurrences = 1000, consecutive_lost_steps = 1000)
 
 # A short continuation in K₁ with few samples, to keep the example fast

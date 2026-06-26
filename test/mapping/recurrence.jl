@@ -1,4 +1,4 @@
-# This file performs more extensive tests specifically for `AttractorsViaRecurrences`
+# This file performs more extensive tests specifically for `BasinMapRecurrences`
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
 
@@ -36,7 +36,7 @@ if DO_EXTENSIVE_TESTS
             df = CoupledODEs(morris_lecar_rule, u0, p; diffeq)
 
             xg = yg = range(-1, 1, length = 2000)
-            mapper = AttractorsViaRecurrences(
+            mapper = BasinMapRecurrences(
                 df, (xg, yg);
                 attractor_locate_steps = 1000,
                 consecutive_recurrences = 2,
@@ -74,10 +74,10 @@ if DO_EXTENSIVE_TESTS
             sampler, = statespace_sampler(grid, 1244)
             ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
 
-            mapper = AttractorsViaRecurrences(ds, grid; sparse = true, show_progress = false, kwargs...)
+            mapper = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false, kwargs...)
             fs_sparse, labels_sparse = basins_fractions(mapper, ics; show_progress = false)
             approx_atts_sparse = extract_attractors(mapper)
-            mapper = AttractorsViaRecurrences(ds, grid; sparse = false, show_progress = false, kwargs...)
+            mapper = BasinMapRecurrences(ds, grid; sparse = false, show_progress = false, kwargs...)
             fs_non, labels_non = basins_fractions(mapper, ics; show_progress = false)
             approx_atts_non = extract_attractors(mapper)
 
@@ -122,7 +122,7 @@ if DO_EXTENSIVE_TESTS
             sparse = false, # we want to compute full basins
         )
 
-        mapper = AttractorsViaRecurrences(ds, grid; mapper_kwargs...)
+        mapper = BasinMapRecurrences(ds, grid; mapper_kwargs...)
         basins, attractors = basins_of_attraction(mapper)
         ids = sort!(unique(basins))
         @test ids... == -1
@@ -136,7 +136,7 @@ if DO_EXTENSIVE_TESTS
         ds = henon()
         xg = yg = range(-1.0, 1.0; length = 100)
         grid = (xg, yg)
-        mapper = AttractorsViaRecurrences(ds, grid)
+        mapper = BasinMapRecurrences(ds, grid)
         id = mapper([0.0, 0.0])
         @test id == 1 # we resume going into the attractor outside the grid
         id2 = mapper([10.0, 10.0])
