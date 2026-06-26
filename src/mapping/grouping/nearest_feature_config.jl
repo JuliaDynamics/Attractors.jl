@@ -2,13 +2,13 @@ using Neighborhood, Distances
 export GroupViaNearestFeature
 
 """
-    GroupViaNearestFeature(templates; kwargs...)
+    GroupViaNearestFeature(templates; kwargs...) <: GroupingConfig
 
 Initialize a struct that contains instructions on how to group features in
-[`AttractorsViaFeaturizing`](@ref). `GroupViaNearestFeature` accepts a `template`,
+[`group_features`](@ref) (or [`AttractorsViaFeaturizing`](@ref)).
+`GroupViaNearestFeature` accepts a `template`,
 which is a dictionary mapping unique labels to unique feature vectors.
-Then, generated feature vectors from initial conditions in
-[`AttractorsViaFeaturizing`](@ref) are labelled according to the feature vector in
+Then, feature vectors are labelled according to the feature vector in
 `templates` that is closest (the label is the key of the closest template).
 
 `templates` can also be just a vector of feature vectors.
