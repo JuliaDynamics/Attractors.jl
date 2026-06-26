@@ -23,7 +23,7 @@ end
 binning = FixedRectangularBinning(range(-10, 240; step = 50), 2)
 gconfig = GroupViaHistogram(binning)
 
-mapper = AttractorsViaFeaturizing(ds, featurizer, gconfig)
+mapper = BasinMapFeaturizeGroup(ds, featurizer, gconfig)
 
 xg = yg = range(-2.0, 2.0; length = 100)
 grid = (xg, yg)

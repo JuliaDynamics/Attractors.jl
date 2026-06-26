@@ -126,7 +126,7 @@ function ε_from_centroids(attractors::AbstractDict)
             throw(
                 ArgumentError(
                     """
-                    Computed `ε = 0` in automatic estimation for `AttractorsViaFeaturizing`, probably because there is
+                    Computed `ε = 0` in automatic estimation for `BasinMapFeaturizeGroup`, probably because there is
                     only a single attractor that also is a single point. Please provide `ε` manually.
                     """
                 )

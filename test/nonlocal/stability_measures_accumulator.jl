@@ -373,7 +373,7 @@ end
     ics = ics_from_grid(grid)
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison()
-    mapper = AttractorsViaFeaturizing(dynamics, featurizer, gconfig)
+    mapper = BasinMapFeaturizeGroup(dynamics, featurizer, gconfig)
     accumulator = StabilityMeasuresAccumulator(mapper)
 
     @testset "single parameter" begin

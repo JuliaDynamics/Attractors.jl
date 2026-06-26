@@ -70,7 +70,7 @@ end
 
 """
 Find the optimal radius ε of a point neighborhood to use in DBSCAN, the unsupervised
-clustering method for `AttractorsViaFeaturizing`. Iteratively search
+clustering method for `BasinMapFeaturizeGroup`. Iteratively search
 for the radius that leads to the best clustering, as characterized by quantifiers known as
 silhouettes. Does a linear (sequential) search.
 """
@@ -158,7 +158,7 @@ end
 # It is the original implementation we have written based on the bSTAB paper.
 """
 Find the optimal radius ε of a point neighborhood to use in DBSCAN, the unsupervised clustering
-method for `AttractorsViaFeaturizing`. The basic idea is to iteratively search for the radius that
+method for `BasinMapFeaturizeGroup`. The basic idea is to iteratively search for the radius that
 leads to the best clustering, as characterized by quantifiers known as silhouettes.
 """
 function optimal_radius_dbscan_silhouette_original(features, min_neighbors, metric; num_attempts_radius = 200)

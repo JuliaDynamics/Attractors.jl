@@ -223,7 +223,7 @@ end
     ds = DeterministicIteratedMap(dummy_multistable_equilibrium!, [0.0], [1.0])
     featurizer(A, t) = A[end]
     grouping_config = GroupViaPairwiseComparison(; threshold = 0.2)
-    mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config)
+    mapper = BasinMapFeaturizeGroup(ds, featurizer, grouping_config)
 
     xg = range(0, 10, length = 100)
     grid = (xg,)
@@ -234,7 +234,7 @@ end
     rrange = range(1, 9.5; step = 0.5)
     ridx = 1
 
-    mapper = AttractorsViaFeaturizing(ds, featurizer, grouping_config; T = 10, Ttr = 1)
+    mapper = BasinMapFeaturizeGroup(ds, featurizer, grouping_config; T = 10, Ttr = 1)
     matcher = MatchByBasinEnclosure(; ε = 0.1)
     assc = AttractorSeedContinueMatch(mapper, matcher)
     fs_curves, atts_all = global_continuation(assc, rrange, ridx, ics; show_progress = false)

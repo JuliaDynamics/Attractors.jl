@@ -131,7 +131,7 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 # Explanation of how they work is in their respective docs.
 
 # 1. [`BasinMapRecurrences`](@ref).
-# 2. [`AttractorsViaFeaturizing`](@ref).
+# 2. [`BasinMapFeaturizeGroup`](@ref).
 
 # You can consult [Datseris2023](@cite) for a comparison between the two.
 
@@ -245,7 +245,7 @@ fs = basins_fractions(mapper, sampler)
 
 # Attractors.jl utilizes composable interfaces throughout its functionality.
 # In the above example we used one particular method to find attractors,
-# via recurrences in the state space. An alternative is [`AttractorsViaFeaturizing`](@ref).
+# via recurrences in the state space. An alternative is [`BasinMapFeaturizeGroup`](@ref).
 
 # For this method, we need to provide a "featurizing" function that given an
 # trajectory (which is likely an attractor), it returns some features that will
@@ -263,9 +263,9 @@ end
 
 # from which we initialize
 
-mapper2 = AttractorsViaFeaturizing(ds, featurizer; Δt = 0.1)
+mapper2 = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
 
-# [`AttractorsViaFeaturizing`](@ref) allows for a third input, which is a
+# [`BasinMapFeaturizeGroup`](@ref) allows for a third input, which is a
 # "grouping configuration", that dictates how features will be grouped into
 # attractors, as features are extracted from (randomly) sampled state space trajectories.
 # In this tutorial we leave it at its default value, which is clustering using the DBSCAN
@@ -284,10 +284,10 @@ plot_attractors(attractors2)
 
 # This mapper also found the attractors, but we should warn you: this mapper is less
 # robust than [`BasinMapRecurrences`](@ref). One of the reasons for this is
-# that [`AttractorsViaFeaturizing`](@ref) is not auto-terminating. For example, if we do not
+# that [`BasinMapFeaturizeGroup`](@ref) is not auto-terminating. For example, if we do not
 # have enough transient integration time, the two attractors will get confused into one:
 
-mapper3 = AttractorsViaFeaturizing(ds, featurizer; Ttr = 10, Δt = 0.1)
+mapper3 = BasinMapFeaturizeGroup(ds, featurizer; Ttr = 10, Δt = 0.1)
 fs3 = basins_fractions(mapper3, sampler)
 attractors3 = extract_attractors(mapper3)
 plot_attractors(attractors3)

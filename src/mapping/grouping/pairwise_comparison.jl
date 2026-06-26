@@ -5,7 +5,7 @@ export GroupViaPairwiseComparison
     GroupViaPairwiseComparison(; threshold::Real, metric...)
 
 Initialize a struct that contains instructions on how to group features in
-[`AttractorsViaFeaturizing`](@ref). `GroupViaPairwiseComparison` groups features and
+[`BasinMapFeaturizeGroup`](@ref). `GroupViaPairwiseComparison` groups features and
 identifies clusters by considering the pairwise distance between features. It can be used
 as an alternative to the clustering method in `GroupViaClustering`, having the
 advantage that it is simpler, typically faster and uses less memory.

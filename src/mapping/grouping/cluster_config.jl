@@ -6,7 +6,7 @@ export GroupViaClustering
     GroupViaClustering(; kwargs...)
 
 Initialize a struct that contains instructions on how to group features in
-[`AttractorsViaFeaturizing`](@ref). `GroupViaClustering` clusters features into
+[`BasinMapFeaturizeGroup`](@ref). `GroupViaClustering` clusters features into
 groups using DBSCAN, similar to the original work by bSTAB [Stender2021](@cite) and
 MCBB [Gelbrecht2020](@cite). Several options on clustering are available, see keywords below.
 

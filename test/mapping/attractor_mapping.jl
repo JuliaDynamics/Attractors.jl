@@ -77,7 +77,7 @@ function test_basins(
     @testset "Featurizing, clustering" begin
         optimal_radius_method = "silhouettes_optim"
         config = GroupViaClustering(; num_attempts_radius = 20, optimal_radius_method)
-        mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr = 500)
+        mapper = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
         test_basins_fractions(
             mapper;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
@@ -89,7 +89,7 @@ function test_basins(
             threshold = threshold_pairwise,
             metric = Euclidean(), rescale_features = false
         )
-        mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr = 500)
+        mapper = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
         test_basins_fractions(
             mapper;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
@@ -105,7 +105,7 @@ function test_basins(
                 threshold = threshold_pairwise,
                 metric = metric_hausdorff, rescale_features = false
             )
-            mapper = AttractorsViaFeaturizing(ds, featurizer_matrix, config; Ttr = 500)
+            mapper = BasinMapFeaturizeGroup(ds, featurizer_matrix, config; Ttr = 500)
             test_basins_fractions(
                 mapper;
                 err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
@@ -124,7 +124,7 @@ function test_basins(
         templates = Dict(k => features_from_u(u) for (k, u) in u0s)
 
         config = GroupViaNearestFeature(templates; max_distance)
-        mapper = AttractorsViaFeaturizing(ds, featurizer, config; Ttr = 500)
+        mapper = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
         # test the functionality mapper(u0) -> label
         @test isinteger(mapper(current_state(ds))) == true
         test_basins_fractions(mapper; err = ferr, single_u_mapping = false)

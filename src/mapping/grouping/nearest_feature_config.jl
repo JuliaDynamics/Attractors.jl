@@ -5,7 +5,7 @@ export GroupViaNearestFeature
     GroupViaNearestFeature(templates; kwargs...) <: GroupingConfig
 
 Initialize a struct that contains instructions on how to group features in
-[`group_features`](@ref) (or [`AttractorsViaFeaturizing`](@ref)).
+[`group_features`](@ref) (or [`BasinMapFeaturizeGroup`](@ref)).
 `GroupViaNearestFeature` accepts a `template`,
 which is a dictionary mapping unique labels to unique feature vectors.
 Then, feature vectors are labelled according to the feature vector in

@@ -216,7 +216,7 @@ a quantity characterizing the whole basin structure.
 
 ## Trivial featurizing and grouping for basins fractions
 
-This is a rather trivial example showcasing the usage of [`AttractorsViaFeaturizing`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`AttractorsViaFeaturizing`](@ref) we just create a julia function that returns this last point
+This is a rather trivial example showcasing the usage of [`BasinMapFeaturizeGroup`](@ref). Let us use once again the magnetic pendulum example. For it, we have a really good idea of what features will uniquely describe each attractor: the last points of a trajectory (which should be very close to the magnetic the trajectory converged to). To provide this information to the [`BasinMapFeaturizeGroup`](@ref) we just create a julia function that returns this last point
 
 ```@example MAIN
 using Attractors
@@ -229,7 +229,7 @@ function featurizer(X, t)
     return X[end]
 end
 
-mapper = AttractorsViaFeaturizing(psys, featurizer; Ttr = 200, T = 1)
+mapper = BasinMapFeaturizeGroup(psys, featurizer; Ttr = 200, T = 1)
 
 xg = yg = range(-4, 4; length = 101)
 
@@ -586,7 +586,7 @@ ridx = 1
 
 featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
-mapper = AttractorsViaFeaturizing(ds, featurizer, clusterspecs; T = 20, threaded = true)
+mapper = BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = true)
 gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
 fractions_cont, clusters_info = global_continuation(
     gap, rrange, ridx, sampler; show_progress = false
@@ -628,7 +628,7 @@ gconfig = GroupViaClustering(;
 )
 ```
 
-You can then pass the `histogram_featurizer` and `gconfig` to an [`AttractorsViaFeaturizing`](@ref) and use the rest of the library as usual.
+You can then pass the `histogram_featurizer` and `gconfig` to an [`BasinMapFeaturizeGroup`](@ref) and use the rest of the library as usual.
 
 ## Edge tracking
 

@@ -39,10 +39,10 @@ using Random
     # in all honesty, we don't have to test 2 grouping configs,
     # as the algorithm is agnostic to the grouping. But oh well!
     group1 = GroupViaClustering(optimal_radius_method = 0.1)
-    mapper2 = AttractorsViaFeaturizing(ds, featurizer, group1; Ttr = 2, T = 2)
+    mapper2 = BasinMapFeaturizeGroup(ds, featurizer, group1; Ttr = 2, T = 2)
 
     group2 = GroupViaPairwiseComparison(threshold = 0.1)
-    mapper3 = AttractorsViaFeaturizing(ds, featurizer, group2; Ttr = 2, T = 2)
+    mapper3 = BasinMapFeaturizeGroup(ds, featurizer, group2; Ttr = 2, T = 2)
 
     mappers = [mapper1, mapper2, mapper3, mapper1]
 
@@ -118,7 +118,7 @@ end
 
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)
-    mapper = AttractorsViaFeaturizing(ds, featurizer, gconfig; Ttr = 1, T = 1)
+    mapper = BasinMapFeaturizeGroup(ds, featurizer, gconfig; Ttr = 1, T = 1)
     gca = AttractorSeedContinueMatch(mapper; seeding = A -> [])
 
     pcurve = [Dict(1 => r) for r in rs]

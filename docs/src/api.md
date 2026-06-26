@@ -27,13 +27,13 @@ AttractorsViaProximity
 ### Featurizing
 
 ```@docs
-AttractorsViaFeaturizing
+BasinMapFeaturizeGroup
 ```
 
 
 ## Grouping configurations
 
-Grouping configurations that can be given to [`AttractorsViaFeaturizing`](@ref)
+Grouping configurations that can be given to [`BasinMapFeaturizeGroup`](@ref)
 are part of a generic and extendable interface based on the [`group_features`](@ref)
 function.
 The grouping configuration sets how the features describing the trajectories will be grouped together.

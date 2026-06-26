@@ -2,7 +2,7 @@ export FeaturizeGroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct FeaturizeGroupAcrossParameter{A <: AttractorsViaFeaturizing, E} <: GlobalContinuationAlgorithm
+struct FeaturizeGroupAcrossParameter{A <: BasinMapFeaturizeGroup, E} <: GlobalContinuationAlgorithm
     mapper::A
     info_extraction::E
     par_weight::Float64
@@ -10,10 +10,10 @@ end
 
 """
     FeaturizeGroupAcrossParameter <: GlobalContinuationAlgorithm
-    FeaturizeGroupAcrossParameter(mapper::AttractorsViaFeaturizing; kwargs...)
+    FeaturizeGroupAcrossParameter(mapper::BasinMapFeaturizeGroup; kwargs...)
 
 A method for [`global_continuation`](@ref).
-It uses the featurizing approach discussed in [`AttractorsViaFeaturizing`](@ref)
+It uses the featurizing approach discussed in [`BasinMapFeaturizeGroup`](@ref)
 and hence requires an instance of that mapper as an input.
 When used in [`global_continuation`](@ref), features are extracted
 and then grouped across a parameter range. Said differently, all features
@@ -33,7 +33,7 @@ in the papers [Gelbrecht2020](@cite) and [Stender2021](@cite).
   This is what the `attractors_cont` contains in the return of `global_continuation`.
 """
 function FeaturizeGroupAcrossParameter(
-        mapper::AttractorsViaFeaturizing;
+        mapper::BasinMapFeaturizeGroup;
         info_extraction = mean_across_features,
         par_weight = 0.0,
     )
@@ -77,7 +77,7 @@ function global_continuation(
     return fractions_cont, attractors_cont
 end
 
-function _get_features_pcurve(mapper::AttractorsViaFeaturizing, ics, n, spp, pcurve, show_progress)
+function _get_features_pcurve(mapper::BasinMapFeaturizeGroup, ics, n, spp, pcurve, show_progress)
     progress = ProgressMeter.Progress(
         n;
         desc = "Generating features", enabled = show_progress, offset = 2,

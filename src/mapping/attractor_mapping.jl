@@ -4,7 +4,7 @@
 export BasinMap,
     BasinMapRecurrences,
     AttractorsViaProximity,
-    AttractorsViaFeaturizing,
+    BasinMapFeaturizeGroup,
     ClusteringConfig,
     basins_fractions,
     convergence_and_basins_of_attraction,
@@ -36,7 +36,7 @@ Currently available mapping methods:
 
 * [`AttractorsViaProximity`](@ref)
 * [`BasinMapRecurrences`](@ref)
-* [`AttractorsViaFeaturizing`](@ref)
+* [`BasinMapFeaturizeGroup`](@ref)
 
 All `BasinMap` subtypes can be used with [`basins_fractions`](@ref)
 or [`basins_of_attraction`](@ref).
@@ -50,7 +50,7 @@ The mappers that can do this are:
 
 * [`AttractorsViaProximity`](@ref)
 * [`BasinMapRecurrences`](@ref)
-* [`AttractorsViaFeaturizing`](@ref) with the [`GroupViaHistogram`](@ref)
+* [`BasinMapFeaturizeGroup`](@ref) with the [`GroupViaHistogram`](@ref)
   or [`GroupViaNearestFeature`](@ref) configurations.
 
 See also [`StabilityMeasuresAccumulator`](@ref) that extends this interface
@@ -195,7 +195,7 @@ Must be extended for new mappers that fall under this category.
 `progress` is an initialized progress bar of appropriate size,
 `labels` is an initialized container of labels that should be overwritten
 in the function call if it is not `empty`.
-See the implementation of `AttractorsViaFeaturizing` for an example.
+See the implementation of `BasinMapFeaturizeGroup` for an example.
 """
 function basins_fractions_grouped(mapper, ics, progress, labels)
     error("Must be implemented for mapper of type $(nameof(typeof(mapper)))")
@@ -261,7 +261,7 @@ include("grouping/attractor_mapping_featurizing.jl")
 
 "internal function for whether the mapper can map individual i.c."
 allows_mapper_u0(::BasinMap) = true
-function allows_mapper_u0(mapper::AttractorsViaFeaturizing)
+function allows_mapper_u0(mapper::BasinMapFeaturizeGroup)
     if mapper.group_config isa GroupViaClustering
         return false
     elseif mapper.group_config isa GroupViaPairwiseComparison

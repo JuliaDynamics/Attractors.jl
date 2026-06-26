@@ -13,7 +13,7 @@ Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability measures in the most efficient
 way possible. `mapper` is any instance of an [`BasinMap`](@ref),
-although for [`AttractorsViaFeaturizing`](@ref) the convergence times won't make sense.
+although for [`BasinMapFeaturizeGroup`](@ref) the convergence times won't make sense.
 
 The accummulator records several measures of stability (or resilience) defined
 in [Morr2026](@cite), and a few more related and derived shortly after,

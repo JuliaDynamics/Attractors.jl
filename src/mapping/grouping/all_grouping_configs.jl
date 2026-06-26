@@ -4,7 +4,7 @@ export GroupingConfig, group_features
    GroupingConfig
 
 Supertype for configuration structs on how to group features together.
-Used in several occasions such as [`AttractorsViaFeaturizing`](@ref)
+Used in several occasions such as [`BasinMapFeaturizeGroup`](@ref)
 or [`aggregate_continuation`](@ref).
 
 Currently available grouping configurations are:
@@ -22,7 +22,7 @@ The only thing necessary for a new grouping configuration is to:
 1. Make a new type and subtype `GroupingConfig`.
 2. If the grouping allows for mapping individual features to group index,
    then instead extend the **internal function** `feature_to_group(feature, config)`.
-   This will also allow doing `id = mapper(u0)` with [`AttractorsViaFeaturizing`](@ref).
+   This will also allow doing `id = mapper(u0)` with [`BasinMapFeaturizeGroup`](@ref).
 3. Else, extend the function `group_features(features, config)`.
    You could still extend `group_features` even if (2.) is satisfied,
    if there are any performance benefits.

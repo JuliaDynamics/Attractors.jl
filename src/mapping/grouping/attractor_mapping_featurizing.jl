@@ -1,4 +1,4 @@
-export AttractorsViaFeaturizing, extract_features
+export BasinMapFeaturizeGroup, extract_features
 
 # Flexible mapping of initial conditions into "attractors" by featurizing
 # and grouping using arbitrary grouping configurations.
@@ -8,7 +8,7 @@ export AttractorsViaFeaturizing, extract_features
 #####################################################################################
 include("all_grouping_configs.jl")
 
-struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T, C, SSS <: AbstractStateSpaceSet} <: BasinMap
+struct BasinMapFeaturizeGroup{DS <: DynamicalSystem, G <: GroupingConfig, F, T, C, SSS <: AbstractStateSpaceSet} <: BasinMap
     ds::DS
     featurizer::F
     group_config::G
@@ -21,7 +21,7 @@ struct AttractorsViaFeaturizing{DS <: DynamicalSystem, G <: GroupingConfig, F, T
 end
 
 """
-    AttractorsViaFeaturizing(
+    BasinMapFeaturizeGroup(
         ds::DynamicalSystem, featurizer::Function,
         grouping_config = GroupViaClustering(); kwargs...
     )
@@ -77,7 +77,7 @@ but of course there is no guarantee that this is actually an attractor.
 
 Note that the convergence time of this mapper is always the constant `T + Ttr`.
 """
-function AttractorsViaFeaturizing(
+function BasinMapFeaturizeGroup(
         ds::DynamicalSystem, featurizer::Function,
         group_config::GroupingConfig = GroupViaClustering(); threaded::Bool = true,
         T = 100, Ttr = 100, Δt = 1, container = dimension(ds) ≥ 32 ? Vector : SVector,
@@ -86,17 +86,17 @@ function AttractorsViaFeaturizing(
     V = eltype(current_state(ds))
     T, Ttr, Δt = promote(T, Ttr, Δt)
     # For parallelization, the dynamical system is deepcopied.
-    return AttractorsViaFeaturizing(
+    return BasinMapFeaturizeGroup(
         ds, featurizer, group_config, Ttr, Δt, T, container, threaded, Dict{Int, StateSpaceSet{D, V}}(),
     )
 end
 
 # BasinMap API:
-function reset_mapper!(mapper::AttractorsViaFeaturizing)
+function reset_mapper!(mapper::BasinMapFeaturizeGroup)
     empty!(mapper.attractors)
     return
 end
-function (mapper::AttractorsViaFeaturizing)(u0)
+function (mapper::BasinMapFeaturizeGroup)(u0)
     ds = referenced_dynamical_system(mapper)
     A, t = trajectory(ds, mapper.total, u0; container = mapper.container, Ttr = mapper.Ttr, Δt = mapper.Δt)
     f = mapper.featurizer(A, t)
@@ -107,11 +107,11 @@ function (mapper::AttractorsViaFeaturizing)(u0)
     end
     return id
 end
-convergence_time(mapper::AttractorsViaFeaturizing) = mapper.Ttr + mapper.total
+convergence_time(mapper::BasinMapFeaturizeGroup) = mapper.Ttr + mapper.total
 
-DynamicalSystemsBase.rulestring(m::AttractorsViaFeaturizing) = DynamicalSystemsBase.rulestring(m.ds)
+DynamicalSystemsBase.rulestring(m::BasinMapFeaturizeGroup) = DynamicalSystemsBase.rulestring(m.ds)
 
-function Base.show(io::IO, mapper::AttractorsViaFeaturizing)
+function Base.show(io::IO, mapper::BasinMapFeaturizeGroup)
     ps = generic_mapper_print(io, mapper)
     println(io, rpad(" Ttr: ", ps), mapper.Ttr)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
@@ -125,7 +125,7 @@ end
 #####################################################################################
 # Extension of `BasinMap` API: basins_fractions_grouped
 #####################################################################################
-function basins_fractions_grouped(mapper::AttractorsViaFeaturizing, ics, progress, labels)
+function basins_fractions_grouped(mapper::BasinMapFeaturizeGroup, ics, progress, labels)
     features = extract_features(mapper, ics; progress)
     glabels = group_features(features, mapper.group_config)
     if !isempty(labels)
@@ -142,14 +142,14 @@ end
 import ProgressMeter
 
 """
-    extract_features(mapper::AttractorsViaFeaturizing, ics; N = 1000, show_progress = true)
+    extract_features(mapper::BasinMapFeaturizeGroup, ics; N = 1000, show_progress = true)
 
 Return a vector of the features of each initial condition in `ics` (as in
 [`basins_fractions`](@ref)), using the configuration of `mapper`.
 Keyword `N` is ignored if `ics isa StateSpaceSet`.
 """
 function extract_features(
-        mapper::AttractorsViaFeaturizing, ics;
+        mapper::BasinMapFeaturizeGroup, ics;
         show_progress = true, progress = nothing, N = 1000
     )
     if isnothing(progress)
@@ -203,7 +203,7 @@ function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper
     return mapper.featurizer(A, t)
 end
 
-function extract_attractors!(mapper::AttractorsViaFeaturizing, labels, ics)
+function extract_attractors!(mapper::BasinMapFeaturizeGroup, labels, ics)
     uidxs = unique(i -> labels[i], eachindex(labels))
     attractors = Dict(
         labels[i] => trajectory(
@@ -215,4 +215,4 @@ function extract_attractors!(mapper::AttractorsViaFeaturizing, labels, ics)
     return
 end
 
-_extract_attractors(mapper::AttractorsViaFeaturizing) = mapper.attractors
+_extract_attractors(mapper::BasinMapFeaturizeGroup) = mapper.attractors
