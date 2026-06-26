@@ -64,11 +64,11 @@ end
         Euclidean(),
         WeightedEuclidean([0, 1]), # distance of x dimension only
     ]
-    accumulator = StabilityMeasuresAccumulator(mapper; idistances = distances)
+    accumulator = StabilityQuantifiersAccumulator(mapper; idistances = distances)
 
     A = ics_from_grid(grid)
     for u0 in A
-        id = accumulator(u0) # run this to accumulate measures
+        id = accumulator(u0) # run this to accumulate quantifiers
     end
     results = finalize_accumulator(accumulator)
 

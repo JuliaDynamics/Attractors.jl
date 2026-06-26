@@ -221,9 +221,9 @@ mapper = BasinMapRecurrences(
 
 sampler, = statespace_sampler(grid)
 
-algo = AttractorSeedContinueMatch(StabilityMeasuresAccumulator(mapper))
+algo = AttractorSeedContinueMatch(StabilityQuantifiersAccumulator(mapper))
 
-@time measures_cont, attractors_cont = global_continuation(
+@time quantifiers_cont, attractors_cont = global_continuation(
     algo, prange, pidx, sampler; samples_per_parameter = 1_000
 )
 
@@ -251,7 +251,7 @@ plot_attractors_curves(
 # These algorithms are also robust in the sense of working well for
 # many different types of dynamical systems, including discrete ones,
 # see [Datseris2022](@cite) for a demonstration.
-# And finally, Attractors.jl estimates a more general nonlocal measure of stability,
+# And finally, Attractors.jl estimates a more general nonlocal quantifier of stability,
 # in the sense that if a set is nonlocally stable, it is guaranteed to be locally stable,
 # however the other way around isn't guaranteed.
 # The global continuation of Attractors.jl continues the whole of a

@@ -12,7 +12,7 @@ using CairoMakie, Attractors
 
 - Attractors found by a global continuation can be aggregated into user-defined groups with
   `aggregate_continuation` (or `aggregate_attractors` for a single parameter) before computing
-  stability measures via `stability_measures_along_continuation`.
+  stability quantifiers via `stability_quantifiers_along_continuation`.
 - **v1.36**: Three enhancements to `StabilityMeasuresAccumulator`:
   (1) local stability measures are now estimated for discrete-time systems too;
   (2) attractors can be aggregated before computing measures via `featurizer`/`group_config`
@@ -20,7 +20,7 @@ using CairoMakie, Attractors
   (3) `finalize_accumulator` now returns the (possibly aggregated) attractors as a second
   value so callers always have access to the correct IDs.
   See the CHANGELOG for details.
-- Yet another groundbreaking feature has been implemented in Attractors.jl: estimation of extendably-many stability measures of a dynamical system automatically, with a single function call (also works along a global continuation)
+- Yet another groundbreaking feature has been implemented in Attractors.jl: estimation of extendably-many stability quantifiers of a dynamical system automatically, with a single function call (also works along a global continuation)
 - See the CHANGELOG.md (at the GitHub repo) for more!
 
 ## Getting started

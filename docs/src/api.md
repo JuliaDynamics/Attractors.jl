@@ -207,12 +207,12 @@ swap_dict_keys!
 next_free_id
 ```
 
-## Stability measures/quantifiers
+## Stability quantifiers
 
 ```@docs
-StabilityMeasuresAccumulator
+StabilityQuantifiersAccumulator
 finalize_accumulator
-stability_measures_along_continuation
+stability_quantifiers_along_continuation
 ```
 
 ### Intermingledness
