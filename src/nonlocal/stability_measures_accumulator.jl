@@ -24,11 +24,10 @@ argument, see the Extra quantifiers section below.
 
 `StabilityMeasuresAccumulator` can be used as any `AttractorMapper` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
-the [`finalize_accumulator`](@ref) function should be called which will return two
-dictionaries: (1) a dictionary of all stability measures estimated by the accumulator,
+the [`finalize_accumulator`](@ref) function should be called which will return a
+dictionary of all stability measures estimated by the accumulator,
 where each entry maps the stability measure description (`String`) to a dictionary
-mapping attractor IDs to the stability measure value; and (2) a dictionary mapping
-attractor IDs to the corresponding attractor (`StateSpaceSet`).
+mapping attractor IDs to the stability measure value.
 Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
 This functionality was developed as part of [Morr2026](@cite) and has now been extended
 to work for any `AttractorMapper`, current or future.
@@ -255,47 +254,26 @@ function (accumulator::StabilityMeasuresAccumulator)(u0)
 end
 
 """
-    finalize_accumulator(accumulator::StabilityMeasuresAccumulator; featurizer = nothing, group_config = nothing)
+    finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
 
-Return two dictionaries:
-1. a dictionary mapping stability measures (strings) to dictionaries
-  mapping attractor IDs to corresponding measure values.
-2. a dictionary mapping attractor IDs to the attractor state space set.
+Return a dictionary mapping stability measures (strings) to dictionaries
+mapping attractor IDs to corresponding measure values.
 
-Output 2 will be different than the attractor set found by the `AttractorMapper` utilized
-by the `accumulator` if attractor aggregation is used (see below).
+The attractors themselves are those of the `accumulator`'s mapper and can be
+obtained with `extract_attractors(accumulator)`.
+
 See [`StabilityMeasuresAccumulator`](@ref) for more.
 
-## Attractor aggregation
-
-Two optional keywords `featurizer, group_config` can be passed, so that the same type of
-attractor aggregation as in [`aggregate_attractor_fractions`](@ref) is performed.
-When providing `featurizer, group_config` attractors with similar features are merged
-before computing stability measures. The merged attractor is the union the constituent
-attractors, and its basin is the union of their basins. Linear stability measures
-(e.g. `characteristic_return_time`) are always `NaN` for merged attractors because they
-cannot be fixed points.
-
-- `featurizer` must be a 1-argument function mapping an attractor (`StateSpaceSet`)
-  to a feature vector (typically an `SVector`) suitable for grouping.
-- `group_config`: a [`GroupingConfig`](@ref) instance controlling how features are grouped.
-
-Both keywords must be specified for this functionality to work.
+To compute stability measures for *aggregated* groups of attractors, merge them first with
+[`aggregate_continuation`](@ref) and pass the merged attractors to
+[`stability_measures_along_continuation`](@ref).
 """
-function finalize_accumulator(
-        accumulator::StabilityMeasuresAccumulator;
-        featurizer = nothing, group_config = nothing,
-    )
+function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     ds = referenced_dynamical_system(accumulator)
-    _attractors = extract_attractors(accumulator.mapper)
-    _bs = accumulator.bs
+    attractors = extract_attractors(accumulator.mapper)
+    bs = accumulator.bs
     u0s = accumulator.u0s
     cts = accumulator.cts
-    if !isnothing(featurizer) && !isnothing(group_config)
-        bs, attractors = _apply_aggregation(_bs, _attractors, featurizer, group_config)
-    else
-        bs, attractors = _bs, _attractors
-    end
     ids = unique(bs)
     js = 1:length(ids)
     ids_to_js = Dict(id => j for (j, id) in enumerate(ids))
@@ -501,7 +479,7 @@ function finalize_accumulator(
         end
     end
 
-    return output, attractors
+    return output
 end
 
 # Weighted median: smallest x with cumulative weight ≥ 0.5.
@@ -527,27 +505,6 @@ function weighted_median(
         end
     end
     return float(vals[p[end]])
-end
-
-# Remap basins vector and merge attractors using featurizer + group_config,
-# following the same interface as `aggregate_attractor_fractions`.
-function _apply_aggregation(bs, attractors, featurizer, group_config)
-    ids = collect(keys(attractors))
-    features = [featurizer(attractors[id]) for id in ids]
-    grouped_labels = group_features(features, group_config)
-    old_to_new = Dict(old_id => new_id for (old_id, new_id) in zip(ids, grouped_labels))
-    bs_new = [get(old_to_new, id, id) for id in bs]
-    new_attractors = Dict{keytype(attractors), valtype(attractors)}()
-    for (old_id, new_id) in zip(ids, grouped_labels)
-        if haskey(new_attractors, new_id)
-            new_attractors[new_id] = StateSpaceSet(
-                vcat(collect(new_attractors[new_id]), collect(attractors[old_id]))
-            )
-        else
-            new_attractors[new_id] = attractors[old_id]
-        end
-    end
-    return bs_new, new_attractors
 end
 
 # Extension function to allow accumulator to work also with non-single-u0 mappers

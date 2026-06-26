@@ -37,7 +37,7 @@ using Random
             id = accumulator(u0) # run this to accumulate measures
         end
 
-        results, _ = finalize_accumulator(accumulator)
+        results = finalize_accumulator(accumulator)
 
         # The expected results are computed as in the following example:
         # maximal_noncritical_shock of attractor 2 at [1, 1] is computed as the distance between the
@@ -134,13 +134,37 @@ using Random
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
 
-        # Merge all attractors at every step via a large threshold on the x-coordinate.
+        # Merge all attractors at every step via a large threshold on the x-coordinate, then
+        # compute the stability measures on the merged attractors.
         featurizer = A -> SVector(first(A)[1])
         merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
+        agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
+            attractors_cont, featurizer, merge_config
+        )
+
+        # One merged group per step, with a consistent ID along the parameter axis
+        @test length(centroids_cont) == 2 == length(members_cont)
+        g1 = only(keys(centroids_cont[1]))
+        g2 = only(keys(centroids_cont[2]))
+        @test g1 == g2
+        # Centroid of the merged feature vectors: mean(0) = 0 and mean(1, -1) = 0
+        @test centroids_cont[1][g1] ≈ SVector(0.0)
+        @test centroids_cont[2][g2] ≈ SVector(0.0)
+        # Membership maps back to the original attractor IDs that were merged
+        @test sort(members_cont[1][g1]) == [1]
+        @test sort(members_cont[2][g2]) == [1, 2]
+
+        # Single-parameter `aggregate_attractors` agrees with one continuation step
+        agg_step, cent_step, mem_step = aggregate_attractors(
+            attractors_cont[2], featurizer, merge_config
+        )
+        @test length(agg_step) == 1
+        @test sort(mem_step[only(keys(mem_step))]) == [1, 2]
+        @test cent_step[only(keys(cent_step))] ≈ SVector(0.0)
+
         measures_agg = stability_measures_along_continuation(
-            dynamics, attractors_cont, pcurve, ics_from_grid(grid);
-            ε = 0.1, finite_time = 0.5,
-            proximity_mapper_options, featurizer, group_config = merge_config
+            dynamics, agg_attractors_cont, pcurve, ics_from_grid(grid);
+            ε = 0.1, finite_time = 0.5, proximity_mapper_options,
         )
 
         # At both steps all ICs belong to the merged attractor → basin fraction == 1
@@ -180,7 +204,7 @@ end
     end
 
     @testset "mapping" begin
-        results, _ = finalize_accumulator(accumulator)
+        results = finalize_accumulator(accumulator)
         # Define expected results for the linear system
         results_expected = Dict(
             "characteristic_return_time" => Dict(1 => 2.0),
@@ -254,7 +278,7 @@ end
     for u0 in A
         id = accumulator(u0)
     end
-    stability_measures, _ = finalize_accumulator(accumulator)
+    stability_measures = finalize_accumulator(accumulator)
 
     measures = ["basin_stability", "minimal_critical_shock_magnitude"]
 
@@ -312,7 +336,7 @@ end
         id = accumulator(u0) # run this to accumulate measures
     end
 
-    results, _ = finalize_accumulator(accumulator)
+    results = finalize_accumulator(accumulator)
 
     @test haskey(results, "extra")
     @test results["extra"] isa Dict
@@ -355,7 +379,7 @@ end
     @testset "single parameter" begin
         fs, labels = basins_fractions(accumulator, ics)
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
-        measures, _ = finalize_accumulator(accumulator)
+        measures = finalize_accumulator(accumulator)
         @test isequal(measures["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
     end
 
@@ -368,54 +392,4 @@ end
         fs = measures_cont["basin_fraction"][1]
         @test all(sort!(collect(v for (k, v) in fs if k != -1)) .≈ [0.333333333333333333, 0.6666666666666])
     end
-end
-
-@testset "aggregation" begin
-    function dumb_map(z, p, n)
-        x, y = z
-        r = p[1]
-        if r < 0.5
-            return SVector(0.0, 0.0)
-        else
-            x ≥ 0 ? SVector(r, r) : SVector(-r, -r)
-        end
-    end
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
-    grid = ([-1, 0, 1.0], [-1, 0, 1.0])
-    mapper = AttractorsViaRecurrences(dynamics, grid; sparse = false)
-    A = ics_from_grid(grid)
-    for u0 in A
-        mapper(u0)
-    end
-    attractors = extract_attractors(mapper)
-    mapper2 = AttractorsViaProximity(dynamics, attractors, 0.01, Ttr = 0)
-    accumulator = StabilityMeasuresAccumulator(mapper2)
-    for u0 in A
-        accumulator(u0)
-    end
-
-    # featurizer: x-coordinate of the attractor's (single) point
-    featurizer = A -> SVector(first(A)[1])
-
-    # Large threshold merges both attractors (at [1,1] and [-1,-1], x-distance = 2) into one
-    merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
-    results_agg, attractors_agg = finalize_accumulator(accumulator; featurizer, group_config = merge_config)
-
-    merged_id = first(k for k in keys(results_agg["basin_fraction"]) if k != -1)
-    # All initial conditions belong to the merged attractor, so basin fraction == 1
-    @test results_agg["basin_fraction"][merged_id] ≈ 1.0
-    @test length(results_agg["basin_fraction"]) == 1 # thre is no -1 for this system
-    # Only one group means no critical shock
-    @test results_agg["minimal_critical_shock_magnitude"][merged_id] == Inf
-    # Linear measures are NaN for the merged (non-fixed-point) attractor
-    @test isnan(results_agg["characteristic_return_time"][merged_id])
-    # The returned attractors must have the same IDs as the measures dictionaries
-    @test sort(collect(keys(attractors_agg))) == sort([k for k in keys(results_agg["basin_fraction"]) if k != -1])
-
-    # Small threshold keeps attractors separate: fractions should match plain finalization
-    separate_config = GroupViaPairwiseComparison(threshold = 0.5, rescale_features = false)
-    results_plain, _ = finalize_accumulator(accumulator)
-    results_separate, _ = finalize_accumulator(accumulator; featurizer, group_config = separate_config)
-    @test sort!(collect(values(results_separate["basin_fraction"]))) ≈
-        sort!(collect(values(results_plain["basin_fraction"])))
 end

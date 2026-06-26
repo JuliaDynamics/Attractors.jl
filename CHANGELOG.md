@@ -1,3 +1,21 @@
+# v2
+
+## Aggregation reworked
+
+Aggregation of attractors, also along a continuation, has been reworked.
+This rework comes from the odd and undisclosed way matching worked for
+aggregated continuation. How this works is now clearly conveying to the user
+and it is done similarly as in global continuation, using
+distances of feature centroids (instead of attractor centroids).
+
+- **BREAKING**: Function `aggregate_attractor_fractions` is removed.
+- New function `aggregate_continuation`: a post-processing companion of `global_continuation` that merges similar attractors into groups across a parameter range.
+- New function `aggregate_attractors`: the single-parameter building block of
+  `aggregate_continuation`.
+- **BREAKING**: Removed the `featurizer` and `group_config` keyword arguments from `finalize_accumulator`. Attractor aggregation for stability measures is now
+  done explicitly via `aggregate_continuation`.
+- **BREAKING** `finalize_accumulator` now returns only the dictionary of stability measures (previously it also returned the dictionary of attractors as a second value). The attractors are always those of the accumulator's mapper and can be obtained with `extract_attractors(accumulator)`.
+
 # v1.39
 
 - New function `boundary_intermingledness`.

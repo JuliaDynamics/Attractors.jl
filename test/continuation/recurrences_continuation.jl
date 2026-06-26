@@ -1,4 +1,4 @@
-# This file also tests `aggregate_attractor_fractions`!
+# This file also tests `aggregate_continuation` and `aggregate_fractions`!
 
 DO_EXTENSIVE_TESTS = get(ENV, "ATTRACTORS_EXTENSIVE_TESTS", "false") == "true"
 
@@ -144,7 +144,9 @@ end
     )
     test_fs(fractions_cont, rrange, [4, 12])
 
-    # Then, test the aggregation of features via featurizing and histogram
+    # Then, test aggregating the basin fractions: first group the attractors with
+    # `aggregate_continuation` (featurizing + histogram), then sum the basin fractions
+    # of each group with `aggregate_fractions`.
     using Statistics
     featurizer = (x) -> mean(x)
 
@@ -152,11 +154,32 @@ end
         FixedRectangularBinning(range(-4, 4; step = 0.005), 2)
     )
 
-    aggr_fracs, aggr_info = aggregate_attractor_fractions(
-        fractions_cont, attractors_cont, featurizer, hconfig
-    )
+    _, _, members_cont = aggregate_continuation(attractors_cont, featurizer, hconfig)
+    aggr_fracs = aggregate_fractions(fractions_cont, members_cont)
     test_fs(aggr_fracs, rrange, [4, 12])
+    # aggregated fractions still sum to 1 at each parameter
+    for fs in aggr_fracs
+        @test sum(values(fs)) ≈ 1
+    end
 
+end
+
+@testset "aggregate_fractions" begin
+    # Unit test of the fraction-summing logic, independent of any continuation.
+    # `members_cont[i]` maps a new (aggregated) ID to the original IDs merged into it,
+    # and `aggregate_fractions` sums the corresponding basin fractions.
+    fractions_cont = [
+        Dict(1 => 0.5, 2 => 0.3, 3 => 0.2),
+        Dict(1 => 0.6, 2 => 0.4),
+    ]
+    members_cont = [
+        Dict(1 => [1, 2], 2 => [3]), # merge old ids 1 & 2 into group 1, id 3 into group 2
+        Dict(1 => [1], 2 => [2]),
+    ]
+    aggr_fracs = aggregate_fractions(fractions_cont, members_cont)
+    @test aggr_fracs[1] == Dict(1 => 0.8, 2 => 0.2)
+    @test aggr_fracs[2] == Dict(1 => 0.6, 2 => 0.4)
+    @test all(fs -> sum(values(fs)) ≈ 1, aggr_fracs)
 end
 
 if DO_EXTENSIVE_TESTS
