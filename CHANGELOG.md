@@ -2,6 +2,10 @@
 
 This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
 
+## Prior deprecations removed
+
+All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
+
 ## Renaming into Basin Maps
 
 The `AttractorMapper` constructions have been fully renamed. All following renames are deprecated:
