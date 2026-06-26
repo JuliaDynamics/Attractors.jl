@@ -22,7 +22,7 @@ ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r])
 xg = yg = range(-1.5, 2.5; length = 3)
 grid = (xg, yg)
 attrs = Dict(1 => StateSpaceSet([SVector(r, r)]), 2 => StateSpaceSet([SVector(-r, -r)]))
-mapper = AttractorsViaProximity(ds, attrs; Ttr = 0)
+mapper = BasinMapProximity(ds, attrs; Ttr = 0)
 
 @testset "boa" begin
     basins, atts = basins_of_attraction(mapper, grid; show_progress = false)

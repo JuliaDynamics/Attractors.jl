@@ -67,7 +67,7 @@ using LinearAlgebra
 
     @testset "target id" begin
         atrdict = Dict(i => StateSpaceSet([a]) for (i, a) in enumerate(attractors))
-        mapper = AttractorsViaProximity(ds, atrdict, 0.01)
+        mapper = BasinMapProximity(ds, atrdict, 0.01)
         algo_bb = Attractors.MCSBlackBoxOptim()
         # multiple target attractors
         mfs_1 = [
@@ -136,7 +136,7 @@ end
 
     # CRUCIAL: Because we are using the projected magnetic pendulum, we need to make sure
     # that we have transient time (because it passes above a magnet but with nonzero velocity)
-    mapper_m = AttractorsViaProximity(psys, attractors_dict; Ttr = 100)
+    mapper_m = BasinMapProximity(psys, attractors_dict; Ttr = 100)
 
     searchrange = [(-4, 4), (-4, 4)]
 

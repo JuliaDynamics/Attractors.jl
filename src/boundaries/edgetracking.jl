@@ -35,7 +35,7 @@ in order to find an *edge state*. Results are returned in the form of
 the basin boundary, along with additional output (see below).
 
 The system's `attractors` are specified as a `Dict` of `StateSpaceSet`s, as in
-[`AttractorsViaProximity`](@ref) or the output of [`extract_attractors`](@ref). By default, the
+[`BasinMapProximity`](@ref) or the output of [`extract_attractors`](@ref). By default, the
 algorithm is initialized from the first and second attractor in `attractors`. Alternatively,
 the initial states can be set via keyword arguments `u1`, `u2` (see below). Note that the
 two initial states must belong to different basins of attraction.
@@ -53,9 +53,9 @@ two initial states must belong to different basins of attraction.
 * `Δt = 0.01`: time step passed to [`step!`](@ref) when evolving the two trajectories.
 * `show_progress = true`: if true, shows progress bar and information while running.
 * `verbose = true`: if false, silences print output and warnings while running.
-* `kw...`: additional keyword arguments to be passed to [`AttractorsViaProximity`](@ref).
+* `kw...`: additional keyword arguments to be passed to [`BasinMapProximity`](@ref).
   We strongly recommend to either pass in a high `Ttr`, or a very small `ε`,
-  (smaller than the default estimated by [`AttractorsViaProximity`](@ref)) to avoid
+  (smaller than the default estimated by [`BasinMapProximity`](@ref)) to avoid
   transient parts of trajectories wrongly being classified as having converged.
 
 ## Description
@@ -123,7 +123,7 @@ function edgetracking(
     )
 
     pds = ParallelDynamicalSystem(ds, [u1, u2])
-    mapper = AttractorsViaProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
+    mapper = BasinMapProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
 
     return edgetracking(
         pds, mapper;
@@ -139,7 +139,7 @@ Low-level function for running the edge tracking algorithm, see [`edgetracking`]
 for a description, keyword arguments and output type.
 
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
-`BasinMap` of subtype `AttractorsViaProximity` or `BasinMapRecurrences`.
+`BasinMap` of subtype `BasinMapProximity` or `BasinMapRecurrences`.
 =#
 function edgetracking(
         pds::ParallelDynamicalSystem, mapper::BasinMap;
@@ -245,7 +245,7 @@ in which case a warning is raised).
 
 ## Description
 `pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
-`BasinMap` of subtype `AttractorsViaProximity` or `BasinMapRecurrences`.
+`BasinMap` of subtype `BasinMapProximity` or `BasinMapRecurrences`.
 
 !!! info
     If the straight line between `u1` and `u2` intersects the basin boundary multiple
@@ -298,7 +298,7 @@ function bisect_to_edge(
             if idx_new != idx2
                 if idx_new == -1
                     error("BasinMap returned label -1 (could not match the initial condition with any attractor.)
-                    Try changing the settings of AttractorsViaProximity or increasing bisect_thresh, diverge_thresh.")
+                    Try changing the settings of BasinMapProximity or increasing bisect_thresh, diverge_thresh.")
                 else
                     if verbose
                         @warn "New bisection point belongs to a third basin of attraction."

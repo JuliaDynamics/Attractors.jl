@@ -21,7 +21,7 @@ subdivision_based_grid
 ### Proximity
 
 ```@docs
-AttractorsViaProximity
+BasinMapProximity
 ```
 
 ### Featurizing

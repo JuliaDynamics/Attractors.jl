@@ -1,5 +1,5 @@
 """
-    AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict; kwargs...)
+    BasinMapProximity(ds::DynamicalSystem, attractors::Dict; kwargs...)
 
 Map initial conditions to attractors based on whether the trajectory reaches `ε`-distance
 close to any of the user-provided `attractors`, which have to be in a form of a dictionary
@@ -41,7 +41,7 @@ an error is thrown.
 The [`convergence_time`](@ref) is `Inf` if an initial condition has not converged.
 As such, the convergence time is always a float type even for discrete time systems.
 """
-struct AttractorsViaProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpaceSet, N, K, M, SS <: AbstractStateSpaceSet, T} <: BasinMap
+struct BasinMapProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpaceSet, N, K, M, SS <: AbstractStateSpaceSet, T} <: BasinMap
     ds::DS
     attractors::Dict{AK, SSS}
     ε::Float64
@@ -59,10 +59,10 @@ struct AttractorsViaProximity{DS <: DynamicalSystem, AK, SSS <: AbstractStateSpa
     latest_convergence_time::Base.RefValue{T}
 end
 
-AttractorsViaProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
-    AttractorsViaProximity(ds, attractors; ε = ε, kw...)
+BasinMapProximity(ds::DynamicalSystem, attractors::Dict, ε; kw...) =
+    BasinMapProximity(ds, attractors; ε = ε, kw...)
 
-function AttractorsViaProximity(
+function BasinMapProximity(
         ds::DynamicalSystem, attractors::Dict;
         Δt = 1, Ttr = 0, consecutive_lost_steps = 10000, horizon_limit = 1.0e3, verbose = false,
         distance = StrictlyMinimumDistance(), stop_at_Δt = false, ε = nothing,
@@ -90,7 +90,7 @@ function AttractorsViaProximity(
         ε isa Real || error("ε must be a Real number")
     end
 
-    mapper = AttractorsViaProximity(
+    mapper = BasinMapProximity(
         ds, attractors,
         ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0, distance, StateSpaceSet([current_state(ds)]),
@@ -100,7 +100,7 @@ function AttractorsViaProximity(
     return mapper
 end
 
-reset_mapper!(::AttractorsViaProximity) = nothing
+reset_mapper!(::BasinMapProximity) = nothing
 
 function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     if length(attractors) != 1
@@ -142,7 +142,7 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     return ε
 end
 
-function (mapper::AttractorsViaProximity)(u0)
+function (mapper::BasinMapProximity)(u0)
     ds = referenced_dynamical_system(mapper)
     reinit!(ds, u0)
     t0 = current_time(ds)
@@ -175,7 +175,7 @@ function (mapper::AttractorsViaProximity)(u0)
     return -1
 end
 
-function Base.show(io::IO, mapper::AttractorsViaProximity)
+function Base.show(io::IO, mapper::BasinMapProximity)
     ps = generic_mapper_print(io, mapper)
     println(io, rpad(" ε: ", ps), mapper.ε)
     println(io, rpad(" Δt: ", ps), mapper.Δt)
@@ -188,6 +188,6 @@ function Base.show(io::IO, mapper::AttractorsViaProximity)
     return
 end
 
-_extract_attractors(mapper::AttractorsViaProximity) = mapper.attractors
+_extract_attractors(mapper::BasinMapProximity) = mapper.attractors
 
-convergence_time(mapper::AttractorsViaProximity) = mapper.latest_convergence_time[]
+convergence_time(mapper::BasinMapProximity) = mapper.latest_convergence_time[]

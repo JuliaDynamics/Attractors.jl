@@ -26,7 +26,7 @@ using Test
     f = (A, B) -> abs(A[1][1] - B[1][1])
 
     @testset "distance: $(distance)" for distance in (f, Centroid(), StrictlyMinimumDistance())
-        mapper = AttractorsViaProximity(ds, attractors, 0.1; Ttr = 2, distance)
+        mapper = BasinMapProximity(ds, attractors, 0.1; Ttr = 2, distance)
         fs = basins_fractions(mapper, sampler)
         @test length(fs) == 2
         @test 0.4 < fs[1] < 0.6
@@ -40,7 +40,7 @@ end
     ds = henon()
     @testset "single attractor, no ε" begin
         attractors = Dict(1 => trajectory(ds, 10000, [0.0, 0.0]; Δt = 1, Ttr = 100)[1])
-        mapper = AttractorsViaProximity(ds, attractors)
+        mapper = BasinMapProximity(ds, attractors)
         @test trunc(mapper.ε, digits = 2) ≈ 0.18 # approximate size of attractor here
     end
     @testset "two attractors, analytically known ε" begin
@@ -48,14 +48,14 @@ end
             1 => StateSpaceSet([0 1.0]; warn = false),
             2 => StateSpaceSet([0 2.0]; warn = false)
         )
-        mapper = AttractorsViaProximity(ds, attractors)
+        mapper = BasinMapProximity(ds, attractors)
         @test mapper.ε == 0.1
     end
     @testset "one attractor, single point (invalid)" begin
         attractors = Dict(
             1 => StateSpaceSet([0 1.0]; warn = false),
         )
-        @test_throws ArgumentError AttractorsViaProximity(ds, attractors)
+        @test_throws ArgumentError BasinMapProximity(ds, attractors)
     end
 end
 
@@ -64,7 +64,7 @@ end
     ds = DeterministicIteratedMap(cubicmap, [1.0], [2.0])
     fp = SVector(sqrt(2))
     attrs = Dict(1 => StateSpaceSet([fp]), 2 => StateSpaceSet([-fp]))
-    mapper = AttractorsViaProximity(ds, attrs)
+    mapper = BasinMapProximity(ds, attrs)
     label = mapper([2.0])
     @test label == -1
 end

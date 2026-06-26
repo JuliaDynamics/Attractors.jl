@@ -84,7 +84,7 @@ Perform a global continuation of all stability measures estimated by
 [`StabilityMeasuresAccumulator`](@ref) using the found attractors of
 a previous call to [`global_continuation`](@ref) using the `ds`.
 
-This method is special because it always creates an [`AttractorsViaProximity`](@ref)
+This method is special because it always creates an [`BasinMapProximity`](@ref)
 mapper for the attractors at a given point along the global continuation,
 and then estimates the stability measures using [`StabilityMeasuresAccumulator`](@ref)
 and the proximity mapper.
@@ -99,8 +99,8 @@ There are two reasons to use this method:
 
 ## Keyword arguments
 
-- `ε = nothing`: given to [`AttractorsViaProximity`](@ref).
-- `proximity_mapper_options = NamedTuple()`: extra keywords for `AttractorsViaProximity`.
+- `ε = nothing`: given to [`BasinMapProximity`](@ref).
+- `proximity_mapper_options = NamedTuple()`: extra keywords for `BasinMapProximity`.
 - `distance, finite_time, weighting_distribution`: given to [`StabilityMeasuresAccumulator`](@ref).
 - `samples_per_parameter = 1000`: how many samples to use when estimating stability measures
   via [`StabilityMeasuresAccumulator`](@ref). Ignored when `ics` is not a function.
@@ -173,7 +173,7 @@ function stability_measures_along_continuation(
         end
 
         accumulator = StabilityMeasuresAccumulator(
-            AttractorsViaProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
+            BasinMapProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
             weighting_distribution = wd, finite_time = ft,
             distance = d
         )

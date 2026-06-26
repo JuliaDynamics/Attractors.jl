@@ -45,7 +45,7 @@ of the typical [`global_continuation`](@ref): a vector of dictionaries mapping a
 to the corresponding nonlocal stability measures.
 
 Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
-on the basis of an `AttractorsViaProximity` mapper from already found attractors.
+on the basis of an `BasinMapProximity` mapper from already found attractors.
 This is useful to do for measures related to the convergence time, which is defined
 more rirogously and is estimated more accurately for a proximity mapper.
 
@@ -293,7 +293,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     end
 
     # convergence paces
-    if (isa(accumulator.mapper, AttractorsViaProximity) && !isnothing(accumulator.mapper.ε))
+    if (isa(accumulator.mapper, BasinMapProximity) && !isnothing(accumulator.mapper.ε))
         ε = accumulator.mapper.ε
     else
         ε = 0.0

@@ -137,7 +137,7 @@ function test_basins(
             known_attractors = Dict(
                 k => trajectory(ds, 1000, v; Δt = 1, Ttr = 100)[1] for (k, v) in u0s if k ≠ -1
             )
-            mapper = AttractorsViaProximity(ds, known_attractors, ε; Ttr = 100, consecutive_lost_steps = 1000)
+            mapper = BasinMapProximity(ds, known_attractors, ε; Ttr = 100, consecutive_lost_steps = 1000)
             test_basins_fractions(mapper; known = true, err = aerr)
         end
     end

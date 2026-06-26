@@ -3,7 +3,7 @@
 
 export BasinMap,
     BasinMapRecurrences,
-    AttractorsViaProximity,
+    BasinMapProximity,
     BasinMapFeaturizeGroup,
     ClusteringConfig,
     basins_fractions,
@@ -34,7 +34,7 @@ by calling `attractors = extract_attractors(mapper)` when applicable.
 
 Currently available mapping methods:
 
-* [`AttractorsViaProximity`](@ref)
+* [`BasinMapProximity`](@ref)
 * [`BasinMapRecurrences`](@ref)
 * [`BasinMapFeaturizeGroup`](@ref)
 
@@ -48,7 +48,7 @@ label = mapper(u0)
 and this will on the fly compute and return the label of the attractor `u0` converges at.
 The mappers that can do this are:
 
-* [`AttractorsViaProximity`](@ref)
+* [`BasinMapProximity`](@ref)
 * [`BasinMapRecurrences`](@ref)
 * [`BasinMapFeaturizeGroup`](@ref) with the [`GroupViaHistogram`](@ref)
   or [`GroupViaNearestFeature`](@ref) configurations.

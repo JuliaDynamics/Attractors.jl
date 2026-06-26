@@ -30,7 +30,7 @@ using Random
             id = mapper(u0) # run this to find all attractors
         end
         attractors = extract_attractors(mapper)
-        mapper = AttractorsViaProximity(dynamics, attractors, 0.01, Ttr = 0)
+        mapper = BasinMapProximity(dynamics, attractors, 0.01, Ttr = 0)
         accumulator = StabilityMeasuresAccumulator(mapper, finite_time = 0.5)
 
         for u0 in A
