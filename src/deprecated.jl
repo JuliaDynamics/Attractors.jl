@@ -26,3 +26,7 @@ function basins_of_attraction(grid::Tuple, ds::DynamicalSystem; kwargs...)
     mapper = BasinMapRecurrences(ds, grid; sparse = false)
     return basins_of_attraction(mapper)
 end
+
+@deprecate AttractorsViaRecurrences BasinMapRecurrences
+@deprecate AttractorsViaFeaturizing BasinMapFeaturizeGroup
+@deprecate AttractorsViaProximity BasinMapProximity
