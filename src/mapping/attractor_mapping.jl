@@ -16,7 +16,7 @@ export BasinMap,
     subdivision_based_grid,
     SubdivisionBasedGrid,
     reset_mapper!,
-    StabilityMeasuresAccumulator,
+    StabilityQuantifiersAccumulator,
     finalize_accumulator
 
 ValidICS = Union{AbstractVector, Function}
@@ -53,8 +53,8 @@ The mappers that can do this are:
 * [`BasinMapFeaturizeGroup`](@ref) with the [`GroupViaHistogram`](@ref)
   or [`GroupViaNearestFeature`](@ref) configurations.
 
-See also [`StabilityMeasuresAccumulator`](@ref) that extends this interface
-to accelerate estimation of stability measures.
+See also [`StabilityQuantifiersAccumulator`](@ref) that extends this interface
+to accelerate estimation of stability quantifiers.
 
 ## For developers
 

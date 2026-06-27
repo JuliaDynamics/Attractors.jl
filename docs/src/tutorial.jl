@@ -499,35 +499,35 @@ animate_attractors_continuation(
 # ```
 
 # %% #src
-# ## Enhancing the continuation with more stability measures or other quantities
+# ## Enhancing the continuation with more stability quantifiers or other quantities
 
-# The standard stability measure that is reported during a global continuation
+# The standard stability quantifier that is reported during a global continuation
 # is the basin fractions. This is primarily because it is computed automatically
-# as we find the different attractors. There are many more stability measures
+# as we find the different attractors. There are many more stability quantifiers
 # that could be more useful in different contexts. Attractors.jl offers
-# the unique possibility of estimating _almost all_ known measures of stability in the
+# the unique possibility of estimating _almost all_ known quantifiers of stability in the
 # literature of dynamical systems during a _single_ global continuation pass.
-# This is done with the [`StabilityMeasuresAccumulator`](@ref) data structure.
-# You can visit its documentation string to learn about all different stability measures.
-# If you find some stability measures not included in the [`StabilityMeasuresAccumulator`](@ref)
+# This is done with the [`StabilityQuantifiersAccumulator`](@ref) data structure.
+# You can visit its documentation string to learn about all different stability quantifiers.
+# If you find some stability quantifiers not included in the [`StabilityQuantifiersAccumulator`](@ref)
 # then either open an Issue and tell us about it or even better make a Pull Request and
 # contribute it yourself!
 
-# Using [`StabilityMeasuresAccumulator`](@ref) is very easy. If we have already performed
-# a global continuation then we can utilize the function [`stability_measures_along_continuation`](@ref)
-# to run through it again and estimate now all stability measures.
+# Using [`StabilityQuantifiersAccumulator`](@ref) is very easy. If we have already performed
+# a global continuation then we can utilize the function [`stability_quantifiers_along_continuation`](@ref)
+# to run through it again and estimate now all stability quantifiers.
 
-result = stability_measures_along_continuation(
+result = stability_quantifiers_along_continuation(
     ds, attractors_cont, pcurve, sampler; ε = 0.1
 )
 keys(result)
 
-# The result is a dictionary mapping the stability measure name (as a string) to
-# the continuation of the measure.
-# We can see there are quite a lot of measures that have been estimated!
+# The result is a dictionary mapping the stability quantifier name (as a string) to
+# the continuation of the quantifier.
+# We can see there are quite a lot of quantifiers that have been estimated!
 # So the values of `result` are the same type as
 # the `fractions_cont` we have computed before. This means it is straightforward to
-# visualize these new stability measures. For example, let's say we want to visualize
+# visualize these new stability quantifiers. For example, let's say we want to visualize
 
 chosen = ["median_convergence_pace", "minimal_critical_shock_magnitude"]
 abbrev = ["MCP", "MCS"]
@@ -538,19 +538,19 @@ ukeys = unique_keys(attractors_cont) # so that we ignore key -1 (divergent orbit
 fig = plot_attractors_curves(attractors_cont, A -> minimum(A[:, 1]), θs)
 for (i, c) in enumerate(chosen)
     ax = Axis(fig[1 - i, 1]; ylabel = abbrev[i])
-    measure_cont = result[c]
-    plot_continuation_curves!(ax, measure_cont, θs; ukeys, add_legend = false)
+    quantifier_cont = result[c]
+    plot_continuation_curves!(ax, quantifier_cont, θs; ukeys, add_legend = false)
     hidexdecorations!(ax; grid = false)
 end
 resize!(fig, 600, 500)
 fig
 
-# For more specialization on estimating these stability measures,
-# see the documentation of [`StabilityMeasuresAccumulator`](@ref).
+# For more specialization on estimating these stability quantifiers,
+# see the documentation of [`StabilityQuantifiersAccumulator`](@ref).
 
 # One of the biggest strengths of Attractors.jl is that it is not an isolated software.
 # It is part of **DynamicalSystems.jl**. We can straightforwardly use any other
-# functionality of the library to enhance this continuation, even beyond stability measures.
+# functionality of the library to enhance this continuation, even beyond stability quantifiers.
 # Let's also estimate and visualize the maximum Lyapunov exponent for each attractor.
 # We first import the function that estimates the MLE
 
@@ -574,7 +574,7 @@ end
 
 # Notice: in the example here we we computed the Lyapunov exponents after the fact.
 # We could do it however duing the first-pass of the continuation of the
-# [`StabilityMeasuresAccumulator`](@ref) by providing the `extras` argument to it,
+# [`StabilityQuantifiersAccumulator`](@ref) by providing the `extras` argument to it,
 # see e.g., the [example of additional quantifiers](@ref user_defined_quantifiers) online.
 
 # Regardless, we now visualize the MLE with the same way as any other quantity over the continuation:

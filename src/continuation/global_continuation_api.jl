@@ -1,4 +1,4 @@
-export global_continuation, GlobalContinuationAlgorithm, continuation_series, stability_measures_along_continuation
+export global_continuation, GlobalContinuationAlgorithm, continuation_series, stability_quantifiers_along_continuation
 export PerParameterInitialConditions
 
 """
@@ -39,9 +39,9 @@ Return:
 1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
    `fractions_cont[i]` is a dictionary mapping attractor IDs to their basin fraction
    at the `i`-th parameter combination.
-   -  This output is different if you are using [`StabilityMeasuresAccumulator`](@ref)
+   -  This output is different if you are using [`StabilityQuantifiersAccumulator`](@ref)
       in combination with [`AttractorSeedContinueMatch`](@ref). See the docstring
-      of [`StabilityMeasuresAccumulator`](@ref) for more details.
+      of [`StabilityQuantifiersAccumulator`](@ref) for more details.
 2. `attractors_cont::Vector{Dict{Int, <:Any}}`. The continued attractors.
    `attractors_cont[i]` is a dictionary mapping attractor ID to the
    attractor set at the `i`-th parameter combination.
@@ -123,4 +123,4 @@ include("continuation_ascm_generic.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
 include("aggregate_continuation.jl")
-include("continuation_stability_measures.jl")
+include("continuation_stability_quantifiers.jl")

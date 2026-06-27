@@ -1,9 +1,9 @@
-export stability_measures_along_continuation
+export stability_quantifiers_along_continuation
 
 # This function is practically identical with the original one in
 # `continuation_ascm_generic.jl`; only small differences exist
 function global_continuation(
-        ascm::AttractorSeedContinueMatch{<:StabilityMeasuresAccumulator}, pcurve, ics;
+        ascm::AttractorSeedContinueMatch{<:StabilityQuantifiersAccumulator}, pcurve, ics;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
@@ -16,7 +16,7 @@ function global_continuation(
     additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
     attractors_cont = Dict[]
     # difference one: this isn't fractions
-    measures_cont = []
+    quantifiers_cont = []
     for (i, p) in enumerate(pcurve)
         set_parameters!(referenced_dynamical_system(mapper), p)
         reset_mapper!(mapper)
@@ -34,10 +34,10 @@ function global_continuation(
         # difference two: we don't care about the return of basins_fractions
         # as initial condition mapping is accumulated anyways
         basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
-        measures = finalize_accumulator(mapper)
+        quantifiers = finalize_accumulator(mapper)
         prev_attractors = deepcopy(extract_attractors(mapper))
         push!(attractors_cont, prev_attractors)
-        push!(measures_cont, measures)
+        push!(quantifiers_cont, quantifiers)
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
@@ -45,27 +45,27 @@ function global_continuation(
     rmaps = match_sequentially!(
         attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
     )
-    # and difference four, a bit more involved matching for measures:
-    transposed = accumulator_continuation_output(measures_cont, rmaps)
+    # and difference four, a bit more involved matching for quantifiers:
+    transposed = accumulator_continuation_output(quantifiers_cont, rmaps)
     return transposed, attractors_cont
 end
 
-function accumulator_continuation_output(measures_cont, rmaps)
+function accumulator_continuation_output(quantifiers_cont, rmaps)
     # match
     for (i, rmap) in enumerate(rmaps)
-        for dict in values(measures_cont[i + 1])
+        for dict in values(quantifiers_cont[i + 1])
             swap_dict_keys!(dict, rmap)
         end
     end
     # "transpose" (i.e., swap nesting order)
     transposed = Dict{String, Vector{Dict{Int64, Any}}}()
-    for measure in measures_cont[1]
-        measure_name = measure[1]
-        transposed[measure_name] = Vector{Dict{Int64, Any}}()
+    for quantifier in quantifiers_cont[1]
+        quantifier_name = quantifier[1]
+        transposed[quantifier_name] = Vector{Dict{Int64, Any}}()
     end
-    for measures in measures_cont
-        for (measure_name, measure_dict) in measures
-            push!(transposed[measure_name], measure_dict)
+    for quantifiers in quantifiers_cont
+        for (quantifier_name, quantifier_dict) in quantifiers
+            push!(transposed[quantifier_name], quantifier_dict)
         end
     end
     return transposed
@@ -75,23 +75,23 @@ end
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
 """
-    stability_measures_along_continuation(
+    stability_quantifiers_along_continuation(
         ds::DynamicalSystem, attractors_cont, pcurve, ics;
         kw...
     )
 
-Perform a global continuation of all stability measures estimated by
-[`StabilityMeasuresAccumulator`](@ref) using the found attractors of
+Perform a global continuation of all stability quantifiers estimated by
+[`StabilityQuantifiersAccumulator`](@ref) using the found attractors of
 a previous call to [`global_continuation`](@ref) using the `ds`.
 
 This method is special because it always creates an [`BasinMapProximity`](@ref)
 mapper for the attractors at a given point along the global continuation,
-and then estimates the stability measures using [`StabilityMeasuresAccumulator`](@ref)
+and then estimates the stability quantifiers using [`StabilityQuantifiersAccumulator`](@ref)
 and the proximity mapper.
 
 There are two reasons to use this method:
 
-1. You are interested in measures related to the convergence time, which is defined
+1. You are interested in quantifiers related to the convergence time, which is defined
    more rirogously and is estimated more accurately for a proximity mapper.
 2. You want more control over the values of `ε, finite_time, weighting_distribution`,
    all of which are allowed to be `Vector`s with the same length as `pcurve`.
@@ -101,20 +101,20 @@ There are two reasons to use this method:
 
 - `ε = nothing`: given to [`BasinMapProximity`](@ref).
 - `proximity_mapper_options = NamedTuple()`: extra keywords for `BasinMapProximity`.
-- `distance, finite_time, weighting_distribution`: given to [`StabilityMeasuresAccumulator`](@ref).
-- `samples_per_parameter = 1000`: how many samples to use when estimating stability measures
-  via [`StabilityMeasuresAccumulator`](@ref). Ignored when `ics` is not a function.
+- `distance, finite_time, weighting_distribution`: given to [`StabilityQuantifiersAccumulator`](@ref).
+- `samples_per_parameter = 1000`: how many samples to use when estimating stability quantifiers
+  via [`StabilityQuantifiersAccumulator`](@ref). Ignored when `ics` is not a function.
 
 ## Aggregating attractors
 
-This function computes stability measures for whatever attractors it is given. To obtain
-measures for *aggregated* groups of attractors, first merge them with
+This function computes stability quantifiers for whatever attractors it is given. To obtain
+quantifiers for *aggregated* groups of attractors, first merge them with
 [`aggregate_continuation`](@ref) and pass the resulting `agg_attractors_cont` here:
-each merged group is then treated as a single attractor, so all measures (including those
+each merged group is then treated as a single attractor, so all quantifiers (including those
 that need the raw basin data, like medians and critical shock magnitudes) are computed
 correctly for the group, with IDs that stay consistent along the parameter axis.
 """
-function stability_measures_along_continuation(
+function stability_quantifiers_along_continuation(
         ds::DynamicalSystem,
         attractors_cont,
         pcurve,
@@ -131,14 +131,14 @@ function stability_measures_along_continuation(
         length(pcurve); desc = "Continuing accumulator quantifiers:", enabled = show_progress
     )
     N = samples_per_parameter
-    measures_cont = []
-    measure_names = nothing
+    quantifiers_cont = []
+    quantifier_names = nothing
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
         attractors = attractors_cont[i]
 
         if isempty(attractors)
-            push!(measures_cont, Dict{String, Dict{Int64, Float64}}())
+            push!(quantifiers_cont, Dict{String, Dict{Int64, Float64}}())
             ProgressMeter.next!(progress)
             continue
         end
@@ -172,7 +172,7 @@ function stability_measures_along_continuation(
             d = distance
         end
 
-        accumulator = StabilityMeasuresAccumulator(
+        accumulator = StabilityQuantifiersAccumulator(
             BasinMapProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
             weighting_distribution = wd, finite_time = ft,
             distance = d
@@ -184,25 +184,25 @@ function stability_measures_along_continuation(
             pics = ics
         end
         basins_fractions(accumulator, pics; N, show_progress = false)
-        measures = finalize_accumulator(accumulator)
-        if measure_names === nothing
-            measure_names = collect(keys(measures))
+        quantifiers = finalize_accumulator(accumulator)
+        if quantifier_names === nothing
+            quantifier_names = collect(keys(quantifiers))
         end
-        push!(measures_cont, measures)
+        push!(quantifiers_cont, quantifiers)
         ProgressMeter.next!(progress)
     end
 
-    # change the measures format to the expected output
+    # change the quantifiers format to the expected output
     transposed = Dict{String, Vector{Dict{Int64, Float64}}}()
-    if measure_names === nothing
+    if quantifier_names === nothing
         return transposed
     end
-    for measure_name in measure_names
-        transposed[measure_name] = Vector{Dict{Int64, Float64}}()
+    for quantifier_name in quantifier_names
+        transposed[quantifier_name] = Vector{Dict{Int64, Float64}}()
     end
-    for measures in measures_cont
-        for measure_name in measure_names
-            push!(transposed[measure_name], get(measures, measure_name, Dict{Int64, Float64}()))
+    for quantifiers in quantifiers_cont
+        for quantifier_name in quantifier_names
+            push!(transposed[quantifier_name], get(quantifiers, quantifier_name, Dict{Int64, Float64}()))
         end
     end
     return transposed

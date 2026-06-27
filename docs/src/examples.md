@@ -716,9 +716,9 @@ computing the zeroes of the ODE system. However, the edge tracking algorithm all
 edge states also in high-dimensional and chaotic systems where a simple computation of
 unstable equilibria becomes infeasible.
 
-## Estimating (almost) all stability measures using the accumulator
+## Estimating (almost) all stability quantifiers using the accumulator
 
-The type [`StabilityMeasuresAccumulator`](@ref) which was highlighted in the main tutorial is showcased in an application of finding all stability measures for the Duffing oscillator at a fixed parameter here.
+The type [`StabilityQuantifiersAccumulator`](@ref) which was highlighted in the main tutorial is showcased in an application of finding all stability quantifiers for the Duffing oscillator at a fixed parameter here.
 
 ```@example MAIN
 function duffing(u, p, t)
@@ -740,25 +740,25 @@ grid = (range(-2, 2; length = n_grid),range(-2, 2; length = n_grid),)
 
 mapper = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
 
-accumulator = StabilityMeasuresAccumulator(mapper;
+accumulator = StabilityQuantifiersAccumulator(mapper;
     finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
 )
 ```
 
 If we call this object on some initial conditions and finalize its values, we receive
-several different stability measures. Their interpretation can be found in the documentation of [`StabilityMeasuresAccumulator`](@ref).
+several different stability quantifiers. Their interpretation can be found in the documentation of [`StabilityQuantifiersAccumulator`](@ref).
 
 ```@example MAIN
 ics = ics_from_grid(grid)
 for u0 in ics
     id = accumulator(u0)
 end
-stability_measures = finalize_accumulator(accumulator)
+stability_quantifiers = finalize_accumulator(accumulator)
 ```
 
 ## [Enhancing the accumulator with arbitrary user-defined quantifiers](@id user_defined_quantifiers)
 
-Following from the example above, lets' say that we want to enhance the accumulator with another quantity which is not estimated by default. In this example this will simply be the maximum velocity (2nd variable) each basin has. Following the documentation of [`StabilityMeasuresAccumulator`](@ref), we only need to define a function that inputs a [`SampledBasinsOfAttraction`](@ref) and returns a dictionary mapping attractor IDs to their additional quantifier. We can do this like so:
+Following from the example above, lets' say that we want to enhance the accumulator with another quantity which is not estimated by default. In this example this will simply be the maximum velocity (2nd variable) each basin has. Following the documentation of [`StabilityQuantifiersAccumulator`](@ref), we only need to define a function that inputs a [`SampledBasinsOfAttraction`](@ref) and returns a dictionary mapping attractor IDs to their additional quantifier. We can do this like so:
 
 ```@example MAIN
 function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
@@ -780,14 +780,14 @@ extras = Dict("maxv" => extra_function)
 we now pass this to a new accumulator and re-run everything:
 
 ```@example MAIN
-accumulator = StabilityMeasuresAccumulator(mapper, extras;
+accumulator = StabilityQuantifiersAccumulator(mapper, extras;
     finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
 )
 for u0 in ics
     id = accumulator(u0)
 end
-stability_measures = finalize_accumulator(accumulator)
-stability_measures["maxv"]
+stability_quantifiers = finalize_accumulator(accumulator)
+stability_quantifiers["maxv"]
 ```
 
 Unsurprisingly, the maximum value of the `y` coordinate is ≈2 for all basins, but this we new already due to the symmetries of the system's basins!
@@ -901,13 +901,13 @@ This special `matcher` achieves the following:
 
 
 
-## [Aggregated stability measures of a population model](@id aggregate_continuation_example)
+## [Aggregated stability quantifiers of a population model](@id aggregate_continuation_example)
 
 This example discusses aggregation of continuation results: where a dynamical system may have multiple attractors, but some of them share the same functional/operating state for the context of the system. In such cases, you want to aggregate attractors with similar function.
 The recommended recipe to do this is: run a normal
 [`global_continuation`](@ref) to find attractors, merge the attractors into user defined groups
 with [`aggregate_continuation`](@ref), and feed the merged attractors to
-[`stability_measures_along_continuation`](@ref) for the computation of stability measures.
+[`stability_quantifiers_along_continuation`](@ref) for the computation of stability quantifiers.
 
 We use the two-habitat population model with Allee effect, also featured in Schoenmakers and
 Feudel [Schoenmakers2021](@cite). The state `X = (X₁, X₂)` are the (normalised) population
@@ -975,11 +975,11 @@ agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
 members_cont
 ```
 
-We then pass the merged attractors to [`stability_measures_along_continuation`](@ref).
+We then pass the merged attractors to [`stability_quantifiers_along_continuation`](@ref).
 Each group is treated as a single attractor, so its basin fraction is the total fraction of state space leading to it.
 
 ```@example MAIN
-measures_cont = stability_measures_along_continuation(
+quantifiers_cont = stability_quantifiers_along_continuation(
     ds, agg_attractors_cont, pcurve, sampler;
     ε = 0.05, finite_time = 100.0, show_progress = false
 )
@@ -987,14 +987,14 @@ measures_cont = stability_measures_along_continuation(
 # The extinction group is the one whose feature centroid is 1
 extinct_id = only(id for (id, c) in centroids_cont[end] if c[1] > 0.5)
 alive_id   = only(id for (id, c) in centroids_cont[end] if c[1] < 0.5)
-fig = plot_basins_curves(measures_cont["basin_fraction"], prange;
+fig = plot_basins_curves(quantifiers_cont["basin_fraction"], prange;
     colors = Dict(extinct_id => "black", alive_id => "green"),
     labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
 )
 
-# `measures_cont` holds every other stability measure too
+# `quantifiers_cont` holds every other stability quantifier too
 ax = Axis(fig[0,1]; ylabel = "mct")
-plot_continuation_curves!(ax, measures_cont["mean_convergence_time"], prange;
+plot_continuation_curves!(ax, quantifiers_cont["mean_convergence_time"], prange;
     colors = Dict(extinct_id => "black", alive_id => "green"),
     labels = Dict(extinct_id => "extinct", alive_id => "functioning"),
 )
