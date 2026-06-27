@@ -4,7 +4,7 @@ This release accompanies the release of our paper "Global continuation as a comp
 
 ## Prior deprecations removed
 
-All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
+- **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
 
 ## Renaming into Basin Maps
 
