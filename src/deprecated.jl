@@ -30,3 +30,5 @@ end
 @deprecate AttractorsViaRecurrences BasinMapRecurrences
 @deprecate AttractorsViaFeaturizing BasinMapFeaturizeGroup
 @deprecate AttractorsViaProximity BasinMapProximity
+@deprecate stability_measures_along_continuation stability_quantifiers_along_continuation
+@deprecate StabilityMeasuresAccumulator StabilityQuantifiersAccumulator
