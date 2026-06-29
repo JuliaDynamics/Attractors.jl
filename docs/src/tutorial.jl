@@ -588,6 +588,48 @@ fig
 # that we would otherwise obtain only by visualizing the system dynamics at every single
 # point in the continuation parameter.
 
+# %% #src
+# ## Multiparameter continuation
+# For global continuation, there is truthfully no difference between single
+# and multiple parameter continuation. To efficiently cover a multidimensional parameter
+# space, We provide the convenience function [`hilbert_pcurve`](@ref).
+# Let's use it here to continue over both parameters
+
+specs = Dict(1 => (5, 6, 2^4), 2 => (0.1, 0.2, 2^4))
+pcurve = hilbert_pcurve(specs)
+
+# We need to add a threshold to the continuation matching.
+# Here we'll add an arbitrary value, but in a research setup this would need
+# to be studied. Thankfully, the matching can be redone after the
+# continuation at practically no cost using [`match_sequentially!`](@ref).
+
+matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
+ascm = AttractorSeedContinueMatch(bmap, matcher)
+
+# and proceed as usual
+fractions_cont, attractors_cont = global_continuation(
+    ascm, pcurve, sampler; samples_per_parameter = 100
+)
+
+# The output is exactly of the same type, and as such very easy to post-process.
+# For example, let's find all parameter values that support an attractor
+# with x-minimum less than `-5` (this is the teal attractor in the starting
+# video of this page)
+function find_condition(attractors::Dict)
+    return any(A -> minimum(A[:, 1]) < -5, values(attractors))
+end
+pidxs = findall(find_condition, attractors_cont)
+
+# We can now scatterplot the parameters that have, or don't have, this property:
+coords = [SVector(p[1], p[2]) for p in pcurve]
+markers = [i ∈ pidxs ? :circle : :rect for i in eachindex(pcurve)]
+colors = [i ∈ pidxs ? :black : :blue for i in eachindex(pcurve)]
+fig, ax = scatter(coords; marker = markers, color = colors)
+ax.xlabel = "parameter 1"
+ax.ylabel = "parameter 2"
+ax.title = "parameters that have teal attractor"
+fig
+
 # ## Conclusion and comparison with traditional local continuation
 
 # We've reached the end of the tutorial! Some aspects we haven't highlighted is

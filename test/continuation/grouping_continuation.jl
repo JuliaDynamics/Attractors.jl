@@ -74,6 +74,14 @@ using Random
     end
 end
 
+@testset "hilbert cont" begin
+    specs = Dict(1 => (5, 6, 2^4), 2 => (0.1, 0.2, 2^4))
+    pcurve = hilbert_pcurve(specs)
+    @test length(pcurve) == 2^8
+    @test pcurve isa Vector{Dict{Int, Float64}}
+end
+
+
 if DO_EXTENSIVE_TESTS
 
     @testset "Henon period doubling" begin

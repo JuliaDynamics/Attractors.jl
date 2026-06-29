@@ -5,6 +5,7 @@ repo = "https://github.com/JuliaDynamics/Attractors.jl.git"
 version = "1.999.0"
 
 [deps]
+BijectiveHilbert = "91e7fc40-53cd-4118-bd19-d7fcd1de2a54"
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 ComplexityMeasures = "ab4b797d-85ee-42ba-b621-05d793b346a2"
@@ -29,6 +30,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 AttractorsVisualizations = "Makie"
 
 [compat]
+BijectiveHilbert = "0.6.1"
 BlackBoxOptim = "0.6"
 Clustering = "0.15"
 ComplexityMeasures = "2.3, 3"
