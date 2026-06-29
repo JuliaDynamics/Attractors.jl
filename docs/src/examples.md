@@ -144,7 +144,7 @@ basins_after, attractors_after = basins_of_attraction(
     bmap, (xg, yg); show_progress = false
 )
 # matching attractors is important!
-rmap = match_statespacesets!(attractors_after, attractors)
+rmap = matching_map!(attractors_after, attractors, MatchBySSSetDistance())
 # Don't forget to update the labels of the basins as well!
 replace!(basins_after, rmap...)
 
