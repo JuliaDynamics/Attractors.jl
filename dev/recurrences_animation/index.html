@@ -34,7 +34,7 @@ xg = range(-0.1, 20; length = density)
 yg = range(-0.001, 0.03; length = density)
 Δt = 0.1
 grid = (xg, yg)
-mapper = BasinMapRecurrences(ds, grid;
+bmap = BasinMapRecurrences(ds, grid;
     Δt, consecutive_attractor_steps = 10, consecutive_basin_steps = 10, sparse = false,
     consecutive_recurrences = 100, attractor_locate_steps = 100,
 )
@@ -42,12 +42,12 @@ mapper = BasinMapRecurrences(ds, grid;
 ##########################################################################
 
 function animate_attractors_via_recurrences(
-        mapper::BasinMapRecurrences, u0s;
+        bmap::BasinMapRecurrences, u0s;
         colors = [&quot;#FFFFFF&quot;, &quot;#7143E0&quot;,&quot;#0A9A84&quot;,&quot;#AF9327&quot;,&quot;#791457&quot;, &quot;#6C768C&quot;, &quot;#4287f5&quot;,],
         filename = &quot;recurrence_algorithm.mp4&quot;,
     )
 
-    grid_nfo = mapper.bsn_nfo.BoA.grid
+    grid_nfo = bmap.bsn_nfo.BoA.grid
 
     fig = Figure()
     ax = Axis(fig[1,1])
@@ -124,8 +124,8 @@ function animate_attractors_via_recurrences(
     end
 
     # Iteration and labelling
-    ds = mapper.ds
-    bsn_nfo = mapper.bsn_nfo
+    ds = bmap.ds
+    bsn_nfo = bmap.bsn_nfo
     u0 = current_state(ds)
 
     traj = Observable(SVector{2, Float64}[u0])
@@ -141,7 +141,7 @@ function animate_attractors_via_recurrences(
 
     Label(fig[0, 1][1,1], labeltext; justification = :left, halign = :left, tellwidth = false)
     # add text  with options
-    kwargstext = prod(&quot;$(p[1])=$(p[2])\n&quot; for p in mapper.kwargs)
+    kwargstext = prod(&quot;$(p[1])=$(p[2])\n&quot; for p in bmap.kwargs)
     Label(fig[0, 1][1, 2], kwargstext; justification = :right, halign = :right, tellwidth = false)
 
 
@@ -167,7 +167,7 @@ function animate_attractors_via_recurrences(
 
                 # update FSM
                 n = Attractors.basin_cell_index(u, bsn_nfo.BoA.grid)
-                cell_label = Attractors.finite_state_machine!(bsn_nfo, n, u; mapper.kwargs...)
+                cell_label = Attractors.finite_state_machine!(bsn_nfo, n, u; bmap.kwargs...)
 
                 state = bsn_nfo.state
 
@@ -210,6 +210,6 @@ function animate_attractors_via_recurrences(
     end
 end
 
-animate_attractors_via_recurrences(mapper, u0s)</code></pre><video width="75%" height="auto" controls autoplay loop>
+animate_attractors_via_recurrences(bmap, u0s)</code></pre><video width="75%" height="auto" controls autoplay loop>
 <source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/attractors/recurrence_algorithm.mp4?raw=true" type="video/mp4">
-</video></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../references/">« References</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 26 June 2026 10:33">Friday 26 June 2026</span>. Using Julia version 1.11.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</video></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../references/">« References</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 29 June 2026 18:02">Monday 29 June 2026</span>. Using Julia version 1.11.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
