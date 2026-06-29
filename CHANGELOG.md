@@ -2,6 +2,10 @@
 
 This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
 
+## New features
+
+- New function `hilbert_pcurve`. It conveniently uses Hilbert curves to create a parameter curve efficiently spanning a multidimensional space. To be used with `global_continuation`.
+
 ## Prior deprecations removed
 
 - **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
