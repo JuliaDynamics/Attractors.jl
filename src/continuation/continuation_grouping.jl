@@ -3,22 +3,22 @@ import ProgressMeter
 import Mmap
 
 struct FeaturizeGroupAcrossParameter{A <: BasinMapFeaturizeGroup, E} <: GlobalContinuationAlgorithm
-    mapper::A
+    bmap::A
     info_extraction::E
     par_weight::Float64
 end
 
 """
     FeaturizeGroupAcrossParameter <: GlobalContinuationAlgorithm
-    FeaturizeGroupAcrossParameter(mapper::BasinMapFeaturizeGroup; kwargs...)
+    FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup; kwargs...)
 
 A method for [`global_continuation`](@ref).
 It uses the featurizing approach discussed in [`BasinMapFeaturizeGroup`](@ref)
-and hence requires an instance of that mapper as an input.
+and hence requires an instance of that bmap as an input.
 When used in [`global_continuation`](@ref), features are extracted
 and then grouped across a parameter range. Said differently, all features
 of all initial conditions across all parameter values are put into the same "pool"
-and then grouped as dictated by the `group_config` of the mapper.
+and then grouped as dictated by the `group_config` of the bmap.
 After the grouping is finished the feature label fractions are distributed
 to each parameter value they came from.
 
@@ -33,12 +33,12 @@ in the papers [Gelbrecht2020](@cite) and [Stender2021](@cite).
   This is what the `attractors_cont` contains in the return of `global_continuation`.
 """
 function FeaturizeGroupAcrossParameter(
-        mapper::BasinMapFeaturizeGroup;
+        bmap::BasinMapFeaturizeGroup;
         info_extraction = mean_across_features,
         par_weight = 0.0,
     )
     return FeaturizeGroupAcrossParameter(
-        mapper, info_extraction, par_weight
+        bmap, info_extraction, par_weight
     )
 end
 
@@ -57,9 +57,9 @@ function global_continuation(
         continuation::FeaturizeGroupAcrossParameter, pcurve, ics;
         show_progress = true, samples_per_parameter = 100
     )
-    (; mapper, info_extraction, par_weight) = continuation
+    (; bmap, info_extraction, par_weight) = continuation
     spp, n = samples_per_parameter, length(pcurve)
-    features = _get_features_pcurve(mapper, ics, n, spp, pcurve, show_progress)
+    features = _get_features_pcurve(bmap, ics, n, spp, pcurve, show_progress)
 
     # This is a special clause for implementing the MCBB algorithm (weighting
     # also by parameter value, i.e., making the parameter value a feature)
@@ -67,33 +67,33 @@ function global_continuation(
     # parameter value (see below). Otherwise, we call normal `group_features`.
     # TODO: We have deprecated this special clause. In the next version we need to cleanup
     # the source code and remove the `par_weight` and its special treatment in `group_features`.
-    if mapper.group_config isa GroupViaClustering && par_weight ≠ 0
-        labels = group_features(features, mapper.group_config; par_weight, plength = n, spp)
+    if bmap.group_config isa GroupViaClustering && par_weight ≠ 0
+        labels = group_features(features, bmap.group_config; par_weight, plength = n, spp)
     else
-        labels = group_features(features, mapper.group_config)
+        labels = group_features(features, bmap.group_config)
     end
     fractions_cont, attractors_cont =
         label_fractions_across_parameter(labels, 1features, n, spp, info_extraction)
     return fractions_cont, attractors_cont
 end
 
-function _get_features_pcurve(mapper::BasinMapFeaturizeGroup, ics, n, spp, pcurve, show_progress)
+function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, ics, n, spp, pcurve, show_progress)
     progress = ProgressMeter.Progress(
         n;
         desc = "Generating features", enabled = show_progress, offset = 2,
     )
     # Extract the first possible feature to initialize the features container
-    feature = extract_features(mapper, ics; N = 1)
+    feature = extract_features(bmap, ics; N = 1)
     features = Vector{typeof(feature[1])}(undef, n * spp)
     # Collect features
     for (i, p) in enumerate(pcurve)
-        set_parameters!(mapper.ds, p)
+        set_parameters!(bmap.ds, p)
         if ics isa PerParameterInitialConditions
             u0s = ics.generator(p, spp)
         else
             u0s = ics
         end
-        current_features = extract_features(mapper, u0s; show_progress, N = spp)
+        current_features = extract_features(bmap, u0s; show_progress, N = spp)
         features[((i - 1) * spp + 1):(i * spp)] .= current_features
         ProgressMeter.next!(progress)
     end

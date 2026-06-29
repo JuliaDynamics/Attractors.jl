@@ -21,17 +21,17 @@ using Random
     # `StabilityQuantifiersAccumulator` for a dumb map.
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1.0], [-1, 0, 1.0])
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     @testset "mapping" begin
 
         for u0 in A
-            id = mapper(u0) # run this to find all attractors
+            id = bmap(u0) # run this to find all attractors
         end
-        attractors = extract_attractors(mapper)
-        mapper = BasinMapProximity(dynamics, attractors, 0.01, Ttr = 0)
-        accumulator = StabilityQuantifiersAccumulator(mapper, finite_time = 0.5)
+        attractors = extract_attractors(bmap)
+        bmap = BasinMapProximity(dynamics, attractors, 0.01, Ttr = 0)
+        accumulator = StabilityQuantifiersAccumulator(bmap, finite_time = 0.5)
 
         for u0 in A
             id = accumulator(u0) # run this to accumulate quantifiers
@@ -194,10 +194,10 @@ end
 
     dynamics = CoupledODEs(linear_evolution, [1.0, 1.0], [1.0])
     grid = ([-1.0, -0.1, 0.3, 1.0], [-1.0, -0.3, 0.1, 1.0])
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
 
     # Use the StabilityQuantifiersAccumulator to compute quantifiers
-    accumulator = StabilityQuantifiersAccumulator(mapper, finite_time = 0.5)
+    accumulator = StabilityQuantifiersAccumulator(bmap, finite_time = 0.5)
     A = ics_from_grid(grid)
     for u0 in A
         id = accumulator(u0)
@@ -271,8 +271,8 @@ end
     yg = range(-3.0, 4.0; length = 101)
     grid = (xg, yg)
 
-    mapper = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
-    accumulator = StabilityQuantifiersAccumulator(mapper)
+    bmap = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+    accumulator = StabilityQuantifiersAccumulator(bmap)
 
     A = ics_from_grid(grid)
     for u0 in A
@@ -308,7 +308,7 @@ end
     r = 0.5
     grid = ([-1, 0, 1], [-1, 0, 1])
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     # this function counts how many points in basin of attraction
@@ -330,7 +330,7 @@ end
     extras = Dict(
         "extra" => extra_function
     )
-    accumulator = StabilityQuantifiersAccumulator(mapper, extras)
+    accumulator = StabilityQuantifiersAccumulator(bmap, extras)
 
     for u0 in A
         id = accumulator(u0) # run this to accumulate quantifiers
@@ -373,8 +373,8 @@ end
     ics = ics_from_grid(grid)
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison()
-    mapper = BasinMapFeaturizeGroup(dynamics, featurizer, gconfig)
-    accumulator = StabilityQuantifiersAccumulator(mapper)
+    bmap = BasinMapFeaturizeGroup(dynamics, featurizer, gconfig)
+    accumulator = StabilityQuantifiersAccumulator(bmap)
 
     @testset "single parameter" begin
         fs, labels = basins_fractions(accumulator, ics)

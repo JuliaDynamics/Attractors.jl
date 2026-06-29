@@ -36,7 +36,7 @@ if DO_EXTENSIVE_TESTS
             df = CoupledODEs(morris_lecar_rule, u0, p; diffeq)
 
             xg = yg = range(-1, 1, length = 2000)
-            mapper = BasinMapRecurrences(
+            bmap = BasinMapRecurrences(
                 df, (xg, yg);
                 attractor_locate_steps = 1000,
                 consecutive_recurrences = 2,
@@ -50,7 +50,7 @@ if DO_EXTENSIVE_TESTS
             sampler, = statespace_sampler(HRectangle([-0.5, 0], [0.5, 1]), 155)
             ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
 
-            fs, labels = basins_fractions(mapper, ics; show_progress = false)
+            fs, labels = basins_fractions(bmap, ics; show_progress = false)
             num_att = length(fs)
             return num_att
         end
@@ -74,12 +74,12 @@ if DO_EXTENSIVE_TESTS
             sampler, = statespace_sampler(grid, 1244)
             ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
 
-            mapper = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false, kwargs...)
-            fs_sparse, labels_sparse = basins_fractions(mapper, ics; show_progress = false)
-            approx_atts_sparse = extract_attractors(mapper)
-            mapper = BasinMapRecurrences(ds, grid; sparse = false, show_progress = false, kwargs...)
-            fs_non, labels_non = basins_fractions(mapper, ics; show_progress = false)
-            approx_atts_non = extract_attractors(mapper)
+            bmap = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false, kwargs...)
+            fs_sparse, labels_sparse = basins_fractions(bmap, ics; show_progress = false)
+            approx_atts_sparse = extract_attractors(bmap)
+            bmap = BasinMapRecurrences(ds, grid; sparse = false, show_progress = false, kwargs...)
+            fs_non, labels_non = basins_fractions(bmap, ics; show_progress = false)
+            approx_atts_non = extract_attractors(bmap)
 
             @test fs_sparse == fs_non
             @test labels_sparse == labels_non
@@ -122,8 +122,8 @@ if DO_EXTENSIVE_TESTS
             sparse = false, # we want to compute full basins
         )
 
-        mapper = BasinMapRecurrences(ds, grid; mapper_kwargs...)
-        basins, attractors = basins_of_attraction(mapper)
+        bmap = BasinMapRecurrences(ds, grid; mapper_kwargs...)
+        basins, attractors = basins_of_attraction(bmap)
         ids = sort!(unique(basins))
         @test ids... == -1
 
@@ -136,10 +136,10 @@ if DO_EXTENSIVE_TESTS
         ds = henon()
         xg = yg = range(-1.0, 1.0; length = 100)
         grid = (xg, yg)
-        mapper = BasinMapRecurrences(ds, grid)
-        id = mapper([0.0, 0.0])
+        bmap = BasinMapRecurrences(ds, grid)
+        id = bmap([0.0, 0.0])
         @test id == 1 # we resume going into the attractor outside the grid
-        id2 = mapper([10.0, 10.0])
+        id2 = bmap([10.0, 10.0])
         @test id2 == -1 # actual divergence to infinity is still detected
     end
 

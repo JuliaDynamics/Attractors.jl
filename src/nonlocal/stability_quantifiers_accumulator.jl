@@ -8,11 +8,11 @@ struct EverywhereUniform end
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
-    StabilityQuantifiersAccumulator(mapper::BasinMap [, extras]; kwargs...)
+    StabilityQuantifiersAccumulator(bmap::BasinMap [, extras]; kwargs...)
 
 A special data structure that allows mapping initial conditions to attractors
 while _at the same time_ calculating many stability quantifiers in the most efficient
-way possible. `mapper` is any instance of an [`BasinMap`](@ref),
+way possible. `bmap` is any instance of an [`BasinMap`](@ref),
 although for [`BasinMapFeaturizeGroup`](@ref) the convergence times won't make sense.
 
 The accummulator records several quantifiers of stability (or resilience) defined
@@ -34,7 +34,7 @@ to work for any `BasinMap`, current or future.
 
 **Using with [`global_continuation`](@ref)**:
 Since `StabilityQuantifiersAccumulator` is formally an `BasinMap`, it can be
-used with [`global_continuation`](@ref). Simply give it as a `mapper` input
+used with [`global_continuation`](@ref). Simply give it as a `bmap` input
 to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
 The only difference now is that `global_continuation` will not return just one
 quantifier of stability (the basin fraction). Rather,
@@ -45,16 +45,16 @@ of the typical [`global_continuation`](@ref): a vector of dictionaries mapping a
 to the corresponding nonlocal stability quantifiers.
 
 Use [`stability_quantifiers_along_continuation`](@ref) for continuation of stability  quantifiers computed
-on the basis of an `BasinMapProximity` mapper from already found attractors.
+on the basis of an `BasinMapProximity` bmap from already found attractors.
 This is useful to do for quantifiers related to the convergence time, which is defined
-more rirogously and is estimated more accurately for a proximity mapper.
+more rirogously and is estimated more accurately for a proximity bmap.
 
 ## Keyword arguments
 
 * `finite_time = 1.0`: Finite time horizon considered for the computation of the
   `finite_time_basin_stability`. Initial coditions with a convergence time
   larger than `finite_time` are not considered to be in the respective finite time basin.
-  Convergence time is determined by the `mapper`.
+  Convergence time is determined by the `bmap`.
 * `weighting_distribution::Distribution`: Distribution of uncertain initial conditions
   used for example in the computation of `basin_stability`. By default it is a uniform
   distribution everywhere in the state space.\
@@ -65,7 +65,7 @@ more rirogously and is estimated more accurately for a proximity mapper.
 
 ## Description
 
-`StabilityQuantifiersAccumulator` efficiently uses a single `id = mapper(u0)` call
+`StabilityQuantifiersAccumulator` efficiently uses a single `id = bmap(u0)` call
 to accumulate information for many different stability quantifiers corresponding
 to each attractor of the dynamical system.
 It accumulates all these different quantifiers when different initial conditions
@@ -112,7 +112,7 @@ probability density `weighting_distribution` when calling `finalize_accumulator!
 The word "distance" here refers to the distance established by the `distance` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
-  `mapper` using [`convergence_time`](@ref). The mean is computed with respect
+  `bmap` using [`convergence_time`](@ref). The mean is computed with respect
   to the `weighting_distribution`.
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
   to the attractor. Only initial conditions with non-zero probability under
@@ -188,7 +188,7 @@ extras = Dict("maxv" => extra_function)
 ```
 """
 struct StabilityQuantifiersAccumulator{AM <: BasinMap, V <: AbstractVector, F, M, W, E <: Dict, X} <: BasinMap
-    mapper::AM
+    bmap::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
     cts::Vector{Float64} # convergence times
@@ -200,19 +200,19 @@ struct StabilityQuantifiersAccumulator{AM <: BasinMap, V <: AbstractVector, F, M
 end
 
 function StabilityQuantifiersAccumulator(
-        mapper::BasinMap, extras = Dict();
+        bmap::BasinMap, extras = Dict();
         finite_time = 1.0, weighting_distribution = EverywhereUniform(),
         distance = Centroid(), idistances = [Euclidean()],
     )
-    reset_mapper!(mapper)
-    ds = referenced_dynamical_system(mapper)
-    AM = typeof(mapper)
+    reset_mapper!(bmap)
+    ds = referenced_dynamical_system(bmap)
+    AM = typeof(bmap)
     V = typeof(current_state(ds))
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
     return StabilityQuantifiersAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
-        mapper,
+        bmap,
         Vector{V}(),
         Vector{Int}(),
         Vector{Float64}(),
@@ -226,7 +226,7 @@ end
 
 # Extend `BasinMap` API:
 function reset_mapper!(a::StabilityQuantifiersAccumulator)
-    reset_mapper!(a.mapper)
+    reset_mapper!(a.bmap)
     empty!(a.u0s)
     empty!(a.bs)
     empty!(a.cts)
@@ -234,22 +234,22 @@ function reset_mapper!(a::StabilityQuantifiersAccumulator)
 end
 
 function extract_attractors(accumulator::StabilityQuantifiersAccumulator)
-    return extract_attractors(accumulator.mapper)
+    return extract_attractors(accumulator.bmap)
 end
 function referenced_dynamical_system(accumulator::StabilityQuantifiersAccumulator)
-    return referenced_dynamical_system(accumulator.mapper)
+    return referenced_dynamical_system(accumulator.bmap)
 end
 function convergence_time(accumulator::StabilityQuantifiersAccumulator)
-    return convergence_time(accumulator.mapper)
+    return convergence_time(accumulator.bmap)
 end
 
-allows_mapper_u0(a::StabilityQuantifiersAccumulator) = allows_mapper_u0(a.mapper)
+allows_mapper_u0(a::StabilityQuantifiersAccumulator) = allows_mapper_u0(a.bmap)
 
 function (accumulator::StabilityQuantifiersAccumulator)(u0)
-    id = accumulator.mapper(u0)
+    id = accumulator.bmap(u0)
     push!(accumulator.u0s, u0)
     push!(accumulator.bs, id)
-    push!(accumulator.cts, convergence_time(accumulator.mapper))
+    push!(accumulator.cts, convergence_time(accumulator.bmap))
     return id
 end
 
@@ -259,7 +259,7 @@ end
 Return a dictionary mapping stability quantifiers (strings) to dictionaries
 mapping attractor IDs to corresponding quantifier values.
 
-The attractors themselves are those of the `accumulator`'s mapper and can be
+The attractors themselves are those of the `accumulator`'s bmap and can be
 obtained with `extract_attractors(accumulator)`.
 
 See [`StabilityQuantifiersAccumulator`](@ref) for more.
@@ -270,7 +270,7 @@ To compute stability quantifiers for *aggregated* groups of attractors, merge th
 """
 function finalize_accumulator(accumulator::StabilityQuantifiersAccumulator)
     ds = referenced_dynamical_system(accumulator)
-    attractors = extract_attractors(accumulator.mapper)
+    attractors = extract_attractors(accumulator.bmap)
     bs = accumulator.bs
     u0s = accumulator.u0s
     cts = accumulator.cts
@@ -293,8 +293,8 @@ function finalize_accumulator(accumulator::StabilityQuantifiersAccumulator)
     end
 
     # convergence paces
-    if (isa(accumulator.mapper, BasinMapProximity) && !isnothing(accumulator.mapper.ε))
-        ε = accumulator.mapper.ε
+    if (isa(accumulator.bmap, BasinMapProximity) && !isnothing(accumulator.bmap.ε))
+        ε = accumulator.bmap.ε
     else
         ε = 0.0
     end
@@ -510,8 +510,8 @@ end
 # Extension function to allow accumulator to work also with non-single-u0 mappers
 function basins_fractions_grouped(accumulator::StabilityQuantifiersAccumulator, ics, progress::Progress, labels)
     # note that ics is always collected into vector, cascaded by `basins_fraction`.
-    # Here we'll call the same function with the stored mapper, cheating the system
-    fs, _labels = basins_fractions(accumulator.mapper, ics; show_progress = progress.core.enabled)
+    # Here we'll call the same function with the stored bmap, cheating the system
+    fs, _labels = basins_fractions(accumulator.bmap, ics; show_progress = progress.core.enabled)
     if !isempty(labels)
         labels .= @view(_labels[1:length(labels)])
     end

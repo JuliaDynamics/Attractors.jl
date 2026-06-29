@@ -45,7 +45,7 @@ sampler, = statespace_sampler(grid)
 basins = basins_fractions(mapper_newton, sampler)
 ```
 
-in this case, to also get the attractors we simply extract them from the underlying storage of the mapper:
+in this case, to also get the attractors we simply extract them from the underlying storage of the bmap:
 ```@example MAIN
 attractors = extract_attractors(mapper_newton)
 ```
@@ -106,16 +106,16 @@ Then, we create a projected system on the x-y plane
 psys = ProjectedDynamicalSystem(ds, [1, 2], [0.0, 0.0])
 ```
 
-and create an attractor mapper that will map initial conditions to attractors like before
+and create an attractor bmap that will map initial conditions to attractors like before
 ```@example MAIN
 xg = yg = range(-4, 4; length = 200)
 grid = (xg, yg)
-mapper = BasinMapRecurrences(psys, grid; Δt = 1.0)
+bmap = BasinMapRecurrences(psys, grid; Δt = 1.0)
 ```
 
 and as before, get the basins of attraction
 ```@example MAIN
-basins, attractors = basins_of_attraction(mapper, grid; show_progress = false)
+basins, attractors = basins_of_attraction(bmap, grid; show_progress = false)
 heatmap_basins_attractors(grid, basins, attractors)
 ```
 
@@ -139,9 +139,9 @@ As we don't know _when_ the basin of the third magnet will disappear, we switch 
 
 ```@example MAIN
 set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
-mapper = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
+bmap = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
 basins_after, attractors_after = basins_of_attraction(
-    mapper, (xg, yg); show_progress = false
+    bmap, (xg, yg); show_progress = false
 )
 # matching attractors is important!
 rmap = match_statespacesets!(attractors_after, attractors)
@@ -175,13 +175,13 @@ at different parameters:
 ```@example MAIN
 set_parameter!(psys, :γs, [1.0, 1.0, 1.0])
 set_parameter!(psys, :α, 1.0)
-mapper = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
-basins2, attractors2 = basins_of_attraction(mapper, grid; show_progress = false)
+bmap = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
+basins2, attractors2 = basins_of_attraction(bmap, grid; show_progress = false)
 
 set_parameter!(psys, :α, 2.0)
 set_parameter!(psys, :d, 0.45)
-mapper = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
-basins3, attractors3 = basins_of_attraction(mapper, grid; show_progress = false)
+bmap = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
+basins3, attractors3 = basins_of_attraction(bmap, grid; show_progress = false)
 ```
 
 then calculate intermingledness and basin entropy
@@ -229,14 +229,14 @@ function featurizer(X, t)
     return X[end]
 end
 
-mapper = BasinMapFeaturizeGroup(psys, featurizer; Ttr = 200, T = 1)
+bmap = BasinMapFeaturizeGroup(psys, featurizer; Ttr = 200, T = 1)
 
 xg = yg = range(-4, 4; length = 101)
 
 region = HRectangle([-4, 4], [4, 4])
 sampler, = statespace_sampler(region)
 
-fs = basins_fractions(mapper, sampler; show_progress = false)
+fs = basins_fractions(bmap, sampler; show_progress = false)
 ```
 As expected, the fractions are each about 1/3 due to the system symmetry.
 
@@ -257,8 +257,8 @@ To compute the basins we define a three-dimensional grid and call on it
 ```julia
 # This computation takes about an hour
 xg = yg = zg = range(-6.0, 6.0; length = 251)
-mapper = BasinMapRecurrences(ds, (xg, yg, zg); sparse = false)
-basins, attractors = basins_of_attraction(mapper)
+bmap = BasinMapRecurrences(ds, (xg, yg, zg); sparse = false)
+basins, attractors = basins_of_attraction(bmap)
 attractors
 ```
 ```
@@ -338,12 +338,12 @@ We define the same grid as before, but now only we only use the x-y coordinates.
 ```@example MAIN
 xg = yg = range(-6.0, 6.0; length = 250)
 grid = (xg, yg)
-mapper = BasinMapRecurrences(pmap, grid; sparse = false)
+bmap = BasinMapRecurrences(pmap, grid; sparse = false)
 ```
 All that is left to do is to call [`basins_of_attraction`](@ref):
 
 ```@example MAIN
-basins, attractors = basins_of_attraction(mapper; show_progress = false);
+basins, attractors = basins_of_attraction(bmap; show_progress = false);
 ```
 
 ```@example MAIN
@@ -386,7 +386,7 @@ ax = Axis(fig[1,1])
 # when pow > 1, the grid is finer close to zero
 for pow in (1, 2)
     xg = yg = range(0, 18.0^(1/pow); length = 200).^pow
-    mapper = BasinMapRecurrences(ds, (xg, yg);
+    bmap = BasinMapRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
         consecutive_recurrences = 10, attractor_locate_steps = 10,
         maximum_iterations = 1000,
@@ -394,8 +394,8 @@ for pow in (1, 2)
 
     # Find attractor and its fraction (fraction is always 1 here)
     sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-    fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
-    attractors = extract_attractors(mapper)
+    fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+    attractors = extract_attractors(bmap)
     scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
 end
 
@@ -441,13 +441,13 @@ The constructed array corresponds to levels of discretization for specific regio
 meaning that if area index is assigned to be `3`, for example, the algorithm will treat the region as one being
 `2^3 = 8` times more dense than originally user provided grid `(xg, yg)`.
 
-Now upon the construction of this structure, one can simply pass it into mapper function as usual.
+Now upon the construction of this structure, one can simply pass it into bmap function as usual.
 
 ```@example MAIN
 fig = Figure()
 ax = Axis(fig[1,1])
-# passing SubdivisionBasedGrid into mapper
-mapper = BasinMapRecurrences(ds, grid;
+# passing SubdivisionBasedGrid into bmap
+bmap = BasinMapRecurrences(ds, grid;
         Dt = 0.1, sparse = true,
         consecutive_recurrences = 10, attractor_locate_steps = 10,
         maximum_iterations = 1000,
@@ -455,22 +455,22 @@ mapper = BasinMapRecurrences(ds, grid;
 
 # Find attractor and its fraction (fraction is always 1 here)
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
-attractors_SBD = extract_attractors(mapper)
+fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+attractors_SBD = extract_attractors(bmap)
 scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 
 
 # to compare the results we also construct RegularGrid of same length here
 xg = yg = range(0, 18, length = 30)
-mapper = BasinMapRecurrences(ds, (xg, yg);
+bmap = BasinMapRecurrences(ds, (xg, yg);
         Dt = 0.1, sparse = true,
         consecutive_recurrences = 10, attractor_locate_steps = 10,
         maximum_iterations = 1000,
     )
 
 sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-fractions = basins_fractions(mapper, sampler; N = 100, show_progress = false)
-attractors_reg = extract_attractors(mapper)
+fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+attractors_reg = extract_attractors(bmap)
 scatter!(ax, vec(attractors_reg[1]); label = "RegularGrid")
 
 axislegend(ax)
@@ -493,8 +493,8 @@ using Random: Xoshiro
 ds = Systems.magnetic_pendulum(; d = 0.3, α = 0.2, ω = 0.5)
 xg = yg = range(-3, 3; length = 101)
 ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
-# Choose a mapper via recurrences
-mapper = BasinMapRecurrences(ds, (xg, yg); Δt = 1.0)
+# Choose a bmap via recurrences
+bmap = BasinMapRecurrences(ds, (xg, yg); Δt = 1.0)
 # What parameter to change, over what range
 γγ = range(1, 0; length = 101)
 prange = [[1, 1, γ] for γ in γγ]
@@ -504,7 +504,7 @@ region = HSphere(3.0, 2)
 sampler, = statespace_sampler(region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
-rsc = RecurrencesFindAndMatch(mapper; threshold = Inf)
+rsc = RecurrencesFindAndMatch(bmap; threshold = Inf)
 fractions_cont, attractors_cont = global_continuation(
     rsc, prange, pidx, sampler;
     show_progress = false, samples_per_parameter = 100
@@ -586,8 +586,8 @@ ridx = 1
 
 featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
-mapper = BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = true)
-gap = FeaturizeGroupAcrossParameter(mapper; par_weight = 1.0)
+bmap = BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = true)
+gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 1.0)
 fractions_cont, clusters_info = global_continuation(
     gap, rrange, ridx, sampler; show_progress = false
 )
@@ -657,8 +657,8 @@ Now we compute the fixed points and basins of attraction of the FHN model.
 ```@example MAIN
 xg = yg = range(-1.5, 1.5; length = 201)
 grid = (xg, yg)
-mapper = BasinMapRecurrences(ds, grid; sparse=false)
-basins, attractors = basins_of_attraction(mapper)
+bmap = BasinMapRecurrences(ds, grid; sparse=false)
+basins, attractors = basins_of_attraction(bmap)
 attractors
 ```
 
@@ -738,9 +738,9 @@ ds = CoupledODEs(duffing, ones(2), params, diffeq=(; reltol=1e-11))
 n_grid = 201
 grid = (range(-2, 2; length = n_grid),range(-2, 2; length = n_grid),)
 
-mapper = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+bmap = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
 
-accumulator = StabilityQuantifiersAccumulator(mapper;
+accumulator = StabilityQuantifiersAccumulator(bmap;
     finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
 )
 ```
@@ -780,7 +780,7 @@ extras = Dict("maxv" => extra_function)
 we now pass this to a new accumulator and re-run everything:
 
 ```@example MAIN
-accumulator = StabilityQuantifiersAccumulator(mapper, extras;
+accumulator = StabilityQuantifiersAccumulator(bmap, extras;
     finite_time = 50.0, weighting_distribution = MvNormal(zeros(2), 1.0*I)
 )
 for u0 in ics
@@ -934,14 +934,14 @@ ds = CoupledODEs(population_rule, [0.7, 0.7], p0;
 
 xg = yg = range(-0.001, 1.0; length = 101)
 grid = (xg, yg)
-mapper = BasinMapRecurrences(ds, grid;
+bmap = BasinMapRecurrences(ds, grid;
     Δt = 0.1, consecutive_recurrences = 1000, consecutive_lost_steps = 1000)
 
 # A short continuation in K₁ with few samples, to keep the example fast
 prange = range(0.91, 0.89; length = 5)
 pcurve = [Dict(1 => v) for v in prange]
 sampler, = statespace_sampler(grid, 1234)
-alg = RecurrencesFindAndMatch(mapper; distance = StrictlyMinimumDistance())
+alg = RecurrencesFindAndMatch(bmap; distance = StrictlyMinimumDistance())
 fractions_cont, attractors_cont = global_continuation(
     alg, pcurve, sampler; samples_per_parameter = 100, show_progress = false
 )

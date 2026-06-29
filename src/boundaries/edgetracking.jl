@@ -123,26 +123,26 @@ function edgetracking(
     )
 
     pds = ParallelDynamicalSystem(ds, [u1, u2])
-    mapper = BasinMapProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
+    bmap = BasinMapProximity(ds, attractors; ε = ϵ_mapper, Δt, kwargs...)
 
     return edgetracking(
-        pds, mapper;
+        pds, bmap;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
         show_progress, verbose
     )
 end
 
 #=
-    edgetracking(pds::ParallelDynamicalSystem, mapper::BasinMap; kwargs...)
+    edgetracking(pds::ParallelDynamicalSystem, bmap::BasinMap; kwargs...)
 
 Low-level function for running the edge tracking algorithm, see [`edgetracking`](@ref)
 for a description, keyword arguments and output type.
 
-`pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
+`pds` is a `ParallelDynamicalSystem` with two states. The `bmap` must be an
 `BasinMap` of subtype `BasinMapProximity` or `BasinMapRecurrences`.
 =#
 function edgetracking(
-        pds::ParallelDynamicalSystem, mapper::BasinMap;
+        pds::ParallelDynamicalSystem, bmap::BasinMap;
         bisect_thresh, diverge_thresh, maxiter, abstol, T_transient, Δt, tmax,
         show_progress, verbose
     )
@@ -152,7 +152,7 @@ function edgetracking(
     end
 
     # initial bisection
-    u1, u2, success = bisect_to_edge(pds, mapper; bisect_thresh, verbose)
+    u1, u2, success = bisect_to_edge(pds, bmap; bisect_thresh, verbose)
     if !success
         return EdgeTrackingResults(nothing)
     end
@@ -184,7 +184,7 @@ function edgetracking(
             end
         end
         # re-bisect
-        u1, u2, success = bisect_to_edge(pds, mapper; bisect_thresh, verbose)
+        u1, u2, success = bisect_to_edge(pds, bmap; bisect_thresh, verbose)
         if ~success
             track1 = StateSpaceSet(track1)
             track2 = StateSpaceSet(track2)
@@ -229,7 +229,7 @@ function edgetracking(
 end
 
 """
-    bisect_to_edge(pds::ParallelDynamicalSystem, mapper::BasinMap; kwargs...) -> u1, u2
+    bisect_to_edge(pds::ParallelDynamicalSystem, bmap::BasinMap; kwargs...) -> u1, u2
 Finds the basin boundary between two states `u1, u2 = current_states(pds)` by bisecting
 along a straight line in phase space. The states `u1` and `u2` must belong to different
 basins.
@@ -237,14 +237,14 @@ basins.
 Returns a triple `u1, u2, success`, where `u1, u2` are two new states located on either side
 of the basin boundary that lie less than `bisect_thresh` (Euclidean distance in state space)
 apart from each other, and `success` is a Bool indicating whether the bisection was
-successful (it may fail if the `mapper` maps both states to the same basin of attraction,
+successful (it may fail if the `bmap` maps both states to the same basin of attraction,
 in which case a warning is raised).
 
 ## Keyword arguments
 * `bisect_thresh = 1e-7`: The maximum (Euclidean) distance between the two returned states.
 
 ## Description
-`pds` is a `ParallelDynamicalSystem` with two states. The `mapper` must be an
+`pds` is a `ParallelDynamicalSystem` with two states. The `bmap` must be an
 `BasinMap` of subtype `BasinMapProximity` or `BasinMapRecurrences`.
 
 !!! info
@@ -254,13 +254,13 @@ in which case a warning is raised).
     conditions `u1` and `u2`. A warning is raised if the bisection involves a third basin.
 """
 function bisect_to_edge(
-        pds::ParallelDynamicalSystem, mapper::BasinMap;
+        pds::ParallelDynamicalSystem, bmap::BasinMap;
         bisect_thresh = 1.0e-6,
         verbose = true
     )
 
     u1, u2 = current_states(pds)
-    idx1, idx2 = mapper(u1), mapper(u2)
+    idx1, idx2 = bmap(u1), bmap(u2)
 
     if (idx1 == idx2)
         if idx1 == -1
@@ -280,7 +280,7 @@ function bisect_to_edge(
     distance = diffnorm(u1, u2)
     while distance > bisect_thresh
         u_new = (u1 + u2) / 2
-        idx_new = mapper(u_new)
+        idx_new = bmap(u_new)
         # slightly shift u_new if it lands too close to the boundary
         retry_counter = 1
         while (idx_new == -1) && retry_counter < 3 # ToDO: make kwarg
@@ -288,7 +288,7 @@ function bisect_to_edge(
                 @warn "Shifting new point slightly because BasinMap returned -1"
             end
             u_new += bisect_thresh * (u1 - u2)
-            idx_new = mapper(u_new)
+            idx_new = bmap(u_new)
             retry_counter += 1
         end
         # update u1 or u2

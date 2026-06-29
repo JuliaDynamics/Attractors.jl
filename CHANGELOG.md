@@ -23,6 +23,7 @@ The `AttractorMapper` constructions have been fully renamed. All following renam
 - `AttractorsViaProximity` -> `BasinMapProximity`
 
 This better represents what these constructs are about, which is also reflected in the updated docstring of `BasinMap`.
+Throughout the docs, `mapper` variable has been renamed to `bmap` as well.
 
 ## Aggregation reworked
 

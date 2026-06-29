@@ -34,15 +34,15 @@ end
     grid_subdiv = subdivision_based_grid(ds, grid_reg)
     function test_grid(grid, bool)
         ds = predator_prey_ds()
-        mapper = BasinMapRecurrences(
+        bmap = BasinMapRecurrences(
             ds, grid;
             Dt = 0.05, sparse = true, force_non_adaptive = true,
             consecutive_recurrences = 20, attractor_locate_steps = 100,
             store_once_per_cell = true,
             maximum_iterations = 1000,
         )
-        id = mapper(u0)
-        A = extract_attractors(mapper)[1]
+        id = bmap(u0)
+        A = extract_attractors(bmap)[1]
         @test (length(A) > 1) == bool
     end
 

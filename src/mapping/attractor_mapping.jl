@@ -25,12 +25,12 @@ ValidICS = Union{AbstractVector, Function}
 # BasinMap structure definition
 #########################################################################################
 """
-    BasinMap(ds::DynamicalSystem, args...; kwargs...) → mapper
+    BasinMap(ds::DynamicalSystem, args...; kwargs...) → bmap
 
 Subtypes of `BasinMap` are structures that map initial conditions of `ds` to unique IDs.
 These IDs (typically) correspond to the basins of attraction and corresponding attractors of `ds`.
-The found attractors are stored inside the `mapper`, and can be obtained
-by calling `attractors = extract_attractors(mapper)` when applicable.
+The found attractors are stored inside the `bmap`, and can be obtained
+by calling `attractors = extract_attractors(bmap)` when applicable.
 
 Currently available mapping methods:
 
@@ -43,7 +43,7 @@ or [`basins_of_attraction`](@ref).
 
 In addition, most basin maps can be called as a function of an initial condition:
 ```julia
-label = mapper(u0)
+label = bmap(u0)
 ```
 and this will on the fly compute and return the label of the attractor `u0` converges at.
 The mappers that can do this are:
@@ -62,13 +62,13 @@ to accelerate estimation of stability quantifiers.
 `BasinMap` and implement the following:
 
 - [`extract_attractors`](@ref)
-- `id = mapper(u0)`
-- the internal function `Attractors.referenced_dynamical_system(mapper)`.
+- `id = bmap(u0)`
+- the internal function `Attractors.referenced_dynamical_system(bmap)`.
 
 From these, everything else in the entire rest of the library just works!
 
-If it is not possible to implement `id = mapper(u0)`, then instead extend
-the function `basins_fractions_grouped(mapper, ics, progress, labels)`,
+If it is not possible to implement `id = bmap(u0)`, then instead extend
+the function `basins_fractions_grouped(bmap, ics, progress, labels)`,
 where `ics` is always a `Vector` of initial conditions, `progress` is a preinitialized
 progress bar, and `labels` is a preinitialized container of labels.
 If `!isempty(labels)`, then its full length must be filled with the ids corresponding
@@ -76,16 +76,16 @@ to the first N entries of `ics`.
 """
 abstract type BasinMap end
 
-referenced_dynamical_system(mapper::BasinMap) = mapper.ds
+referenced_dynamical_system(bmap::BasinMap) = bmap.ds
 
 # Generic pretty printing
-function generic_mapper_print(io, mapper)
+function generic_mapper_print(io, bmap)
     ps = 14
-    println(io, "$(nameof(typeof(mapper)))")
-    println(io, rpad(" system: ", ps), nameof(typeof(referenced_dynamical_system(mapper))))
+    println(io, "$(nameof(typeof(bmap)))")
+    println(io, rpad(" system: ", ps), nameof(typeof(referenced_dynamical_system(bmap))))
     return ps
 end
-Base.show(io::IO, mapper::BasinMap) = generic_mapper_print(io, mapper)
+Base.show(io::IO, bmap::BasinMap) = generic_mapper_print(io, bmap)
 
 #########################################################################################
 # Generic basin fractions method structure definition
@@ -93,13 +93,13 @@ Base.show(io::IO, mapper::BasinMap) = generic_mapper_print(io, mapper)
 # It works for all mappers that define the function-like-object behavior
 """
     basins_fractions(
-        mapper::BasinMap,
+        bmap::BasinMap,
         ics::Union{AbstractVector, Function};
         kwargs...
     )
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
-system by mapping initial conditions to attractors using `mapper`
+system by mapping initial conditions to attractors using `bmap`
 (which contains a reference to a [`DynamicalSystem`](@ref)).
 The fractions are simply the ratios of how many initial conditions ended up
 at each attractor.
@@ -117,15 +117,15 @@ The function will always return `fractions`, which is
 a dictionary whose keys are the labels given to each attractor
 (always integers enumerating the different attractors), and whose
 values are the respective basins fractions. The label `-1` is given to any initial condition
-where `mapper` could not match to an attractor (this depends on the `mapper` type).
+where `bmap` could not match to an attractor (this depends on the `bmap` type).
 
 If `ics` is a `StateSpaceSet` the function will also return `labels`, which is a
 _vector_, of equal length to `ics`, that contains the label each initial
 condition was mapped to.
 
-See [`BasinMap`](@ref) for all possible `mapper` types, and use
+See [`BasinMap`](@ref) for all possible `bmap` types, and use
 [`extract_attractors`](@ref) (after calling `basins_fractions`) to extract
-the stored attractors from the `mapper`.
+the stored attractors from the `bmap`.
 See also [`convergence_and_basins_fractions`](@ref).
 
 ## Keyword arguments
@@ -134,7 +134,7 @@ See also [`convergence_and_basins_fractions`](@ref).
 * `show_progress = true`: Display a progress bar of the process.
 """
 function basins_fractions(
-        mapper::BasinMap, ics::ValidICS;
+        bmap::BasinMap, ics::ValidICS;
         show_progress = true, N = 1000,
         # this is an internal keyword used in the ASCM global conitnuation
         additional_ics = [],
@@ -149,8 +149,8 @@ function basins_fractions(
         desc = "Mapping i.c. to attractors:", PMKWARGS..., offset, enabled = show_progress
     )
     labels = Vector{Int}(undef, used_container ? N : 0)
-    ffs = if allows_mapper_u0(mapper)
-        basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
+    ffs = if allows_mapper_u0(bmap)
+        basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
     else
         # collect all initial conditions
         icscol = if ics isa Function
@@ -159,7 +159,7 @@ function basins_fractions(
             copy(ics)
         end
         append!(icscol, additional_ics)
-        basins_fractions_grouped(mapper, icscol, progress, labels)
+        basins_fractions_grouped(bmap, icscol, progress, labels)
     end
     if used_container
         return ffs, labels
@@ -168,15 +168,15 @@ function basins_fractions(
     end
 end
 
-function basins_fractions_individual(mapper, ics, N, progress, labels, additional_ics)
+function basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
     fs = Dict{Int, Int}()
     for u0 in additional_ics
-        label = mapper(u0)
+        label = bmap(u0)
         fs[label] = get(fs, label, 0) + 1
     end
     for i in 1:N
         ic = _get_ic(ics, i)
-        label = mapper(ic)
+        label = bmap(ic)
         fs[label] = get(fs, label, 0) + 1
         !isempty(labels) && (labels[i] = label)
         ProgressMeter.next!(progress)
@@ -186,7 +186,7 @@ function basins_fractions_individual(mapper, ics, N, progress, labels, additiona
 end
 
 """
-    basins_fractions_grouped(mapper, ics, progress, labels)
+    basins_fractions_grouped(bmap, ics, progress, labels)
 
 Internal function called by `basins_fractions` for `BasinMap`s that
 cannot map individual initial conditions to attractor labels.
@@ -197,26 +197,26 @@ Must be extended for new mappers that fall under this category.
 in the function call if it is not `empty`.
 See the implementation of `BasinMapFeaturizeGroup` for an example.
 """
-function basins_fractions_grouped(mapper, ics, progress, labels)
-    error("Must be implemented for mapper of type $(nameof(typeof(mapper)))")
+function basins_fractions_grouped(bmap, ics, progress, labels)
+    error("Must be implemented for bmap of type $(nameof(typeof(bmap)))")
 end
 
 _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractVector, i) = ics[i]
 
 """
-    extract_attractors(mapper::AttractorsMapper) → attractors
+    extract_attractors(bmap::AttractorsMapper) → attractors
 
-Return a dictionary mapping label IDs to attractors found by the `mapper`.
-This function should be called after mapping initial conditions with `mapper`
+Return a dictionary mapping label IDs to attractors found by the `bmap`.
+This function should be called after mapping initial conditions with `bmap`
 (e.g., calling [`basins_fractions`](@ref))
 so that the attractors have actually been found first.
 
-For developing a new mapper: extend the internal function `_extract_attractors`.
+For developing a new bmap: extend the internal function `_extract_attractors`.
 """
-function extract_attractors(mapper::BasinMap)
-    attractors = _extract_attractors(mapper)
-    ds = referenced_dynamical_system(mapper)
+function extract_attractors(bmap::BasinMap)
+    attractors = _extract_attractors(bmap)
+    ds = referenced_dynamical_system(bmap)
     # name attractor variables if possible
     # add prior compat entry to fix some incompat version bugs
     if isdefined(DynamicalSystemsBase, :referenced_sciml_model)
@@ -234,10 +234,10 @@ end
 
 
 """
-    convergence_time(mapper::BasinMap) → t
+    convergence_time(bmap::BasinMap) → t
 
-Return the approximate time the `mapper` took to converge to an attractor.
-This function should be called just right after `mapper(u0)` was called with
+Return the approximate time the `bmap` took to converge to an attractor.
+This function should be called just right after `bmap(u0)` was called with
 `u0` the initial condition of interest. Hence it is only valid with `BasinMap`
 subtypes that support this syntax.
 
@@ -259,12 +259,12 @@ include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")
 
-"internal function for whether the mapper can map individual i.c."
+"internal function for whether the bmap can map individual i.c."
 allows_mapper_u0(::BasinMap) = true
-function allows_mapper_u0(mapper::BasinMapFeaturizeGroup)
-    if mapper.group_config isa GroupViaClustering
+function allows_mapper_u0(bmap::BasinMapFeaturizeGroup)
+    if bmap.group_config isa GroupViaClustering
         return false
-    elseif mapper.group_config isa GroupViaPairwiseComparison
+    elseif bmap.group_config isa GroupViaPairwiseComparison
         return false
     else
         return true

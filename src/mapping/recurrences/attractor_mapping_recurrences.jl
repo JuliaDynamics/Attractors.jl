@@ -157,20 +157,20 @@ function to_grid_type(grid)
     return finalgrid
 end
 
-function (mapper::BasinMapRecurrences)(u0; show_progress = true)
+function (bmap::BasinMapRecurrences)(u0; show_progress = true)
     # Call low level code. Notice that in this
-    # call signature the internal basins info array of the mapper is NOT updated
+    # call signature the internal basins info array of the bmap is NOT updated
     # with the basins of attraction info. Only with the attractors info.
-    lab = recurrences_map_to_label!(mapper.bsn_nfo, mapper.ds, u0; show_progress, mapper.kwargs...)
+    lab = recurrences_map_to_label!(bmap.bsn_nfo, bmap.ds, u0; show_progress, bmap.kwargs...)
     # Transform to integers indexing from odd-even indexing
     return iseven(lab) ? (lab ÷ 2) : (lab - 1) ÷ 2
 end
 
 
-function Base.show(io::IO, mapper::BasinMapRecurrences)
-    ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" grid: ", ps), mapper.grid)
-    println(io, rpad(" attractors: ", ps), mapper.bsn_nfo.BoA.attractors)
+function Base.show(io::IO, bmap::BasinMapRecurrences)
+    ps = generic_mapper_print(io, bmap)
+    println(io, rpad(" grid: ", ps), bmap.grid)
+    println(io, rpad(" attractors: ", ps), bmap.bsn_nfo.BoA.attractors)
     return
 end
 
@@ -196,35 +196,35 @@ end
 
 
 """
-    basins_of_attraction(mapper::BasinMapRecurrences; show_progress = true) → boa
+    basins_of_attraction(bmap::BasinMapRecurrences; show_progress = true) → boa
 
 This is a special method of `basins_of_attraction` that using recurrences does
 _exactly_ what is described in the paper by Datseris & Wagemakers [Datseris2022](@cite).
-By enforcing that the internal grid of `mapper` is the same as the grid of initial
+By enforcing that the internal grid of `bmap` is the same as the grid of initial
 conditions to map to attractors, the method can further utilize found exit and attraction
 basins, making the computation faster as the grid is processed more and more.
 
 The return has type [`ArrayBasinsOfAttraction`](@ref), but may be decomposed as `basins, attractors = boa`
 ensuring backwards compatibility with the previous return format.
 """
-function basins_of_attraction(mapper::BasinMapRecurrences; show_progress = true)
-    if mapper.bsn_nfo.BoA.basins isa SparseArray
+function basins_of_attraction(bmap::BasinMapRecurrences; show_progress = true)
+    if bmap.bsn_nfo.BoA.basins isa SparseArray
         throw(
             ArgumentError(
                 """
                 Sparse version of BasinMapRecurrences is incompatible with
-                `basins_of_attraction(mapper)`."""
+                `basins_of_attraction(bmap)`."""
             )
         )
     end
 
-    if (mapper.bsn_nfo.BoA.grid isa SubdivisionBasedGrid)
-        grid = mapper.grid.max_grid
+    if (bmap.bsn_nfo.BoA.grid isa SubdivisionBasedGrid)
+        grid = bmap.grid.max_grid
     else
-        grid = mapper.grid.grid
+        grid = bmap.grid.grid
     end
 
-    basins = zero(mapper.bsn_nfo.BoA.basins)
+    basins = zero(bmap.bsn_nfo.BoA.basins)
 
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
@@ -239,11 +239,11 @@ function basins_of_attraction(mapper::BasinMapRecurrences; show_progress = true)
         if basins[ind] == 0
             show_progress && ProgressMeter.update!(progress, k)
             y0 = generate_ic_on_grid(grid, ind)
-            basins[ind] = mapper(y0; show_progress)
+            basins[ind] = bmap(y0; show_progress)
         end
     end
 
-    return ArrayBasinsOfAttraction(basins, extract_attractors(mapper), grid)
+    return ArrayBasinsOfAttraction(basins, extract_attractors(bmap), grid)
 end
 
 #####################################################################################
@@ -369,25 +369,25 @@ end
 automatic_Δt_recurrences(ds, grid; kw...) = automatic_Δt_recurrences(ds, to_grid_type(grid); kw...)
 
 """
-    reset_mapper!(mapper::AttractorsMapper)
+    reset_mapper!(bmap::AttractorsMapper)
 
-Reset all accumulated information of `mapper` so that it is
+Reset all accumulated information of `bmap` so that it is
 as if it has just been initialized. Useful in `for` loops
-that loop over a parameter of the dynamical system stored in `mapper`.
+that loop over a parameter of the dynamical system stored in `bmap`.
 """
-function reset_mapper!(mapper::BasinMapRecurrences)
-    empty!(mapper.bsn_nfo.BoA.attractors)
-    if mapper.bsn_nfo.BoA.basins isa Array
-        mapper.bsn_nfo.BoA.basins .= 0
+function reset_mapper!(bmap::BasinMapRecurrences)
+    empty!(bmap.bsn_nfo.BoA.attractors)
+    if bmap.bsn_nfo.BoA.basins isa Array
+        bmap.bsn_nfo.BoA.basins .= 0
     else
-        empty!(mapper.bsn_nfo.BoA.basins)
+        empty!(bmap.bsn_nfo.BoA.basins)
     end
-    mapper.bsn_nfo.state = :att_search
-    mapper.bsn_nfo.consecutive_match = 0
-    mapper.bsn_nfo.consecutive_lost = 0
-    mapper.bsn_nfo.prev_label = 0
-    mapper.bsn_nfo.current_att_label = 2
-    mapper.bsn_nfo.visited_cell_label = 4
+    bmap.bsn_nfo.state = :att_search
+    bmap.bsn_nfo.consecutive_match = 0
+    bmap.bsn_nfo.consecutive_lost = 0
+    bmap.bsn_nfo.prev_label = 0
+    bmap.bsn_nfo.current_att_label = 2
+    bmap.bsn_nfo.visited_cell_label = 4
     return
 end
 

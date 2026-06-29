@@ -194,7 +194,7 @@ fig
 
 # 1. A `DynamicalSystem`,
 # 1. an `BasinMap` instance (and its meta parameters).
-#    For the mapper used here, `BasinMapRecurrences`, the meta parameters are:
+#    For the bmap used here, `BasinMapRecurrences`, the meta parameters are:
 #    1. A state space tesselation
 #    1. A recurrence threshold
 #    1. A lost iterations threshold
@@ -213,7 +213,7 @@ grid = (
     range(-20.0, 20.0; length = 200), # z
 )
 
-mapper = BasinMapRecurrences(
+bmap = BasinMapRecurrences(
     ds, grid;
     consecutive_recurrences = 1000,
     consecutive_lost_steps = 100,
@@ -221,7 +221,7 @@ mapper = BasinMapRecurrences(
 
 sampler, = statespace_sampler(grid)
 
-algo = AttractorSeedContinueMatch(StabilityQuantifiersAccumulator(mapper))
+algo = AttractorSeedContinueMatch(StabilityQuantifiersAccumulator(bmap))
 
 @time quantifiers_cont, attractors_cont = global_continuation(
     algo, prange, pidx, sampler; samples_per_parameter = 1_000

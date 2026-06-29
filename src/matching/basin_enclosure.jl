@@ -33,7 +33,7 @@ to the old attractor `A₋` attractor if `A₋` is located inside the basin of a
 To see if `A₋` is in the basin of `A₊`, we first pick a point from `A₋` using the `seeding`
 keyword argument. By default this is the last point on the attractor, but it could be anything
 else, including the centroid of the attractor (`mean(A)`).
-This point is given as an initial condition to an [`BasinMapProximity`](@ref) mapper
+This point is given as an initial condition to an [`BasinMapProximity`](@ref) bmap
 that maps initial conditions to the `₊` attractors when
 the trajectories from the initial conditions are `ε`-close to the `₊` attractors.
 

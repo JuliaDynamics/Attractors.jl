@@ -22,12 +22,12 @@ to get assined different IDs.
 For example: for `threshold = 2` basins that have ≤ 50% overlap get
 different IDs guaranteed. By default, there is no threshold.
 
-The information of the basins of attraction is typically an `Array`, or 
+The information of the basins of attraction is typically an `Array`, or
 a [`ArrayBasinsOfAttraction`](@ref) type , i.e. the direct output of [`basins_of_attraction`](@ref).
 For convenience, as well as backwards compatibility, when using
-[`matching_map`](@ref) with this mapper you may provide two `Array`s `b₊, b₋`
+[`matching_map`](@ref) with this bmap you may provide two `Array`s `b₊, b₋`
 representing basins of attraction after and before, and the conversion to dictionaries
-will happen internally as it is supposed to. Similarly two `ArrayBasinsOfAttraction` types 
+will happen internally as it is supposed to. Similarly two `ArrayBasinsOfAttraction` types
 for before and after can be used, BoA₊ and BoA₋.
 To replace the `IDs` in `b₊` given the replacement map just call `replace!(b₊, rmap...)`,
 or equivalently `replace!(BoA₊.basins, rmap...)`, or use the in-place version [`matching_map!`](@ref) directly.
@@ -50,7 +50,7 @@ Special case of `matching_map` where instead of having as input dictionaries
 mapping IDs to values, we have `Array`s which represent basins of
 attraction and whose elements are the IDs.
 
-The second function signature exists for backwards compatibility. 
+The second function signature exists for backwards compatibility.
 
 See [`MatchByBasinOverlap`](@ref) for how matching works.
 """

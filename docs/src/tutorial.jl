@@ -59,7 +59,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 #     range(-20.0, 20.0; length = 150), # y
 #     range(-20.0, 20.0; length = 150), # z
 # )
-# mapper = BasinMapRecurrences(ds, grid;
+# bmap = BasinMapRecurrences(ds, grid;
 #     consecutive_recurrences = 1000,
 #     consecutive_lost_steps = 100,
 # )
@@ -67,9 +67,9 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # ## Find attractors and their basins of attraction state space fraction
 # ## by randomly sampling initial conditions in state sapce
 # sampler, = statespace_sampler(grid)
-# algo = AttractorSeedContinueMatch(mapper)
-# fs = basins_fractions(mapper, sampler)
-# attractors = extract_attractors(mapper)
+# algo = AttractorSeedContinueMatch(bmap)
+# fs = basins_fractions(bmap, sampler)
+# attractors = extract_attractors(bmap)
 
 # ## found two attractors: one is a limit cycle, the other is chaotic
 # ## visualize them
@@ -77,7 +77,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 
 # ## continue all attractors and their basin fractions across any arbigrary
 # ## curve in parameter space using a global continuation algorithm
-# algo = AttractorSeedContinueMatch(mapper)
+# algo = AttractorSeedContinueMatch(bmap)
 # params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 # angles = range(0, 2π; length = 101)
 # pcurve = params.(angles)
@@ -125,9 +125,9 @@ u0 = [-4.0, 5, 0] # state
 diffeq = (alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9, dt = 0.01) # solver options
 ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
-# ## Finding attractors
+# ## Finding attractors and basins (basin map)
 
-# In this tutorial we will utilize two methods for finding attractors in dynamical systems.
+# In this tutorial we will utilize two methods for finding attractors and their basins.
 # Explanation of how they work is in their respective docs.
 
 # 1. [`BasinMapRecurrences`](@ref).
@@ -135,12 +135,13 @@ ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
 # You can consult [Datseris2023](@cite) for a comparison between the two.
 
-# As far as the user is concerned, both algorithms are part of the same interface,
-# and can be used in the same way. The interface is extendable as well,
-# and works as follows.
+# As far as the user is concerned, both algorithms are part of the same interface
+# that is called `BasinMap`, as these constructs are mapping initial conditions to
+# their corresponding basins of attraction. Thus, they are used the same way.
+# The interface is extendable as well.
 
-# First, we create an instance of such an "attractor finding algorithm",
-# which we call `BasinMap`. For example, [`BasinMapRecurrences`](@ref)
+# First, we create an instance of a `BasinMap`.
+# For example, [`BasinMapRecurrences`](@ref)
 # requires a tesselated grid of the state space to search for attractors in.
 # It also allows the user to tune some meta parameters, but in our example
 # they are already tuned for the dynamical system at hand. So we initialize
@@ -151,25 +152,25 @@ grid = (
     range(-15.0, 15.0; length = 150), # z
 )
 
-mapper = BasinMapRecurrences(
+bmap = BasinMapRecurrences(
     ds, grid;
     consecutive_recurrences = 1000, attractor_locate_steps = 1000,
     consecutive_lost_steps = 100,
 )
 
-# This `mapper` can map any initial condition to the corresponding
-# attractor ID, for example
+# This `bmap` can map any initial condition to tis corresponding basin,
+# enumerated by unique integers. For example
 
-mapper([-4.0, 5, 0])
+bmap([-4.0, 5, 0])
 
 # while
 
-mapper([4.0, 2, 0])
+bmap([4.0, 2, 0])
 
 # the fact that these two different initial conditions got assigned different IDs means
-# that they converged to a different attractor. Indeed,
+# that they converged to a different attractor under this basin map. Indeed,
 
-mapper([1.0, 3, 2])
+bmap([1.0, 3, 2])
 
 # gets the same ID as the first initial condition.
 
@@ -177,15 +178,15 @@ mapper([1.0, 3, 2])
 # To our knowledge the DynamicalSystems.jl library is the only
 # dynamical systems software (in any language) that provides such an
 # infrastructure for mapping initial conditions of any arbitrary dynamical system to its
-# unique attractors. And this is only the tip of this iceberg!
+# unique basins. And this is only the tip of this iceberg!
 # The rest of the functionality of Attractors.jl is all full of brand new cutting edge
 # progress in dynamical systems research.
 
 # Okay, back to the tutorial now!
-# The found attractors are stored in the mapper internally, to obtain them we
+# The found attractors are stored in the basin map internally, to obtain them we
 # use the function
 
-attractors = extract_attractors(mapper)
+attractors = extract_attractors(bmap)
 
 # In Attractors.jl, all information regarding attractors is always a standard Julia
 # `Dict`, which maps attractor IDs (positive integers) to the corresponding quantity.
@@ -200,12 +201,11 @@ plot_attractors(attractors)
 
 # In our example system we see that for the chosen parameters there are two coexisting attractors:
 # a limit cycle and a chaotic attractor.
-# There may be more attractors though! We've only checked two initial conditions,
-# so we could have found at most two attractors!
+# There may be more attractors though! We've only checked a few initial conditions.
 # However, it can get tedious to manually iterate over initial conditions, which is why
-# this `mapper` is typically given to higher level functions for finding attractors
+# this `bmap` is typically given to higher level functions for finding attractors
 # and their basins of attraction. The simplest one
-# is [`basins_fractions`](@ref). Using the `mapper`,
+# is [`basins_fractions`](@ref). Using the `bmap`,
 # it finds "all" attractors of the dynamical system and reports the state space fraction
 # each attractors attracts. The search is probabilistic, so "all" attractors means those
 # that at least one initial condition converged to.
@@ -226,7 +226,7 @@ sampler() # another random i.c.
 
 # and finally call
 
-fs = basins_fractions(mapper, sampler)
+fs = basins_fractions(bmap, sampler)
 
 # The returned `fs` is a dictionary mapping each attractor ID to
 # the fraction of the state space the corresponding basin occupies.
@@ -274,7 +274,7 @@ mapper2 = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
 # a trajectory `A` given to the `featurizer` function. Because one of the two attractors
 # is chaotic, we need denser sampling time than the default.
 
-# We can use `mapper2` exactly as `mapper`:
+# We can use `mapper2` exactly as `bmap`:
 
 fs2 = basins_fractions(mapper2, sampler)
 
@@ -282,7 +282,7 @@ attractors2 = extract_attractors(mapper2)
 
 plot_attractors(attractors2)
 
-# This mapper also found the attractors, but we should warn you: this mapper is less
+# This basin map also found the attractors, but we should warn you: this basin map is less
 # robust than [`BasinMapRecurrences`](@ref). One of the reasons for this is
 # that [`BasinMapFeaturizeGroup`](@ref) is not auto-terminating. For example, if we do not
 # have enough transient integration time, the two attractors will get confused into one:
@@ -293,7 +293,7 @@ attractors3 = extract_attractors(mapper3)
 plot_attractors(attractors3)
 
 # On the other hand, the downside of [`BasinMapRecurrences`](@ref) is that
-# it can take quite a while to converge for chaotic high dimensional systems.
+# it can take quite a while to converge for chaotic or high dimensional systems.
 
 # ## [Global continuation](@id global_cont_tutorial)
 
@@ -330,16 +330,16 @@ pidx = 1 # index of the parameter
 
 # Then, we may call the [`global_continuation`](@ref) function.
 # We have to provide a continuation algorithm, which itself references an [`BasinMap`](@ref).
-# In this example we will re-use the `mapper` to create the "flagship product" of Attractors.jl
+# In this example we will re-use the `bmap` to create the "flagship product" of Attractors.jl
 # which is the general [`AttractorSeedContinueMatch`](@ref).
-# This algorithm uses the `mapper` to find all attractors at each parameter value
+# This algorithm uses the `bmap` to find all attractors at each parameter value
 # and from the found attractors it continues them along a parameter axis
 # using a seeding process (see its documentation string).
 # Then, it performs a "matching" step, ensuring a "continuity" of the attractor
 # label across the parameter axis. For now we ignore the matching step, leaving it to the
-# default value. We'll use the `mapper` we created above and define
+# default value. We'll use the `bmap` we created above and define
 
-ascm = AttractorSeedContinueMatch(mapper)
+ascm = AttractorSeedContinueMatch(bmap)
 
 # and call
 
@@ -474,13 +474,13 @@ pcurve = params.(θs)
 
 # here each component maps the parameter index to its value.
 # We can just give this `pcurve` to the global continuation,
-# using the same mapper and continuation algorithm,
+# using the same basin map and continuation algorithm,
 # but adjusting the matching process so that vanished attractors
 # are kept in "memory"
 
 matcher = MatchBySSSetDistance(use_vanished = true)
 
-ascm = AttractorSeedContinueMatch(mapper, matcher)
+ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 fractions_cont, attractors_cont = global_continuation(
     ascm, pcurve, sampler; samples_per_parameter = 1_000

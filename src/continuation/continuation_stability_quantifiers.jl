@@ -11,15 +11,15 @@ function global_continuation(
         length(pcurve);
         desc = "Global continuation (accumulator):", PMKWARGS..., enabled = show_progress
     )
-    mapper = ascm.mapper
-    prev_attractors = empty(extract_attractors(mapper))
-    additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
+    bmap = ascm.bmap
+    prev_attractors = empty(extract_attractors(bmap))
+    additional_ics = typeof(current_state(referenced_dynamical_system(bmap)))[]
     attractors_cont = Dict[]
     # difference one: this isn't fractions
     quantifiers_cont = []
     for (i, p) in enumerate(pcurve)
-        set_parameters!(referenced_dynamical_system(mapper), p)
-        reset_mapper!(mapper)
+        set_parameters!(referenced_dynamical_system(bmap), p)
+        reset_mapper!(bmap)
         empty!(additional_ics)
         for att in values(prev_attractors)
             for u0 in ascm.seeding(att)
@@ -33,9 +33,9 @@ function global_continuation(
         end
         # difference two: we don't care about the return of basins_fractions
         # as initial condition mapping is accumulated anyways
-        basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
-        quantifiers = finalize_accumulator(mapper)
-        prev_attractors = deepcopy(extract_attractors(mapper))
+        basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
+        quantifiers = finalize_accumulator(bmap)
+        prev_attractors = deepcopy(extract_attractors(bmap))
         push!(attractors_cont, prev_attractors)
         push!(quantifiers_cont, quantifiers)
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
@@ -43,7 +43,7 @@ function global_continuation(
     end
 
     rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(bmap)
     )
     # and difference four, a bit more involved matching for quantifiers:
     transposed = accumulator_continuation_output(quantifiers_cont, rmaps)
@@ -85,14 +85,14 @@ Perform a global continuation of all stability quantifiers estimated by
 a previous call to [`global_continuation`](@ref) using the `ds`.
 
 This method is special because it always creates an [`BasinMapProximity`](@ref)
-mapper for the attractors at a given point along the global continuation,
+bmap for the attractors at a given point along the global continuation,
 and then estimates the stability quantifiers using [`StabilityQuantifiersAccumulator`](@ref)
-and the proximity mapper.
+and the proximity bmap.
 
 There are two reasons to use this method:
 
 1. You are interested in quantifiers related to the convergence time, which is defined
-   more rirogously and is estimated more accurately for a proximity mapper.
+   more rirogously and is estimated more accurately for a proximity bmap.
 2. You want more control over the values of `ε, finite_time, weighting_distribution`,
    all of which are allowed to be `Vector`s with the same length as `pcurve`.
    (they can always be functions)

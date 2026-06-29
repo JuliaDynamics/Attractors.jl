@@ -29,27 +29,27 @@ function test_basins(
 
     # reusable testing function
     function test_basins_fractions(
-            mapper;
+            bmap;
             err = 1.0e-3, known = false, single_u_mapping = true,
             known_ids = known_ids, expected_fs = expected_fs,
         )
         if single_u_mapping
             for (k, u0) in u0s
-                @test k == mapper(u0)
+                @test k == bmap(u0)
             end
         end
         # Generic test
-        fs = basins_fractions(mapper, sampler; N = 100, show_progress = false)
+        fs = basins_fractions(bmap, sampler; N = 100, show_progress = false)
         for k in keys(fs)
             @test 0 ≤ fs[k] ≤ 1
         end
         @test sum(values(fs)) ≈ 1 atol = 1.0e-14
 
         # Precise test with known initial conditions
-        fs, labels = basins_fractions(mapper, ics; show_progress = false)
-        # @show nameof(typeof(mapper))
+        fs, labels = basins_fractions(bmap, ics; show_progress = false)
+        # @show nameof(typeof(bmap))
         # @show fs
-        approx_atts = extract_attractors(mapper)
+        approx_atts = extract_attractors(bmap)
         found_fs = sort(collect(values(fs)))
         # @show found_fs
         if length(found_fs) > length(expected_fs)
@@ -69,17 +69,17 @@ function test_basins(
     end
 
     @testset "Recurrences" begin
-        mapper = BasinMapRecurrences(ds, grid; kwargs...)
-        test_basins_fractions(mapper; err = rerr)
+        bmap = BasinMapRecurrences(ds, grid; kwargs...)
+        test_basins_fractions(bmap; err = rerr)
     end
 
 
     @testset "Featurizing, clustering" begin
         optimal_radius_method = "silhouettes_optim"
         config = GroupViaClustering(; num_attempts_radius = 20, optimal_radius_method)
-        mapper = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
+        bmap = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
         test_basins_fractions(
-            mapper;
+            bmap;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
         )
     end
@@ -89,9 +89,9 @@ function test_basins(
             threshold = threshold_pairwise,
             metric = Euclidean(), rescale_features = false
         )
-        mapper = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
+        bmap = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
         test_basins_fractions(
-            mapper;
+            bmap;
             err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
         )
     end
@@ -105,9 +105,9 @@ function test_basins(
                 threshold = threshold_pairwise,
                 metric = metric_hausdorff, rescale_features = false
             )
-            mapper = BasinMapFeaturizeGroup(ds, featurizer_matrix, config; Ttr = 500)
+            bmap = BasinMapFeaturizeGroup(ds, featurizer_matrix, config; Ttr = 500)
             test_basins_fractions(
-                mapper;
+                bmap;
                 err = ferr, single_u_mapping = false, known_ids = [-1, 1, 2, 3]
             )
         end
@@ -124,10 +124,10 @@ function test_basins(
         templates = Dict(k => features_from_u(u) for (k, u) in u0s)
 
         config = GroupViaNearestFeature(templates; max_distance)
-        mapper = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
-        # test the functionality mapper(u0) -> label
-        @test isinteger(mapper(current_state(ds))) == true
-        test_basins_fractions(mapper; err = ferr, single_u_mapping = false)
+        bmap = BasinMapFeaturizeGroup(ds, featurizer, config; Ttr = 500)
+        # test the functionality bmap(u0) -> label
+        @test isinteger(bmap(current_state(ds))) == true
+        test_basins_fractions(bmap; err = ferr, single_u_mapping = false)
     end
 
     return if DO_EXTENSIVE_TESTS && proximity_test
@@ -137,8 +137,8 @@ function test_basins(
             known_attractors = Dict(
                 k => trajectory(ds, 1000, v; Δt = 1, Ttr = 100)[1] for (k, v) in u0s if k ≠ -1
             )
-            mapper = BasinMapProximity(ds, known_attractors, ε; Ttr = 100, consecutive_lost_steps = 1000)
-            test_basins_fractions(mapper; known = true, err = aerr)
+            bmap = BasinMapProximity(ds, known_attractors, ε; Ttr = 100, consecutive_lost_steps = 1000)
+            test_basins_fractions(bmap; known = true, err = aerr)
         end
     end
 end
@@ -355,7 +355,7 @@ end
 @testset "Basins of Attraction" begin
     # The reason of this test is to check whether
     # basins_of_attraction does not modify the internal
-    # state of the mapper changing. (regression bug)
+    # state of the bmap changing. (regression bug)
     function map_3_states(z, p, n)
         if z[1] < -1
             return SVector(-2.0, 0.0)
@@ -368,10 +368,10 @@ end
     ds = DiscreteDynamicalSystem(map_3_states, zeros(2))
     xg = yg = range(-3, 3; length = 20)
     grid = (xg, yg)
-    mapper = BasinMapRecurrences(ds, grid; sparse = false)
-    basins, atts = basins_of_attraction(mapper; show_progress = false)
+    bmap = BasinMapRecurrences(ds, grid; sparse = false)
+    basins, atts = basins_of_attraction(bmap; show_progress = false)
     ics = [ [x, 1.0] for x in range(-3, 3, length = 20)]
-    fractions, labels = basins_fractions(mapper, ics; show_progress = false)
+    fractions, labels = basins_fractions(bmap, ics; show_progress = false)
 
     @test 0 ∉ keys(fractions)
 end

@@ -5,20 +5,20 @@ export minimal_critical_shock, MCSBruteForce, MCSBlackBoxOptim
 export excitability_threshold
 
 """
-    minimal_critical_shock(mapper::BasinMap, u0, search_area, algorithm; kw...)
+    minimal_critical_shock(bmap::BasinMap, u0, search_area, algorithm; kw...)
 
 Return the _minimal critical shock_ for the initial point `u0` according to the
-specified `algorithm` given a `mapper` that satisfies the `id = mapper(u0)` interface
+specified `algorithm` given a `bmap` that satisfies the `id = bmap(u0)` interface
 (see [`BasinMap`](@ref) if you are not sure which mappers do that).
 The output `mfs` is a vector like `u0`.
 
-The `mapper` contains a reference to a [`DynamicalSystem`](@ref).
+The `bmap` contains a reference to a [`DynamicalSystem`](@ref).
 The options for `algorithm` are: [`MCSBruteForce`](@ref) or [`MCSBlackBoxOptim`](@ref).
 For high dimensional systems [`MCSBlackBoxOptim`](@ref) is likely more accurate.
 
 The `search_area` dictates the state space range for the search of the `mfs`.
 It can be a 2-tuple of (min, max) values, in which case the same values are used
-for each dimension of the system in `mapper`. Otherwise, it can be a vector of 2-tuples,
+for each dimension of the system in `bmap`. Otherwise, it can be a vector of 2-tuples,
 each for each dimension of the system. The search area is defined w.r.t. to `u0`
 (i.e., it is the search area for perturbations of `u0`).
 
@@ -38,7 +38,7 @@ Other names for the concept are or _stability threshold_ or _minimal fatal shock
 
 The minimal critical shock is defined as the smallest-norm perturbation of the initial
 point `u0` that will lead it a different basin of attraction than the one it was originally in.
-This alternative basin is not returned, do `mapper(u0 .+ mfs)` if you need the ID.
+This alternative basin is not returned, do `bmap(u0 .+ mfs)` if you need the ID.
 
 The minimal critical shock has many names. Many papers computed this quantity without explicitly
 naming it, or naming it something simple like "distance to the threshold".
@@ -59,7 +59,7 @@ perturbation that brings us into specified basin(s). This is enabled via the key
 `target_id`.
 """
 function minimal_critical_shock(
-        mapper::BasinMap, u0, search_area, algorithm;
+        bmap::BasinMap, u0, search_area, algorithm;
         metric = LinearAlgebra.norm, target_id = nothing
     )
     dim = length(u0)
@@ -69,9 +69,9 @@ function minimal_critical_shock(
         error("Input search area does not match the dimension of the system")
     end
     # generate a function that returns `true` for ids that that are in the target basin
-    id_u0 = mapper(u0)
+    id_u0 = bmap(u0)
     idchecker = id_check_function(id_u0, target_id)
-    return _mfs(algorithm, mapper, u0, search_area, idchecker, metric)
+    return _mfs(algorithm, bmap, u0, search_area, idchecker, metric)
 end
 const excitability_threshold = minimal_critical_shock
 
@@ -125,15 +125,15 @@ Base.@kwdef struct MCSBruteForce
     seed::Int = rand(1:10000)
 end
 
-function _mfs(algorithm::MCSBruteForce, mapper, u0, search_area, idchecker, _metric)
+function _mfs(algorithm::MCSBruteForce, bmap, u0, search_area, idchecker, _metric)
     metric = LinearAlgebra.norm
     algorithm.sphere_decrease_factor ≥ 1 && error("Sphere decrease factor cannot be ≥ 1.")
     dim = length(u0)
     best_shock, best_dist = crude_initial_radius(
-        mapper, u0, search_area, idchecker, metric, algorithm.initial_iterations, algorithm.seed
+        bmap, u0, search_area, idchecker, metric, algorithm.initial_iterations, algorithm.seed
     )
     best_shock, best_dist = mfs_brute_force(
-        mapper, u0, best_shock, best_dist, dim, idchecker, metric,
+        bmap, u0, best_shock, best_dist, dim, idchecker, metric,
         algorithm.sphere_iterations, algorithm.sphere_decrease_factor, algorithm.seed
     )
     return best_shock
@@ -148,7 +148,7 @@ of the perturbation and compares it to the best perturbation found so far.
 If the norm is smaller, it updates the best perturbation found so far.
 It repeats this process total_iterations times and returns the best perturbation found.
 """
-function crude_initial_radius(mapper::BasinMap, u0, search_area, idchecker, metric, total_iterations, seed)
+function crude_initial_radius(bmap::BasinMap, u0, search_area, idchecker, metric, total_iterations, seed)
     best_dist = Inf
     region = StateSpaceSets.HRectangle([s[1] for s in search_area], [s[2] for s in search_area])
     generator, _ = statespace_sampler(region, seed)
@@ -158,7 +158,7 @@ function crude_initial_radius(mapper::BasinMap, u0, search_area, idchecker, metr
     for _ in 1:total_iterations
         perturbation = generator()
         @. shock = perturbation + u0
-        new_id = mapper(shock)
+        new_id = bmap(shock)
         if idchecker(new_id)
             dist = metric(perturbation)
             if dist < best_dist
@@ -181,7 +181,7 @@ so far and reduces the radius of the sphere. It repeats this process total_itera
 and returns the best perturbation found.
 """
 function mfs_brute_force(
-        mapper::BasinMap, u0,
+        bmap::BasinMap, u0,
         best_shock, best_dist, dim, idchecker, metric,
         total_iterations, sphere_decrease_factor, seed
     )
@@ -194,7 +194,7 @@ function mfs_brute_force(
     while i < total_iterations
         perturbation = generator()
         @. new_shock = perturbation + u0
-        new_id = mapper(new_shock)
+        new_id = bmap(new_shock)
         # if perturbation leading to another basin:
         if idchecker(new_id)
             # record best
@@ -239,9 +239,9 @@ y function used as a constraint function.
 So, if we hit another basin during the search we encourage the algorithm otherwise we
 punish it with some penalty. The function to minimize is (besides some details):
 ```julia
-function mfs_objective(perturbation, u0, mapper, penalty)
+function mfs_objective(perturbation, u0, bmap, penalty)
     dist = norm(perturbation)
-    if mapper(u0 + perturbation) == mapper(u0)
+    if bmap(u0 + perturbation) == bmap(u0)
         # penalize if we stay in the same basin:
         return dist + penalty
     else
@@ -263,9 +263,9 @@ Base.@kwdef struct MCSBlackBoxOptim{G, RA, BB}
     bbkwargs::BB = NamedTuple()
 end
 
-function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, metric)
+function _mfs(algorithm::MCSBlackBoxOptim, bmap, u0, search_area, idchecker, metric)
     function objective_function(perturbation)
-        return mfs_objective(perturbation, u0, idchecker, metric, mapper, algorithm.penalty)
+        return mfs_objective(perturbation, u0, idchecker, metric, bmap, algorithm.penalty)
     end
     dim = length(u0)
     if algorithm.print_info == true
@@ -284,7 +284,7 @@ function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, m
         if !isnothing(algorithm.guess)
             guess = algorithm.guess
         else
-            guess = minimal_critical_shock(mapper, u0, search_area, algorithm.random_algo)
+            guess = minimal_critical_shock(bmap, u0, search_area, algorithm.random_algo)
         end
         result = bboptimize(
             objective_function, guess;
@@ -298,13 +298,13 @@ function _mfs(algorithm::MCSBlackBoxOptim, mapper, u0, search_area, idchecker, m
     return best_shock
 end
 
-function mfs_objective(perturbation, u0, idchecker, metric, mapper::BasinMap, penalty)
+function mfs_objective(perturbation, u0, idchecker, metric, bmap::BasinMap, penalty)
     dist = metric(perturbation)
     if dist == 0
         return penalty
     end
     new_shock = perturbation + u0
-    new_id = mapper(new_shock)
+    new_id = bmap(new_shock)
     if idchecker(new_id) # valid shock, it brings us to a desired basin
         return dist
     else
