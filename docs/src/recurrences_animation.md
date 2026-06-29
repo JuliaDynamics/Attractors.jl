@@ -38,7 +38,7 @@ xg = range(-0.1, 20; length = density)
 yg = range(-0.001, 0.03; length = density)
 Δt = 0.1
 grid = (xg, yg)
-mapper = BasinMapRecurrences(ds, grid;
+bmap = BasinMapRecurrences(ds, grid;
     Δt, consecutive_attractor_steps = 10, consecutive_basin_steps = 10, sparse = false,
     consecutive_recurrences = 100, attractor_locate_steps = 100,
 )
@@ -46,12 +46,12 @@ mapper = BasinMapRecurrences(ds, grid;
 ##########################################################################
 
 function animate_attractors_via_recurrences(
-        mapper::BasinMapRecurrences, u0s;
+        bmap::BasinMapRecurrences, u0s;
         colors = ["#FFFFFF", "#7143E0","#0A9A84","#AF9327","#791457", "#6C768C", "#4287f5",],
         filename = "recurrence_algorithm.mp4",
     )
 
-    grid_nfo = mapper.bsn_nfo.BoA.grid
+    grid_nfo = bmap.bsn_nfo.BoA.grid
 
     fig = Figure()
     ax = Axis(fig[1,1])
@@ -128,8 +128,8 @@ function animate_attractors_via_recurrences(
     end
 
     # Iteration and labelling
-    ds = mapper.ds
-    bsn_nfo = mapper.bsn_nfo
+    ds = bmap.ds
+    bsn_nfo = bmap.bsn_nfo
     u0 = current_state(ds)
 
     traj = Observable(SVector{2, Float64}[u0])
@@ -145,7 +145,7 @@ function animate_attractors_via_recurrences(
 
     Label(fig[0, 1][1,1], labeltext; justification = :left, halign = :left, tellwidth = false)
     # add text  with options
-    kwargstext = prod("$(p[1])=$(p[2])\n" for p in mapper.kwargs)
+    kwargstext = prod("$(p[1])=$(p[2])\n" for p in bmap.kwargs)
     Label(fig[0, 1][1, 2], kwargstext; justification = :right, halign = :right, tellwidth = false)
 
 
@@ -171,7 +171,7 @@ function animate_attractors_via_recurrences(
 
                 # update FSM
                 n = Attractors.basin_cell_index(u, bsn_nfo.BoA.grid)
-                cell_label = Attractors.finite_state_machine!(bsn_nfo, n, u; mapper.kwargs...)
+                cell_label = Attractors.finite_state_machine!(bsn_nfo, n, u; bmap.kwargs...)
 
                 state = bsn_nfo.state
 
@@ -214,7 +214,7 @@ function animate_attractors_via_recurrences(
     end
 end
 
-animate_attractors_via_recurrences(mapper, u0s)
+animate_attractors_via_recurrences(bmap, u0s)
 ```
 
 ```@raw html

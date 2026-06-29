@@ -26,11 +26,11 @@ end
         grouping_config = GroupViaClustering(); kwargs...
     )
 
-Initialize a `mapper` that maps initial conditions to attractors using a featurizing and
+Initialize a `bmap` that maps initial conditions to attractors using a featurizing and
 grouping approach. This is a supercase of the featurizing and clustering approach that
 is utilized by bSTAB [Stender2021](@cite) and MCBB [Gelbrecht2020](@cite).
-See [`BasinMap`](@ref) for how to use the `mapper`.
-This `mapper` also allows the syntax `mapper(u0)` if the `grouping_config` is
+See [`BasinMap`](@ref) for how to use the `bmap`.
+This `bmap` also allows the syntax `bmap(u0)` if the `grouping_config` is
 is _not_ `GroupViaClustering` or `GroupViaPairwiseComparison`.
 
 `featurizer` is a function `f(A, t)` that takes as an input an integrated trajectory
@@ -69,13 +69,13 @@ to expect in order to pick the right features, and the right way to group them,
 in contrast to [`BasinMapRecurrences`](@ref).
 
 Attractors are stored and can be accessed with [`extract_attractors`](@ref),
-however it should be clear that this mapper never actually finds attractors.
+however it should be clear that this bmap never actually finds attractors.
 They way we store attractors is by picking the first initial condition that belongs
 to the corresponding "attractor group", and then recording its trajectory
 with the same arguments `T, Ttr, Δt`. This is stored as the attractor,
 but of course there is no guarantee that this is actually an attractor.
 
-Note that the convergence time of this mapper is always the constant `T + Ttr`.
+Note that the convergence time of this bmap is always the constant `T + Ttr`.
 """
 function BasinMapFeaturizeGroup(
         ds::DynamicalSystem, featurizer::Function,
@@ -92,32 +92,32 @@ function BasinMapFeaturizeGroup(
 end
 
 # BasinMap API:
-function reset_mapper!(mapper::BasinMapFeaturizeGroup)
-    empty!(mapper.attractors)
+function reset_mapper!(bmap::BasinMapFeaturizeGroup)
+    empty!(bmap.attractors)
     return
 end
-function (mapper::BasinMapFeaturizeGroup)(u0)
-    ds = referenced_dynamical_system(mapper)
-    A, t = trajectory(ds, mapper.total, u0; container = mapper.container, Ttr = mapper.Ttr, Δt = mapper.Δt)
-    f = mapper.featurizer(A, t)
-    id = feature_to_group(f, mapper.group_config)
+function (bmap::BasinMapFeaturizeGroup)(u0)
+    ds = referenced_dynamical_system(bmap)
+    A, t = trajectory(ds, bmap.total, u0; container = bmap.container, Ttr = bmap.Ttr, Δt = bmap.Δt)
+    f = bmap.featurizer(A, t)
+    id = feature_to_group(f, bmap.group_config)
     # store attractor if this is the first id
-    if !haskey(mapper.attractors, id) && id > 0
-        mapper.attractors[id] = A
+    if !haskey(bmap.attractors, id) && id > 0
+        bmap.attractors[id] = A
     end
     return id
 end
-convergence_time(mapper::BasinMapFeaturizeGroup) = mapper.Ttr + mapper.total
+convergence_time(bmap::BasinMapFeaturizeGroup) = bmap.Ttr + bmap.total
 
 DynamicalSystemsBase.rulestring(m::BasinMapFeaturizeGroup) = DynamicalSystemsBase.rulestring(m.ds)
 
-function Base.show(io::IO, mapper::BasinMapFeaturizeGroup)
-    ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" Ttr: ", ps), mapper.Ttr)
-    println(io, rpad(" Δt: ", ps), mapper.Δt)
-    println(io, rpad(" T: ", ps), mapper.total)
-    println(io, rpad(" group via: ", ps), nameof(typeof(mapper.group_config)))
-    println(io, rpad(" featurizer: ", ps), nameof(mapper.featurizer))
+function Base.show(io::IO, bmap::BasinMapFeaturizeGroup)
+    ps = generic_mapper_print(io, bmap)
+    println(io, rpad(" Ttr: ", ps), bmap.Ttr)
+    println(io, rpad(" Δt: ", ps), bmap.Δt)
+    println(io, rpad(" T: ", ps), bmap.total)
+    println(io, rpad(" group via: ", ps), nameof(typeof(bmap.group_config)))
+    println(io, rpad(" featurizer: ", ps), nameof(bmap.featurizer))
     return
 end
 
@@ -125,13 +125,13 @@ end
 #####################################################################################
 # Extension of `BasinMap` API: basins_fractions_grouped
 #####################################################################################
-function basins_fractions_grouped(mapper::BasinMapFeaturizeGroup, ics, progress, labels)
-    features = extract_features(mapper, ics; progress)
-    glabels = group_features(features, mapper.group_config)
+function basins_fractions_grouped(bmap::BasinMapFeaturizeGroup, ics, progress, labels)
+    features = extract_features(bmap, ics; progress)
+    glabels = group_features(features, bmap.group_config)
     if !isempty(labels)
         labels .= @view(glabels[1:length(labels)])
     end
-    extract_attractors!(mapper, glabels, ics)
+    extract_attractors!(bmap, glabels, ics)
     fs = basins_fractions(glabels) # Vanilla fractions method with Array input
     return fs
 end
@@ -142,14 +142,14 @@ end
 import ProgressMeter
 
 """
-    extract_features(mapper::BasinMapFeaturizeGroup, ics; N = 1000, show_progress = true)
+    extract_features(bmap::BasinMapFeaturizeGroup, ics; N = 1000, show_progress = true)
 
 Return a vector of the features of each initial condition in `ics` (as in
-[`basins_fractions`](@ref)), using the configuration of `mapper`.
+[`basins_fractions`](@ref)), using the configuration of `bmap`.
 Keyword `N` is ignored if `ics isa StateSpaceSet`.
 """
 function extract_features(
-        mapper::BasinMapFeaturizeGroup, ics;
+        bmap::BasinMapFeaturizeGroup, ics;
         show_progress = true, progress = nothing, N = 1000
     )
     if isnothing(progress)
@@ -158,61 +158,61 @@ function extract_features(
             desc = "Integrating trajectories:", enabled = show_progress
         )
     end
-    return if !(mapper.threaded)
-        extract_features_single(mapper, ics; N, progress)
+    return if !(bmap.threaded)
+        extract_features_single(bmap, ics; N, progress)
     else
-        extract_features_threaded(mapper, ics; N, progress)
+        extract_features_threaded(bmap, ics; N, progress)
     end
 end
 
-function extract_features_single(mapper, ics; progress, N)
+function extract_features_single(bmap, ics; progress, N)
     N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
-    ds = referenced_dynamical_system(mapper)
-    first_feature = extract_feature(ds, _get_ic(ics, 1), mapper)
+    ds = referenced_dynamical_system(bmap)
+    first_feature = extract_feature(ds, _get_ic(ics, 1), bmap)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
     feature_vector[1] = first_feature
     for i in 2:N
         ic = _get_ic(ics, i)
-        feature_vector[i] = extract_feature(ds, ic, mapper)
+        feature_vector[i] = extract_feature(ds, ic, bmap)
         ProgressMeter.next!(progress)
     end
     return feature_vector
 end
 
 using OhMyThreads: @tasks, @local
-function extract_features_threaded(mapper, ics; progress, N)
+function extract_features_threaded(bmap, ics; progress, N)
     N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
-    # systems = [deepcopy(mapper.ds) for _ in 1:(Threads.nthreads() - 1)]
-    # pushfirst!(systems, mapper.ds)
-    first_feature = extract_feature(mapper.ds, _get_ic(ics, 1), mapper)
+    # systems = [deepcopy(bmap.ds) for _ in 1:(Threads.nthreads() - 1)]
+    # pushfirst!(systems, bmap.ds)
+    first_feature = extract_feature(bmap.ds, _get_ic(ics, 1), bmap)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
     feature_vector[1] = first_feature
     @tasks for i in 2:N
-        @local ds = deepcopy(referenced_dynamical_system(mapper))
+        @local ds = deepcopy(referenced_dynamical_system(bmap))
         ic = _get_ic(ics, i)
-        feature_vector[i] = extract_feature(ds, ic, mapper)
+        feature_vector[i] = extract_feature(ds, ic, bmap)
         ProgressMeter.next!(progress)
     end
     return feature_vector
 end
 
-function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, mapper)
-    A, t = trajectory(ds, mapper.total, u0;
-        container = mapper.container, Ttr = mapper.Ttr, Δt = mapper.Δt
+function extract_feature(ds::DynamicalSystem, u0::AbstractVector{<:Real}, bmap)
+    A, t = trajectory(ds, bmap.total, u0;
+        container = bmap.container, Ttr = bmap.Ttr, Δt = bmap.Δt
     )
-    return mapper.featurizer(A, t)
+    return bmap.featurizer(A, t)
 end
 
-function extract_attractors!(mapper::BasinMapFeaturizeGroup, labels, ics)
+function extract_attractors!(bmap::BasinMapFeaturizeGroup, labels, ics)
     uidxs = unique(i -> labels[i], eachindex(labels))
     attractors = Dict(
         labels[i] => trajectory(
-                mapper.ds, mapper.total, ics[i];
-                Ttr = mapper.Ttr, Δt = mapper.Δt
+                bmap.ds, bmap.total, ics[i];
+                Ttr = bmap.Ttr, Δt = bmap.Δt
             )[1] for i in uidxs if i > 0
     )
-    overwrite_dict!(mapper.attractors, attractors)
+    overwrite_dict!(bmap.attractors, attractors)
     return
 end
 
-_extract_attractors(mapper::BasinMapFeaturizeGroup) = mapper.attractors
+_extract_attractors(bmap::BasinMapFeaturizeGroup) = bmap.attractors

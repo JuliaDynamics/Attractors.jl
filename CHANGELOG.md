@@ -2,7 +2,18 @@
 
 This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
 
-## Renaming into Basin Maps
+## Prior deprecations removed
+
+- **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
+
+## Renaming of stability measures
+
+- The concept of "stability measures" has been renamed into "stability quantifiers" throughout the docs
+- The following renames of API are deprecated:
+  - `stability_measures_along_continuation` -> `stability_quantifiers_along_continuation`
+  - `StabilityMeasuresAccumulator` -> `StabilityQuantifiersAccumulator`
+
+## Renaming of attractor mappers
 
 The `AttractorMapper` constructions have been fully renamed. All following renames are deprecated:
 
@@ -12,6 +23,7 @@ The `AttractorMapper` constructions have been fully renamed. All following renam
 - `AttractorsViaProximity` -> `BasinMapProximity`
 
 This better represents what these constructs are about, which is also reflected in the updated docstring of `BasinMap`.
+Throughout the docs, `mapper` variable has been renamed to `bmap` as well.
 
 ## Aggregation reworked
 

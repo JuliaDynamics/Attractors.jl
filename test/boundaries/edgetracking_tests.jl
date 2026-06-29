@@ -44,10 +44,10 @@ end
     # Find attractors on a 3D grid
     xg = yg = yz = range(-6.0, 6.0; length = 101)
     grid = (xg, yg, yz)
-    mapper = BasinMapRecurrences(ds, grid; consecutive_recurrences = 1000)
+    bmap = BasinMapRecurrences(ds, grid; consecutive_recurrences = 1000)
     sampler, = statespace_sampler(grid)
-    basins_fractions(mapper, sampler; show_progress = false)
-    attractors = extract_attractors(mapper)
+    basins_fractions(bmap, sampler; show_progress = false)
+    attractors = extract_attractors(bmap)
 
     # Run edgetracking between pairs of points lying on different attractors
     n_sample = 5

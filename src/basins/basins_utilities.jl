@@ -2,9 +2,9 @@ using Neighborhood
 export ics_from_grid, map_to_basin
 
 """
-    basins_of_attraction(mapper::BasinMap, grid::Tuple) → boa
+    basins_of_attraction(bmap::BasinMap, grid::Tuple) → boa
 
-Compute the full basins of attraction as identified by the given `mapper`,
+Compute the full basins of attraction as identified by the given `bmap`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
 along with (perhaps approximated) found attractors contained within the
 [`ArrayBasinsOfAttraction`](@ref) structure.
@@ -13,7 +13,7 @@ along with (perhaps approximated) found attractors contained within the
 the state space into boxes with size the step size of each range.
 For example, `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`.
 The grid has to be the same dimensionality as the state space expected by the
-integrator/system used in `mapper`. E.g., a [`ProjectedDynamicalSystem`](@ref)
+integrator/system used in `bmap`. E.g., a [`ProjectedDynamicalSystem`](@ref)
 could be used for lower dimensional projections, etc. A special case here is
 a [`PoincareMap`](@ref) with `plane` being `Tuple{Int, <: Real}`. In this special
 scenario the grid can be one dimension smaller than the state space, in which case
@@ -28,19 +28,19 @@ Note that, to ensure backwards compatibility the return type can be decomposed s
 
 See also [`convergence_and_basins_of_attraction`](@ref).
 """
-function basins_of_attraction(mapper::BasinMap, grid::Tuple; kwargs...)
+function basins_of_attraction(bmap::BasinMap, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     A = ics_from_grid(grid)
-    fs, labels = basins_fractions(mapper, A; kwargs...)
-    attractors = extract_attractors(mapper)
+    fs, labels = basins_fractions(bmap, A; kwargs...)
+    attractors = extract_attractors(bmap)
     vec(basins) .= vec(labels)
     return ArrayBasinsOfAttraction(basins, attractors, grid)
 end
 
 """
-    basins_of_attraction(mapper::BasinMap, ics; kwargs...) → boa
+    basins_of_attraction(bmap::BasinMap, ics; kwargs...) → boa
 
-Compute the full basins of attraction as identified by the given `mapper`,
+Compute the full basins of attraction as identified by the given `bmap`,
 which includes a reference to a [`DynamicalSystem`](@ref) and return them
 along with (perhaps approximated) found attractors contained within a
 [`SampledBasinsOfAttraction`](@ref) object.
@@ -54,11 +54,11 @@ Note that, as with the other `basins_of_attraction` function, the return can be 
 `basins, attractors = boa`.
 
 """
-function basins_of_attraction(mapper::BasinMap, ics::ValidICS; show_progress = true, N = 1000)
+function basins_of_attraction(bmap::BasinMap, ics::ValidICS; show_progress = true, N = 1000)
     used_container = ics isa AbstractVector
     ics_vec = used_container ? ics : [ics() for _ in 1:N]
-    _, labels = basins_fractions(mapper, ics_vec, show_progress = show_progress)
-    attractors = extract_attractors(mapper)
+    _, labels = basins_fractions(bmap, ics_vec, show_progress = show_progress)
+    attractors = extract_attractors(bmap)
     return SampledBasinsOfAttraction(labels, attractors, ics_vec)
 end
 
@@ -114,7 +114,7 @@ end
 basins_fractions(BoA::BasinsOfAttraction, ids = unique(extract_basins(BoA))) = basins_fractions(extract_basins(BoA), ids)
 
 """
-    convergence_and_basins_of_attraction(mapper::BasinMap, grid)
+    convergence_and_basins_of_attraction(bmap::BasinMap, grid)
 
 An extension of [`basins_of_attraction`](@ref).
 Return `basins, attractors, convergence`, with `basins, attractors` as in
@@ -132,12 +132,12 @@ backwards compatibility.
 
 - `show_progress = true`: show progress bar.
 """
-function convergence_and_basins_of_attraction(mapper::BasinMap, grid; show_progress = true)
-    if length(grid) != dimension(referenced_dynamical_system(mapper))
-        @error "The mapper and the grid must have the same dimension"
+function convergence_and_basins_of_attraction(bmap::BasinMap, grid; show_progress = true)
+    if length(grid) != dimension(referenced_dynamical_system(bmap))
+        @error "The bmap and the grid must have the same dimension"
     end
     basins = zeros(length.(grid))
-    ds = referenced_dynamical_system(mapper)
+    ds = referenced_dynamical_system(bmap)
     iterations = zeros(typeof(current_time(ds)), length.(grid))
     I = CartesianIndices(basins)
     progress = ProgressMeter.Progress(
@@ -147,21 +147,21 @@ function convergence_and_basins_of_attraction(mapper::BasinMap, grid; show_progr
     for (k, ind) in enumerate(I)
         show_progress && ProgressMeter.update!(progress, k)
         u0 = Attractors.generate_ic_on_grid(grid, ind)
-        basins[ind] = mapper(u0)
-        iterations[ind] = convergence_time(mapper)
+        basins[ind] = bmap(u0)
+        iterations[ind] = convergence_time(bmap)
     end
-    attractors = extract_attractors(mapper)
+    attractors = extract_attractors(bmap)
     return basins, attractors, iterations
 end
 
 """
-    convergence_and_basins_fractions(mapper::BasinMap, ics)
+    convergence_and_basins_fractions(bmap::BasinMap, ics)
 
 An extension of [`basins_fractions`](@ref).
 Return `fs, labels, convergence`. The first two are as in `basins_fractions`,
 and `convergence` is a vector containing the time each initial condition took
 to converge to its attractor.
-Only usable with mappers that support `id = mapper(u0)`.
+Only usable with mappers that support `id = bmap(u0)`.
 
 See also [`convergence_time`](@ref).
 
@@ -170,7 +170,7 @@ See also [`convergence_time`](@ref).
 - `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_fractions(
-        mapper::BasinMap, ics::ValidICS;
+        bmap::BasinMap, ics::ValidICS;
         show_progress = true, N = 1000,
     )
     N = ics isa Function ? N : length(ics)
@@ -180,14 +180,14 @@ function convergence_and_basins_fractions(
     )
     fs = Dict{Int, Int}()
     labels = Vector{Int}(undef, N)
-    iterations = Vector{typeof(current_time(mapper.ds))}(undef, N)
+    iterations = Vector{typeof(current_time(bmap.ds))}(undef, N)
 
     for i in 1:N
         ic = _get_ic(ics, i)
-        label = mapper(ic)
+        label = bmap(ic)
         fs[label] = get(fs, label, 0) + 1
         labels[i] = label
-        iterations[i] = convergence_time(mapper)
+        iterations[i] = convergence_time(bmap)
         show_progress && ProgressMeter.next!(progress)
     end
     # Transform count into fraction

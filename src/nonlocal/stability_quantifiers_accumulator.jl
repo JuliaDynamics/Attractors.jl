@@ -8,53 +8,53 @@ struct EverywhereUniform end
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
-    StabilityMeasuresAccumulator(mapper::BasinMap [, extras]; kwargs...)
+    StabilityQuantifiersAccumulator(bmap::BasinMap [, extras]; kwargs...)
 
 A special data structure that allows mapping initial conditions to attractors
-while _at the same time_ calculating many stability measures in the most efficient
-way possible. `mapper` is any instance of an [`BasinMap`](@ref),
+while _at the same time_ calculating many stability quantifiers in the most efficient
+way possible. `bmap` is any instance of an [`BasinMap`](@ref),
 although for [`BasinMapFeaturizeGroup`](@ref) the convergence times won't make sense.
 
-The accummulator records several measures of stability (or resilience) defined
+The accummulator records several quantifiers of stability (or resilience) defined
 in [Morr2026](@cite), and a few more related and derived shortly after,
 including the intermingledness of basins of attraction [Datseris2026Intermingled](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
 
-`StabilityMeasuresAccumulator` can be used as any `BasinMap` with library functions
+`StabilityQuantifiersAccumulator` can be used as any `BasinMap` with library functions
 such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
 the [`finalize_accumulator`](@ref) function should be called which will return a
-dictionary of all stability measures estimated by the accumulator,
-where each entry maps the stability measure description (`String`) to a dictionary
-mapping attractor IDs to the stability measure value.
-Calling `reset_mapper!(accumulator)` cleans up all accumulated measures.
+dictionary of all stability quantifiers estimated by the accumulator,
+where each entry maps the stability quantifier description (`String`) to a dictionary
+mapping attractor IDs to the stability quantifier value.
+Calling `reset_mapper!(accumulator)` cleans up all accumulated quantifiers.
 This functionality was developed as part of [Morr2026](@cite) and has now been extended
 to work for any `BasinMap`, current or future.
 
 **Using with [`global_continuation`](@ref)**:
-Since `StabilityMeasuresAccumulator` is formally an `BasinMap`, it can be
-used with [`global_continuation`](@ref). Simply give it as a `mapper` input
+Since `StabilityQuantifiersAccumulator` is formally an `BasinMap`, it can be
+used with [`global_continuation`](@ref). Simply give it as a `bmap` input
 to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
 The only difference now is that `global_continuation` will not return just one
-measure of stability (the basin fraction). Rather,
+quantifier of stability (the basin fraction). Rather,
 now the first return argument of `global_continuation` will be a
-`measures_cont`, a dictionary mapping stability measures (strings)
+`quantifiers_cont`, a dictionary mapping stability quantifiers (strings)
 to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
 of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
-to the corresponding nonlocal stability measures.
+to the corresponding nonlocal stability quantifiers.
 
-Use [`stability_measures_along_continuation`](@ref) for continuation of stability  measures computed
-on the basis of an `BasinMapProximity` mapper from already found attractors.
-This is useful to do for measures related to the convergence time, which is defined
-more rirogously and is estimated more accurately for a proximity mapper.
+Use [`stability_quantifiers_along_continuation`](@ref) for continuation of stability  quantifiers computed
+on the basis of an `BasinMapProximity` bmap from already found attractors.
+This is useful to do for quantifiers related to the convergence time, which is defined
+more rirogously and is estimated more accurately for a proximity bmap.
 
 ## Keyword arguments
 
 * `finite_time = 1.0`: Finite time horizon considered for the computation of the
   `finite_time_basin_stability`. Initial coditions with a convergence time
   larger than `finite_time` are not considered to be in the respective finite time basin.
-  Convergence time is determined by the `mapper`.
+  Convergence time is determined by the `bmap`.
 * `weighting_distribution::Distribution`: Distribution of uncertain initial conditions
   used for example in the computation of `basin_stability`. By default it is a uniform
   distribution everywhere in the state space.\
@@ -65,29 +65,29 @@ more rirogously and is estimated more accurately for a proximity mapper.
 
 ## Description
 
-`StabilityMeasuresAccumulator` efficiently uses a single `id = mapper(u0)` call
-to accumulate information for many different stability measures corresponding
+`StabilityQuantifiersAccumulator` efficiently uses a single `id = bmap(u0)` call
+to accumulate information for many different stability quantifiers corresponding
 to each attractor of the dynamical system.
-It accumulates all these different measures when different initial conditions
+It accumulates all these different quantifiers when different initial conditions
 are mapped through it. After enough `u0`s have been given to the accumulator, they
 can be finalized (comput maxima or averages) using `finalize!(accumulator)`.
 
-You can extent this functionality by adding new stability measures as long as their
+You can extent this functionality by adding new stability quantifiers as long as their
 estimation can be done on the basis of the three quantities accumulated:
 the basin dictionary mapping initial conditions to attractors,
 the distance of each initial condition to each attractor,
 and the convergence time of each initial condition.
 
-The following stability measures are estimated for each attractor
-(and the returned dictionary maps strings with the names of the measures
-to the dictionaries containing the measure values for each attractor):
+The following stability quantifiers are estimated for each attractor
+(and the returned dictionary maps strings with the names of the quantifiers
+to the dictionaries containing the quantifier values for each attractor):
 
-### Local (fixed point) stability measures
+### Local (fixed point) stability quantifiers
 
-These measures apply only to fixed point attractors.
+These quantifiers apply only to fixed point attractors.
 Their value is `NaN` if an attractor is not a fixed point (`length(A) > 1`).
 If an unstable fixed point attractor is recorded (due to an initial condition starting
-there for example), a value `Inf` is assigned to all measures.
+there for example), a value `Inf` is assigned to all quantifiers.
 
 
 * `characteristic_return_time`: The reciprocal of the largest real part of the
@@ -103,16 +103,16 @@ there for example), a value `Inf` is assigned to all measures.
 * `maximal_amplification_time`: The time at which the maximal amplification
   occurs (continuous time). Always 0 for discrete time systems.
 
-### Nonlocal stability measures
+### Nonlocal stability quantifiers
 
-The information for these nonlocal stability measures is accumulated while initial
+The information for these nonlocal stability quantifiers is accumulated while initial
 conditions are mapped to attractors. Afterwards it is aggregated according to the
 probability density `weighting_distribution` when calling `finalize_accumulator!`.
 
 The word "distance" here refers to the distance established by the `distance` keyword.
 
 * `mean_convergence_time`: The convergence time is determined by the
-  `mapper` using [`convergence_time`](@ref). The mean is computed with respect
+  `bmap` using [`convergence_time`](@ref). The mean is computed with respect
   to the `weighting_distribution`.
 * `maximal_convergence_time`: The maximal convergence time of initial conditions
   to the attractor. Only initial conditions with non-zero probability under
@@ -187,8 +187,8 @@ end
 extras = Dict("maxv" => extra_function)
 ```
 """
-struct StabilityMeasuresAccumulator{AM <: BasinMap, V <: AbstractVector, F, M, W, E <: Dict, X} <: BasinMap
-    mapper::AM
+struct StabilityQuantifiersAccumulator{AM <: BasinMap, V <: AbstractVector, F, M, W, E <: Dict, X} <: BasinMap
+    bmap::AM
     u0s::Vector{V}
     bs::Vector{Int} # basins vector
     cts::Vector{Float64} # convergence times
@@ -199,20 +199,20 @@ struct StabilityMeasuresAccumulator{AM <: BasinMap, V <: AbstractVector, F, M, W
     idistances::X
 end
 
-function StabilityMeasuresAccumulator(
-        mapper::BasinMap, extras = Dict();
+function StabilityQuantifiersAccumulator(
+        bmap::BasinMap, extras = Dict();
         finite_time = 1.0, weighting_distribution = EverywhereUniform(),
         distance = Centroid(), idistances = [Euclidean()],
     )
-    reset_mapper!(mapper)
-    ds = referenced_dynamical_system(mapper)
-    AM = typeof(mapper)
+    reset_mapper!(bmap)
+    ds = referenced_dynamical_system(bmap)
+    AM = typeof(bmap)
     V = typeof(current_state(ds))
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
-    return StabilityMeasuresAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
-        mapper,
+    return StabilityQuantifiersAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
+        bmap,
         Vector{V}(),
         Vector{Int}(),
         Vector{Float64}(),
@@ -225,52 +225,52 @@ function StabilityMeasuresAccumulator(
 end
 
 # Extend `BasinMap` API:
-function reset_mapper!(a::StabilityMeasuresAccumulator)
-    reset_mapper!(a.mapper)
+function reset_mapper!(a::StabilityQuantifiersAccumulator)
+    reset_mapper!(a.bmap)
     empty!(a.u0s)
     empty!(a.bs)
     empty!(a.cts)
     return
 end
 
-function extract_attractors(accumulator::StabilityMeasuresAccumulator)
-    return extract_attractors(accumulator.mapper)
+function extract_attractors(accumulator::StabilityQuantifiersAccumulator)
+    return extract_attractors(accumulator.bmap)
 end
-function referenced_dynamical_system(accumulator::StabilityMeasuresAccumulator)
-    return referenced_dynamical_system(accumulator.mapper)
+function referenced_dynamical_system(accumulator::StabilityQuantifiersAccumulator)
+    return referenced_dynamical_system(accumulator.bmap)
 end
-function convergence_time(accumulator::StabilityMeasuresAccumulator)
-    return convergence_time(accumulator.mapper)
+function convergence_time(accumulator::StabilityQuantifiersAccumulator)
+    return convergence_time(accumulator.bmap)
 end
 
-allows_mapper_u0(a::StabilityMeasuresAccumulator) = allows_mapper_u0(a.mapper)
+allows_mapper_u0(a::StabilityQuantifiersAccumulator) = allows_mapper_u0(a.bmap)
 
-function (accumulator::StabilityMeasuresAccumulator)(u0)
-    id = accumulator.mapper(u0)
+function (accumulator::StabilityQuantifiersAccumulator)(u0)
+    id = accumulator.bmap(u0)
     push!(accumulator.u0s, u0)
     push!(accumulator.bs, id)
-    push!(accumulator.cts, convergence_time(accumulator.mapper))
+    push!(accumulator.cts, convergence_time(accumulator.bmap))
     return id
 end
 
 """
-    finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+    finalize_accumulator(accumulator::StabilityQuantifiersAccumulator)
 
-Return a dictionary mapping stability measures (strings) to dictionaries
-mapping attractor IDs to corresponding measure values.
+Return a dictionary mapping stability quantifiers (strings) to dictionaries
+mapping attractor IDs to corresponding quantifier values.
 
-The attractors themselves are those of the `accumulator`'s mapper and can be
+The attractors themselves are those of the `accumulator`'s bmap and can be
 obtained with `extract_attractors(accumulator)`.
 
-See [`StabilityMeasuresAccumulator`](@ref) for more.
+See [`StabilityQuantifiersAccumulator`](@ref) for more.
 
-To compute stability measures for *aggregated* groups of attractors, merge them first with
+To compute stability quantifiers for *aggregated* groups of attractors, merge them first with
 [`aggregate_continuation`](@ref) and pass the merged attractors to
-[`stability_measures_along_continuation`](@ref).
+[`stability_quantifiers_along_continuation`](@ref).
 """
-function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
+function finalize_accumulator(accumulator::StabilityQuantifiersAccumulator)
     ds = referenced_dynamical_system(accumulator)
-    attractors = extract_attractors(accumulator.mapper)
+    attractors = extract_attractors(accumulator.bmap)
     bs = accumulator.bs
     u0s = accumulator.u0s
     cts = accumulator.cts
@@ -293,8 +293,8 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
     end
 
     # convergence paces
-    if (isa(accumulator.mapper, BasinMapProximity) && !isnothing(accumulator.mapper.ε))
-        ε = accumulator.mapper.ε
+    if (isa(accumulator.bmap, BasinMapProximity) && !isnothing(accumulator.bmap.ε))
+        ε = accumulator.bmap.ε
     else
         ε = 0.0
     end
@@ -388,7 +388,7 @@ function finalize_accumulator(accumulator::StabilityMeasuresAccumulator)
         minimal_critical_shock_magnitude[-1] = NaN # no critical shock for -1 attractor
     end
 
-    # linear measures
+    # linear quantifiers
     characteristic_return_time = Dict(id => NaN for id in ids)
     reactivity = Dict(id => NaN for id in ids)
     maximal_amplification = Dict(id => NaN for id in ids)
@@ -508,10 +508,10 @@ function weighted_median(
 end
 
 # Extension function to allow accumulator to work also with non-single-u0 mappers
-function basins_fractions_grouped(accumulator::StabilityMeasuresAccumulator, ics, progress::Progress, labels)
+function basins_fractions_grouped(accumulator::StabilityQuantifiersAccumulator, ics, progress::Progress, labels)
     # note that ics is always collected into vector, cascaded by `basins_fraction`.
-    # Here we'll call the same function with the stored mapper, cheating the system
-    fs, _labels = basins_fractions(accumulator.mapper, ics; show_progress = progress.core.enabled)
+    # Here we'll call the same function with the stored bmap, cheating the system
+    fs, _labels = basins_fractions(accumulator.bmap, ics; show_progress = progress.core.enabled)
     if !isempty(labels)
         labels .= @view(_labels[1:length(labels)])
     end

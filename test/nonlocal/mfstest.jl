@@ -67,16 +67,16 @@ using LinearAlgebra
 
     @testset "target id" begin
         atrdict = Dict(i => StateSpaceSet([a]) for (i, a) in enumerate(attractors))
-        mapper = BasinMapProximity(ds, atrdict, 0.01)
+        bmap = BasinMapProximity(ds, atrdict, 0.01)
         algo_bb = Attractors.MCSBlackBoxOptim()
         # multiple target attractors
         mfs_1 = [
-            i => minimal_critical_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i]))
+            i => minimal_critical_shock(bmap, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i]))
                 for (i, a) in enumerate(attractors)
         ]
         # specific target attractors
         mfs_2 = [
-            i => minimal_critical_shock(mapper, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i])[1])
+            i => minimal_critical_shock(bmap, a, (-1.5, 1.5), algo_bb; target_id = setdiff(1:3, [i])[1])
                 for (i, a) in enumerate(attractors)
         ]
         # due to the symmetries of the system all mfs should be identical in magnitude

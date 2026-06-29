@@ -3,10 +3,10 @@ import ProgressMeter
 using Random: MersenneTwister
 
 """
-    AttractorSeedContinueMatch(mapper, matcher = MatchBySSSetDistance(); seeding)
+    AttractorSeedContinueMatch(bmap, matcher = MatchBySSSetDistance(); seeding)
 
 A global continuation method for [`global_continuation`](@ref).
-`mapper` is any subtype of [`BasinMap`](@ref) which implements
+`bmap` is any subtype of [`BasinMap`](@ref) which implements
 [`extract_attractors`](@ref), i.e., it finds the actual attractors.
 `matcher` is a configuration of how to match attractor IDs, see [`IDMatcher`](@ref)
 for more options.
@@ -23,8 +23,8 @@ This is a general/composable global continuation method based on a 4-step proces
 ### Step 0 - Finding initial attractors
 
 At the first parameter slice of the global continuation process, attractors and their fractions
-are found using the given `mapper` and [`basins_fractions`](@ref).
-See the `mapper` documentation and [`BasinMap`](@ref)
+are found using the given `bmap` and [`basins_fractions`](@ref).
+See the `bmap` documentation and [`BasinMap`](@ref)
 for details on how this works. Then, from the second parameter onwards the continuation occurs.
 
 ### Step 1 - Seeding initial conditions
@@ -39,15 +39,15 @@ i.e., it always returns an empty iterator and hence no seeds and we skip to step
 
 ### Step 2 - Continuing the seeds
 
-The dynamical system referenced by the `mapper` is now set to the new parameter value.
-The seeds are run through the `mapper` to converge to attractors at the new parameter value.
+The dynamical system referenced by the `bmap` is now set to the new parameter value.
+The seeds are run through the `bmap` to converge to attractors at the new parameter value.
 Seeding initial conditions close to previous attractors increases the probability
 that if an attractor continues to exist in the new parameter, it is found.
 Additionally, for some `mappers` this seeding process improves the accuracy as well as
 performance of finding attractors, see e.g. discussion in [Datseris2023](@cite).
 
-This seeding works for any `mapper`, regardless of if they can map individual initial conditions
-with the `mapper(u0)` syntax! If this syntax isn't supported, steps 2 and 3 are done together.
+This seeding works for any `bmap`, regardless of if they can map individual initial conditions
+with the `bmap(u0)` syntax! If this syntax isn't supported, steps 2 and 3 are done together.
 
 ### Step 3 - Estimate basins fractions
 
@@ -93,15 +93,15 @@ described in [Datseris2023](@cite). This continuation method is still exported
 as [`RecurrencesFindAndMatch`](@ref).
 """
 struct AttractorSeedContinueMatch{A, M, S} <: GlobalContinuationAlgorithm
-    mapper::A
+    bmap::A
     matcher::M
     seeding::S
 end
 
 const ASCM = AttractorSeedContinueMatch
 
-ASCM(mapper, matcher = MatchBySSSetDistance(); seeding = _default_seeding) =
-    ASCM(mapper, matcher, seeding)
+ASCM(bmap, matcher = MatchBySSSetDistance(); seeding = _default_seeding) =
+    ASCM(bmap, matcher, seeding)
 
 # TODO: This is currently not used, and not sure if it has to be.
 function _scaled_seeding(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
@@ -125,16 +125,16 @@ function global_continuation(
         length(pcurve);
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
     )
-    mapper = ascm.mapper
-    prev_attractors = empty(extract_attractors(mapper))
-    additional_ics = typeof(current_state(referenced_dynamical_system(mapper)))[]
+    bmap = ascm.bmap
+    prev_attractors = empty(extract_attractors(bmap))
+    additional_ics = typeof(current_state(referenced_dynamical_system(bmap)))[]
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict[]
     # Continue loop over all remaining parameters
     for (i, p) in enumerate(pcurve)
-        set_parameters!(referenced_dynamical_system(mapper), p)
-        reset_mapper!(mapper)
+        set_parameters!(referenced_dynamical_system(bmap), p)
+        reset_mapper!(bmap)
         # Seed initial conditions from previous attractors.
         # Here we utilize the interal keyword `additional_ics` of `basins_fractions`.
         # The seeding process finds attractors with really small basins, and we need
@@ -154,11 +154,11 @@ function global_continuation(
         else
             pics = ics
         end
-        # and finally call basin fractions; it knows how to do all calculations given the mapper
-        ret = basins_fractions(mapper, pics; N, additional_ics, show_progress, offset = 2)
+        # and finally call basin fractions; it knows how to do all calculations given the bmap
+        ret = basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
         fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
         # deepcopy is important here as attractor container always referrenced
-        prev_attractors = deepcopy(extract_attractors(mapper))
+        prev_attractors = deepcopy(extract_attractors(bmap))
         # we don't match attractors here, this happens directly at the end.
         # here we just store the result
         push!(fractions_cont, fs)
@@ -167,7 +167,7 @@ function global_continuation(
         ProgressMeter.next!(progress; showvalues)
     end
     rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(mapper)
+        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(bmap)
     )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont

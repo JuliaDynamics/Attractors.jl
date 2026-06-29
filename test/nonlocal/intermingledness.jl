@@ -59,16 +59,16 @@ end
     end
     dynamics = DiscreteDynamicalSystem(dumb_map, [0.0, 1.0], [0.9])
     grid = (-1:0.1:1, -1:0.1:1)
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false, Ttr = 2)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false, Ttr = 2)
     distances = [
         Euclidean(),
         WeightedEuclidean([0, 1]), # distance of x dimension only
     ]
-    accumulator = StabilityMeasuresAccumulator(mapper; idistances = distances)
+    accumulator = StabilityQuantifiersAccumulator(bmap; idistances = distances)
 
     A = ics_from_grid(grid)
     for u0 in A
-        id = accumulator(u0) # run this to accumulate measures
+        id = accumulator(u0) # run this to accumulate quantifiers
     end
     results = finalize_accumulator(accumulator)
 

@@ -23,7 +23,7 @@ end
 binning = FixedRectangularBinning(range(-10, 240; step = 50), 2)
 gconfig = GroupViaHistogram(binning)
 
-mapper = BasinMapFeaturizeGroup(ds, featurizer, gconfig)
+bmap = BasinMapFeaturizeGroup(ds, featurizer, gconfig)
 
 xg = yg = range(-2.0, 2.0; length = 100)
 grid = (xg, yg)
@@ -32,7 +32,7 @@ expected_fs_raw = Dict(1 => 0.451, -1 => 0.549)
 sampler, _ = statespace_sampler(grid, 12444)
 
 ics = StateSpaceSet([copy(sampler()) for _ in 1:1000])
-fs, = basins_fractions(mapper, ics; show_progress = false)
+fs, = basins_fractions(bmap, ics; show_progress = false)
 @test length(keys(fs)) == 2
 @test fs[1] ≈ 0.45 rtol = 1.0e-1
 # the divergent points go to last bin, which is 25 = 5x5
@@ -40,5 +40,5 @@ fs, = basins_fractions(mapper, ics; show_progress = false)
 
 # Test that attractors have been stored.
 # the second "attractor" is infinity
-atts = extract_attractors(mapper)
+atts = extract_attractors(bmap)
 @test atts[25][end] == [-Inf, -Inf]

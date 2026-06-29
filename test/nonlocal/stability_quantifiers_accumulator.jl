@@ -17,24 +17,24 @@ using Random
             end
         end
     end
-    # Test the computation of nonlocal stability measures using the
-    # `StabilityMeasuresAccumulator` for a dumb map.
+    # Test the computation of nonlocal stability quantifiers using the
+    # `StabilityQuantifiersAccumulator` for a dumb map.
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1.0], [-1, 0, 1.0])
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     @testset "mapping" begin
 
         for u0 in A
-            id = mapper(u0) # run this to find all attractors
+            id = bmap(u0) # run this to find all attractors
         end
-        attractors = extract_attractors(mapper)
-        mapper = BasinMapProximity(dynamics, attractors, 0.01, Ttr = 0)
-        accumulator = StabilityMeasuresAccumulator(mapper, finite_time = 0.5)
+        attractors = extract_attractors(bmap)
+        bmap = BasinMapProximity(dynamics, attractors, 0.01, Ttr = 0)
+        accumulator = StabilityQuantifiersAccumulator(bmap, finite_time = 0.5)
 
         for u0 in A
-            id = accumulator(u0) # run this to accumulate measures
+            id = accumulator(u0) # run this to accumulate quantifiers
         end
 
         results = finalize_accumulator(accumulator)
@@ -76,7 +76,7 @@ using Random
     end
 
     @testset "continuation" begin
-        # Now we test the continuation of nonlocal stability measures.
+        # Now we test the continuation of nonlocal stability quantifiers.
         pcurve = [[1 => p] for p in [-1.0, 1.0]]
         attractors_cont = [
             Dict(1 => StateSpaceSet([SVector(0.0, 0.0)])),
@@ -86,12 +86,12 @@ using Random
         proximity_mapper_options = (
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
-        measures_cont = stability_measures_along_continuation(
+        quantifiers_cont = stability_quantifiers_along_continuation(
             dynamics, attractors_cont, pcurve, ics_from_grid(grid), ε = 0.1, finite_time = 0.5,
             proximity_mapper_options = proximity_mapper_options
         )
 
-        measures_cont_expected = Dict(
+        quantifiers_cont_expected = Dict(
             "finite_time_basin_stability" => [Dict(1 => 0.11111), Dict(2 => 0.11111, 1 => 0.11111)],
             "maximal_noncritical_shock_magnitude" => [Dict(1 => 1.41421), Dict(2 => 2.23607, 1 => 2.0)],
             "median_convergence_pace" => [Dict(1 => 0.70711), Dict(2 => 0.5, 1 => 0.5)],
@@ -110,12 +110,12 @@ using Random
             "maximal_amplification_time" => [Dict(1 => 0.0), Dict(2 => 0.0, 1 => 0.0)]
         )
         # Validate the results
-        for (key, value) in measures_cont_expected
-            @test key in keys(measures_cont)
+        for (key, value) in quantifiers_cont_expected
+            @test key in keys(quantifiers_cont)
             for k in [1, 2]
                 @test isapprox(
                     sort(collect(values(value[k]))),
-                    sort(collect(values(measures_cont[key][k]))),
+                    sort(collect(values(quantifiers_cont[key][k]))),
                     atol = 1.0e-5,
                     nans = true,
                 )
@@ -135,7 +135,7 @@ using Random
         )
 
         # Merge all attractors at every step via a large threshold on the x-coordinate, then
-        # compute the stability measures on the merged attractors.
+        # compute the stability quantifiers on the merged attractors.
         featurizer = A -> SVector(first(A)[1])
         merge_config = GroupViaPairwiseComparison(threshold = 3.0, rescale_features = false)
         agg_attractors_cont, centroids_cont, members_cont = aggregate_continuation(
@@ -162,26 +162,26 @@ using Random
         @test sort(mem_step[only(keys(mem_step))]) == [1, 2]
         @test cent_step[only(keys(cent_step))] ≈ SVector(0.0)
 
-        measures_agg = stability_measures_along_continuation(
+        quantifiers_agg = stability_quantifiers_along_continuation(
             dynamics, agg_attractors_cont, pcurve, ics_from_grid(grid);
             ε = 0.1, finite_time = 0.5, proximity_mapper_options,
         )
 
         # At both steps all ICs belong to the merged attractor → basin fraction == 1
-        merged_id_1 = first(k for k in keys(measures_agg["basin_fraction"][1]) if k != -1)
-        merged_id_2 = first(k for k in keys(measures_agg["basin_fraction"][2]) if k != -1)
-        @test measures_agg["basin_fraction"][1][merged_id_1] ≈ 1.0
-        @test measures_agg["basin_fraction"][2][merged_id_2] ≈ 1.0
+        merged_id_1 = first(k for k in keys(quantifiers_agg["basin_fraction"][1]) if k != -1)
+        merged_id_2 = first(k for k in keys(quantifiers_agg["basin_fraction"][2]) if k != -1)
+        @test quantifiers_agg["basin_fraction"][1][merged_id_1] ≈ 1.0
+        @test quantifiers_agg["basin_fraction"][2][merged_id_2] ≈ 1.0
         # With only one aggregated group, no critical shock at either step
-        @test measures_agg["minimal_critical_shock_magnitude"][1][merged_id_1] == Inf
-        @test measures_agg["minimal_critical_shock_magnitude"][2][merged_id_2] == Inf
+        @test quantifiers_agg["minimal_critical_shock_magnitude"][1][merged_id_1] == Inf
+        @test quantifiers_agg["minimal_critical_shock_magnitude"][2][merged_id_2] == Inf
     end
 end
 
 
 @testset "fixed point continuous" begin
 
-    # Now we will test the local stability measures in `StabilityMeasuresAccumulator` in a
+    # Now we will test the local stability quantifiers in `StabilityQuantifiersAccumulator` in a
     # linear system.
     function linear_evolution(z, p, n)
         if p[1] < 0.0
@@ -194,10 +194,10 @@ end
 
     dynamics = CoupledODEs(linear_evolution, [1.0, 1.0], [1.0])
     grid = ([-1.0, -0.1, 0.3, 1.0], [-1.0, -0.3, 0.1, 1.0])
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
 
-    # Use the StabilityMeasuresAccumulator to compute measures
-    accumulator = StabilityMeasuresAccumulator(mapper, finite_time = 0.5)
+    # Use the StabilityQuantifiersAccumulator to compute quantifiers
+    accumulator = StabilityQuantifiersAccumulator(bmap, finite_time = 0.5)
     A = ics_from_grid(grid)
     for u0 in A
         id = accumulator(u0)
@@ -234,24 +234,24 @@ end
         proximity_mapper_options_local = (
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
-        measures_cont_local = stability_measures_along_continuation(
+        quantifiers_cont_local = stability_quantifiers_along_continuation(
             dynamics, attractors_cont_local, pcurve_local, ics_from_grid(grid), ε = 0.1, finite_time = 0.5,
             proximity_mapper_options = proximity_mapper_options_local
         )
 
-        measures_cont_local_expected = Dict(
+        quantifiers_cont_local_expected = Dict(
             "characteristic_return_time" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => 2.0)],
             "reactivity" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => -0.5)],
             "maximal_amplification" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => 1.0)],
             "maximal_amplification_time" => [Dict(-1 => NaN, 1 => Inf), Dict(1 => 0.0)]
         )
 
-        for (key, value) in measures_cont_local_expected
-            @test key in keys(measures_cont_local)
+        for (key, value) in quantifiers_cont_local_expected
+            @test key in keys(quantifiers_cont_local)
             for k in [1, 2]
                 @test isapprox(
                     sort(collect(values(value[k]))),
-                    sort(collect(values(measures_cont_local[key][k]))),
+                    sort(collect(values(quantifiers_cont_local[key][k]))),
                     atol = 1.0e-5,
                     nans = true,
                 )
@@ -263,7 +263,7 @@ end
 
 @testset "Discrete time" begin
     # For these parameters the map has 1 fixed point and one period 3 orbit.
-    # The tests failed because linear measures are not computed for discrete sytems now.
+    # The tests failed because linear quantifiers are not computed for discrete sytems now.
     henon_rule_alter(x, p, n) = SVector{2}(1.0 - p[1] * x[1]^2 + x[2], -p[2] * x[1])
     μ = 1.05; J = 0.9
     ds = DeterministicIteratedMap(henon_rule_alter, zeros(2), [μ, J])
@@ -271,20 +271,20 @@ end
     yg = range(-3.0, 4.0; length = 101)
     grid = (xg, yg)
 
-    mapper = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
-    accumulator = StabilityMeasuresAccumulator(mapper)
+    bmap = BasinMapRecurrences(ds, grid; sparse = false, consecutive_recurrences = 1000)
+    accumulator = StabilityQuantifiersAccumulator(bmap)
 
     A = ics_from_grid(grid)
     for u0 in A
         id = accumulator(u0)
     end
-    stability_measures = finalize_accumulator(accumulator)
+    stability_quantifiers = finalize_accumulator(accumulator)
 
-    measures = ["basin_stability", "minimal_critical_shock_magnitude"]
+    quantifiers = ["basin_stability", "minimal_critical_shock_magnitude"]
 
-    @testset "Henon $m" for m in measures
-        measures = collect(values(stability_measures[m]))
-        @test count(!isnan, measures) ≥ 0
+    @testset "Henon $m" for m in quantifiers
+        quantifiers = collect(values(stability_quantifiers[m]))
+        @test count(!isnan, quantifiers) ≥ 0
     end
 end
 
@@ -308,7 +308,7 @@ end
     r = 0.5
     grid = ([-1, 0, 1], [-1, 0, 1])
     dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
-    mapper = BasinMapRecurrences(dynamics, grid; sparse = false)
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     # this function counts how many points in basin of attraction
@@ -330,10 +330,10 @@ end
     extras = Dict(
         "extra" => extra_function
     )
-    accumulator = StabilityMeasuresAccumulator(mapper, extras)
+    accumulator = StabilityQuantifiersAccumulator(bmap, extras)
 
     for u0 in A
-        id = accumulator(u0) # run this to accumulate measures
+        id = accumulator(u0) # run this to accumulate quantifiers
     end
 
     results = finalize_accumulator(accumulator)
@@ -347,8 +347,8 @@ end
     @testset "continuation" begin
         rs = [0.5, 1.0]
         gca = AttractorSeedContinueMatch(accumulator)
-        measures_cont, attractors_cont = global_continuation(gca, rs, 1, A)
-        @test measures_cont["extra"] == [Dict(1 => 0, 2 => 3), Dict(1 => 0, 2 => 0)]
+        quantifiers_cont, attractors_cont = global_continuation(gca, rs, 1, A)
+        @test quantifiers_cont["extra"] == [Dict(1 => 0, 2 => 3), Dict(1 => 0, 2 => 0)]
     end
 end
 
@@ -373,23 +373,23 @@ end
     ics = ics_from_grid(grid)
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison()
-    mapper = BasinMapFeaturizeGroup(dynamics, featurizer, gconfig)
-    accumulator = StabilityMeasuresAccumulator(mapper)
+    bmap = BasinMapFeaturizeGroup(dynamics, featurizer, gconfig)
+    accumulator = StabilityQuantifiersAccumulator(bmap)
 
     @testset "single parameter" begin
         fs, labels = basins_fractions(accumulator, ics)
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
-        measures = finalize_accumulator(accumulator)
-        @test isequal(measures["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
+        quantifiers = finalize_accumulator(accumulator)
+        @test isequal(quantifiers["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
     end
 
     @testset "continuation" begin
         pcurve = [[1 => r] for r in rs]
         acsm = AttractorSeedContinueMatch(accumulator)
-        measures_cont, attractors_cont = global_continuation(acsm, pcurve, ics)
+        quantifiers_cont, attractors_cont = global_continuation(acsm, pcurve, ics)
 
-        @test isequal(measures_cont["minimal_critical_shock_magnitude"][2], Dict(2 => 2.0, 1 => 1.0))
-        fs = measures_cont["basin_fraction"][1]
+        @test isequal(quantifiers_cont["minimal_critical_shock_magnitude"][2], Dict(2 => 2.0, 1 => 1.0))
+        fs = quantifiers_cont["basin_fraction"][1]
         @test all(sort!(collect(v for (k, v) in fs if k != -1)) .≈ [0.333333333333333333, 0.6666666666666])
     end
 end

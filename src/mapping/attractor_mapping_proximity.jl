@@ -90,14 +90,14 @@ function BasinMapProximity(
         ε isa Real || error("ε must be a Real number")
     end
 
-    mapper = BasinMapProximity(
+    bmap = BasinMapProximity(
         ds, attractors,
         ε, Δt, eltype(Δt)(Ttr), consecutive_lost_steps, horizon_limit,
         search_trees, [Inf], [0], 0.0, distance, StateSpaceSet([current_state(ds)]),
         stop_at_Δt, Ref(float(current_time(ds))), # we make it float so that it can handle `Inf`.
     )
 
-    return mapper
+    return bmap
 end
 
 reset_mapper!(::BasinMapProximity) = nothing
@@ -142,45 +142,45 @@ function _deduce_ε_from_attractors(attractors, search_trees, verbose = false)
     return ε
 end
 
-function (mapper::BasinMapProximity)(u0)
-    ds = referenced_dynamical_system(mapper)
+function (bmap::BasinMapProximity)(u0)
+    ds = referenced_dynamical_system(bmap)
     reinit!(ds, u0)
     t0 = current_time(ds)
     maxdist = zero(eltype(current_state(ds)))
-    mapper.latest_convergence_time[] = Inf # default return value
-    mapper.Ttr > 0 && step!(ds, mapper.Ttr)
+    bmap.latest_convergence_time[] = Inf # default return value
+    bmap.Ttr > 0 && step!(ds, bmap.Ttr)
     lost_count = 0
-    while lost_count < mapper.consecutive_lost_steps
-        step!(ds, mapper.Δt, mapper.stop_at_Δt)
+    while lost_count < bmap.consecutive_lost_steps
+        step!(ds, bmap.Δt, bmap.stop_at_Δt)
         successful_step(ds) || return -1 # first check for Inf or NaN
         lost_count += 1
         u = current_state(ds)
         # then update the stored set
-        mapper.cset[1] = u
+        bmap.cset[1] = u
         # then compute all distances
-        for (k, tree) in mapper.search_trees # this is a `Dict`
-            A = mapper.attractors[k]
+        for (k, tree) in bmap.search_trees # this is a `Dict`
+            A = bmap.attractors[k]
             # we use internal method from StateSpaceSets.jl
-            d = set_distance(mapper.cset, A, mapper.distance; tree2 = tree)
-            if d < mapper.ε
-                mapper.latest_convergence_time[] = current_time(ds) - t0
+            d = set_distance(bmap.cset, A, bmap.distance; tree2 = tree)
+            if d < bmap.ε
+                bmap.latest_convergence_time[] = current_time(ds) - t0
                 return k
             elseif maxdist < d
                 maxdist = d
                 # exit if the distance is too large
-                maxdist > mapper.horizon_limit && return -1
+                maxdist > bmap.horizon_limit && return -1
             end
         end
     end
     return -1
 end
 
-function Base.show(io::IO, mapper::BasinMapProximity)
-    ps = generic_mapper_print(io, mapper)
-    println(io, rpad(" ε: ", ps), mapper.ε)
-    println(io, rpad(" Δt: ", ps), mapper.Δt)
-    println(io, rpad(" Ttr: ", ps), mapper.Ttr)
-    attstrings = split(sprint(show, MIME"text/plain"(), mapper.attractors), '\n')
+function Base.show(io::IO, bmap::BasinMapProximity)
+    ps = generic_mapper_print(io, bmap)
+    println(io, rpad(" ε: ", ps), bmap.ε)
+    println(io, rpad(" Δt: ", ps), bmap.Δt)
+    println(io, rpad(" Ttr: ", ps), bmap.Ttr)
+    attstrings = split(sprint(show, MIME"text/plain"(), bmap.attractors), '\n')
     println(io, rpad(" attractors: ", ps), attstrings[1])
     for j in 2:length(attstrings)
         println(io, rpad(" ", ps), attstrings[j])
@@ -188,6 +188,6 @@ function Base.show(io::IO, mapper::BasinMapProximity)
     return
 end
 
-_extract_attractors(mapper::BasinMapProximity) = mapper.attractors
+_extract_attractors(bmap::BasinMapProximity) = bmap.attractors
 
-convergence_time(mapper::BasinMapProximity) = mapper.latest_convergence_time[]
+convergence_time(bmap::BasinMapProximity) = bmap.latest_convergence_time[]

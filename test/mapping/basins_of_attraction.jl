@@ -22,10 +22,10 @@ ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r])
 xg = yg = range(-1.5, 2.5; length = 3)
 grid = (xg, yg)
 attrs = Dict(1 => StateSpaceSet([SVector(r, r)]), 2 => StateSpaceSet([SVector(-r, -r)]))
-mapper = BasinMapProximity(ds, attrs; Ttr = 0)
+bmap = BasinMapProximity(ds, attrs; Ttr = 0)
 
 @testset "boa" begin
-    basins, atts = basins_of_attraction(mapper, grid; show_progress = false)
+    basins, atts = basins_of_attraction(bmap, grid; show_progress = false)
 
     @test basins[1, :] == fill(2, 3)
     @test basins[2, :] == fill(1, 3)
@@ -34,7 +34,7 @@ end
 
 @testset "boa convergence" begin
 
-    basins, atts, iterations = convergence_and_basins_of_attraction(mapper, grid; show_progress = false)
+    basins, atts, iterations = convergence_and_basins_of_attraction(bmap, grid; show_progress = false)
 
     @test basins[1, :] == fill(2, 3)
     @test basins[2, :] == fill(1, 3)
@@ -47,8 +47,8 @@ end
 
     set_state!(ds, 0.0, 2)
     ics = [Dict(1 => x) for x in xg]
-    fs, labels, iterations = convergence_and_basins_fractions(mapper, ics)
-    fs2, labels = basins_fractions(mapper, ics; show_progress = false)
+    fs, labels, iterations = convergence_and_basins_fractions(bmap, ics)
+    fs2, labels = basins_fractions(bmap, ics; show_progress = false)
 
     for fs in (fs, fs2)
         @test length(fs) == 2

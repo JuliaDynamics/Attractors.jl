@@ -46,8 +46,8 @@ using Random
 
     mappers = [mapper1, mapper2, mapper3, mapper1]
 
-    @testset "case: $(i)" for (i, mapper) in enumerate(mappers)
-        algo = AttractorSeedContinueMatch(mapper)
+    @testset "case: $(i)" for (i, bmap) in enumerate(mappers)
+        algo = AttractorSeedContinueMatch(bmap)
 
         if i < 4
             fractions_cont, a = global_continuation(
@@ -118,8 +118,8 @@ end
 
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)
-    mapper = BasinMapFeaturizeGroup(ds, featurizer, gconfig; Ttr = 1, T = 1)
-    gca = AttractorSeedContinueMatch(mapper; seeding = A -> [])
+    bmap = BasinMapFeaturizeGroup(ds, featurizer, gconfig; Ttr = 1, T = 1)
+    gca = AttractorSeedContinueMatch(bmap; seeding = A -> [])
 
     pcurve = [Dict(1 => r) for r in rs]
     fractions_cont, attractors_cont = global_continuation(

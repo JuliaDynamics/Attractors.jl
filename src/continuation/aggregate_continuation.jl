@@ -48,18 +48,18 @@ set-distance accepted by [`setsofsets_distances`](@ref) (e.g. [`Hausdorff`](@ref
 sets. Because matching is in feature space, `featurizer` must return *numeric* feature vectors
 (e.g. `SVector`s).
 
-## Aggregating stability measures
+## Aggregating stability quantifiers
 
-To obtain stability measures for the aggregated groups, pass
-`agg_attractors_cont` to [`stability_measures_along_continuation`](@ref). Each merged group is
-then treated as a single attractor, so every measure — including those that need the raw basin
+To obtain stability quantifiers for the aggregated groups, pass
+`agg_attractors_cont` to [`stability_quantifiers_along_continuation`](@ref). Each merged group is
+then treated as a single attractor, so every quantifier — including those that need the raw basin
 data, such as medians and critical shock magnitudes — is computed correctly for the group.
 
 See the [aggregation example](@ref aggregate_continuation_example) for an illustration.
 
 !!! note "Aggregating basin fractions only"
     If you only care about aggregating the basin fractions, there is no reason to
-    go through the route of `stability_measures_along_continuation`.
+    go through the route of `stability_quantifiers_along_continuation`.
     Simply give the returned `members_cont`, together with the `fractions_cont` from the
     continuation, to [`aggregate_fractions`](@ref).
     The denser the sampling for the original continuation was, the more accurate
@@ -114,8 +114,8 @@ are merged into a single `StateSpaceSet`.
 3. `members`: a dictionary mapping each group ID to the vector of original attractor IDs (the keys
    of `attractors`) that were merged into it.
 
-To compute stability measures for the merged groups, pass `agg_attractors` to
-[`stability_measures_along_continuation`](@ref) (wrapping it and the parameter in length-1
+To compute stability quantifiers for the merged groups, pass `agg_attractors` to
+[`stability_quantifiers_along_continuation`](@ref) (wrapping it and the parameter in length-1
 vectors if you have a single parameter).
 """
 function aggregate_attractors(attractors::Dict, featurizer, group_config)

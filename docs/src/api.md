@@ -2,7 +2,7 @@
 
 ## Finding attractors
 
-Attractors.jl defines a generic interface for finding attractors of dynamical systems. One first decides the instance of [`DynamicalSystem`](@ref) they need. Then, an instance of [`BasinMap`](@ref) is created from this dynamical system. This `mapper` instance can be used to compute e.g., [`basins_of_attraction`](@ref), and the output can be further analyzed to get e.g., the [`basin_entropy`](@ref).
+Attractors.jl defines a generic interface for finding attractors of dynamical systems. One first decides the instance of [`DynamicalSystem`](@ref) they need. Then, an instance of [`BasinMap`](@ref) is created from this dynamical system. This `bmap` instance can be used to compute e.g., [`basins_of_attraction`](@ref), and the output can be further analyzed to get e.g., the [`basin_entropy`](@ref).
 
 ```@docs
 BasinMap
@@ -207,12 +207,12 @@ swap_dict_keys!
 next_free_id
 ```
 
-## Stability measures/quantifiers
+## Stability quantifiers
 
 ```@docs
-StabilityMeasuresAccumulator
+StabilityQuantifiersAccumulator
 finalize_accumulator
-stability_measures_along_continuation
+stability_quantifiers_along_continuation
 ```
 
 ### Intermingledness

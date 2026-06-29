@@ -2,7 +2,7 @@ export RecurrencesFindAndMatch, RAFM
 
 """
     RecurrencesFindAndMatch <: GlobalContinuationAlgorithm
-    RecurrencesFindAndMatch(mapper::BasinMapRecurrences; kwargs...)
+    RecurrencesFindAndMatch(bmap::BasinMapRecurrences; kwargs...)
 
 A method for [`global_continuation`](@ref) as in [Datseris2023](@cite) that is based on the
 recurrences algorithm for finding attractors ([`BasinMapRecurrences`](@ref))
@@ -22,14 +22,14 @@ and then matching them according to their state space distance.
 and to have a clear reference to the original algorithm developed in [Datseris2023](@cite).
 
 The source code of `RecurrencesFindAndMatch` is trival:
-it takes the given mapper, it initializes a [`MatchBySSSetDistance`](@ref),
+it takes the given bmap, it initializes a [`MatchBySSSetDistance`](@ref),
 and along with `seeds_from_attractor` it makes the [`AttractorSeedContinueMatch`](@ref)
 instance. This is the process described in [Datseris2023](@cite),
 whereby attractors are found using the recurrences algorithm [`BasinMapRecurrences`](@ref)
 and they are then matched by their distance in state space [`MatchBySSSetDistance`](@ref).
 """
 function RecurrencesFindAndMatch(
-        mapper::BasinMapRecurrences; distance = Centroid(), threshold = Inf,
+        bmap::BasinMapRecurrences; distance = Centroid(), threshold = Inf,
         info_extraction = nothing, seeds_from_attractor = _default_seeding,
     )
     if info_extraction !== nothing
@@ -37,7 +37,7 @@ function RecurrencesFindAndMatch(
         You can extract info after the attractors have been found."
     end
     matcher = MatchBySSSetDistance(; distance, threshold)
-    return AttractorSeedContinueMatch(mapper, matcher, seeds_from_attractor)
+    return AttractorSeedContinueMatch(bmap, matcher, seeds_from_attractor)
 end
 
 "Alias for [`RecurrencesFindAndMatch`](@ref)."
