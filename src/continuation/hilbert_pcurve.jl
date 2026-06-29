@@ -19,7 +19,7 @@ The 1st parameter for example will cover the range `0` to `5` using `32` values.
     densities are always converted to the closest power of 2. It is recommended to
     provided powers of 2 to begin with, to avoid confusion.
 """
-hilbert_curve(input::AbstractDict) = hilber_curve(collect(input))
+hilbert_pcurve(input::AbstractDict) = hilbert_pcurve(collect(input))
 function hilbert_pcurve(input::Vector{<:Pair}) # need ordered input for hilbert
     # transform to hilbert appropriate
     pidxs = getindex.(input, 1)

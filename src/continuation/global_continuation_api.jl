@@ -47,7 +47,8 @@ Return:
    attractor set at the `i`-th parameter combination.
 
 See the function [`continuation_series`](@ref) if you wish to transform the output
-to an alternative format.
+to an alternative format. There is no difference between single or multi parameter
+global continuation. Use [`hilbert_pcurve`](@ref) to cover multiparameter spaces.
 
 ## Keyword arguments
 
@@ -119,6 +120,7 @@ function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, 
     return series
 end
 
+include("hilbert_pcurve.jl")
 include("continuation_ascm_generic.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
