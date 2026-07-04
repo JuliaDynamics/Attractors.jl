@@ -602,7 +602,7 @@ clusters_info
 
 ## Using histograms and histogram distances as features
 
-One of the aspects discussed in the original MCBB paper and implementation was the usage of histograms of the means of the variables of a dynamical system as the feature vector. This is useful in very high dimensional systems, such as oscillator networks, where the histogram of the means is significantly different in synchronized or unsychronized states.
+One of the aspects discussed in the original MCBB paper and implementation was the usage of histograms of the means of the variables of a dynamical system as the feature vector. This is useful in very high dimensional systems, such as oscillator networks, where the histogram of the means is significantly different in synchronized or unsynchronized states.
 
 This is possible to do with current interface without any modifications, by using two more packages: ComplexityMeasures.jl to compute histograms, and Distances.jl for the Kullback-Leibler divergence (or any other measure of distance in the space of probability distributions you fancy).
 
@@ -687,8 +687,8 @@ et.edge[end]
 The algorithm has converged to the origin (up to the specified accuracy) where the saddle
 is located. The figure below shows how the algorithm has iteratively tracked along the basin
 boundary from the two initial conditions (red points) to the saddle (green square). Points
-of the edge track (orange) at which a re-bisection occured are marked with a white border.
-The figure also depicts two trajectories (blue) intialized on either side of the basin
+of the edge track (orange) at which a re-bisection occurred are marked with a white border.
+The figure also depicts two trajectories (blue) initialized on either side of the basin
 boundary at the first bisection point. We see that these trajectories follow the basin
 boundary for a while but then relax to either attractor before reaching the saddle. By
 counteracting the instability of the saddle, the edge tracking algorithm instead allows to
