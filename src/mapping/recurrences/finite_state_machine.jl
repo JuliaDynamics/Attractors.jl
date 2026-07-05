@@ -192,7 +192,7 @@ function finite_state_machine!(
                 - there exists significant slowdown/stickiness in state space that is wrongly
                   interpreted as an attractor (increase any of `consecutive_recurrences, Ttr, Δt`)
 
-                Index of cell that this occured at: $(n).
+                Index of cell that this occurred at: $(n).
                 """
             )
         end

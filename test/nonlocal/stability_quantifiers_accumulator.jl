@@ -353,7 +353,7 @@ end
 end
 
 
-@testset "accummulator with featurizer" begin
+@testset "accumulator with featurizer" begin
     function dumb_map(z, p, n)
         x, y = z
         r = p[1]
