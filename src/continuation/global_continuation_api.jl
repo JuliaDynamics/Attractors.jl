@@ -108,9 +108,13 @@ where the `k` dictionary entry is the series of the continuation quantity corres
 attractor with ID `k`. `fillval` denotes the value to assign in the series
 if the attractor with ID `k` does not exist at this particular series index.
 If the `continuation_info` is the attractors themselves, you likely want to
-use as `fillval` some empty state space set such as `StateSpaceSet{D}()`.
+use as `fillval` some empty state space set such as `StateSpaceSet{D}()`,
+or just the `missing` value (in which case the output will be of `Union` type).
+
+This function is typically used on the output of [`global_continuation`](@ref).
 """
 function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, fillval = NaN, ukeys = unique_keys(continuation_info))
+    filltype = promote_type(typeof(fillval), typeof(first(first(continuation_info))))
     series = Dict(k => fill(fillval, length(continuation_info)) for k in ukeys)
     for i in eachindex(continuation_info)
         for k in ukeys
