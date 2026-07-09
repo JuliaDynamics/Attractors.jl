@@ -114,8 +114,9 @@ or just the `missing` value (in which case the output will be of `Union` type).
 This function is typically used on the output of [`global_continuation`](@ref).
 """
 function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, fillval = NaN, ukeys = unique_keys(continuation_info))
-    filltype = promote_type(typeof(fillval), typeof(first(first(continuation_info))))
-    series = Dict(k => fill(fillval, length(continuation_info)) for k in ukeys)
+    V = valtype(eltype(continuation_info))
+    T = promote_type(typeof(fillval), V)
+    series = Dict(k => fill!(Vector{T}(undef, length(continuation_info)), fillval) for k in ukeys)
     for i in eachindex(continuation_info)
         for k in ukeys
             series[k][i] = get(continuation_info[i], k, fillval)
