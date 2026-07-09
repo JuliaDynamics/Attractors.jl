@@ -186,7 +186,6 @@ function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
     return out
 end
 
-# must be dictionary mapping the quantifier name to its function.
 extras = Dict("maxv" => extra_function)
 ```
 """
