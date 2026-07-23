@@ -1,11 +1,11 @@
 export global_continuation, GlobalContinuationAlgorithm, continuation_series, stability_quantifiers_along_continuation
-export PerParameterInitialConditions
+include("sampler_api.jl")
 
 """
     GlobalContinuationAlgorithm
 
 Supertype of all algorithms used in [`global_continuation`](@ref).
-Each algorithm typically references an [`BasinMap`](@ref),
+Each algorithm typically references a [`BasinMap`](@ref),
 as well as contains more information for how to continue/track/match attractors
 across a parameter range.
 
@@ -14,25 +14,22 @@ See [`global_continuation`](@ref) for more.
 abstract type GlobalContinuationAlgorithm end
 
 """
-    global_continuation(gca::GlobalContinuationAlgorithm, prange, pidx, ics; kwargs...)
-    global_continuation(gca::GlobalContinuationAlgorithm, pcurve, ics; kwargs...)
+    global_continuation(gca::GlobalContinuationAlgorithm, pcurve, icsampler; kwargs...)
 
-Find and continue attractors (or representations of attractors)
-and the fractions of their basins of attraction across a parameter curve `pcurve`
-by sampling given initial conditions `ics` according to algorithm `gca`.
+Find and continue attractors (or representations of attractors) and properties of their
+basins across a parameter curve `pcurve` according to algorithm `gca` and
+by sampling initial conditions using `icsampler`
 
 Possible subtypes of a `GlobalContinuationAlgorithm` are:
 
 - [`AttractorSeedContinueMatch`](@ref)
 - [`FeaturizeGroupAcrossParameter`](@ref)
 
-`ics` are the initial conditions to use when sampling the state space.
-They can be specified in one of three ways:
+`pcurve` is a vector of dictionaries, each dictionary mapping parameter indices to values.
+This defines an arbitrary curve in the whole parameter space of the dynamical system.
 
-1. A set vector of initial conditions (vector of vectors).
-2. A 0-argument function that generates random initial conditions.
-3. The special type [`PerParameterInitialConditions`](@ref) that allows
-   different initial conditions for different parameter values.
+`icsampler` is a subtype of [`InitialConditionSampler`](@ref) and provides instructions
+for how to sample initial conditions to explore the state space during the continuation.
 
 Return:
 
@@ -46,15 +43,13 @@ Return:
    `attractors_cont[i]` is a dictionary mapping attractor ID to the
    attractor set at the `i`-th parameter combination.
 
-See the function [`continuation_series`](@ref) if you wish to transform the output
+See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format. There is no difference between single or multi parameter
 global continuation. Use [`hilbert_pcurve`](@ref) to cover multiparameter spaces.
 
 ## Keyword arguments
 
 - `show_progress = true`: display a progress bar of the computation.
-- `samples_per_parameter = 100`: amount of initial conditions sampled at each parameter
-  combination from `ics` if `ics` is a function instead of set initial conditions.
 
 ## Description
 
@@ -83,19 +78,6 @@ function global_continuation(alg::GlobalContinuationAlgorithm, prange::AbstractV
     # everything is propagated to the curve setting
     pcurve = [Dict(pidx => p) for p in prange]
     return global_continuation(alg, pcurve, sampler; kw...)
-end
-
-"""
-    PerParameterInitialConditions(generator)
-
-Wrapper around a function `generator`, to be called as
-`generator(parameters, N::Int)`.
-It inputs the current parameter(s) of a [`global_continuation`](@ref)
-(elements of `pcurve`), and generates a vector of `N` initial conditions.
-Note that elements of `pcurve` are recommended to be dictionaries.
-"""
-struct PerParameterInitialConditions{F}
-    generator::F
 end
 
 
