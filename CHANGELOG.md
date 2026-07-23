@@ -6,9 +6,12 @@ This release accompanies the release of our paper "Global continuation as a comp
 
 - New function `hilbert_pcurve`. It conveniently uses Hilbert curves to create a parameter curve efficiently spanning a multidimensional space. To be used with `global_continuation`.
 
-## Prior deprecations removed
+## Deprecations
 
 - **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
+- **DEPRECATED**: calling `global_continuation` with `prange, pidx` is deprecated.
+  Use the version where a single `pcurve` is provided instead, by making
+  `pcurve = [Dict(pidx => p) for p in prange]`.
 
 ## Renaming of stability measures
 

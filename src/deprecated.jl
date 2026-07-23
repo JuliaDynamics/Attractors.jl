@@ -32,3 +32,9 @@ end
 @deprecate AttractorsViaProximity BasinMapProximity
 @deprecate stability_measures_along_continuation stability_quantifiers_along_continuation
 @deprecate StabilityMeasuresAccumulator StabilityQuantifiersAccumulator
+
+function global_continuation(alg::GlobalContinuationAlgorithm, prange, pidx, sampler::InitialConditionSampler; kw...)
+    @warn "passing `prange, pidx` as inputs to `global_continuation` is deprecated. Pass a single `pcurve`."
+    pcurve = [Dict(pidx => p) for p in prange]
+    return global_continuation(alg, pcurve, sampler; kw...)
+end
