@@ -19,12 +19,20 @@ Concerete subtypes are:
 """
 abstract type InitialConditionSampler end
 
-# what should be inputs here? parameters for sure, anything else?
+"""
+    generate_ics(sampler::InitialConditionsSampler, p::Dict)
+
+Generate initial condititions from the given sampler, optionally utilizing
+the parameters of the current continuation step.
+"""
 function generate_ics end
 
-function update_sampler!(sampler, args...)
-    return nothing
-end
+"""
+    update_sampler!(sampler::InitialConditionsSampler, args...)
+
+Todo, decide `args`.
+"""
+update_sampler!(sampler, args...) = nothing
 
 """
     RandomICSampler(f::Function, N::Int) <: InitialConditionSampler
