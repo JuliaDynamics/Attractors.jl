@@ -117,7 +117,7 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
 end
 
 function global_continuation(
-        ascm::AttractorSeedContinueMatch, pcurve, icsampler;
+        ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionSampler;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
