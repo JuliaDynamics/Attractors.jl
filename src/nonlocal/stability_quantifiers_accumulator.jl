@@ -10,20 +10,20 @@ Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 """
     StabilityQuantifiersAccumulator(bmap::BasinMap [, extras]; kwargs...)
 
-A special data structure that allows mapping initial conditions to attractors
+A special data structure that allows mapping initial conditions to their basins
 while _at the same time_ calculating many stability quantifiers in the most efficient
-way possible. `bmap` is any instance of an [`BasinMap`](@ref),
+way possible. `bmap` is any instance of a [`BasinMap`](@ref),
 although for [`BasinMapFeaturizeGroup`](@ref) the convergence times won't make sense.
 
 The accummulator records several quantifiers of stability (or resilience) defined
-in [Morr2026](@cite), and a few more related and derived shortly after,
+in [Morr2026](@cite), and a few more derived after the original publication,
 including the intermingledness of basins of attraction [Datseris2026Intermingled](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
 argument, see the Extra quantifiers section below.
 
 `StabilityQuantifiersAccumulator` can be used as any `BasinMap` with library functions
-such as [`basins_fractions`](@ref). After mapping all initial conditions to attractors,
+such as [`basins_fractions`](@ref). After mapping all initial conditions to their basins,
 the [`finalize_accumulator`](@ref) function should be called which will return a
 dictionary of all stability quantifiers estimated by the accumulator,
 where each entry maps the stability quantifier description (`String`) to a dictionary
@@ -162,7 +162,10 @@ Thus, any function of such objects can be estimated at the end of the accumulati
 (at the call of `finalize_accumulator`). To enhance the output of the accumulator
 with arbitrary quantifiers you can provide the optional argument `extras`.
 It is a dictionary mapping additional quantifier names (as `String`s) to functions
-`f(sboa, ds)`. Each function `f` takes as an input the sampled basins
+`f(sboa, ds)`. Instead of a dictionary, you can provide an iterable of functions `f`,
+in which case the function name is used as the dict's string key.
+
+Each function `f` takes as an input the sampled basins
 and the dynamical system and returns a dictionary mapping attractor IDs to an output
 (anything works, but real numbers make most sense).
 Each provided function produces an additional entry in the
@@ -175,7 +178,7 @@ function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
     ids = extract_basins(sboa)
     u0s = extract_domain(sboa)
     att = extract_attractors(sboa) # we don't need the attractors for this example
-    out = Dict(k => 0.0 for k in unique(ids)) # our function must return a Dict
+    out = Dict{Int, Float64}() # our function must return a Dict
     for i in eachindex(ids)
         id = ids[i]
         out[id] = max(out[id], u0s[i][2])
@@ -183,7 +186,6 @@ function extra_function(sboa::SampledBasinsOfAttraction, ds::DynamicalSystem)
     return out
 end
 
-# must be dictionary mapping the quantifier name to its function.
 extras = Dict("maxv" => extra_function)
 ```
 """
@@ -200,7 +202,7 @@ struct StabilityQuantifiersAccumulator{AM <: BasinMap, V <: AbstractVector, F, M
 end
 
 function StabilityQuantifiersAccumulator(
-        bmap::BasinMap, extras = Dict();
+        bmap::BasinMap, extr = Dict();
         finite_time = 1.0, weighting_distribution = EverywhereUniform(),
         distance = Centroid(), idistances = [Euclidean()],
     )
@@ -211,6 +213,7 @@ function StabilityQuantifiersAccumulator(
     F = typeof(finite_time)
     M = typeof(distance)
     W = typeof(weighting_distribution)
+    extras = _convert_to_dict(extr)
     return StabilityQuantifiersAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
         bmap,
         Vector{V}(),
@@ -223,6 +226,12 @@ function StabilityQuantifiersAccumulator(
         idistances
     )
 end
+
+_convert_to_dict(extr::Dict) = extr
+function _convert_to_dict(extr)
+    return Dict(string(nameof(f)) => f for f in extr)
+end
+
 
 # Extend `BasinMap` API:
 function reset_mapper!(a::StabilityQuantifiersAccumulator)

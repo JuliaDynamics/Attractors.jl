@@ -5,6 +5,10 @@ This release accompanies the release of our paper "Global continuation as a comp
 ## New features
 
 - New function `hilbert_pcurve`. It conveniently uses Hilbert curves to create a parameter curve efficiently spanning a multidimensional space. To be used with `global_continuation`.
+- `StabilityQuantifiersAccumulator` allows for an `extras` input to calculate arbitrary
+  additional quantities after sampling the state space.
+- `continuation_series` now allows for mixed type outputs, so that the fill value
+  can be of different type (e.g., `missing`) than the continuation quantity.
 
 ## Prior deprecations removed
 
