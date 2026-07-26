@@ -25,8 +25,8 @@ Possible subtypes of a `GlobalContinuationAlgorithm` are:
 - [`AttractorSeedContinueMatch`](@ref)
 - [`FeaturizeGroupAcrossParameter`](@ref)
 
-`pcurve` is a vector of dictionaries, each dictionary mapping parameter indices to values.
-This defines an arbitrary curve in the whole parameter space of the dynamical system.
+`pcurve` is a `Vector` of dictionaries, each dictionary mapping parameter indices to values.
+This defines an arbitrary curve in the parameter space of the dynamical system.
 
 `icsampler` is a subtype of [`InitialConditionSampler`](@ref) and provides instructions
 for how to sample initial conditions to explore the state space during the continuation.
@@ -34,13 +34,13 @@ for how to sample initial conditions to explore the state space during the conti
 Return:
 
 1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
-   `fractions_cont[i]` is a dictionary mapping attractor IDs to their basin fraction
+   `fractions_cont[i]` is a dictionary mapping basin IDs to their basin fraction
    at the `i`-th parameter combination.
    -  This output is different if you are using [`StabilityQuantifiersAccumulator`](@ref)
       in combination with [`AttractorSeedContinueMatch`](@ref). See the docstring
       of [`StabilityQuantifiersAccumulator`](@ref) for more details.
-2. `attractors_cont::Vector{Dict{Int, <:Any}}`. The continued attractors.
-   `attractors_cont[i]` is a dictionary mapping attractor ID to the
+2. `attractors_cont::Vector{Dict{Int, SSSet}}`. The continued attractors.
+   `attractors_cont[i]` is a dictionary mapping basin ID to its
    attractor set at the `i`-th parameter combination.
 
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
