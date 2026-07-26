@@ -102,7 +102,7 @@ end
         ics = [SVector(v, w + I) for w in grid[2] for v in grid[1]]
         return ics
     end
-    icsgen = PerParameterInitialConditions(make_ics)
+    icsgen = PerParameterInitialConditions(make_ics, 25)
 
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)
@@ -111,7 +111,7 @@ end
 
     pcurve = [Dict(1 => r) for r in rs]
     fractions_cont, attractors_cont = global_continuation(
-        gca, pcurve, icsgen; samples_per_parameter = 25, show_progress = false
+        gca, pcurve, icsgen; show_progress = false
     )
 
     # all times 2 attractors, never the 0.0 attractor

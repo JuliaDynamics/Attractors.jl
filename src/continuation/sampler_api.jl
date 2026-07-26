@@ -75,11 +75,11 @@ It inputs the current parameter(s) of a [`global_continuation`](@ref)
 and ouputs an iterable of `N` initial conditions.
 The sampler generates overall `N` initial conditions.
 """
-struct PerParameterInitialConditions{F}
+struct PerParameterInitialConditions{F} <: InitialConditionSampler
     f::F
     N::Int
 end
-generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, N)
+generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.N)
 
 """
 Alex's paper.
