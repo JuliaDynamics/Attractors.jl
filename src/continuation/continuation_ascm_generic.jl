@@ -104,11 +104,11 @@ ASCM(bmap, matcher = MatchBySSSetDistance(); seeding = _default_seeding) =
     ASCM(bmap, matcher, seeding)
 
 # TODO: This is currently not used, and not sure if it has to be.
-function _scaled_seeding(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
-    max_possible_seeds = 6
-    seeds = round(Int, log(max_possible_seeds, length(attractor)))
+function _scaled_seeding(attractor::AbstractStateSpaceSet, rng = MersenneTwister(1))
+    max_possible_seeds = 9 # ≈ log(10,000)
+    seeds = round(Int, log(length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
-    return (rand(rng, vec(attractor)) for _ in 1:seeds)
+    return (rand(rng, attractor) for _ in 1:seeds)
 end
 
 # This is the one used
