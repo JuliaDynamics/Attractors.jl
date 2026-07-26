@@ -19,7 +19,7 @@ export BasinMap,
     StabilityQuantifiersAccumulator,
     finalize_accumulator
 
-ValidICS = Union{AbstractVector, Function}
+ValidICS = Union{AbstractVector, Function, Base.Generator}
 
 #########################################################################################
 # BasinMap structure definition
@@ -153,10 +153,11 @@ function basins_fractions(
         basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
     else
         # collect all initial conditions
-        icscol = if ics isa Function
-            StateSpaceSet([copy(ics()) for _ in 1:N])
-        else
+        # TODO: We do some unecessary copying here I feel like... maybe we can improve?
+        icscol = if ics isa AbstractVector
             copy(ics)
+        else
+            StateSpaceSet([copy(ics()) for _ in 1:N])
         end
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)

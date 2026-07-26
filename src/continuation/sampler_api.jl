@@ -13,9 +13,6 @@ Concerete subtypes are:
 - [`RandomICSampler`]
 - [`PrescribedICs`]
 - [`PerParameterICs`](@ref)
-- [`BayesianUpdateSampler`](@ref)
-
-
 """
 abstract type InitialConditionSampler end
 
@@ -52,8 +49,8 @@ struct RandomICSampler::F <: InitialConditionSampler
     f::F
     N::Int
 end
-
 RandomICSampler(N::Int, args...; kw...) = RandomICSampler(statespace_sampler(args...; kw...)[1], N)
+generate_ics(p::RandomICSampler, args...) = (p.f() for _ in 1:p.N)
 
 """
     PrescribedICs(u0s::AbstractVector) <: InitialConditionSampler
@@ -64,6 +61,7 @@ Wrapper around a container of initial conditions that simply provides
 struct PrescribedICs{V<:AbstractVector} <: InitialConditionSampler
     ics::V
 end
+generate_ics(p::PrescribedICs, args...) = p.ics
 
 """
     PerParameterICs(f, N::Int) <: InitialConditionSampler
@@ -76,12 +74,13 @@ and ouputs an initial condition. It generates `N` initial conditions
 at a given parameter.
 """
 struct PerParameterInitialConditions{F}
-    generator::F
+    f::F
     N::Int
 end
+generate_ics(p::PerParameterInitialConditions, params, args...) = (p.f(params) for _ in 1:p.N)
 
 """
-    Alex's paper.
+Alex's paper.
 """
 struct BayesianUpdateSampler::F <: InitialConditionSampler
     f::F

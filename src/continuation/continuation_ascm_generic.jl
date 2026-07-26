@@ -148,13 +148,7 @@ function global_continuation(
                 push!(additional_ics, u0)
             end
         end
-        # now prepare the initial conditions if per-parameter is requested
-        if ics isa PerParameterInitialConditions
-            pics = ics.generator(p, N)
-        else
-            pics = ics
-        end
-        TODO: okay this complicates things a bit because you also need the basin fractions update?
+        # prepare the initial conditions
         pics = generate_ics(icsampler, p)
         # and finally call basin fractions; it knows how to do all calculations given the bmap
         ret = basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
