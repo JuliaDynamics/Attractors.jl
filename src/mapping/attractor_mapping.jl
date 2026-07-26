@@ -146,7 +146,7 @@ function basins_fractions(
     N = used_container ? length(ics) : N
     progress = ProgressMeter.Progress(
         N;
-        desc = "Mapping i.c. to attractors:", PMKWARGS..., offset, enabled = show_progress
+        desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
     )
     labels = Vector{Int}(undef, used_container ? N : 0)
     ffs = if allows_mapper_u0(bmap)
