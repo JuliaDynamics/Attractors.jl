@@ -93,6 +93,7 @@ if DO_EXTENSIVE_TESTS
         ds = DeterministicIteratedMap(henon_rule, ones(2), [a, b])
         ps = range(0.6, 1.1; length = 11)
         pidx = 1
+        pcurve = [Dict(1 => p) for p in ps]
         sampler, = statespace_sampler(HRectangle([-2, -2], [2, 2]), 1234)
 
         # Feature based on period.
@@ -115,9 +116,10 @@ if DO_EXTENSIVE_TESTS
             T = 10, Ttr = 2000, threaded = true
         )
         gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
+        sampler = RandomICSampler(sampler, 100)
         fractions_cont, attractors_cont = global_continuation(
-            gap, ps, pidx, sampler;
-            samples_per_parameter = 100, show_progress = false
+            gap, pcurve, sampler;
+            show_progress = false
         )
 
         for (i, p) in enumerate(ps)

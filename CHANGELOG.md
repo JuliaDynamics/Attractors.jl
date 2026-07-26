@@ -9,6 +9,10 @@ This release accompanies the release of our paper "Global continuation as a comp
   additional quantities after sampling the state space.
 - `continuation_series` now allows for mixed type outputs, so that the fill value
   can be of different type (e.g., `missing`) than the continuation quantity.
+- New API for instructing `global_continuation` on how to sample initial conditions
+  structured around a new abstract type `InitialConditionSampler`.
+  - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
+    to come in the future.
 
 ## Deprecations
 
@@ -16,6 +20,9 @@ This release accompanies the release of our paper "Global continuation as a comp
 - **DEPRECATED**: calling `global_continuation` with `prange, pidx` is deprecated.
   Use the version where a single `pcurve` is provided instead, by making
   `pcurve = [Dict(pidx => p) for p in prange]`.
+- **DEPRECATED**: giving a vector of initial conditions, or a sampling function,
+  as the last argument to `global_continuation` is deprecated. Use an instance of a subtype
+  of `InitialConditionSampler` instead.
 
 ## Renaming of stability measures
 
