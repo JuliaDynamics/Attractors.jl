@@ -117,7 +117,7 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
 end
 
 function global_continuation(
-        ascm::AttractorSeedContinueMatch, pcurve, ics;
+        ascm::AttractorSeedContinueMatch, pcurve, icsampler;
         samples_per_parameter = 100, show_progress = true,
     )
     N = samples_per_parameter
@@ -154,6 +154,8 @@ function global_continuation(
         else
             pics = ics
         end
+        TODO: okay this complicates things a bit because you also need the basin fractions update?
+        pics = generate_ics(icsampler, p)
         # and finally call basin fractions; it knows how to do all calculations given the bmap
         ret = basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
         fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
