@@ -45,7 +45,7 @@ The following convenience signature is also provided
 which propagates `args, kw` to [`statespace_sampler`](@ref) and uses the generated
 sampler as the function `f`.
 """
-struct RandomICSampler::F <: InitialConditionSampler
+struct RandomICSampler{F} <: InitialConditionSampler
     f::F
     N::Int
 end
@@ -82,7 +82,7 @@ generate_ics(p::PerParameterInitialConditions, params, args...) = (p.f(params) f
 """
 Alex's paper.
 """
-struct BayesianUpdateSampler::F <: InitialConditionSampler
+struct BayesianUpdateSampler{F} <: InitialConditionSampler
     f::F
     Ndense::Int
     Nsparse::Int
