@@ -157,7 +157,7 @@ function basins_fractions(
         icscol = if ics isa AbstractVector
             copy(ics)
         else
-            StateSpaceSet([copy(ics()) for _ in 1:N])
+            StateSpaceSet([copy(_get_ic(ics, i)) for i in 1:N])
         end
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)
@@ -202,6 +202,8 @@ function basins_fractions_grouped(bmap, ics, progress, labels)
     error("Must be implemented for bmap of type $(nameof(typeof(bmap)))")
 end
 
+# Generator dispatch is needed because that's what `Sampler` types return
+_get_ic(ics::Base.Generator, i) = first(iterate(ics))
 _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractVector, i) = ics[i]
 

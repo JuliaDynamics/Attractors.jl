@@ -118,9 +118,8 @@ end
 
 function global_continuation(
         ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionSampler;
-        samples_per_parameter = 100, show_progress = true,
+        show_progress = true,
     )
-    N = samples_per_parameter
     progress = ProgressMeter.Progress(
         length(pcurve);
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
@@ -151,7 +150,7 @@ function global_continuation(
         # prepare the initial conditions
         pics = generate_ics(icsampler, p)
         # and finally call basin fractions; it knows how to do all calculations given the bmap
-        ret = basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
+        ret = basins_fractions(bmap, pics; N = length(icsampler), additional_ics, show_progress, offset = 2)
         fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(bmap))

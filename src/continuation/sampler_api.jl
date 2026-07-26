@@ -1,5 +1,5 @@
 export InitialConditionSampler, generate_ics, update_sampler!
-export PerParameterInitialConditions
+export RandomICSampler, PerParameterICs, PerParameterInitialConditions
 
 """
     InitialConditionSampler
@@ -15,6 +15,7 @@ Concerete subtypes are:
 - [`PerParameterICs`](@ref)
 """
 abstract type InitialConditionSampler end
+Base.length(s::InitialConditionSampler) = s.N
 
 """
     generate_ics(sampler::InitialConditionsSampler, p::Dict)
@@ -62,22 +63,23 @@ struct PrescribedICs{V<:AbstractVector} <: InitialConditionSampler
     ics::V
 end
 generate_ics(p::PrescribedICs, args...) = p.ics
+Base.length(s::PrescribedICs) = length(s.ics)
 
 """
     PerParameterICs(f, N::Int) <: InitialConditionSampler
 
 Wrapper around a function `f`, to be called as
-`f(parameters) -> u`.
+`f(parameters, N)`.
 It inputs the current parameter(s) of a [`global_continuation`](@ref)
 (elements of `pcurve` which are always a dictionary),
-and ouputs an initial condition. It generates `N` initial conditions
-at a given parameter.
+and ouputs an iterable of `N` initial conditions.
+The sampler generates overall `N` initial conditions.
 """
 struct PerParameterInitialConditions{F}
     f::F
     N::Int
 end
-generate_ics(p::PerParameterInitialConditions, params, args...) = (p.f(params) for _ in 1:p.N)
+generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, N)
 
 """
 Alex's paper.
