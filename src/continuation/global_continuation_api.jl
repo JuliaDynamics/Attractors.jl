@@ -57,13 +57,13 @@ global continuation. Use [`hilbert_pcurve`](@ref) to cover multiparameter spaces
 as outlined in our article [Datseris2026](@cite).
 
 The global continuation algorithm typically references a [`BasinMap`](@ref)
-which is used to find the attractors and basins of a dynamical system. Additional
+which is used to find basins and corresponding attractors of a dynamical system. Additional
 arguments that control how to continue/track/match attractors across a parameter range
 are given when creating `gca`.
 
 The basin properties and the attractors (or some representation of them) are continued
-across the parameter curve, whose elements are simply given to `DynamicalSystems.set_parameter!s`
-to update system parameters. This is fundamentally different to local continuation,
+across the parameter curve, whose elements are simply given to `DynamicalSystems.set_parameters!`
+to update system parameters. This is fundamentally different to local (traditional) continuation,
 see the online documentation or our article for details.
 """
 function global_continuation end
