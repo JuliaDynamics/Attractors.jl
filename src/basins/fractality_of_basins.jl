@@ -77,6 +77,7 @@ basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, es::NTuple{D, <:Integer})
 
 """
     basin_entropy(BoA::SampledBasinsOfAttraction{<:Integer}, n = 100; kw...) -> Sb, Sbb
+    basin_entropy(points::AbstractVector, labels::AbstractVector, n = 100; kw...) -> Sb, Sbb
 
 Return the basin entropy `Sb` and basin boundary entropy `Sbb` of sampled basins
 using a nearest-neighbor estimate. For each sampled point, a local neighborhood is
@@ -90,6 +91,11 @@ from the relative frequencies of basin IDs in this neighborhood.
 function basin_entropy(BoA::SampledBasinsOfAttraction{<:Integer}, n::Integer = 100; metric = Euclidean())
     points = BoA.sampled_points
     ids = BoA.points_ids
+    return basin_entropy(points, ids, n; metric)
+end
+
+# This function was made by GPT-5.3-Codex
+function basin_entropy(points::AbstractVector, ids::AbstractVector{<:Integer}, n::Int; metric = Euclidean())
     N = length(points)
     N ≤ 1 && return 0.0, 0.0
 
