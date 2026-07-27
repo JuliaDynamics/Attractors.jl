@@ -7,7 +7,7 @@ export uncertainty_exponent, basins_fractal_dimension, basins_fractal_test, basi
 Return the basin entropy [Daza2016](@cite) `Sb` and basin boundary entropy `Sbb`
 of the given `basins` of attraction by considering `ε`-sized boxes along each dimension.
 
-The second function signature exists for backwards compatibility. 
+The second function signature exists for backwards compatibility.
 
 ## Description
 
@@ -75,6 +75,73 @@ end
 
 basin_entropy(BoA::ArrayBasinsOfAttraction{<:Integer}, es::NTuple{D, <:Integer}) where {D} = basin_entropy(BoA.basins, es)
 
+"""
+    basin_entropy(BoA::SampledBasinsOfAttraction{<:Integer}, n = 100; kw...) -> Sb, Sbb
+
+Return the basin entropy `Sb` and basin boundary entropy `Sbb` of sampled basins
+using a nearest-neighbor estimate. For each sampled point, a local neighborhood is
+formed by its `n` nearest neighbors, and the probabilities ``p_{ij}`` are estimated
+from the relative frequencies of basin IDs in this neighborhood.
+
+## Keyword arguments
+
+- `metric = Euclidean()`: the metric to use when constructing the KDTree.
+"""
+function basin_entropy(BoA::SampledBasinsOfAttraction{<:Integer}, n::Integer = 100; metric = Euclidean())
+    points = BoA.sampled_points
+    ids = BoA.points_ids
+    N = length(points)
+    N ≤ 1 && return 0.0, 0.0
+
+    tree = searchstructure(KDTree, points, metric)
+    nneigh = min(n, N - 1)
+    kquery = min(n + 1, N)
+    idxs = zeros(Int, kquery)
+    dists = zeros(Float64, kquery)
+
+    Sb = 0.0
+    Nb = 0
+    local_idxs = zeros(Int, nneigh)
+    skip = Returns(false)
+    sort_result = false
+
+    for i in eachindex(points)
+        Neighborhood.NearestNeighbors.knn_point!(
+            tree, points[i], sort_result, dists, idxs, skip
+        )
+
+        found = 0
+        for j in eachindex(idxs)
+            idx = idxs[j]
+            if idx == i
+                continue
+            end
+            found += 1
+            local_idxs[found] = idx
+            found == nneigh && break
+        end
+
+        # Fallback: in degenerate cases where self wasn't returned by knn query,
+        # fill remaining slots directly from the returned nearest-neighbor indices.
+        if found < nneigh
+            for j in eachindex(idxs)
+                found += 1
+                local_idxs[found] = idxs[j]
+                found == nneigh && break
+            end
+        end
+
+        neighbor_ids = @view ids[local_idxs]
+        uvals = unique(neighbor_ids)
+        if length(uvals) > 1
+            Nb += 1
+            Sb += _box_entropy(neighbor_ids, uvals)
+        end
+    end
+
+    return Sb / N, Nb == 0 ? 0.0 : Sb / Nb
+end
+
 function _box_entropy(box_values, unique_vals = unique(box_values))
     h = 0.0
     for v in unique_vals
@@ -86,14 +153,11 @@ end
 
 
 """
-    basin_entropy(BoA::ArrayBasinsOfAttraction, ε = 20, Ntotal = 1000) -> test_res, Sbb
     basins_fractal_test(basins; ε = 20, Ntotal = 1000) -> test_res, Sbb
 
 Perform an automated test to decide if the boundary of the basins has fractal structures
 based on the method of Puy et al. [Puy2021](@cite).
 Return `test_res` (`:fractal` or `:smooth`) and the mean basin boundary entropy.
-
-The second function signature exists for backwards compatibility. 
 
 ## Keyword arguments
 
@@ -185,7 +249,7 @@ linreg(x, y) = hcat(fill!(similar(x), 1), x) \ y
 Estimate the fractal dimension `d` of the boundary between basins of attraction using
 a box-counting algorithm for the boxes that contain at least two different basin IDs.
 
-The second function signature exists for backwards compatibility. 
+The second function signature exists for backwards compatibility.
 
 ## Keyword arguments
 
@@ -258,7 +322,7 @@ The output `α` is the estimation of the uncertainty exponent using the box-coun
 dimension of the boundary by fitting a line in the `log.(N_ε)` vs `log.(1/ε)` curve.
 However it is recommended to analyze the curve directly for more accuracy.
 
-The second function signature exists for backwards compatibility. 
+The second function signature exists for backwards compatibility.
 
 ## Keyword arguments
 * `range_ε = 2:maximum(size(basins))÷20` is the range of sizes of the ball to
