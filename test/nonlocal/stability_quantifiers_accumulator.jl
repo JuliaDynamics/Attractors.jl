@@ -352,6 +352,69 @@ end
     end
 end
 
+@testset "sampled basin entropy quantifiers" begin
+    function dumb_map(z, p, n)
+        x, y = z
+        r = p[1]
+        if r < 0.5
+            return SVector(0.0, 0.0)
+        else
+            if x ≥ 0
+                return SVector(r, r)
+            else
+                return SVector(-r, -r)
+            end
+        end
+    end
+
+    r = 1.0
+    grid = ([-1, 0, 1], [-1, 0, 1])
+    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
+    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
+    A = ics_from_grid(grid)
+
+    accumulator = StabilityQuantifiersAccumulator(
+        bmap;
+        n_basin_entropy = 2,
+        idistances = [],
+    )
+    for u0 in A
+        accumulator(u0)
+    end
+    results = finalize_accumulator(accumulator)
+
+    @test haskey(results, "basin_entropy")
+    @test haskey(results, "boundary_basin_entropy")
+    @test results["basin_entropy"] isa Dict
+    @test results["boundary_basin_entropy"] isa Dict
+
+    nids = length(unique(v for v in accumulator.bs if v != -1))
+    hmax = log(nids)
+    bvals = [v for v in values(results["basin_entropy"]) if !isnan(v)]
+    bbvals = [v for v in values(results["boundary_basin_entropy"]) if !isnan(v)]
+    @test !isempty(bvals)
+    @test !isempty(bbvals)
+    @test all(0.0 ≤ v ≤ hmax for v in bvals)
+    @test all(0.0 ≤ v ≤ hmax for v in bbvals)
+
+    pcurve = [[1 => rr] for rr in [0.5, 1.0]]
+    attractors_cont = [
+        Dict(1 => StateSpaceSet([SVector(0.0, 0.0)])),
+        Dict(2 => StateSpaceSet([SVector(1.0, 1.0)]), 1 => StateSpaceSet([SVector(-1.0, -1.0)])),
+    ]
+    quantifiers_cont = stability_quantifiers_along_continuation(
+        dynamics, attractors_cont, pcurve, A;
+        ε = 0.1,
+        n_basin_entropy = 2,
+        show_progress = false,
+        proximity_mapper_options = (Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000),
+    )
+    @test haskey(quantifiers_cont, "basin_entropy")
+    @test haskey(quantifiers_cont, "boundary_basin_entropy")
+    @test length(quantifiers_cont["basin_entropy"]) == 2
+    @test length(quantifiers_cont["boundary_basin_entropy"]) == 2
+end
+
 
 @testset "accumulator with featurizer" begin
     function dumb_map(z, p, n)
