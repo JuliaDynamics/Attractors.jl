@@ -62,6 +62,10 @@ more rirogously and is estimated more accurately for a proximity bmap.
   condition `u0` and an attractor `A`. Estimated via `set_distance([u0], A, distance)`.
 * `idistances = [Euclidean()]`: A vector of point distances given to [`intermingedness`](@ref)
   for calculating the intermingledness of basins of attraction.
+  If this is empty, intermingledness is not calculated.
+* `n_basin_entropy = 100`: number of nearest neighbors used for sampled-basin entropy.
+* `basin_entropy = true`: if `true`, compute sampled-basin entropy quantifiers; if `false`,
+  skip them because they can be expensive.
 
 ## Description
 
@@ -154,6 +158,8 @@ The word "distance" here refers to the distance established by the `distance` ke
   be produced, each ending with the number `i`. Because intermingledness is expensive to
   compute for a large number of initial conditions, you can disable this by providing
   an empty vector to `idistances`. See [`intermingedness`](@ref) for more information.
+* `basin_entropy` and `boundary_basin_entropy`: estimated from the sampled basins with the
+  nearest-neighbor method (if `basin_entropy = true`).
 
 ### Extra quantifiers
 
@@ -199,12 +205,15 @@ struct StabilityQuantifiersAccumulator{AM <: BasinMap, V <: AbstractVector, F, M
     distance::M
     extras::E
     idistances::X
+    basin_entropy::Bool
+    n_basin_entropy::Int
 end
 
 function StabilityQuantifiersAccumulator(
         bmap::BasinMap, extr = Dict();
         finite_time = 1.0, weighting_distribution = EverywhereUniform(),
         distance = Centroid(), idistances = [Euclidean()],
+        basin_entropy::Bool = true, n_basin_entropy::Integer = 100,
     )
     reset_mapper!(bmap)
     ds = referenced_dynamical_system(bmap)
@@ -214,6 +223,9 @@ function StabilityQuantifiersAccumulator(
     M = typeof(distance)
     W = typeof(weighting_distribution)
     extras = _convert_to_dict(extr)
+    if n_basin_entropy < 1
+        throw(ArgumentError("`n_basin_entropy` must be a positive integer"))
+    end
     return StabilityQuantifiersAccumulator{AM, V, F, M, W, typeof(extras), typeof(idistances)}(
         bmap,
         Vector{V}(),
@@ -223,7 +235,9 @@ function StabilityQuantifiersAccumulator(
         weighting_distribution,
         distance,
         extras,
-        idistances
+        idistances,
+        basin_entropy,
+        Int(n_basin_entropy),
     )
 end
 
@@ -480,9 +494,16 @@ function finalize_accumulator(accumulator::StabilityQuantifiersAccumulator)
         output["intermingledness$(i)"] = m
     end
 
+    # sampled-basin object reused by optional quantifiers
+    sboa = SampledBasinsOfAttraction(bs, attractors, u0s)
+    if accumulator.basin_entropy
+        Sb, Sbb = basin_entropy(sboa, accumulator.n_basin_entropy)
+        output["basin_entropy"] = Dict(id => (id == -1 ? NaN : Sb) for id in ids)
+        output["boundary_basin_entropy"] = Dict(id => (id == -1 ? NaN : Sbb) for id in ids)
+    end
+
     # extra quantifiers requested by the user
     if !isempty(accumulator.extras)
-        sboa = SampledBasinsOfAttraction(bs, attractors, u0s)
         for (key, f) in accumulator.extras
             output[key] = f(sboa, ds)
         end

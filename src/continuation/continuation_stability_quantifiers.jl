@@ -102,6 +102,10 @@ There are two reasons to use this method:
 - `ε = nothing`: given to [`BasinMapProximity`](@ref).
 - `proximity_mapper_options = NamedTuple()`: extra keywords for `BasinMapProximity`.
 - `distance, finite_time, weighting_distribution`: given to [`StabilityQuantifiersAccumulator`](@ref).
+- `basin_entropy = true`: given to [`StabilityQuantifiersAccumulator`](@ref) to enable/disable
+    sampled-basin entropy quantifiers.
+- `n_basin_entropy = 100`: given to [`StabilityQuantifiersAccumulator`](@ref) as the number
+    of nearest neighbors used by sampled-basin entropy quantifiers.
 - `samples_per_parameter = 1000`: how many samples to use when estimating stability quantifiers
   via [`StabilityQuantifiersAccumulator`](@ref). Ignored when `ics` is not a function.
 
@@ -122,6 +126,8 @@ function stability_quantifiers_along_continuation(
         ε = nothing,
         weighting_distribution = EverywhereUniform(),
         finite_time = 1.0,
+        basin_entropy = true,
+        n_basin_entropy = 100,
         samples_per_parameter = 1000,
         distance = Centroid(),
         proximity_mapper_options = NamedTuple(),
@@ -175,7 +181,9 @@ function stability_quantifiers_along_continuation(
         accumulator = StabilityQuantifiersAccumulator(
             BasinMapProximity(ds, attractors; ε = ε_, proximity_mapper_options...);
             weighting_distribution = wd, finite_time = ft,
-            distance = d
+            distance = d,
+            basin_entropy = basin_entropy,
+            n_basin_entropy = n_basin_entropy,
         )
 
         if ics isa PerParameterInitialConditions
