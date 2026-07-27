@@ -78,3 +78,17 @@ end
     basins = rand(Int, 50, 50)
     @test_throws ArgumentError basin_entropy(basins, 7)
 end
+
+@testset "Sampled basin entropy" begin
+    points = StateSpaceSet([SVector(-2.0), SVector(-1.0), SVector(1.0), SVector(2.0)])
+    basins = Int[1, 1, 2, 2]
+    attractors = Dict(
+        1 => StateSpaceSet([SVector(-1.5)]),
+        2 => StateSpaceSet([SVector(1.5)]),
+    )
+    sboa = SampledBasinsOfAttraction(basins, attractors, points)
+
+    Sb, Sbb = basin_entropy(sboa, 2)
+    @test Sb ≈ log(2)
+    @test Sbb ≈ log(2)
+end
