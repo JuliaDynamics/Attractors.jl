@@ -86,19 +86,28 @@ generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.
 
 From Alex's paper.
 """
-struct BayesianUpdateSampler{D, S} <: InitialConditionSampler
-    dense_sampler::D
-    sparse_sampler::S
+struct BayesianUpdateSampler{D, S, R <: HRectangle} <: InitialConditionSampler
+    dense_n::Int
+    sparse_n::Int
     γ::Float64
+    β::Float64
+    λ::Float64
+    boxes::Vector{R}
     more_fields
 end
 
 function generate_ics(sampler::BayesianUpdateSampler)
-    η = compute_log_bayes_factor(sampler.γ)
-    if η < 0
-        return genereate_ics(sampler.dense_sampler)
-    else
-        return generate_ics(sampler.sparse_sampler)
+    all_ics = []
+    # loop through boxes
+    for (boxi, box) in enumerate(sampler.boxes)
+        # for each box, compute η
+        η = somehow
+        if η < 0
+            ics = random_ics_from_box(box, dense_n)
+        else
+            ics = random_ics_from_box(box, sparse_n)
+        end
+        append!(all_ics, ics)
     end
 end
 
