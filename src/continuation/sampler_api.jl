@@ -90,6 +90,7 @@ struct BayesianUpdateSampler{D, S} <: InitialConditionSampler
     dense_sampler::D
     sparse_sampler::S
     γ::Float64
+    more_fields
 end
 
 function generate_ics(sampler::BayesianUpdateSampler)
@@ -99,4 +100,8 @@ function generate_ics(sampler::BayesianUpdateSampler)
     else
         return generate_ics(sampler.sparse_sampler)
     end
+end
+
+function update_sampler!(sampler::BayesianUpdateSampler, args...)
+    # Processing stuff
 end

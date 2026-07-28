@@ -158,6 +158,9 @@ function global_continuation(
         # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
+        # update the sampler type, if needed
+        update_sampler!(sampler, what_do_we_need)
+        # show progress
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
