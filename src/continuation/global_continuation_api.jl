@@ -39,10 +39,10 @@ about additional information added to this output.
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format.
 """
-struct GlobalContinuationOutput{SSS<:StateSpaceSet, D<:Dict, A}
+struct GlobalContinuationOutput{SSS<:StateSpaceSet, F<:AbstractFloat, V<:Vector, A}
     attractors::Vector{Dict{Int, SSS}}
     fractions::Vector{Dict{Int, F}}
-    quantifiers::Dict{String, Vector{D}}
+    quantifiers::Dict{String, V}
     other::Dict{String, A} # TODO: Can this include the extras of accumulation?
 end
 

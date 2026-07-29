@@ -189,14 +189,14 @@ function global_continuation(
     # and finally match the rest of the tracked quantities, as well as transform
     # them to the agreed output
     fractions, quantifiers = match_and_generate_output(bmap, quantifiers_cont, rmaps)
-    out = GlobalContinuationOutput(attractors, fractions, quantifiers, other_cont)
+    out = GlobalContinuationOutput(attractors_cont, fractions, quantifiers, other_cont)
     return out
 end
 
 # This function has a generic form that just matches fractions, and a more technical
 # form that matches various quantifiers and is taken care off by the accumulator
 function match_and_generate_output(bmap, quantifiers_cont, rmaps)
-    fractions_cont = quantifiers_cont
+    fractions_cont = Dict{Int, Float64}.(quantifiers_cont)
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, Dict{String, Vector}()
 end
