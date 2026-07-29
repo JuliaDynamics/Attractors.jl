@@ -1,4 +1,4 @@
-export InitialConditionSampler, generate_ics, update_sampler!
+export InitialConditionSampler
 export RandomICSampler, PerParameterICs, PerParameterInitialConditions
 
 """
@@ -6,7 +6,7 @@ export RandomICSampler, PerParameterICs, PerParameterInitialConditions
 
 Data structure deciding how to sample initial conditions during
 [`global_continuation`](@ref). It defines an extendable interface
-based on the internal functions [`generate_ics`](@ref) and [`inform_sampler!`](@ref).
+based on the internal functions `generate_ics, update_sampler!, resampling_required`.
 
 Concerete subtypes are:
 
@@ -31,6 +31,7 @@ function generate_ics end
 Todo, decide `args`.
 """
 update_sampler!(sampler, args...) = nothing
+resampling_required(sampler) = false
 
 """
     RandomICSampler(f::Function, N::Int) <: InitialConditionSampler
@@ -93,10 +94,13 @@ struct BayesianUpdateSampler{D, S, R <: HRectangle} <: InitialConditionSampler
     β::Float64
     λ::Float64
     boxes::Vector{R}
+    resampling_necessary::Bool
     more_fields
 end
 
 function generate_ics(sampler::BayesianUpdateSampler)
+    # This function utilizes `resampling_necessary`.
+
     all_ics = []
     # loop through boxes
     for (boxi, box) in enumerate(sampler.boxes)

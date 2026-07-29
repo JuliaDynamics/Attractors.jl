@@ -154,12 +154,24 @@ function global_continuation(
         fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(bmap))
+        update_sampler!(sampler, what_do_we_need)
+        # Now, check if the sampler requires us to re-sample at the current parameter
+        while resampling_required(sampler)
+            # Do something something,
+            # Generate new ICs,
+            # Do more somthing, and then finally update the sampler again
+            # update the sampler type, if needed
+            update_sampler!(sampler, what_do_we_need)
+
+            # The big question is: how can we re-use the initial conditions
+            # that were already generated and run through basin fractions...?
+            # We can modify basin fractions to return the labels of the init. cond.
+            # as well if this helps.
+        end
+        # All the computations are done, and now we just store the result(s)
         # we don't match attractors here, this happens directly at the end.
-        # here we just store the result
         push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
-        # update the sampler type, if needed
-        update_sampler!(sampler, what_do_we_need)
         # show progress
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
