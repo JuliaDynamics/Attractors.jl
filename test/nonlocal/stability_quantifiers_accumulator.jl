@@ -357,7 +357,9 @@ end
     @testset "continuation" begin
         rs = [0.5, 1.0]
         gca = AttractorSeedContinueMatch(accumulator)
-        quantifiers_cont, attractors_cont = global_continuation(gca, rs, 1, A)
+        pcurve = [Dict(1 => r) for r in rs]
+        gco = global_continuation(gca, pcurve, PrescribedICs(A))
+        quantifiers_cont = gco.quantifiers
         @test quantifiers_cont["extra"] == [Dict(1 => 0, 2 => 3), Dict(1 => 0, 2 => 0)]
     end
 end
@@ -450,7 +452,7 @@ end
     accumulator = StabilityQuantifiersAccumulator(bmap)
 
     @testset "single parameter" begin
-        fs, labels = basins_fractions(accumulator, ics)
+        fs, labels = basins_fractions_labels(accumulator, ics)
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
         quantifiers = finalize_accumulator(accumulator)
         @test isequal(quantifiers["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
@@ -459,8 +461,8 @@ end
     @testset "continuation" begin
         pcurve = [[1 => r] for r in rs]
         acsm = AttractorSeedContinueMatch(accumulator)
-        quantifiers_cont, attractors_cont = global_continuation(acsm, pcurve, ics)
-
+        gco = global_continuation(acsm, pcurve, PrescribedICs(ics))
+        quantifiers_cont = gco.quantifiers
         @test isequal(quantifiers_cont["minimal_critical_shock_magnitude"][2], Dict(2 => 2.0, 1 => 1.0))
         fs = quantifiers_cont["basin_fraction"][1]
         @test all(sort!(collect(v for (k, v) in fs if k != -1)) .≈ [0.333333333333333333, 0.6666666666666])
