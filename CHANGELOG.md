@@ -24,7 +24,8 @@ This release accompanies the release of our paper "Global continuation as a comp
   of `InitialConditionSampler` instead.
 - **DEPRECATED**: Passing a vector of initial conditions or a sampling function to
   `global_continuation` is now deprecated. Use the `InitialConditionSampler` interface.
-
+- **BREAKING**: Anything related to the `par_weight` input to `FeaturizeGroupAcrossParameter` has been removed (it was so far deprecated).
+- **BREAKING**: `info_extraction` keyword argument to `FeaturizeGroupAcrossParameter` is now an optional positional argument.
 
 ### Renaming of stability measures
 

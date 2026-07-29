@@ -27,7 +27,7 @@ The type of output of [`global_continuation`](@ref). It contains the fields:
   `fractions[i]` is a dictionary mapping basin IDs to their basin fraction
   at the `i`-th parameter combination.
 - `quantifiers::Dict{String, Vector{Dict}}`. Quantifiers of the attractors
-  or their basins that have been (potentially) continued. This entry is typically empty,
+  or their basins that have been (potentially) continued. This entry is empty,
   unless continuation is done with [`StabilityQuantifiersAccumulator`](@ref).
   Then, it is a dictionary mapping strings (names of quantifiers) to vectors of dictionaries.
 - `other::Dict{String, Any}`. Any other information was generated during the continuation,
