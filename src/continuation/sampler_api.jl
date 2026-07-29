@@ -71,17 +71,17 @@ Base.length(s::PrescribedICs) = length(s.ics)
     PerParameterICs(f, N::Int) <: InitialConditionSampler
 
 Wrapper around a function `f`, to be called as
-`f(parameters)`.
+`f(parameters, N)`.
 It inputs the current parameter(s) of a [`global_continuation`](@ref)
 (elements of `pcurve` which are always a dictionary), and outputs
-a random initial condition.
+`N` initial conditions.
 The sampler generates overall `N` initial conditions.
 """
 struct PerParameterInitialConditions{F} <: InitialConditionSampler
     f::F
     N::Int
 end
-generate_ics(p::PerParameterInitialConditions, params, args...) = (p.f(params) for _ in p.N)
+generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.N)
 
 """
     BayesianUpdateSampler(dense_sampler, sparse_sampler, γ = 0.5) <: InitialConditionSampler

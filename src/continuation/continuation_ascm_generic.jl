@@ -160,7 +160,6 @@ function global_continuation(
             # Do more somthing, and then finally update the sampler again
             # update the sampler type, if needed
             update_sampler!(sampler, labels)
-
             # TODO: for the future: find a way that the original initial conditions
             # used before the `while` loop, are somehow kept into memory instead
             # of being discarded.

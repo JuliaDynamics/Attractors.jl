@@ -16,6 +16,8 @@ This release accompanies the release of our paper "Global continuation as a comp
   structured around a new abstract type `InitialConditionSampler`.
   - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
     to come in the future.
+  - **DEPRECATED**: Passing a vector of initial conditions or a sampling function to
+    `global_continuation` is now deprecated. Use the aforementioned types.
 
 ## Breaking changes and Deprecations
 

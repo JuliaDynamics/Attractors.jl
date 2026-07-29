@@ -165,7 +165,7 @@ function basins_fractions_labels(bmap::BasinMap, ics;
         N;
         desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
     )
-    labels = Vector{Int}(undef, fill_labels ? N : 0)
+    labels = Vector{Int32}(undef, fill_labels ? N : 0)
     ffs = if allows_mapper_u0(bmap)
         basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
     else
