@@ -32,3 +32,20 @@ end
 @deprecate AttractorsViaProximity BasinMapProximity
 @deprecate stability_measures_along_continuation stability_quantifiers_along_continuation
 @deprecate StabilityMeasuresAccumulator StabilityQuantifiersAccumulator
+
+function global_continuation(alg, prange, pidx, ics; kw...)
+    @warn "passing `prange, pidx` as inputs to `global_continuation` is deprecated. Pass a single `pcurve`."
+    pcurve = [Dict(pidx => p) for p in prange]
+    return global_continuation(alg, pcurve, ics; kw...)
+end
+
+function global_continuation(alg::GlobalContinuationAlgorithm, pcurve::Vector, ics::Union{AbstractVector, Function}; kw...)
+    @warn "You must now pass a subtype of `InitialConditionSampler` explicitly to `global_continuation`.
+    Making the closest type for now..."
+    if ics isa AbstractVector
+        sampler = PrescribedICs(ics)
+    else
+        sampler = RandomICSampler(ics, 100)
+    end
+    return global_continuation(alg, pcurve, sampler; kw...)
+end

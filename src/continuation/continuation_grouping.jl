@@ -54,11 +54,11 @@ function mean_across_features(fs)
 end
 
 function global_continuation(
-        continuation::FeaturizeGroupAcrossParameter, pcurve, ics;
-        show_progress = true, samples_per_parameter = 100
+        continuation::FeaturizeGroupAcrossParameter, pcurve::Vector, ics::InitialConditionSampler;
+        show_progress = true,
     )
     (; bmap, info_extraction, par_weight) = continuation
-    spp, n = samples_per_parameter, length(pcurve)
+    spp, n = length(ics), length(pcurve)
     features = _get_features_pcurve(bmap, ics, n, spp, pcurve, show_progress)
 
     # This is a special clause for implementing the MCBB algorithm (weighting
@@ -77,23 +77,21 @@ function global_continuation(
     return fractions_cont, attractors_cont
 end
 
-function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, ics, n, spp, pcurve, show_progress)
+function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler, n, spp, pcurve, show_progress)
     progress = ProgressMeter.Progress(
-        n;
-        desc = "Generating features", enabled = show_progress, offset = 2,
+        n; desc = "Generating features", enabled = show_progress, offset = 2,
     )
     # Extract the first possible feature to initialize the features container
-    feature = extract_features(bmap, ics; N = 1)
-    features = Vector{typeof(feature[1])}(undef, n * spp)
-    # Collect features
-    for (i, p) in enumerate(pcurve)
-        set_parameters!(bmap.ds, p)
-        if ics isa PerParameterInitialConditions
-            u0s = ics.generator(p, spp)
-        else
-            u0s = ics
-        end
-        current_features = extract_features(bmap, u0s; show_progress, N = spp)
+    u0s = generate_ics(sampler)
+    set_parameters!(bmap.ds, first(pcurve))
+    current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
+    features = Vector{typeof(current_features[1])}(undef, n * spp)
+    features[1:spp] .= current_features
+    # Collect features across parameter axis
+    for i in 2:length(pcurve)
+        set_parameters!(bmap.ds, pcurve[i])
+        u0s = generate_ics(sampler)
+        current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
         features[((i - 1) * spp + 1):(i * spp)] .= current_features
         ProgressMeter.next!(progress)
     end

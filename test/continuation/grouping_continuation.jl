@@ -28,16 +28,17 @@ using Random
     ds = DiscreteDynamicalSystem(dumb_map, [0.0, 0.0], [r])
 
     sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
+    sampler = RandomICSampler(sampler, 100)
 
     rrange = range(0, 2; length = 21)
-    ridx = 1
+    pcurve = [Dict(1 => r) for r in rrange]
 
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     bmap = Attractors.BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = false)
     gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
     fractions_cont, attractors_cont = global_continuation(
-        gap, rrange, ridx, sampler; show_progress = false
+        gap, pcurve, sampler; show_progress = false
     )
 
     for (i, r) in enumerate(rrange)
@@ -92,6 +93,7 @@ if DO_EXTENSIVE_TESTS
         ds = DeterministicIteratedMap(henon_rule, ones(2), [a, b])
         ps = range(0.6, 1.1; length = 11)
         pidx = 1
+        pcurve = [Dict(1 => p) for p in ps]
         sampler, = statespace_sampler(HRectangle([-2, -2], [2, 2]), 1234)
 
         # Feature based on period.
@@ -114,9 +116,10 @@ if DO_EXTENSIVE_TESTS
             T = 10, Ttr = 2000, threaded = true
         )
         gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
+        sampler = RandomICSampler(sampler, 100)
         fractions_cont, attractors_cont = global_continuation(
-            gap, ps, pidx, sampler;
-            samples_per_parameter = 100, show_progress = false
+            gap, pcurve, sampler;
+            show_progress = false
         )
 
         for (i, p) in enumerate(ps)

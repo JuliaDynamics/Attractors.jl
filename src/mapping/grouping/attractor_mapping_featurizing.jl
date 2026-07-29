@@ -166,7 +166,7 @@ function extract_features(
 end
 
 function extract_features_single(bmap, ics; progress, N)
-    N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
+    N = (typeof(ics) <: AbstractVector) ? length(ics) : N # number of actual ICs
     ds = referenced_dynamical_system(bmap)
     first_feature = extract_feature(ds, _get_ic(ics, 1), bmap)
     feature_vector = Vector{typeof(first_feature)}(undef, N)
@@ -181,7 +181,7 @@ end
 
 using OhMyThreads: @tasks, @local
 function extract_features_threaded(bmap, ics; progress, N)
-    N = (typeof(ics) <: Function) ? N : size(ics, 1) # number of actual ICs
+    N = (typeof(ics) <: AbstractVector) ? length(ics) : N # number of actual ICs
     # systems = [deepcopy(bmap.ds) for _ in 1:(Threads.nthreads() - 1)]
     # pushfirst!(systems, bmap.ds)
     first_feature = extract_feature(bmap.ds, _get_ic(ics, 1), bmap)

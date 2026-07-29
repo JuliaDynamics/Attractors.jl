@@ -104,11 +104,11 @@ ASCM(bmap, matcher = MatchBySSSetDistance(); seeding = _default_seeding) =
     ASCM(bmap, matcher, seeding)
 
 # TODO: This is currently not used, and not sure if it has to be.
-function _scaled_seeding(attractor::AbstractStateSpaceSet; rng = MersenneTwister(1))
-    max_possible_seeds = 6
-    seeds = round(Int, log(max_possible_seeds, length(attractor)))
+function _scaled_seeding(attractor::AbstractStateSpaceSet, rng = MersenneTwister(1))
+    max_possible_seeds = 9 # ≈ log(10,000)
+    seeds = round(Int, log(length(attractor)))
     seeds = clamp(seeds, 1, max_possible_seeds)
-    return (rand(rng, vec(attractor)) for _ in 1:seeds)
+    return (rand(rng, attractor) for _ in 1:seeds)
 end
 
 # This is the one used
@@ -117,10 +117,9 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
 end
 
 function global_continuation(
-        ascm::AttractorSeedContinueMatch, pcurve, ics;
-        samples_per_parameter = 100, show_progress = true,
+        ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionSampler;
+        show_progress = true,
     )
-    N = samples_per_parameter
     progress = ProgressMeter.Progress(
         length(pcurve);
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
@@ -148,21 +147,29 @@ function global_continuation(
                 push!(additional_ics, u0)
             end
         end
-        # now prepare the initial conditions if per-parameter is requested
-        if ics isa PerParameterInitialConditions
-            pics = ics.generator(p, N)
-        else
-            pics = ics
-        end
+        # prepare the initial conditions
+        pics = generate_ics(icsampler, p)
         # and finally call basin fractions; it knows how to do all calculations given the bmap
-        ret = basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
-        fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
+        fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
+        update_sampler!(sampler, labels)
+        # Now, check if the sampler requires us to re-sample at the current parameter
+        while resampling_required(sampler)
+            pics = generate_ics(icsampler, p)
+            fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
+            # Do more somthing, and then finally update the sampler again
+            # update the sampler type, if needed
+            update_sampler!(sampler, labels)
+            # TODO: for the future: find a way that the original initial conditions
+            # used before the `while` loop, are somehow kept into memory instead
+            # of being discarded.
+        end
+        # All the computations are done, and now we just store the result(s)
+        # we don't match attractors here, this happens directly at the end.
+        push!(fractions_cont, fs)
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(bmap))
-        # we don't match attractors here, this happens directly at the end.
-        # here we just store the result
-        push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
+        # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end

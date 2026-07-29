@@ -29,7 +29,7 @@ using Random
     grid = (xg, yg)
     mapper1 = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
 
-    sampler, = statespace_sampler(grid, 1234)
+    sampler = RandomICSampler(1000, grid, 1234)
 
     rrange = range(0, 2; length = 20)
     ridx = 1
@@ -48,23 +48,12 @@ using Random
 
     @testset "case: $(i)" for (i, bmap) in enumerate(mappers)
         algo = AttractorSeedContinueMatch(bmap)
-
-        if i < 4
-            fractions_cont, a = global_continuation(
-                algo, rrange, ridx, sampler;
-                show_progress = false, samples_per_parameter = 1000
-            )
-        else # test parameter curve version
-            pcurve = [[1 => r, 2 => 1.1] for r in rrange]
-            fractions_cont, a = global_continuation(
-                algo, pcurve, sampler;
-                show_progress = false, samples_per_parameter = 1000
-            )
-        end
-
+        pcurve = [[1 => r, 2 => 1.1] for r in rrange]
+        fractions_cont, a = global_continuation(
+            algo, pcurve, sampler; show_progress = false,
+        )
 
         for (i, r) in enumerate(rrange)
-
             fs = fractions_cont[i]
             if r < 0.5
                 k = sort!(collect(keys(fs)))
@@ -80,7 +69,6 @@ using Random
             @test sum(values(fs)) ≈ 1
         end
     end
-
 end
 
 @testset "parameter dependent ic" begin
@@ -114,7 +102,7 @@ end
         ics = [SVector(v, w + I) for w in grid[2] for v in grid[1]]
         return ics
     end
-    icsgen = PerParameterInitialConditions(make_ics)
+    icsgen = PerParameterInitialConditions(make_ics, 25)
 
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)
@@ -123,7 +111,7 @@ end
 
     pcurve = [Dict(1 => r) for r in rs]
     fractions_cont, attractors_cont = global_continuation(
-        gca, pcurve, icsgen; samples_per_parameter = 25, show_progress = false
+        gca, pcurve, icsgen; show_progress = false
     )
 
     # all times 2 attractors, never the 0.0 attractor

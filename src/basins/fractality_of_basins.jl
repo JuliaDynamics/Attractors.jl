@@ -127,16 +127,6 @@ function basin_entropy(points::AbstractVector, ids::AbstractVector{<:Integer}, n
             found == nneigh && break
         end
 
-        # Fallback: in degenerate cases where self wasn't returned by knn query,
-        # fill remaining slots directly from the returned nearest-neighbor indices.
-        if found < nneigh
-            for j in eachindex(idxs)
-                found += 1
-                local_idxs[found] = idxs[j]
-                found == nneigh && break
-            end
-        end
-
         neighbor_ids = @view ids[local_idxs]
         uvals = unique(neighbor_ids)
         if length(uvals) > 1

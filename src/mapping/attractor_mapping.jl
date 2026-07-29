@@ -7,6 +7,7 @@ export BasinMap,
     BasinMapFeaturizeGroup,
     ClusteringConfig,
     basins_fractions,
+    basins_fractions_labels,
     convergence_and_basins_of_attraction,
     convergence_and_basins_fractions,
     convergence_time,
@@ -18,8 +19,6 @@ export BasinMap,
     reset_mapper!,
     StabilityQuantifiersAccumulator,
     finalize_accumulator
-
-ValidICS = Union{AbstractVector, Function}
 
 #########################################################################################
 # BasinMap structure definition
@@ -102,7 +101,10 @@ Approximate the state space fractions `fs` of the basins of attraction of a dyna
 system by mapping initial conditions to attractors using `bmap`
 (which contains a reference to a [`DynamicalSystem`](@ref)).
 The fractions are simply the ratios of how many initial conditions ended up
-at each attractor.
+at each attractor. Return the fractions as a dictionary mapping
+basin IDs (integers) to their fractions.
+If you also want to obtain a vector of labels corresponding to each initial condition,
+use the function `basins_fractions_labels` instead.
 
 Initial conditions to use are defined by `ics`. It can be:
 * an `AbstractVector` of initial conditions, in which case all are used.
@@ -133,35 +135,51 @@ See also [`convergence_and_basins_fractions`](@ref).
 * `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
-function basins_fractions(
-        bmap::BasinMap, ics::ValidICS;
+function basins_fractions(bmap::BasinMap, ics; kw...)
+    fs, labels = basins_fractions_labels(bmap, ics; fill_labels = false, kw...)
+    return fs
+end
+
+"""
+    basins_fractions_labels(
+        bmap::BasinMap,
+        ics::Union{AbstractVector, Function};
+        kwargs...
+    )
+
+Same as [`basins_fractions`](@ref) but return two outputs: the fractions dictionary
+and a vector of integers which contains the labels of the provided initial conditions.
+"""
+function basins_fractions_labels(bmap::BasinMap, ics;
         show_progress = true, N = 1000,
+        # This is an internal keyword used by `basin_fractions`
+        fill_labels = true,
         # this is an internal keyword used in the ASCM global conitnuation
         additional_ics = [],
         # and this is another internal keyword for the offset of the progress bar
         # for when this function is called in global continuation
         offset = 0,
     )
-    used_container = ics isa AbstractVector
-    N = used_container ? length(ics) : N
+    N = ics isa AbstractVector ? length(ics) : N
     progress = ProgressMeter.Progress(
         N;
-        desc = "Mapping i.c. to attractors:", PMKWARGS..., offset, enabled = show_progress
+        desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
     )
-    labels = Vector{Int}(undef, used_container ? N : 0)
+    labels = Vector{Int32}(undef, fill_labels ? N : 0)
     ffs = if allows_mapper_u0(bmap)
         basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
     else
         # collect all initial conditions
-        icscol = if ics isa Function
-            StateSpaceSet([copy(ics()) for _ in 1:N])
-        else
+        # TODO: We do some unecessary copying here I feel like... maybe we can improve?
+        icscol = if ics isa AbstractVector
             copy(ics)
+        else
+            StateSpaceSet([copy(_get_ic(ics, i)) for i in 1:N])
         end
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)
     end
-    if used_container
+    if fill_labels
         return ffs, labels
     else
         return ffs
@@ -201,6 +219,8 @@ function basins_fractions_grouped(bmap, ics, progress, labels)
     error("Must be implemented for bmap of type $(nameof(typeof(bmap)))")
 end
 
+# Generator dispatch is needed because that's what `Sampler` types return
+_get_ic(ics::Base.Generator, i) = first(iterate(ics))
 _get_ic(ics::Function, i) = ics()
 _get_ic(ics::AbstractVector, i) = ics[i]
 
