@@ -49,9 +49,10 @@ using Random
     @testset "case: $(i)" for (i, bmap) in enumerate(mappers)
         algo = AttractorSeedContinueMatch(bmap)
         pcurve = [[1 => r, 2 => 1.1] for r in rrange]
-        fractions_cont, a = global_continuation(
+        gco = global_continuation(
             algo, pcurve, sampler; show_progress = false,
         )
+        fractions_cont = gco.fractions
 
         for (i, r) in enumerate(rrange)
             fs = fractions_cont[i]

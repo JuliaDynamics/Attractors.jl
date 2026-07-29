@@ -49,3 +49,13 @@ function global_continuation(alg::GlobalContinuationAlgorithm, pcurve::Vector, i
     end
     return global_continuation(alg, pcurve, sampler; kw...)
 end
+
+function Base.iterate(gco::GlobalContinuationOutput, state = 1)
+    if state == 1
+        return (gco.fractions, 2)
+    elseif state == 2
+        return (gco.attractors, 3)
+    else
+        return nothing
+    end
+end

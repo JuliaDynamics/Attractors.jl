@@ -11,7 +11,8 @@ This release accompanies the release of our paper "Global continuation as a comp
   - When continuing with `StabilityQuantifierAccumulator` the third field `.quantifiers`
     contains that info.
   - For backwards compatibility `iterate` works on `GlobalContinuationOutput` and returns
-    the first two fields. This will be breaking user code that used the accumulator though.
+    the continued fractions and attractors as was the case before v2.
+    This will be breaking user code that used the accumulator though.
 - **BREAKING**: The `basins_fractions` output structure has been reworked. Now `basins_fractions` always returns only one output regardless of inputs: the fractions.
   A new function `basins_fractions_labels` returns also the labels.
 - **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.

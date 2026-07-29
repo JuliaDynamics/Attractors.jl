@@ -45,6 +45,7 @@ struct GlobalContinuationOutput{SSS<:StateSpaceSet, F<:AbstractFloat, V<:Vector,
     quantifiers::Dict{String, V}
     other::Dict{String, A} # TODO: Can this include the extras of accumulation?
 end
+# this type extents `iterate` in deprecated.jl file.
 
 # Internal function for adding info; dispatches on `something`
 function add_extra_continuation_info!(extras::Dict{String,Any}, something)
