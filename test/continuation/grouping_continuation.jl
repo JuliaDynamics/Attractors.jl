@@ -36,10 +36,11 @@ using Random
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     bmap = Attractors.BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = false)
-    gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
-    fractions_cont, attractors_cont = global_continuation(
+    gap = FeaturizeGroupAcrossParameter(bmap)
+    gco = global_continuation(
         gap, pcurve, sampler; show_progress = false
     )
+    fractions_cont, attractors_cont = gco.fractions, gco.attractors
 
     for (i, r) in enumerate(rrange)
 

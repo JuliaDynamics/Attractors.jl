@@ -83,13 +83,13 @@ function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler, n, spp, pcu
     )
     # Extract the first possible feature to initialize the features container
     u0s = generate_ics(sampler)
-    set_parameters!(bmap.ds, first(pcurve))
+    set_parameters!(referenced_dynamical_system(bmap), first(pcurve))
     current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
     features = Vector{typeof(current_features[1])}(undef, n * spp)
     features[1:spp] .= current_features
     # Collect features across parameter axis
     for i in 2:length(pcurve)
-        set_parameters!(bmap.ds, pcurve[i])
+        set_parameters!(referenced_dynamical_system(bmap), pcurve[i])
         u0s = generate_ics(sampler)
         current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
         features[((i - 1) * spp + 1):(i * spp)] .= current_features
