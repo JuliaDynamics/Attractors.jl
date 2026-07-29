@@ -17,8 +17,10 @@ This release accompanies the release of our paper "Global continuation as a comp
   - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
     to come in the future.
 
-## Deprecations
+## Breaking changes and Deprecations
 
+- **BREAKING**: The `basins_fractions` output structure has been reworked. Now `basins_fractions` always returns only one output regardless of inputs: the fractions.
+  A new function `basins_fractions_labels` returns also the labels.
 - **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
 - **DEPRECATED**: calling `global_continuation` with `prange, pidx` is deprecated.
   Use the version where a single `pcurve` is provided instead, by making
@@ -27,14 +29,14 @@ This release accompanies the release of our paper "Global continuation as a comp
   as the last argument to `global_continuation` is deprecated. Use an instance of a subtype
   of `InitialConditionSampler` instead.
 
-## Renaming of stability measures
+### Renaming of stability measures
 
 - The concept of "stability measures" has been renamed into "stability quantifiers" throughout the docs
 - The following renames of API are deprecated:
   - `stability_measures_along_continuation` -> `stability_quantifiers_along_continuation`
   - `StabilityMeasuresAccumulator` -> `StabilityQuantifiersAccumulator`
 
-## Renaming of attractor mappers
+### Renaming of attractor mappers
 
 The `AttractorMapper` constructions have been fully renamed. All following renames are deprecated:
 

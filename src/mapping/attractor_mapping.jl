@@ -20,8 +20,6 @@ export BasinMap,
     StabilityQuantifiersAccumulator,
     finalize_accumulator
 
-ValidICS = Union{AbstractVector, Function, Base.Generator}
-
 #########################################################################################
 # BasinMap structure definition
 #########################################################################################
@@ -152,8 +150,7 @@ end
 Same as [`basins_fractions`](@ref) but return two outputs: the fractions dictionary
 and a vector of integers which contains the labels of the provided initial conditions.
 """
-function basins_fractions_labels(bmap, ics;
-        bmap::BasinMap, ics::ValidICS;
+function basins_fractions_labels(bmap::BasinMap, ics;
         show_progress = true, N = 1000,
         # This is an internal keyword used by `basin_fractions`
         fill_labels = true,

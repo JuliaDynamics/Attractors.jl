@@ -31,7 +31,7 @@ See also [`convergence_and_basins_of_attraction`](@ref).
 function basins_of_attraction(bmap::BasinMap, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     A = ics_from_grid(grid)
-    fs, labels = basins_fractions(bmap, A; kwargs...)
+    _, labels = basins_fractions_labels(bmap, A; kwargs...)
     attractors = extract_attractors(bmap)
     vec(basins) .= vec(labels)
     return ArrayBasinsOfAttraction(basins, attractors, grid)
@@ -48,16 +48,14 @@ along with (perhaps approximated) found attractors contained within a
 The initial conditions `ics`, and the keyword arguments `kwargs` are the same
 as in [`basins_fractions`](@ref) with the same function signature. This function
 is a small convenience wrapper which uses the sampled initial conditions and their
-corresponding labels, from `basins_fractions`, to construct a [`SampledBasinsOfAttraction`](@ref)
+corresponding labels to construct a [`SampledBasinsOfAttraction`](@ref)
 
 Note that, as with the other `basins_of_attraction` function, the return can be decomposed:
 `basins, attractors = boa`.
-
 """
-function basins_of_attraction(bmap::BasinMap, ics::ValidICS; show_progress = true, N = 1000)
-    used_container = ics isa AbstractVector
-    ics_vec = used_container ? ics : [ics() for _ in 1:N]
-    _, labels = basins_fractions(bmap, ics_vec, show_progress = show_progress)
+function basins_of_attraction(bmap::BasinMap, ics; show_progress = true, N = 1000)
+    ics_vec = ics isa AbstractVector ? ics : [copy(ics()) for _ in 1:N]
+    _, labels = basins_fractions_labels(bmap, ics_vec, show_progress = show_progress)
     attractors = extract_attractors(bmap)
     return SampledBasinsOfAttraction(labels, attractors, ics_vec)
 end
@@ -170,7 +168,7 @@ See also [`convergence_time`](@ref).
 - `show_progress = true`: show progress bar.
 """
 function convergence_and_basins_fractions(
-        bmap::BasinMap, ics::ValidICS;
+        bmap::BasinMap, ics;
         show_progress = true, N = 1000,
     )
     N = ics isa Function ? N : length(ics)
