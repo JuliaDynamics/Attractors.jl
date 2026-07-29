@@ -151,12 +151,12 @@ function global_continuation(
         pics = generate_ics(icsampler, p)
         # TODO: Make basin_fractions always return labels in this function
         # and finally call basin fractions; it knows how to do all calculations given the bmap
-        fs, labels = basins_fractions(bmap, pics; N = length(icsampler), additional_ics, show_progress, offset = 2)
+        fs, labels = basins_fractions(bmap, pics; additional_ics, show_progress, offset = 2)
         update_sampler!(sampler, labels)
         # Now, check if the sampler requires us to re-sample at the current parameter
         while resampling_required(sampler)
             pics = generate_ics(icsampler, p)
-            fs, labels = basins_fractions(bmap, pics; N = length(icsampler), additional_ics, show_progress, offset = 2)
+            fs, labels = basins_fractions(bmap, pics; additional_ics, show_progress, offset = 2)
             # Do more somthing, and then finally update the sampler again
             # update the sampler type, if needed
             update_sampler!(sampler, labels)

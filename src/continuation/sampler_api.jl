@@ -70,10 +70,10 @@ Base.length(s::PrescribedICs) = length(s.ics)
     PerParameterICs(f, N::Int) <: InitialConditionSampler
 
 Wrapper around a function `f`, to be called as
-`f(parameters, N)`.
+`f(parameters)`.
 It inputs the current parameter(s) of a [`global_continuation`](@ref)
-(elements of `pcurve` which are always a dictionary),
-and ouputs an iterable of `N` initial conditions.
+(elements of `pcurve` which are always a dictionary), and outputs
+a random initial condition.
 The sampler generates overall `N` initial conditions.
 """
 struct PerParameterInitialConditions{F} <: InitialConditionSampler
@@ -124,6 +124,7 @@ function generate_ics(sampler::BayesianUpdateSampler)
         end
         append!(all_ics, ics)
     end
+    return all_ics
 end
 
 function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
@@ -134,7 +135,7 @@ function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
         labels_for_box = view(labels, counter:(counter + n_box))
         # then make a decision on the η and box flag and whatever
         # update bayesian
-        η = update
+        η = update_somehow(labels_for_box)
         # then update the box flag
         boxes_flags[box_index] = η < 0 ? true : false
         counter += n_box
