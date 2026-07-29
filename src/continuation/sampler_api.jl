@@ -1,5 +1,5 @@
 export InitialConditionSampler
-export RandomICSampler, PerParameterICs, PerParameterInitialConditions
+export RandomICSampler, PrescribedICs, PerParameterICs
 
 """
     InitialConditionSampler
@@ -8,8 +8,8 @@ Data structure deciding how to sample initial conditions during
 [`global_continuation`](@ref).
 Concerete subtypes are:
 
-- [`RandomICSampler`]
-- [`PrescribedICs`]
+- [`RandomICSampler`](@ref)
+- [`PrescribedICs`](@ref)
 - [`PerParameterICs`](@ref)
 
 `InitialConditionSampler` defines a currently experimental extendable interface
@@ -77,11 +77,11 @@ It inputs the current parameter(s) of a [`global_continuation`](@ref)
 `N` initial conditions.
 The sampler generates overall `N` initial conditions.
 """
-struct PerParameterInitialConditions{F} <: InitialConditionSampler
+struct PerParameterICs{F} <: InitialConditionSampler
     f::F
     N::Int
 end
-generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.N)
+generate_ics(p::PerParameterICs, params, args...) = p.f(params, p.N)
 
 """
     BayesianUpdateSampler(dense_sampler, sparse_sampler, γ = 0.5) <: InitialConditionSampler

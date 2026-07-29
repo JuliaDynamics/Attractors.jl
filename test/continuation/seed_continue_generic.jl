@@ -103,7 +103,7 @@ end
         ics = [SVector(v, w + I) for w in grid[2] for v in grid[1]]
         return ics
     end
-    icsgen = PerParameterInitialConditions(make_ics, 25)
+    icsgen = PerParameterICs(make_ics, 25)
 
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)

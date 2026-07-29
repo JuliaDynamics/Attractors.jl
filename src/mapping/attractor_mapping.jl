@@ -179,11 +179,7 @@ function basins_fractions_labels(bmap::BasinMap, ics;
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)
     end
-    if fill_labels
-        return ffs, labels
-    else
-        return ffs
-    end
+    return ffs, labels
 end
 
 function basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)

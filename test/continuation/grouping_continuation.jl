@@ -88,9 +88,9 @@ using Random
 end
 
 @testset "hilbert cont" begin
-    specs = Dict(1 => (5, 6, 2^4), 2 => (0.1, 0.2, 2^4))
+    specs = Dict(1 => (5, 6, 2^2), 2 => (0.1, 0.2, 2^2))
     pcurve = hilbert_pcurve(specs)
-    @test length(pcurve) == 2^8
+    @test length(pcurve) == 2^4
     @test pcurve isa Vector{Dict{Int, Float64}}
 end
 

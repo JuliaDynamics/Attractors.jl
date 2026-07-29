@@ -4,7 +4,7 @@ using Test, Attractors
 using Random
 
 @testset "dumb map analytic" begin
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -19,7 +19,7 @@ using Random
     end
     # Test the computation of nonlocal stability quantifiers using the
     # `StabilityQuantifiersAccumulator` for a dumb map.
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
+    dynamics = DeterministicIteratedMap(dumb_map2, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1.0], [-1, 0, 1.0])
     bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
@@ -176,6 +176,16 @@ using Random
         @test quantifiers_agg["minimal_critical_shock_magnitude"][1][merged_id_1] == Inf
         @test quantifiers_agg["minimal_critical_shock_magnitude"][2][merged_id_2] == Inf
     end
+
+    @testset "continuation with ASCM" begin
+        accumulator = StabilityQuantifiersAccumulator(bmap)
+        pcurve = [[1 => p] for p in [-1.0, 1.0]]
+        ascm = AttractorSeedContinueMatch(accumulator)
+        gco = global_continuation(ascm, pcurve, PrescribedICs(A))
+        @test !isempty(gco.quantifiers)
+        @test haskey(gco.quantifiers, "mean_convergence_pace")
+    end
+
 end
 
 
@@ -291,7 +301,7 @@ end
 
 @testset "user-defined quantifiers" begin
 
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -307,7 +317,7 @@ end
 
     r = 0.5
     grid = ([-1, 0, 1], [-1, 0, 1])
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
+    dynamics = DiscreteDynamicalSystem(dumb_map2, [1.0, 1.0], [r])
     bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
@@ -353,7 +363,7 @@ end
 end
 
 @testset "sampled basin entropy quantifiers" begin
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -369,7 +379,7 @@ end
 
     r = 1.0
     grid = ([-1, 0, 1], [-1, 0, 1])
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
+    dynamics = DiscreteDynamicalSystem(dumb_map2, [1.0, 1.0], [r])
     bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
@@ -417,7 +427,7 @@ end
 
 
 @testset "accumulator with featurizer" begin
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -431,7 +441,7 @@ end
         end
     end
     rs = [0.5, 1.0]
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
+    dynamics = DiscreteDynamicalSystem(dumb_map2, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1], [-1, 0, 1])
     ics = ics_from_grid(grid)
     featurizer(A, t) = A[end]
