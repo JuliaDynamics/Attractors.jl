@@ -26,12 +26,12 @@ The type of output of [`global_continuation`](@ref). It contains the fields:
 - `fractions::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
   `fractions[i]` is a dictionary mapping basin IDs to their basin fraction
   at the `i`-th parameter combination.
-- `quantifiers::Dict{String, Vector{Dict}}`. Any other quantifiers of the attractors
-  or their basins that have been potentially continued. This entry is typically empty,
+- `quantifiers::Dict{String, Vector{Dict}}`. Quantifiers of the attractors
+  or their basins that have been (potentially) continued. This entry is typically empty,
   unless continuation is done with [`StabilityQuantifiersAccumulator`](@ref).
   Then, it is a dictionary mapping strings (names of quantifiers) to vectors of dictionaries.
-- `extras::Dict{String, X}`. Anything extra that has been tracked during the continuation,
-  such as user-specified quantities or information regarding the sampling strategy.
+- `other::Dict{String, Any}`. Any other information was generated during the continuation,
+  that may relate to the sampling strategy, featurizing, or other.
 
 The various algorithms used in global continuation inform in their documentation strings
 about additional information added to this output.
@@ -39,11 +39,16 @@ about additional information added to this output.
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format.
 """
-struct GlobalContinuationOutput{SSS<:StateSpaceSet, F<:AbstractFloat, DE<:Dict}
+struct GlobalContinuationOutput{SSS<:StateSpaceSet, D<:Dict, A}
     attractors::Vector{Dict{Int, SSS}}
     fractions::Vector{Dict{Int, F}}
-    quantifiers::Dict{String, Vector{DQ}}
-    extras::Dict{String, Vector{DE}}
+    quantifiers::Dict{String, Vector{D}}
+    other::Dict{String, A} # TODO: Can this include the extras of accumulation?
+end
+
+# Internal function for adding info; dispatches on `something`
+function add_extra_continuation_info!(extras::Dict{String,Any}, something)
+    return nothing
 end
 
 """
@@ -66,7 +71,6 @@ for how to sample initial conditions to explore the state space during the conti
 
 Return an instance of [`GlobalContinuationOutput`](@ref) that contains the continued
 attractors, their basins fractions, and any other additional information.
-
 
 There is no difference between single or multi parameter
 global continuation. Use [`hilbert_pcurve`](@ref) to cover multiparameter spaces.

@@ -13,7 +13,8 @@ for more options.
 
 ## Description
 
-This is a general/composable global continuation method based on a 4-step process:
+This is a general and composable global continuation method outlined in our article
+[Datseris2026](@cite) and based on a 4-step process:
 
 1. Seed initial conditions from previously found attractors
 2. Propagate those forwards to "continue" previous attractors
@@ -127,9 +128,10 @@ function global_continuation(
     bmap = ascm.bmap
     prev_attractors = empty(extract_attractors(bmap))
     additional_ics = typeof(current_state(referenced_dynamical_system(bmap)))[]
-    # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
-    attractors_cont = Dict[]
-    fractions_cont = Dict[]
+    # setup output containers
+    attractors_cont = typeof(prev_attractors)[]
+    quantifiers_cont = []
+    other_cont = Dict{String, Any}()
     # Continue loop over all remaining parameters
     for (i, p) in enumerate(pcurve)
         set_parameters!(referenced_dynamical_system(bmap), p)
@@ -165,17 +167,36 @@ function global_continuation(
         end
         # All the computations are done, and now we just store the result(s)
         # we don't match attractors here, this happens directly at the end.
-        push!(fractions_cont, fs)
+        if bmap isa StabilityQuantifiersAccumulator
+            quantifiers = finalize_accumulator(bmap)
+        else
+            quantifiers = fs
+        end
+        push!(quantifiers_cont, quantifiers)
         # deepcopy is important here as attractor container always referrenced
         prev_attractors = deepcopy(extract_attractors(bmap))
         push!(attractors_cont, prev_attractors)
+        # any extras that need to be updated can be done so here:
+        add_extra_continuation_info!(other_cont, sampler)
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
+    # we now do the matching pass
     rmaps = match_sequentially!(
         attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(bmap)
     )
+    # and finally match the rest of the tracked quantities, as well as transform
+    # them to the agreed output
+    fractions, quantifiers = match_and_generate_output(bmap, quantifiers_cont, rmaps)
+    out = GlobalContinuationOutput(attractors, fractions, quantifiers, other_cont)
+    return out
+end
+
+# This function has a generic form that just matches fractions, and a more technical
+# form that matches various quantifiers and is taken care off by the accumulator
+function match_and_generate_output(bmap, quantifiers_cont, rmaps)
+    fractions_cont = quantifiers_cont
     match_sequentially!(fractions_cont, rmaps)
-    return fractions_cont, attractors_cont
+    return fractions_cont, Dict{String, Vector}()
 end

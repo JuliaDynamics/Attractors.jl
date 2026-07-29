@@ -71,6 +71,27 @@ function accumulator_continuation_output(quantifiers_cont, rmaps)
     return transposed
 end
 
+function match_and_generate_output(bmap::StabilityQuantifiersAccumulator, quantifiers_cont, rmaps)
+    # match
+    for (i, rmap) in enumerate(rmaps)
+        for dict in values(quantifiers_cont[i + 1])
+            swap_dict_keys!(dict, rmap)
+        end
+    end
+    # "transpose" (i.e., swap nesting order)
+    transposed = Dict{String, Vector{Dict{Int64, Any}}}()
+    for quantifier in quantifiers_cont[1]
+        quantifier_name = quantifier[1]
+        transposed[quantifier_name] = Vector{Dict{Int64, Any}}()
+    end
+    for quantifiers in quantifiers_cont
+        for (quantifier_name, quantifier_dict) in quantifiers
+            push!(transposed[quantifier_name], quantifier_dict)
+        end
+    end
+    return transposed["basin_fraction"], transposed
+end
+
 
 # make sure to allow the possiblity that the proximity options can also be
 # vectors of same length as `pcurve`; Same for the distributions
