@@ -95,7 +95,7 @@ struct BayesianUpdateSampler{D, S, R <: HRectangle} <: InitialConditionSampler
     β::Float64
     λ::Float64
     boxes::Vector{R}
-    boxes_flags::Vector{Bool} # same size as `boxes`
+    boxes_flags::Vector{Bool} # same size as `boxes`, true if resampling is required for this box
     resampling_necessary::Bool
     more_fields
 end
@@ -144,3 +144,5 @@ function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
     # Processing stuff
     return nothing
 end
+
+resampling_required(sampler::BayesianUpdateSampler) = any(sampler.boxes_flags)
