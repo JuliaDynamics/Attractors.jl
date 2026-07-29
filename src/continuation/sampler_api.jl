@@ -140,4 +140,5 @@ function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
         counter += n_box
     end
     # Processing stuff
+    return nothing
 end
