@@ -32,6 +32,7 @@ The type of output of [`global_continuation`](@ref). It contains the fields:
   Then, it is a dictionary mapping strings (names of quantifiers) to vectors of dictionaries.
 - `other::Dict{String, Any}`. Any other information was generated during the continuation,
   that may relate to the sampling strategy, featurizing, or other.
+- `pcurve::Vector{<:Dict}`. The parameter curve the continuation continued over.
 
 The various algorithms used in global continuation inform in their documentation strings
 about additional information added to this output.
@@ -39,11 +40,12 @@ about additional information added to this output.
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format.
 """
-struct GlobalContinuationOutput{SSS<:StateSpaceSet, F<:AbstractFloat, V<:Vector, A}
+struct GlobalContinuationOutput{SSS<:StateSpaceSet, F<:AbstractFloat, V<:Vector, A, P}
     attractors::Vector{Dict{Int, SSS}}
     fractions::Vector{Dict{Int, F}}
     quantifiers::Dict{String, V}
     other::Dict{String, A} # TODO: Can this include the extras of accumulation?
+    pcurve::Vector{P}
 end
 # this type extents `iterate` in deprecated.jl file.
 

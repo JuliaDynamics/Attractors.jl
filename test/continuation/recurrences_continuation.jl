@@ -37,10 +37,12 @@ using Random
     rrange = range(0, 2; length = 20)
     ridx = 1
     rsc = RecurrencesFindAndMatch(bmap; threshold = 0.3)
-    fractions_cont, a = global_continuation(
+    gco = global_continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000
     )
+
+    fractions_cont, a = gco.fractions, gco.attractors
 
     for (i, r) in enumerate(rrange)
 
@@ -138,10 +140,11 @@ end
     # First, test the normal function of finding attractors
     bmap = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(bmap; threshold = 0.1)
-    fractions_cont, attractors_cont = global_continuation(
+    gco = global_continuation(
         rsc, rrange, ridx, sampler;
         show_progress = false, samples_per_parameter = 1000,
     )
+    fractions_cont, attractors_cont = gco.fractions, gco.attractors
     test_fs(fractions_cont, rrange, [4, 12])
 
     # Then, test aggregating the basin fractions: first group the attractors with
@@ -217,10 +220,11 @@ if DO_EXTENSIVE_TESTS
             bmap;
             threshold = 0.99, distance = distance_function
         )
-        fractions_cont, attractors_cont = global_continuation(
+        gco = global_continuation(
             rsc, ps, pidx, sampler;
             show_progress = false, samples_per_parameter = 100
         )
+        fractions_cont, attractors_cont = gco.fractions, gco.attractors
 
         for (i, p) in enumerate(ps)
             fs = fractions_cont[i]
