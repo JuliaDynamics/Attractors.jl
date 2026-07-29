@@ -149,7 +149,6 @@ function global_continuation(
         end
         # prepare the initial conditions
         pics = generate_ics(icsampler, p)
-        # TODO: Make basin_fractions always return labels in this function
         # and finally call basin fractions; it knows how to do all calculations given the bmap
         fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
         update_sampler!(sampler, labels)
