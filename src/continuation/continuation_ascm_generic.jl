@@ -149,30 +149,29 @@ function global_continuation(
         end
         # prepare the initial conditions
         pics = generate_ics(icsampler, p)
+        # TODO: Make basin_fractions always return labels in this function
         # and finally call basin fractions; it knows how to do all calculations given the bmap
-        ret = basins_fractions(bmap, pics; N = length(icsampler), additional_ics, show_progress, offset = 2)
-        fs = pics isa AbstractVector ? ret[1] : ret # if fractions also return labels.
-        # deepcopy is important here as attractor container always referrenced
-        prev_attractors = deepcopy(extract_attractors(bmap))
-        update_sampler!(sampler, what_do_we_need)
+        fs, labels = basins_fractions(bmap, pics; N = length(icsampler), additional_ics, show_progress, offset = 2)
+        update_sampler!(sampler, labels)
         # Now, check if the sampler requires us to re-sample at the current parameter
         while resampling_required(sampler)
-            # Do something something,
-            # Generate new ICs,
+            pics = generate_ics(icsampler, p)
+            fs, labels = basins_fractions(bmap, pics; N = length(icsampler), additional_ics, show_progress, offset = 2)
             # Do more somthing, and then finally update the sampler again
             # update the sampler type, if needed
-            update_sampler!(sampler, what_do_we_need)
+            update_sampler!(sampler, labels)
 
-            # The big question is: how can we re-use the initial conditions
-            # that were already generated and run through basin fractions...?
-            # We can modify basin fractions to return the labels of the init. cond.
-            # as well if this helps.
+            # TODO: for the future: find a way that the original initial conditions
+            # used before the `while` loop, are somehow kept into memory instead
+            # of being discarded.
         end
         # All the computations are done, and now we just store the result(s)
         # we don't match attractors here, this happens directly at the end.
         push!(fractions_cont, fs)
+        # deepcopy is important here as attractor container always referrenced
+        prev_attractors = deepcopy(extract_attractors(bmap))
         push!(attractors_cont, prev_attractors)
-        # show progress
+        # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end

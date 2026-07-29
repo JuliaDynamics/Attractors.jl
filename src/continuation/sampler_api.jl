@@ -94,13 +94,24 @@ struct BayesianUpdateSampler{D, S, R <: HRectangle} <: InitialConditionSampler
     β::Float64
     λ::Float64
     boxes::Vector{R}
+    boxes_flags::Vector{Bool} # same size as `boxes`
     resampling_necessary::Bool
     more_fields
 end
 
+# Sketch for boxes
+# each box has either `dense_n` or `sparse_n`
+
+# if you have a total of `N` i.c.
+# and you know the `boxes_flags`, then you know exactly which ones of the total `N`
+# are in each box.
+
+# This way, you can generate a _single_ vector of initial conditions
+# (although its size would change at each step of the continuation depending
+# on which boxes get sparse or dense `n`)
+
 function generate_ics(sampler::BayesianUpdateSampler)
     # This function utilizes `resampling_necessary`.
-
     all_ics = []
     # loop through boxes
     for (boxi, box) in enumerate(sampler.boxes)
@@ -115,6 +126,18 @@ function generate_ics(sampler::BayesianUpdateSampler)
     end
 end
 
-function update_sampler!(sampler::BayesianUpdateSampler, args...)
+function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
+    # first, analyze labels per-box
+    counter = 1
+    for box_index in eachindex(sampler.boxes)
+        n_box = boxes_flags[box_index] ? sampler.dense_n : sampler.sparse_n
+        labels_for_box = view(labels, counter:(counter + n_box))
+        # then make a decision on the η and box flag and whatever
+        # update bayesian
+        η = update
+        # then update the box flag
+        boxes_flags[box_index] = η < 0 ? true : false
+        counter += n_box
+    end
     # Processing stuff
 end
