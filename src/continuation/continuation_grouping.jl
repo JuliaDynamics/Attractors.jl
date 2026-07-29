@@ -2,14 +2,15 @@ export FeaturizeGroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct FeaturizeGroupAcrossParameter{A <: BasinMapFeaturizeGroup, E} <: GlobalContinuationAlgorithm
-    bmap::A
+struct FeaturizeGroupAcrossParameter{B <: BasinMapFeaturizeGroup, E} <: GlobalContinuationAlgorithm
+    bmap::B
     info_extraction::E
+    store_features::Bool
 end
 
 """
     FeaturizeGroupAcrossParameter <: GlobalContinuationAlgorithm
-    FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup [, info_extraction])
+    FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup [, info_extraction]; kw...)
 
 A method for [`global_continuation`](@ref) that featurizes and groups
 trajectories across the whole parameter axis to establish a continuation of the groups.
@@ -19,8 +20,11 @@ trajectories across the whole parameter axis to establish a continuation of the 
 By default, the centroid of the cluster is used as its description.
 This output becomes the `attractors` representation in [`GlobalContinuationOutput`](@ref).
 
-This method adds some information into the `other` field of `GlobalContinuationOutput`:
-- `"`
+If the keyword `store_features` is `true` (default), then
+this method adds some information into the `other` field of `GlobalContinuationOutput`:
+- `"features"` contains the features per parameter step
+- `"labels"` contains their corresponding labels (both containers are sorted)
+which allows subsequent analysis of the grouped features.
 
 ## Description
 
@@ -36,8 +40,8 @@ to each parameter value they came from.
 This continuation method is based on, but strongly generalizes, the approaches
 in the papers [Gelbrecht2020](@cite) and [Stender2021](@cite).
 """
-function FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup)
-    return FeaturizeGroupAcrossParameter(bmap, mean_across_features)
+function FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup; store_features = true)
+    return FeaturizeGroupAcrossParameter(bmap, mean_across_features, store_features)
 end
 
 function mean_across_features(fs)
@@ -60,10 +64,17 @@ function global_continuation(
     spp, n = length(sampler), length(pcurve)
     features = _get_features_pcurve(bmap, sampler, n, spp, pcurve, show_progress)
     labels = group_features(features, bmap.group_config)
-    fractions_cont, attractors_cont = label_fractions_across_parameter(
+    fractions_cont, attractors_cont, feat_cont, label_cont = label_fractions_across_parameter(
         labels, features, n, spp, info_extraction
     )
-    return fractions_cont, attractors_cont
+    # wrap output into the designated type:
+    if continuation.store_features
+        other = Dict("features" => feat_cont, "labels" => label_cont)
+    else
+        other = Dict{String, Nothing}()
+    end
+    out = GlobalContinuationOutput(attractors_cont, fractions_cont, Dict{String,Vector}(), other, pcurve)
+    return out
 end
 
 function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler, n, spp, pcurve, show_progress)
@@ -92,12 +103,16 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
     fractions_cont = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction([first(features)])
     attractors_cont = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
+    features_cont = []
+    labels_cont = []
     for i in 1:n
         # Here we know which indices correspond to which parameter value
         # because they are sequentially increased every `spp`
         # (steps per parameter)
         current_labels = view(labels, ((i - 1) * spp + 1):(i * spp))
         current_features = view(features, ((i - 1) * spp + 1):(i * spp))
+        push!(labels_cont, current_labels)
+        push!(features_cont, current_features)
         current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_cont[i] = basins_fractions(current_labels, current_ids)
@@ -107,5 +122,5 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
                 ) for id in current_ids
         )
     end
-    return fractions_cont, attractors_cont
+    return fractions_cont, attractors_cont, features_cont, labels_cont
 end

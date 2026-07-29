@@ -30,8 +30,9 @@ The type of output of [`global_continuation`](@ref). It contains the fields:
   or their basins that have been (potentially) continued. This entry is empty,
   unless continuation is done with [`StabilityQuantifiersAccumulator`](@ref).
   Then, it is a dictionary mapping strings (names of quantifiers) to vectors of dictionaries.
-- `other::Dict{String, Any}`. Any other information was generated during the continuation,
+- `other::Dict{String, Vector}`. Any other information was generated during the continuation,
   that may relate to the sampling strategy, featurizing, or other.
+  Each quantity's name (string) is mapped to a vector of the same length as `pcurve`.
 - `pcurve::Vector{<:Dict}`. The parameter curve the continuation continued over.
 
 The various algorithms used in global continuation inform in their documentation strings
@@ -40,11 +41,11 @@ about additional information added to this output.
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format.
 """
-struct GlobalContinuationOutput{SSS<:StateSpaceSet, F<:AbstractFloat, V<:Vector, A, P}
+struct GlobalContinuationOutput{SSS, F<:AbstractFloat, V<:Vector, A, P}
     attractors::Vector{Dict{Int, SSS}}
     fractions::Vector{Dict{Int, F}}
     quantifiers::Dict{String, V}
-    other::Dict{String, A} # TODO: Can this include the extras of accumulation?
+    other::Dict{String, A}
     pcurve::Vector{P}
 end
 # this type extents `iterate` in deprecated.jl file.
