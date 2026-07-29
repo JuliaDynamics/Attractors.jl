@@ -50,6 +50,23 @@ struct GlobalContinuationOutput{SSS, F<:AbstractFloat, V<:Vector, A, P}
 end
 # this type extents `iterate` in deprecated.jl file.
 
+# Generic pretty printing
+function generic_mapper_print(io, bmap)
+    ps = 14
+    println(io, "$(nameof(typeof(bmap)))")
+    println(io, rpad(" system: ", ps), nameof(typeof(referenced_dynamical_system(bmap))))
+    return ps
+end
+function Base.show(io::IO, gco::GlobalContinuationOutput)
+    println(io, "GlobalContinuationOutput with fields:")
+    println(io, " attractors")
+    println(io, " fractions")
+    println(io, " quantifiers")
+    println(io, " other")
+    println(io, " pcurve")
+end
+
+
 # Internal function for adding info; dispatches on `something`
 function add_extra_continuation_info!(extras::Dict{String,Any}, something)
     return nothing
