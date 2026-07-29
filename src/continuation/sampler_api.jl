@@ -5,14 +5,15 @@ export RandomICSampler, PerParameterICs, PerParameterInitialConditions
     InitialConditionSampler
 
 Data structure deciding how to sample initial conditions during
-[`global_continuation`](@ref). It defines an extendable interface
-based on the internal functions `generate_ics, update_sampler!, resampling_required`.
-
+[`global_continuation`](@ref).
 Concerete subtypes are:
 
 - [`RandomICSampler`]
 - [`PrescribedICs`]
 - [`PerParameterICs`](@ref)
+
+`InitialConditionSampler` defines a currently experimental extendable interface
+based on the internal functions `generate_ics, update_sampler!, resampling_required`.
 """
 abstract type InitialConditionSampler end
 Base.length(s::InitialConditionSampler) = s.N
@@ -80,7 +81,7 @@ struct PerParameterInitialConditions{F} <: InitialConditionSampler
     f::F
     N::Int
 end
-generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.N)
+generate_ics(p::PerParameterInitialConditions, params, args...) = (p.f(params) for _ in p.N)
 
 """
     BayesianUpdateSampler(dense_sampler, sparse_sampler, γ = 0.5) <: InitialConditionSampler
