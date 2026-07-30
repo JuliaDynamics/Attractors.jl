@@ -504,7 +504,7 @@ animate_attractors_continuation(ds, gco; savename = "curvecont.mp4");
 # is the basin fractions. This is primarily because it is computed automatically
 # as we find the different attractors. There are many more stability quantifiers
 # that could be more useful in different contexts. Attractors.jl offers
-# the unique possibility of estimating _almost all_ known quantifiers of stability in the
+# the unique possibility of estimating a multitude of known quantifiers of stability in the
 # literature of dynamical systems during a _single_ global continuation pass.
 # This is done with the [`StabilityQuantifiersAccumulator`](@ref) data structure.
 # You can visit its documentation string to learn about all different stability quantifiers.
@@ -512,8 +512,8 @@ animate_attractors_continuation(ds, gco; savename = "curvecont.mp4");
 # then either open an Issue and tell us about it or even better make a Pull Request and
 # contribute it yourself!
 
-# Using [`StabilityQuantifiersAccumulator`](@ref) is very easy. If we have already performed
-# a global continuation then we can utilize the function [`stability_quantifiers_along_continuation`](@ref)
+# Using [`StabilityQuantifiersAccumulator`](@ref) is very easy. If you have already performed
+# a global continuation then you can utilize the function [`stability_quantifiers_along_continuation`](@ref)
 # to run through it again and estimate now all stability quantifiers.
 
 result = stability_quantifiers_along_continuation(
@@ -606,9 +606,8 @@ matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 # and proceed as usual
-fractions_cont, attractors_cont = global_continuation(
-    ascm, pcurve, sampler; samples_per_parameter = 100
-)
+gcsampler = RandomICSampler(sampler, 100)
+fractions_cont, attractors_cont = global_continuation(ascm, pcurve, gcsampler)
 
 # The output is exactly of the same type, and as such very easy to post-process.
 # For example, let's find all parameter values that support an attractor
