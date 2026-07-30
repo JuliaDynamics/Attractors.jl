@@ -46,7 +46,7 @@ function test_basins(
         @test sum(values(fs)) ≈ 1 atol = 1.0e-14
 
         # Precise test with known initial conditions
-        fs, labels = basins_fractions(bmap, ics; show_progress = false)
+        fs = basins_fractions(bmap, ics; show_progress = false)
         # @show nameof(typeof(bmap))
         # @show fs
         approx_atts = extract_attractors(bmap)
@@ -59,7 +59,13 @@ function test_basins(
         @test length(found_fs) == length(expected_fs) #number of attractors
         errors = abs.(expected_fs .- found_fs)
         for er in errors
-            @test er .≤ err
+            if !all(er .≤ err)
+                @show er
+                @show err
+                @test false
+            else
+                @test true
+            end
         end
         return if known # also test whether the attractor index is correct
             for k in known_ids
@@ -371,7 +377,7 @@ end
     bmap = BasinMapRecurrences(ds, grid; sparse = false)
     basins, atts = basins_of_attraction(bmap; show_progress = false)
     ics = [ [x, 1.0] for x in range(-3, 3, length = 20)]
-    fractions, labels = basins_fractions(bmap, ics; show_progress = false)
+    fractions = basins_fractions(bmap, ics; show_progress = false)
 
     @test 0 ∉ keys(fractions)
 end

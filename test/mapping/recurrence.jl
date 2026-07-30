@@ -50,7 +50,7 @@ if DO_EXTENSIVE_TESTS
             sampler, = statespace_sampler(HRectangle([-0.5, 0], [0.5, 1]), 155)
             ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
 
-            fs, labels = basins_fractions(bmap, ics; show_progress = false)
+            fs = basins_fractions(bmap, ics; show_progress = false)
             num_att = length(fs)
             return num_att
         end
