@@ -78,9 +78,9 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # ## continue all attractors and their basin fractions across any arbigrary
 # ## curve in parameter space using a global continuation algorithm
 # algo = AttractorSeedContinueMatch(bmap)
-# params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
+# ellipsoid(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 # angles = range(0, 2π; length = 101)
-# pcurve = params.(angles)
+# pcurve = ellipsoid.(angles)
 # gcoutput = global_continuation(
 # 	algo, pcurve, RandomICSampler(sampler, 1000)
 # )
@@ -260,7 +260,7 @@ end
 
 # from which we initialize
 
-mapper2 = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
+bmap_fg = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
 
 # [`BasinMapFeaturizeGroup`](@ref) allows for a third input, which is a
 # "grouping configuration", that dictates how features will be grouped into
@@ -271,23 +271,23 @@ mapper2 = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
 # a trajectory `A` given to the `featurizer` function. Because one of the two attractors
 # is chaotic, we need denser sampling time than the default.
 
-# We can use `mapper2` exactly as `bmap`:
+# We can use `bmap_fg` exactly as `bmap`:
 
-fs2 = basins_fractions(mapper2, sampler)
+fs2 = basins_fractions(bmap_fg, sampler)
 
-attractors2 = extract_attractors(mapper2)
+attractors_fg = extract_attractors(bmap_fg)
 
-plot_attractors(attractors2)
+plot_attractors(attractors_fg)
 
 # This basin map also found the attractors, but we should warn you: this basin map is less
 # robust than [`BasinMapRecurrences`](@ref). One of the reasons for this is
 # that [`BasinMapFeaturizeGroup`](@ref) is not auto-terminating. For example, if we do not
 # have enough transient integration time, the two attractors will get confused into one:
 
-mapper3 = BasinMapFeaturizeGroup(ds, featurizer; Ttr = 10, Δt = 0.1)
-fs3 = basins_fractions(mapper3, sampler)
-attractors3 = extract_attractors(mapper3)
-plot_attractors(attractors3)
+bmap_fg2 = BasinMapFeaturizeGroup(ds, featurizer; Ttr = 10, Δt = 0.1)
+basins_fractions(bmap_fg2, sampler)
+attractors_fg2 = extract_attractors(bmap_fg2)
+plot_attractors(attractors_fg2)
 
 # On the other hand, the downside of [`BasinMapRecurrences`](@ref) is that
 # it can take quite a while to converge for chaotic or high dimensional systems.
@@ -472,9 +472,9 @@ fig = plot_attractors_curves(
 
 # For example, we can probe an elipsoid defined as
 
-params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
+ellipsoid(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 θs = range(0, 2π; length = 101)
-pcurve = params.(θs)
+pcurve = ellipsoid.(θs)
 
 # here each component maps the parameter index to its value.
 # We can just give this `pcurve` to the global continuation,
