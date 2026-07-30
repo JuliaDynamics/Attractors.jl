@@ -87,7 +87,7 @@ using Random
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
         quantifiers_cont = stability_quantifiers_along_continuation(
-            dynamics, attractors_cont, pcurve, ics_from_grid(grid), ε = 0.1, finite_time = 0.5,
+            dynamics, attractors_cont, pcurve, PrescribedICs(ics_from_grid(grid)); ε = 0.1, finite_time = 0.5,
             proximity_mapper_options = proximity_mapper_options
         )
 
@@ -163,7 +163,7 @@ using Random
         @test cent_step[only(keys(cent_step))] ≈ SVector(0.0)
 
         quantifiers_agg = stability_quantifiers_along_continuation(
-            dynamics, agg_attractors_cont, pcurve, ics_from_grid(grid);
+            dynamics, agg_attractors_cont, pcurve, PrescribedICs(ics_from_grid(grid));
             ε = 0.1, finite_time = 0.5, proximity_mapper_options,
         )
 
@@ -244,8 +244,9 @@ end
         proximity_mapper_options_local = (
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
+        gcsampler = PrescribedICs(ics_from_grid(grid))
         quantifiers_cont_local = stability_quantifiers_along_continuation(
-            dynamics, attractors_cont_local, pcurve_local, ics_from_grid(grid), ε = 0.1, finite_time = 0.5,
+            dynamics, attractors_cont_local, pcurve_local, gcsampler; ε = 0.1, finite_time = 0.5,
             proximity_mapper_options = proximity_mapper_options_local
         )
 
@@ -415,7 +416,7 @@ end
         Dict(2 => StateSpaceSet([SVector(1.0, 1.0)]), 1 => StateSpaceSet([SVector(-1.0, -1.0)])),
     ]
     quantifiers_cont = stability_quantifiers_along_continuation(
-        dynamics, attractors_cont, pcurve, A;
+        dynamics, attractors_cont, pcurve, PrescribedICs(A);
         ε = 0.1,
         n_basin_entropy = 2,
         show_progress = false,

@@ -517,7 +517,7 @@ animate_attractors_continuation(ds, gco; savename = "curvecont.mp4");
 # to run through it again and estimate now all stability quantifiers.
 
 result = stability_quantifiers_along_continuation(
-    ds, attractors_cont, pcurve, sampler; ε = 0.1
+    ds, attractors_cont, pcurve, gcsampler; ε = 0.1
 )
 keys(result)
 

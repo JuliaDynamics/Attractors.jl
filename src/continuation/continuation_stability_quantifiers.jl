@@ -25,13 +25,15 @@ end
 
 """
     stability_quantifiers_along_continuation(
-        ds::DynamicalSystem, attractors_cont, pcurve, ics;
+        ds::DynamicalSystem, attractors_cont, pcurve, sampler;
         kw...
     )
 
 Perform a global continuation of all stability quantifiers estimated by
 [`StabilityQuantifiersAccumulator`](@ref) using the found attractors of
 a previous call to [`global_continuation`](@ref) using the `ds`.
+The inputs `pcurve, sampler` are the same as in [`global_continuation`](@ref)
+(i.e., a vector and an `InitialConditionSampler`).
 
 This method is special because it always creates a [`BasinMapProximity`](@ref)
 for the attractors at a given point along the global continuation,
@@ -55,8 +57,6 @@ There are two reasons to use this method:
     sampled-basin entropy quantifiers.
 - `n_basin_entropy = 100`: given to [`StabilityQuantifiersAccumulator`](@ref) as the number
     of nearest neighbors used by sampled-basin entropy quantifiers.
-- `samples_per_parameter = 1000`: how many samples to use when estimating stability quantifiers
-  via [`StabilityQuantifiersAccumulator`](@ref). Ignored when `ics` is not a function.
 
 ## Aggregating attractors
 
@@ -71,13 +71,12 @@ function stability_quantifiers_along_continuation(
         ds::DynamicalSystem,
         attractors_cont,
         pcurve,
-        ics;
+        sampler;
         ε = nothing,
         weighting_distribution = EverywhereUniform(),
         finite_time = 1.0,
         basin_entropy = true,
         n_basin_entropy = 100,
-        samples_per_parameter = 1000,
         distance = Centroid(),
         proximity_mapper_options = NamedTuple(),
         show_progress = true
@@ -85,7 +84,17 @@ function stability_quantifiers_along_continuation(
     progress = ProgressMeter.Progress(
         length(pcurve); desc = "Continuing accumulator quantifiers:", enabled = show_progress
     )
-    N = samples_per_parameter
+
+    # Deprecation: remove this at later version.
+    if !(sampler isa InitialConditionSampler)
+        @warn "You must now pass a subtype of `InitialConditionSampler` explicitly."
+        if sampler isa AbstractVector
+            sampler = PrescribedICs(sampler)
+        else
+            sampler = RandomICSampler(sampler, 1000)
+        end
+    end
+
     quantifiers_cont = []
     quantifier_names = nothing
     for (i, p) in enumerate(pcurve)
@@ -135,12 +144,8 @@ function stability_quantifiers_along_continuation(
             n_basin_entropy = n_basin_entropy,
         )
 
-        if ics isa PerParameterICs
-            pics = ics.generator(p, N)
-        else
-            pics = ics
-        end
-        basins_fractions(accumulator, pics; N, show_progress = false)
+        pics = generate_ics(sampler, p)
+        basins_fractions(accumulator, pics; N = length(sampler), show_progress = false)
         quantifiers = finalize_accumulator(accumulator)
         if quantifier_names === nothing
             quantifier_names = collect(keys(quantifiers))
