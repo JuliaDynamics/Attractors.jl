@@ -487,6 +487,7 @@ matcher = MatchBySSSetDistance(use_vanished = true)
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 gco = global_continuation(ascm, pcurve, gcsampler)
+attractors_cont = gco.attractors
 
 # and animate the result
 animate_attractors_continuation(ds, gco; savename = "curvecont.mp4");
