@@ -453,7 +453,7 @@ end
     accumulator = StabilityQuantifiersAccumulator(bmap)
 
     @testset "single parameter" begin
-        fs, labels = basins_fractions_labels(accumulator, ics)
+        fs, labels = basins_fractions_labels(accumulator, PrescribedICs(ics))
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
         quantifiers = finalize_accumulator(accumulator)
         @test isequal(quantifiers["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))

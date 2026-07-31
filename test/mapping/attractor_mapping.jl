@@ -22,7 +22,7 @@ function test_basins(
     )
     # u0s is Vector{Pair}
     sampler = RandomICsSampler(100, grid, 1234)
-    sampler2 = statespace_sampler(grid, 1234)[2]
+    sampler2, = statespace_sampler(grid, 1234)[2]
     ics = StateSpaceSet([copy(sampler2()) for i in 1:1000])
 
     expected_fs = sort!(collect(values(expected_fs_raw)))

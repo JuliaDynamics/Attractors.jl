@@ -60,12 +60,10 @@ function global_continuation(
         show_progress = true,
     )
     (; bmap, info_extraction) = continuation
-    # spp means 'samples per parameter'
-    spp, n = length(sampler), length(pcurve)
-    features = _get_features_pcurve(bmap, sampler, n, spp, pcurve, show_progress)
+    features = _get_features_pcurve(bmap, sampler, pcurve, show_progress)
     labels = group_features(features, bmap.group_config)
     fractions_cont, attractors_cont, feat_cont, label_cont = label_fractions_across_parameter(
-        labels, features, n, spp, info_extraction
+        labels, features, length(pcurve), length(sampler), info_extraction
     )
     # wrap output into the designated type:
     if continuation.store_features
@@ -77,12 +75,14 @@ function global_continuation(
     return out
 end
 
-function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler, n, spp, pcurve, show_progress)
+function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler::InitialConditionsSampler, pcurve, show_progress)
+    n = length(pcurve)
     progress = ProgressMeter.Progress(
         n; desc = "Generating features", enabled = show_progress, offset = 2,
     )
     # Extract the first possible feature to initialize the features container
     u0s = generate_ics(sampler)
+    spp = length(sampler)
     set_parameters!(referenced_dynamical_system(bmap), first(pcurve))
     current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
     features = Vector{typeof(current_features[1])}(undef, n * spp)

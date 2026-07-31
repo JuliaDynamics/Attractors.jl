@@ -83,14 +83,8 @@ The elements of `basins` are integers, enumerating the attractor that the entry 
 Return a dictionary that maps attractor IDs to their relative fractions.
 Optionally you may give a vector of `ids` to calculate the fractions of only
 the chosen ids (by default `ids = unique(basins)`).
-
-The second function signature exists for backwards compatibility.
-
-In [Menck2013](@cite) the authors use these fractions to quantify the stability of a basin of
-attraction, and specifically how it changes when a parameter is changed.
-For this, see [`global_continuation`](@ref).
 """
-function basins_fractions(basins::AbstractArray, ids = unique(basins))
+function basins_fractions(basins::AbstractArray, ids = unique(basins)::AbstractArray)
     fs = Dict{eltype(basins), Float64}()
     N = length(basins)
     for ξ in ids
