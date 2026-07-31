@@ -38,24 +38,15 @@ function basins_of_attraction(bmap::BasinMap, grid::Tuple; kwargs...)
 end
 
 """
-    basins_of_attraction(bmap::BasinMap, ics; kwargs...) → boa
+    basins_of_attraction(bmap::BasinMap, sampler::InitialConditionsSampler; kw...) → boa
 
-Compute the full basins of attraction as identified by the given `bmap`,
-which includes a reference to a [`DynamicalSystem`](@ref) and return them
-along with (perhaps approximated) found attractors contained within a
-[`SampledBasinsOfAttraction`](@ref) object.
+Compute and return a [`SampledBasinsOfAttraction`](@ref) object.
 
-The initial conditions `ics`, and the keyword arguments `kwargs` are the same
-as in [`basins_fractions`](@ref) with the same function signature. This function
-is a small convenience wrapper which uses the sampled initial conditions and their
-corresponding labels to construct a [`SampledBasinsOfAttraction`](@ref)
-
-Note that, as with the other `basins_of_attraction` function, the return can be decomposed:
-`basins, attractors = boa`.
+The only keyword is `show_progress = true`.
 """
-function basins_of_attraction(bmap::BasinMap, ics; show_progress = true, N = 1000)
-    ics_vec = ics isa AbstractVector ? ics : [copy(ics()) for _ in 1:N]
-    _, labels = basins_fractions_labels(bmap, ics_vec, show_progress = show_progress)
+function basins_of_attraction(bmap::BasinMap, sampler::InitialConditionsSampler; show_progress = true)
+    ics_vec = collect(generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap))))
+    _, labels = basins_fractions_labels(bmap, PrescribedICs(ics_vec); show_progress)
     attractors = extract_attractors(bmap)
     return SampledBasinsOfAttraction(labels, attractors, ics_vec)
 end
