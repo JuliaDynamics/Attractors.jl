@@ -64,7 +64,7 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
     )
     labels = Vector{Int}(undef, fill_labels ? length(sampler) : 0)
     ffs = if can_map_individual_ic(bmap)
-        basins_fractions_individual(bmap, sampler, progress, labels, additional_ics)
+        basins_fractions_individual(bmap, sampler, params, progress, labels, additional_ics)
     else
         # collect all initial conditions
         ics = generate_ics(sampler, params)
@@ -75,8 +75,8 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
     return ffs, labels
 end
 
-function basins_fractions_individual(bmap, sampler, progress, labels, additional_ics)
-    ics = generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap)))
+function basins_fractions_individual(bmap, sampler, params, progress, labels, additional_ics)
+    ics = generate_ics(sampler, params)
     fs = Dict{Int, Int}()
     for u0 in additional_ics
         label = bmap(u0)
