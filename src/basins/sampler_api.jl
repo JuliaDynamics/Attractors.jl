@@ -19,10 +19,10 @@ abstract type InitialConditionSampler end
 Base.length(s::InitialConditionSampler) = s.N
 
 """
-    generate_ics(sampler::InitialConditionsSampler, p::Dict)
+    generate_ics(sampler::InitialConditionsSampler, params)
 
 Generate initial condititions from the given sampler, optionally utilizing
-the parameters of the current continuation step.
+a container of parameters of a dynamical system.
 """
 function generate_ics end
 

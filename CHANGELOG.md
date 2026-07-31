@@ -23,7 +23,8 @@ This release accompanies the release of our paper "Global continuation as a comp
   as the last argument to `global_continuation` is deprecated. Use an instance of a subtype
   of `InitialConditionSampler` instead.
 - **DEPRECATED**: Passing a vector of initial conditions or a sampling function to
-  `global_continuation` is now deprecated. Use the `InitialConditionSampler` interface.
+  `basins_fractions` is now deprecated. Use the `InitialConditionSampler` interface.
+  Use an instance of a subtype of `InitialConditionSampler` instead.
 - **BREAKING**: This sampler object must also be passed to `stability_quantifiers_along_continuation`.
 - **BREAKING**: `PerParameterInitialConditions` has been renamed to `PerParameterICs`.
 - **BREAKING**: Anything related to the `par_weight` input to `FeaturizeGroupAcrossParameter` has been removed (it was so far deprecated).
@@ -78,7 +79,9 @@ distances of feature centroids (instead of attractor centroids).
   structured around a new abstract type `InitialConditionSampler`.
   - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
     to come in the future.
-
+- New `InitialConditionSampler` interface for specifying how initial conditions should
+  be sampled. Can be extended in the future and is currently composed out of
+  `RandomICSampler, PrescribedICs, PerParameterICs` concrete types.
 
 # v1.39
 

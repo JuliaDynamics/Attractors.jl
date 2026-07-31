@@ -87,9 +87,8 @@ end
 Base.show(io::IO, bmap::BasinMap) = generic_mapper_print(io, bmap)
 
 #########################################################################################
-# Generic basin fractions method structure definition
+# Generic basin fractions method definition
 #########################################################################################
-# It works for all mappers that define the function-like-object behavior
 """
     basins_fractions(bmap::BasinMap, ics::InitialConditionsSampler; kwargs...)
 
@@ -154,29 +153,25 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
     )
     labels = Vector{Int}(undef, fill_labels ? N : 0)
     ffs = if allows_mapper_u0(bmap)
-        basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
+        basins_fractions_individual(bmap, sampler, N, progress, labels, additional_ics)
     else
         # collect all initial conditions
-        # TODO: We do some unecessary copying here I feel like... maybe we can improve?
-        icscol = if ics isa AbstractVector
-            copy(ics)
-        else
-            StateSpaceSet([copy(_get_ic(ics, i)) for i in 1:N])
-        end
+        ics = generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap)))
+        icscol = collect(ics) # thankfully this also copies for `Vector`
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)
     end
     return ffs, labels
 end
 
-function basins_fractions_individual(bmap, ics, N, progress, labels, additional_ics)
+function basins_fractions_individual(bmap, sampler, N, progress, labels, additional_ics)
+    ics = generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap)))
     fs = Dict{Int, Int}()
     for u0 in additional_ics
         label = bmap(u0)
         fs[label] = get(fs, label, 0) + 1
     end
-    for i in 1:N
-        ic = _get_ic(ics, i)
+    for (i, ic) in enumerate(ics)
         label = bmap(ic)
         fs[label] = get(fs, label, 0) + 1
         !isempty(labels) && (labels[i] = label)
