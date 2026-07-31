@@ -35,7 +35,7 @@ end
 
 function basins_fractions(bmap::BasinMap, ics::Union{AbstractVector, Function}; kw...)
     @warn "You must now pass a subtype of `InitialConditionsSampler` explicitly to `basins_fractions`.
-    Making the closest type for now..."
+    Keyword `N` is also invalid. Making the closest type for now..."
     if ics isa AbstractVector
         sampler = PrescribedICs(ics)
     else

@@ -144,8 +144,7 @@ function stability_quantifiers_along_continuation(
             n_basin_entropy = n_basin_entropy,
         )
 
-        pics = generate_ics(sampler, p)
-        basins_fractions(accumulator, pics; N = length(sampler), show_progress = false)
+        basins_fractions(accumulator, sampler; params = p, show_progress = false)
         quantifiers = finalize_accumulator(accumulator)
         if quantifier_names === nothing
             quantifier_names = collect(keys(quantifiers))
