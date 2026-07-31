@@ -71,10 +71,10 @@ Base.length(s::PrescribedICs) = length(s.ics)
     PerParameterICs(f, N::Int) <: InitialConditionSampler
 
 Wrapper around a function `f`, to be called as
-`f(parameters, N)`.
-It inputs the current parameter(s) of a [`global_continuation`](@ref)
-(elements of `pcurve` which are always a dictionary), and outputs
-`N` initial conditions.
+`f(parameters, N)`. When used in [`basins_fractions`](@ref),
+it inputs the `current_parameters` of the dynamical system.
+When used in [`global_continuation`](@ref) it inputs the current
+element of `pcurve` (which is expected to be a dictionary).
 The sampler generates overall `N` initial conditions.
 """
 struct PerParameterICs{F} <: InitialConditionSampler
