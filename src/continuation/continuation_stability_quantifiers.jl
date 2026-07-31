@@ -1,56 +1,7 @@
 export stability_quantifiers_along_continuation
 
-# This function is practically identical with the original one in
-# `continuation_ascm_generic.jl`; only small differences exist
-function global_continuation(
-        ascm::AttractorSeedContinueMatch{<:StabilityQuantifiersAccumulator}, pcurve, ics;
-        samples_per_parameter = 100, show_progress = true,
-    )
-    N = samples_per_parameter
-    progress = ProgressMeter.Progress(
-        length(pcurve);
-        desc = "Global continuation (accumulator):", PMKWARGS..., enabled = show_progress
-    )
-    bmap = ascm.bmap
-    prev_attractors = empty(extract_attractors(bmap))
-    additional_ics = typeof(current_state(referenced_dynamical_system(bmap)))[]
-    attractors_cont = Dict[]
-    # difference one: this isn't fractions
-    quantifiers_cont = []
-    for (i, p) in enumerate(pcurve)
-        set_parameters!(referenced_dynamical_system(bmap), p)
-        reset_mapper!(bmap)
-        empty!(additional_ics)
-        for att in values(prev_attractors)
-            for u0 in ascm.seeding(att)
-                push!(additional_ics, u0)
-            end
-        end
-        if ics isa PerParameterInitialConditions
-            pics = ics.generator(p, N)
-        else
-            pics = ics
-        end
-        # difference two: we don't care about the return of basins_fractions
-        # as initial condition mapping is accumulated anyways
-        basins_fractions(bmap, pics; N, additional_ics, show_progress, offset = 2)
-        quantifiers = finalize_accumulator(bmap)
-        prev_attractors = deepcopy(extract_attractors(bmap))
-        push!(attractors_cont, prev_attractors)
-        push!(quantifiers_cont, quantifiers)
-        showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
-        ProgressMeter.next!(progress; showvalues)
-    end
-
-    rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(bmap)
-    )
-    # and difference four, a bit more involved matching for quantifiers:
-    transposed = accumulator_continuation_output(quantifiers_cont, rmaps)
-    return transposed, attractors_cont
-end
-
-function accumulator_continuation_output(quantifiers_cont, rmaps)
+# this fuction is called in `global_continuation` when the bmap is the accumulator
+function match_and_generate_output(bmap::StabilityQuantifiersAccumulator, quantifiers_cont, rmaps)
     # match
     for (i, rmap) in enumerate(rmaps)
         for dict in values(quantifiers_cont[i + 1])
@@ -68,31 +19,31 @@ function accumulator_continuation_output(quantifiers_cont, rmaps)
             push!(transposed[quantifier_name], quantifier_dict)
         end
     end
-    return transposed
+    return Vector{Dict{Int64, Float64}}(transposed["basin_fraction"]), transposed
 end
 
 
-# make sure to allow the possiblity that the proximity options can also be
-# vectors of same length as `pcurve`; Same for the distributions
 """
     stability_quantifiers_along_continuation(
-        ds::DynamicalSystem, attractors_cont, pcurve, ics;
+        ds::DynamicalSystem, attractors_cont, pcurve, sampler;
         kw...
     )
 
 Perform a global continuation of all stability quantifiers estimated by
 [`StabilityQuantifiersAccumulator`](@ref) using the found attractors of
 a previous call to [`global_continuation`](@ref) using the `ds`.
+The inputs `pcurve, sampler` are the same as in [`global_continuation`](@ref)
+(i.e., a vector and an `InitialConditionSampler`).
 
-This method is special because it always creates an [`BasinMapProximity`](@ref)
-bmap for the attractors at a given point along the global continuation,
+This method is special because it always creates a [`BasinMapProximity`](@ref)
+for the attractors at a given point along the global continuation,
 and then estimates the stability quantifiers using [`StabilityQuantifiersAccumulator`](@ref)
-and the proximity bmap.
+and the proximity map.
 
 There are two reasons to use this method:
 
 1. You are interested in quantifiers related to the convergence time, which is defined
-   more rirogously and is estimated more accurately for a proximity bmap.
+   more rirogously and is estimated more accurately for a proximity map.
 2. You want more control over the values of `ε, finite_time, weighting_distribution`,
    all of which are allowed to be `Vector`s with the same length as `pcurve`.
    (they can always be functions)
@@ -106,8 +57,6 @@ There are two reasons to use this method:
     sampled-basin entropy quantifiers.
 - `n_basin_entropy = 100`: given to [`StabilityQuantifiersAccumulator`](@ref) as the number
     of nearest neighbors used by sampled-basin entropy quantifiers.
-- `samples_per_parameter = 1000`: how many samples to use when estimating stability quantifiers
-  via [`StabilityQuantifiersAccumulator`](@ref). Ignored when `ics` is not a function.
 
 ## Aggregating attractors
 
@@ -122,13 +71,12 @@ function stability_quantifiers_along_continuation(
         ds::DynamicalSystem,
         attractors_cont,
         pcurve,
-        ics;
+        sampler;
         ε = nothing,
         weighting_distribution = EverywhereUniform(),
         finite_time = 1.0,
         basin_entropy = true,
         n_basin_entropy = 100,
-        samples_per_parameter = 1000,
         distance = Centroid(),
         proximity_mapper_options = NamedTuple(),
         show_progress = true
@@ -136,7 +84,17 @@ function stability_quantifiers_along_continuation(
     progress = ProgressMeter.Progress(
         length(pcurve); desc = "Continuing accumulator quantifiers:", enabled = show_progress
     )
-    N = samples_per_parameter
+
+    # Deprecation: remove this at later version.
+    if !(sampler isa InitialConditionSampler)
+        @warn "You must now pass a subtype of `InitialConditionSampler` explicitly."
+        if sampler isa AbstractVector
+            sampler = PrescribedICs(sampler)
+        else
+            sampler = RandomICSampler(sampler, 1000)
+        end
+    end
+
     quantifiers_cont = []
     quantifier_names = nothing
     for (i, p) in enumerate(pcurve)
@@ -186,12 +144,8 @@ function stability_quantifiers_along_continuation(
             n_basin_entropy = n_basin_entropy,
         )
 
-        if ics isa PerParameterInitialConditions
-            pics = ics.generator(p, N)
-        else
-            pics = ics
-        end
-        basins_fractions(accumulator, pics; N, show_progress = false)
+        pics = generate_ics(sampler, p)
+        basins_fractions(accumulator, pics; N = length(sampler), show_progress = false)
         quantifiers = finalize_accumulator(accumulator)
         if quantifier_names === nothing
             quantifier_names = collect(keys(quantifiers))

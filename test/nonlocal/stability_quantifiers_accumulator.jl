@@ -4,7 +4,7 @@ using Test, Attractors
 using Random
 
 @testset "dumb map analytic" begin
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -19,7 +19,7 @@ using Random
     end
     # Test the computation of nonlocal stability quantifiers using the
     # `StabilityQuantifiersAccumulator` for a dumb map.
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
+    dynamics = DeterministicIteratedMap(dumb_map2, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1.0], [-1, 0, 1.0])
     bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
@@ -87,7 +87,7 @@ using Random
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
         quantifiers_cont = stability_quantifiers_along_continuation(
-            dynamics, attractors_cont, pcurve, ics_from_grid(grid), ε = 0.1, finite_time = 0.5,
+            dynamics, attractors_cont, pcurve, PrescribedICs(ics_from_grid(grid)); ε = 0.1, finite_time = 0.5,
             proximity_mapper_options = proximity_mapper_options
         )
 
@@ -163,7 +163,7 @@ using Random
         @test cent_step[only(keys(cent_step))] ≈ SVector(0.0)
 
         quantifiers_agg = stability_quantifiers_along_continuation(
-            dynamics, agg_attractors_cont, pcurve, ics_from_grid(grid);
+            dynamics, agg_attractors_cont, pcurve, PrescribedICs(ics_from_grid(grid));
             ε = 0.1, finite_time = 0.5, proximity_mapper_options,
         )
 
@@ -176,6 +176,16 @@ using Random
         @test quantifiers_agg["minimal_critical_shock_magnitude"][1][merged_id_1] == Inf
         @test quantifiers_agg["minimal_critical_shock_magnitude"][2][merged_id_2] == Inf
     end
+
+    @testset "continuation with ASCM" begin
+        accumulator = StabilityQuantifiersAccumulator(bmap)
+        pcurve = [[1 => p] for p in [-1.0, 1.0]]
+        ascm = AttractorSeedContinueMatch(accumulator)
+        gco = global_continuation(ascm, pcurve, PrescribedICs(A))
+        @test !isempty(gco.quantifiers)
+        @test haskey(gco.quantifiers, "mean_convergence_pace")
+    end
+
 end
 
 
@@ -234,8 +244,9 @@ end
         proximity_mapper_options_local = (
             Ttr = 0, stop_at_Δt = false, horizon_limit = 1.0e2, consecutive_lost_steps = 10000,
         )
+        gcsampler = PrescribedICs(ics_from_grid(grid))
         quantifiers_cont_local = stability_quantifiers_along_continuation(
-            dynamics, attractors_cont_local, pcurve_local, ics_from_grid(grid), ε = 0.1, finite_time = 0.5,
+            dynamics, attractors_cont_local, pcurve_local, gcsampler; ε = 0.1, finite_time = 0.5,
             proximity_mapper_options = proximity_mapper_options_local
         )
 
@@ -291,7 +302,7 @@ end
 
 @testset "user-defined quantifiers" begin
 
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -307,7 +318,7 @@ end
 
     r = 0.5
     grid = ([-1, 0, 1], [-1, 0, 1])
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
+    dynamics = DiscreteDynamicalSystem(dumb_map2, [1.0, 1.0], [r])
     bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
@@ -347,13 +358,15 @@ end
     @testset "continuation" begin
         rs = [0.5, 1.0]
         gca = AttractorSeedContinueMatch(accumulator)
-        quantifiers_cont, attractors_cont = global_continuation(gca, rs, 1, A)
+        pcurve = [Dict(1 => r) for r in rs]
+        gco = global_continuation(gca, pcurve, PrescribedICs(A))
+        quantifiers_cont = gco.quantifiers
         @test quantifiers_cont["extra"] == [Dict(1 => 0, 2 => 3), Dict(1 => 0, 2 => 0)]
     end
 end
 
 @testset "sampled basin entropy quantifiers" begin
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -369,7 +382,7 @@ end
 
     r = 1.0
     grid = ([-1, 0, 1], [-1, 0, 1])
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [r])
+    dynamics = DiscreteDynamicalSystem(dumb_map2, [1.0, 1.0], [r])
     bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
@@ -403,7 +416,7 @@ end
         Dict(2 => StateSpaceSet([SVector(1.0, 1.0)]), 1 => StateSpaceSet([SVector(-1.0, -1.0)])),
     ]
     quantifiers_cont = stability_quantifiers_along_continuation(
-        dynamics, attractors_cont, pcurve, A;
+        dynamics, attractors_cont, pcurve, PrescribedICs(A);
         ε = 0.1,
         n_basin_entropy = 2,
         show_progress = false,
@@ -417,7 +430,7 @@ end
 
 
 @testset "accumulator with featurizer" begin
-    function dumb_map(z, p, n)
+    function dumb_map2(z, p, n)
         x, y = z
         r = p[1]
         if r < 0.5
@@ -431,7 +444,7 @@ end
         end
     end
     rs = [0.5, 1.0]
-    dynamics = DiscreteDynamicalSystem(dumb_map, [1.0, 1.0], [1.0])
+    dynamics = DiscreteDynamicalSystem(dumb_map2, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1], [-1, 0, 1])
     ics = ics_from_grid(grid)
     featurizer(A, t) = A[end]
@@ -440,7 +453,7 @@ end
     accumulator = StabilityQuantifiersAccumulator(bmap)
 
     @testset "single parameter" begin
-        fs, labels = basins_fractions(accumulator, ics)
+        fs, labels = basins_fractions_labels(accumulator, ics)
         @test all(sort!(collect(values(fs))) .≈ [0.333333333333333333, 0.6666666666666])
         quantifiers = finalize_accumulator(accumulator)
         @test isequal(quantifiers["minimal_critical_shock_magnitude"], Dict(2 => 2.0, 1 => 1.0))
@@ -449,8 +462,8 @@ end
     @testset "continuation" begin
         pcurve = [[1 => r] for r in rs]
         acsm = AttractorSeedContinueMatch(accumulator)
-        quantifiers_cont, attractors_cont = global_continuation(acsm, pcurve, ics)
-
+        gco = global_continuation(acsm, pcurve, PrescribedICs(ics))
+        quantifiers_cont = gco.quantifiers
         @test isequal(quantifiers_cont["minimal_critical_shock_magnitude"][2], Dict(2 => 2.0, 1 => 1.0))
         fs = quantifiers_cont["basin_fraction"][1]
         @test all(sort!(collect(v for (k, v) in fs if k != -1)) .≈ [0.333333333333333333, 0.6666666666666])

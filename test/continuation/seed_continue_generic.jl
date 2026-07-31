@@ -49,9 +49,10 @@ using Random
     @testset "case: $(i)" for (i, bmap) in enumerate(mappers)
         algo = AttractorSeedContinueMatch(bmap)
         pcurve = [[1 => r, 2 => 1.1] for r in rrange]
-        fractions_cont, a = global_continuation(
+        gco = global_continuation(
             algo, pcurve, sampler; show_progress = false,
         )
+        fractions_cont = gco.fractions
 
         for (i, r) in enumerate(rrange)
             fs = fractions_cont[i]
@@ -102,7 +103,7 @@ end
         ics = [SVector(v, w + I) for w in grid[2] for v in grid[1]]
         return ics
     end
-    icsgen = PerParameterInitialConditions(make_ics, 25)
+    icsgen = PerParameterICs(make_ics, 25)
 
     featurizer(A, t) = A[end]
     gconfig = GroupViaPairwiseComparison(threshold = 0.25, rescale_features = false)
@@ -110,9 +111,11 @@ end
     gca = AttractorSeedContinueMatch(bmap; seeding = A -> [])
 
     pcurve = [Dict(1 => r) for r in rs]
-    fractions_cont, attractors_cont = global_continuation(
+    gco = global_continuation(
         gca, pcurve, icsgen; show_progress = false
     )
+
+    attractors_cont = gco.attractors
 
     # all times 2 attractors, never the 0.0 attractor
     @test all(A -> length(A) == 2, attractors_cont)

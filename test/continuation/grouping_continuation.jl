@@ -36,10 +36,14 @@ using Random
     featurizer(a, t) = a[end]
     clusterspecs = Attractors.GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
     bmap = Attractors.BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = false)
-    gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
-    fractions_cont, attractors_cont = global_continuation(
-        gap, pcurve, sampler; show_progress = false
+    fgap = FeaturizeGroupAcrossParameter(bmap)
+    gco = global_continuation(
+        fgap, pcurve, sampler; show_progress = false
     )
+    fractions_cont, attractors_cont = gco.fractions, gco.attractors
+
+    @test haskey(gco.other, "features")
+    @test gco.other["features"] |> length == length(pcurve)
 
     for (i, r) in enumerate(rrange)
 
@@ -73,12 +77,20 @@ using Random
         end
         @test sum(values(fs)) ≈ 1
     end
+
+    fgap = FeaturizeGroupAcrossParameter(bmap; store_features = false)
+
+    gco = global_continuation(
+        fgap, pcurve, sampler; show_progress = false
+    )
+    @test !haskey(gco.other, "features")
+
 end
 
 @testset "hilbert cont" begin
-    specs = Dict(1 => (5, 6, 2^4), 2 => (0.1, 0.2, 2^4))
+    specs = Dict(1 => (5, 6, 2^2), 2 => (0.1, 0.2, 2^2))
     pcurve = hilbert_pcurve(specs)
-    @test length(pcurve) == 2^8
+    @test length(pcurve) == 2^4
     @test pcurve isa Vector{Dict{Int, Float64}}
 end
 
@@ -115,10 +127,10 @@ if DO_EXTENSIVE_TESTS
             ds, featurizer, clusterspecs;
             T = 10, Ttr = 2000, threaded = true
         )
-        gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
+        fgap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
         sampler = RandomICSampler(sampler, 100)
         fractions_cont, attractors_cont = global_continuation(
-            gap, pcurve, sampler;
+            fgap, pcurve, sampler;
             show_progress = false
         )
 

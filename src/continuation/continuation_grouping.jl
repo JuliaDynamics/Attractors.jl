@@ -2,17 +2,32 @@ export FeaturizeGroupAcrossParameter
 import ProgressMeter
 import Mmap
 
-struct FeaturizeGroupAcrossParameter{A <: BasinMapFeaturizeGroup, E} <: GlobalContinuationAlgorithm
-    bmap::A
+struct FeaturizeGroupAcrossParameter{B <: BasinMapFeaturizeGroup, E} <: GlobalContinuationAlgorithm
+    bmap::B
     info_extraction::E
-    par_weight::Float64
+    store_features::Bool
 end
 
 """
     FeaturizeGroupAcrossParameter <: GlobalContinuationAlgorithm
-    FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup; kwargs...)
+    FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup [, info_extraction]; kw...)
 
-A method for [`global_continuation`](@ref).
+A method for [`global_continuation`](@ref) that featurizes and groups
+trajectories across the whole parameter axis to establish a continuation of the groups.
+
+`info_extraction::Function` is a function that takes as an input a vector of feature-vectors
+(corresponding to a cluster) and returns a description of the cluster.
+By default, the centroid of the cluster is used as its description.
+This output becomes the `attractors` representation in [`GlobalContinuationOutput`](@ref).
+
+If the keyword `store_features` is `true` (default), then
+this method adds some information into the `other` field of `GlobalContinuationOutput`:
+- `"features"` contains the features per parameter step
+- `"labels"` contains their corresponding labels (both containers are sorted)
+which allows subsequent analysis of the grouped features.
+
+## Description
+
 It uses the featurizing approach discussed in [`BasinMapFeaturizeGroup`](@ref)
 and hence requires an instance of that bmap as an input.
 When used in [`global_continuation`](@ref), features are extracted
@@ -24,22 +39,9 @@ to each parameter value they came from.
 
 This continuation method is based on, but strongly generalizes, the approaches
 in the papers [Gelbrecht2020](@cite) and [Stender2021](@cite).
-
-## Keyword arguments
-
-- `info_extraction::Function` a function that takes as an input a vector of feature-vectors
-  (corresponding to a cluster) and returns a description of the cluster.
-  By default, the centroid of the cluster is used.
-  This is what the `attractors_cont` contains in the return of `global_continuation`.
 """
-function FeaturizeGroupAcrossParameter(
-        bmap::BasinMapFeaturizeGroup;
-        info_extraction = mean_across_features,
-        par_weight = 0.0,
-    )
-    return FeaturizeGroupAcrossParameter(
-        bmap, info_extraction, par_weight
-    )
+function FeaturizeGroupAcrossParameter(bmap::BasinMapFeaturizeGroup; store_features = true)
+    return FeaturizeGroupAcrossParameter(bmap, mean_across_features, store_features)
 end
 
 function mean_across_features(fs)
@@ -54,27 +56,25 @@ function mean_across_features(fs)
 end
 
 function global_continuation(
-        continuation::FeaturizeGroupAcrossParameter, pcurve::Vector, ics::InitialConditionSampler;
+        continuation::FeaturizeGroupAcrossParameter, pcurve::Vector, sampler::InitialConditionSampler;
         show_progress = true,
     )
-    (; bmap, info_extraction, par_weight) = continuation
-    spp, n = length(ics), length(pcurve)
-    features = _get_features_pcurve(bmap, ics, n, spp, pcurve, show_progress)
-
-    # This is a special clause for implementing the MCBB algorithm (weighting
-    # also by parameter value, i.e., making the parameter value a feature)
-    # It calls a special `group_features` function that also incorporates the
-    # parameter value (see below). Otherwise, we call normal `group_features`.
-    # TODO: We have deprecated this special clause. In the next version we need to cleanup
-    # the source code and remove the `par_weight` and its special treatment in `group_features`.
-    if bmap.group_config isa GroupViaClustering && par_weight ≠ 0
-        labels = group_features(features, bmap.group_config; par_weight, plength = n, spp)
+    (; bmap, info_extraction) = continuation
+    # spp means 'samples per parameter'
+    spp, n = length(sampler), length(pcurve)
+    features = _get_features_pcurve(bmap, sampler, n, spp, pcurve, show_progress)
+    labels = group_features(features, bmap.group_config)
+    fractions_cont, attractors_cont, feat_cont, label_cont = label_fractions_across_parameter(
+        labels, features, n, spp, info_extraction
+    )
+    # wrap output into the designated type:
+    if continuation.store_features
+        other = Dict("features" => feat_cont, "labels" => label_cont)
     else
-        labels = group_features(features, bmap.group_config)
+        other = Dict{String, Nothing}()
     end
-    fractions_cont, attractors_cont =
-        label_fractions_across_parameter(labels, 1features, n, spp, info_extraction)
-    return fractions_cont, attractors_cont
+    out = GlobalContinuationOutput(attractors_cont, fractions_cont, Dict{String,Vector}(), other, pcurve)
+    return out
 end
 
 function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler, n, spp, pcurve, show_progress)
@@ -83,13 +83,13 @@ function _get_features_pcurve(bmap::BasinMapFeaturizeGroup, sampler, n, spp, pcu
     )
     # Extract the first possible feature to initialize the features container
     u0s = generate_ics(sampler)
-    set_parameters!(bmap.ds, first(pcurve))
+    set_parameters!(referenced_dynamical_system(bmap), first(pcurve))
     current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
     features = Vector{typeof(current_features[1])}(undef, n * spp)
     features[1:spp] .= current_features
     # Collect features across parameter axis
     for i in 2:length(pcurve)
-        set_parameters!(bmap.ds, pcurve[i])
+        set_parameters!(referenced_dynamical_system(bmap), pcurve[i])
         u0s = generate_ics(sampler)
         current_features = extract_features(bmap, u0s; show_progress, N = length(sampler))
         features[((i - 1) * spp + 1):(i * spp)] .= current_features
@@ -103,12 +103,16 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
     fractions_cont = Vector{Dict{Int, Float64}}(undef, n)
     dummy_info = info_extraction([first(features)])
     attractors_cont = Vector{Dict{Int, typeof(dummy_info)}}(undef, n)
+    features_cont = []
+    labels_cont = []
     for i in 1:n
         # Here we know which indices correspond to which parameter value
         # because they are sequentially increased every `spp`
         # (steps per parameter)
         current_labels = view(labels, ((i - 1) * spp + 1):(i * spp))
         current_features = view(features, ((i - 1) * spp + 1):(i * spp))
+        push!(labels_cont, current_labels)
+        push!(features_cont, current_features)
         current_ids = unique(current_labels)
         # getting fractions is easy; use API function that takes in arrays
         fractions_cont[i] = basins_fractions(current_labels, current_ids)
@@ -118,5 +122,5 @@ function label_fractions_across_parameter(labels, features, n, spp, info_extract
                 ) for id in current_ids
         )
     end
-    return fractions_cont, attractors_cont
+    return fractions_cont, attractors_cont, features_cont, labels_cont
 end

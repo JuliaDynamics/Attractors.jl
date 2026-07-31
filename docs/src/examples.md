@@ -478,7 +478,7 @@ fig
 
 ```
 
-## Basin fractions continuation in the magnetic pendulum
+## Global continuation in the magnetic pendulum
 
 Perhaps the simplest application of [`global_continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
 
@@ -497,18 +497,17 @@ ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
 bmap = BasinMapRecurrences(ds, (xg, yg); Δt = 1.0)
 # What parameter to change, over what range
 γγ = range(1, 0; length = 101)
-prange = [[1, 1, γ] for γ in γγ]
-pidx = :γs
+pcurve = [Dict(:γs => [1, 1, γ]) for γ in γγ]
 # important to make a sampler that respects the symmetry of the system
 region = HSphere(3.0, 2)
-sampler, = statespace_sampler(region, 1234)
+sampler = RandomICSampler(100, region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(bmap; threshold = Inf)
-fractions_cont, attractors_cont = global_continuation(
-    rsc, prange, pidx, sampler;
-    show_progress = false, samples_per_parameter = 100
+gco = global_continuation(
+    rsc, pcurve, sampler; show_progress = false,
 )
+fractions_cont, attractors_cont = gco.fractions, gco.attractors
 # Show some characteristic fractions:
 fractions_cont[[1, 50, 101]]
 ```
@@ -548,8 +547,9 @@ fig
 as you can see, two of the three fixed points, and their stability, do not depend at all on the parameter value, since this parameter value tunes the magnetic strength of only the third magnet. Nevertheless, the **fractions of basin of attraction** of all attractors depend strongly on the parameter. This is a simple example that highlights excellently how this new approach we propose here should be used even if one has already done a standard linearized bifurcation analysis.
 
 ## Featurizing and grouping across parameters (MCBB / FGAP)
+
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
-For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
+For this, we will use [`FeaturizeGroupAcrossParameter`](@ref).
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
 Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
 
@@ -579,25 +579,25 @@ ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 
 
 ```@example MAIN
-sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
+sampler = RandomICSampler(100, HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
 
 rrange = range(0, 2; length = 21)
-ridx = 1
+pcurve = [Dict(1 => r) for r in rrange]
 
 featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 bmap = BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = true)
-gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 1.0)
-fractions_cont, clusters_info = global_continuation(
-    gap, rrange, ridx, sampler; show_progress = false
+gap = FeaturizeGroupAcrossParameter(bmap)
+gco = global_continuation(
+    gap, pcurve, sampler; show_progress = false
 )
-fractions_cont
+fractions_cont = gco.fractions
 ```
 
 Looking at the information of the "attractors" (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:
 
 ```@example MAIN
-clusters_info
+clusters_info = gco.attractors
 ```
 
 ## Using histograms and histogram distances as features
@@ -899,8 +899,6 @@ This special `matcher` achieves the following:
   the attractors are matched!
 
 
-
-
 ## [Aggregated stability quantifiers of a population model](@id aggregate_continuation_example)
 
 This example discusses aggregation of continuation results: where a dynamical system may have multiple attractors, but some of them share the same functional/operating state for the context of the system. In such cases, you want to aggregate attractors with similar function.
@@ -940,12 +938,12 @@ bmap = BasinMapRecurrences(ds, grid;
 # A short continuation in K₁ with few samples, to keep the example fast
 prange = range(0.91, 0.89; length = 5)
 pcurve = [Dict(1 => v) for v in prange]
-sampler, = statespace_sampler(grid, 1234)
+sampler = RandomICSampler(100, grid, 1234)
 alg = RecurrencesFindAndMatch(bmap; distance = StrictlyMinimumDistance())
-fractions_cont, attractors_cont = global_continuation(
-    alg, pcurve, sampler; samples_per_parameter = 100, show_progress = false
+gco = global_continuation(
+    alg, pcurve, sampler; show_progress = false
 )
-
+attractors_cont = gco.attractors
 length.(values.(attractors_cont)) # number of attractors at each step
 ```
 

@@ -2,23 +2,17 @@
 
 This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
 
-## New features
-
-- `basin_entropy` function has been extended to work for sampled basins by using
-  nearest neighbor searches and KD trees.
-- `basin_entropy` is now also optionally estimated by `StabilityQuantifierAccumulator`.
-- New function `hilbert_pcurve`. It conveniently uses Hilbert curves to create a parameter curve efficiently spanning a multidimensional space. To be used with `global_continuation`.
-- `StabilityQuantifiersAccumulator` allows for an `extras` input to calculate arbitrary
-  additional quantities after sampling the state space.
-- `continuation_series` now allows for mixed type outputs, so that the fill value
-  can be of different type (e.g., `missing`) than the continuation quantity.
-- New API for instructing `global_continuation` on how to sample initial conditions
-  structured around a new abstract type `InitialConditionSampler`.
-  - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
-    to come in the future.
-
 ## Breaking changes and Deprecations
 
+- **BREAKING**: The output of `global_continuation` is now a single centralized type
+  `GlobalContinuationOutput` that contains all quantities computed during a continuation
+  and is flexible in allowing additional output to be added in the future.
+  - Its first two fields are the attractors and fractions that are continued.
+  - When continuing with `StabilityQuantifierAccumulator` the third field `.quantifiers`
+    contains that info.
+  - For backwards compatibility `iterate` works on `GlobalContinuationOutput` and returns
+    the continued fractions and attractors as was the case before v2.
+    This will be breaking user code that used the accumulator though.
 - **BREAKING**: The `basins_fractions` output structure has been reworked. Now `basins_fractions` always returns only one output regardless of inputs: the fractions.
   A new function `basins_fractions_labels` returns also the labels.
 - **BREAKING**: All deprecations existing before v2 release have been removed. Add v1.39 explicitly to resolve this if need be.
@@ -30,6 +24,10 @@ This release accompanies the release of our paper "Global continuation as a comp
   of `InitialConditionSampler` instead.
 - **DEPRECATED**: Passing a vector of initial conditions or a sampling function to
   `global_continuation` is now deprecated. Use the `InitialConditionSampler` interface.
+- **BREAKING**: This sampler object must also be passed to `stability_quantifiers_along_continuation`.
+- **BREAKING**: `PerParameterInitialConditions` has been renamed to `PerParameterICs`.
+- **BREAKING**: Anything related to the `par_weight` input to `FeaturizeGroupAcrossParameter` has been removed (it was so far deprecated).
+- **BREAKING**: `info_extraction` keyword argument to `FeaturizeGroupAcrossParameter` is now an optional positional argument.
 
 ### Renaming of stability measures
 
@@ -50,7 +48,7 @@ The `AttractorMapper` constructions have been fully renamed. All following renam
 This better represents what these constructs are about, which is also reflected in the updated docstring of `BasinMap`.
 Throughout the docs, `mapper` variable has been renamed to `bmap` as well.
 
-## Aggregation reworked
+### Aggregation reworked
 
 Aggregation of attractors, also along a continuation, has been reworked.
 This rework comes from the odd and undisclosed way matching worked for
@@ -65,6 +63,22 @@ distances of feature centroids (instead of attractor centroids).
 - **BREAKING**: Removed the `featurizer` and `group_config` keyword arguments from `finalize_accumulator`. Attractor aggregation for stability measures is now
   done explicitly via `aggregate_continuation`.
 - **BREAKING** `finalize_accumulator` now returns only the dictionary of stability measures (previously it also returned the dictionary of attractors as a second value). The attractors are always those of the accumulator's mapper and can be obtained with `extract_attractors(accumulator)`.
+
+## New features
+
+- `basin_entropy` function has been extended to work for sampled basins by using
+  nearest neighbor searches and KD trees.
+- `basin_entropy` is now also optionally estimated by `StabilityQuantifierAccumulator`.
+- New function `hilbert_pcurve`. It conveniently uses Hilbert curves to create a parameter curve efficiently spanning a multidimensional space. To be used with `global_continuation`.
+- `StabilityQuantifiersAccumulator` allows for an `extras` input to calculate arbitrary
+  additional quantities after sampling the state space.
+- `continuation_series` now allows for mixed type outputs, so that the fill value
+  can be of different type (e.g., `missing`) than the continuation quantity.
+- New API for instructing `global_continuation` on how to sample initial conditions
+  structured around a new abstract type `InitialConditionSampler`.
+  - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
+    to come in the future.
+
 
 # v1.39
 

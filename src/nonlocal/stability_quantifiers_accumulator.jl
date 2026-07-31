@@ -16,7 +16,7 @@ way possible. `bmap` is any instance of a [`BasinMap`](@ref),
 although for [`BasinMapFeaturizeGroup`](@ref) the convergence times won't make sense.
 
 The accummulator records several quantifiers of stability (or resilience) defined
-in [Morr2026](@cite), and a few more derived after the original publication,
+in [Morr2026](@cite), and a few more added after the publication,
 including the intermingledness of basins of attraction [Datseris2026Intermingled](@cite), see list below.
 However, it also allows computing any additional user-defined quantifier that is
 a function of the attractors and/or their basins of attraction via the `extras`
@@ -36,13 +36,9 @@ to work for any `BasinMap`, current or future.
 Since `StabilityQuantifiersAccumulator` is formally an `BasinMap`, it can be
 used with [`global_continuation`](@ref). Simply give it as a `bmap` input
 to [`AttractorSeedContinueMatch`](@ref) and then call `global_continuation`.
-The only difference now is that `global_continuation` will not return just one
-quantifier of stability (the basin fraction). Rather,
-now the first return argument of `global_continuation` will be a
-`quantifiers_cont`, a dictionary mapping stability quantifiers (strings)
-to vectors of dictionaries. Each vector of dictionaries is similar to `fractions_cont`
-of the typical [`global_continuation`](@ref): a vector of dictionaries mapping attractor IDs
-to the corresponding nonlocal stability quantifiers.
+Then, the field `.quantifiers` of [`GlobalContinuationOutput`](@ref) will be
+filled with all the quantifiers estimated by the accumulator at each parameter.
+These will also be matched just like the attractors and their fractions are matched.
 
 Use [`stability_quantifiers_along_continuation`](@ref) for continuation of stability  quantifiers computed
 on the basis of an `BasinMapProximity` bmap from already found attractors.
@@ -541,7 +537,7 @@ end
 function basins_fractions_grouped(accumulator::StabilityQuantifiersAccumulator, ics, progress::Progress, labels)
     # note that ics is always collected into vector, cascaded by `basins_fraction`.
     # Here we'll call the same function with the stored bmap, cheating the system
-    fs, _labels = basins_fractions(accumulator.bmap, ics; show_progress = progress.core.enabled)
+    fs, _labels = basins_fractions_labels(accumulator.bmap, ics; show_progress = progress.core.enabled)
     if !isempty(labels)
         labels .= @view(_labels[1:length(labels)])
     end

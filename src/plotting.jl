@@ -68,21 +68,19 @@ export shaded_basins_heatmap, shaded_basins_heatmap!
 ##########################################################################################
 """
     animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_cont, fractions_cont, pcurve; kw...
+        ds::DynamicalSystem, gco::GlobalContinuationOutput; kw...
     )
 
 Animate how the found system attractors and their corresponding basin fractions
-change as the system parameter is increased. This function combines the input
+change along a [`global_continuation`](@ref). This function combines the input
 and output of the [`global_continuation`](@ref) function into a video output.
 
 The input dynamical system `ds` is used to evolve initial conditions sampled from the
 found attractors, so that the attractors are better visualized.
-`attractors_cont, fractions_cont` are the output of [`global_continuation`](@ref)
-while `ds, pcurve` are the input to [`global_continuation`](@ref).
 
 ## Keyword arguments
 
-- `savename = "attracont.mp4"`: name of video output file.
+- `savename = "globalcont.mp4"`: name of video output file.
 - `framerate = 4`: framerate of video output.
 - `Δt, T`: propagated to `trajectory` for evolving an initial condition sampled
   from an attractor.
