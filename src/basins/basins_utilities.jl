@@ -31,7 +31,7 @@ See also [`convergence_and_basins_of_attraction`](@ref).
 function basins_of_attraction(bmap::BasinMap, grid::Tuple; kwargs...)
     basins = zeros(Int32, map(length, grid))
     A = ics_from_grid(grid)
-    _, labels = basins_fractions_labels(bmap, A; kwargs...)
+    _, labels = basins_fractions_labels(bmap, PrescribedICs(A); kwargs...)
     attractors = extract_attractors(bmap)
     vec(basins) .= vec(labels)
     return ArrayBasinsOfAttraction(basins, attractors, grid)
