@@ -101,8 +101,8 @@ basin IDs (integers) to their fractions.
 If you also want to obtain a vector of labels corresponding to each initial condition,
 use the function [`basins_fractions_labels`](@ref) instead.
 
-Initial conditions are sampled using a concrete subtype of [`InitialConditionSampler`](@ref)
-and typically will use [`RandomICSampler`](@ref) or [`PrescribedICs`](@ref).
+Initial conditions are sampled using a concrete subtype of [`InitialConditionsSampler`](@ref)
+and typically will use [`RandomICsSampler`](@ref) or [`PrescribedICs`](@ref).
 
 ## Return
 

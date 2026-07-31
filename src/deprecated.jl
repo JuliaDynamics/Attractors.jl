@@ -34,12 +34,12 @@ end
 @deprecate StabilityMeasuresAccumulator StabilityQuantifiersAccumulator
 
 function basins_fractions(bmap::BasinMap, ics::Union{AbstractVector, Function}; kw...)
-    @warn "You must now pass a subtype of `InitialConditionSampler` explicitly to `basins_fractions`.
+    @warn "You must now pass a subtype of `InitialConditionsSampler` explicitly to `basins_fractions`.
     Making the closest type for now..."
     if ics isa AbstractVector
         sampler = PrescribedICs(ics)
     else
-        sampler = RandomICSampler(ics, 1000)
+        sampler = RandomICsSampler(ics, 1000)
     end
     return basins_fractions(bmap, sampler; kw...)
 end
@@ -51,12 +51,12 @@ function global_continuation(alg, prange, pidx, ics; kw...)
 end
 
 function global_continuation(alg::GlobalContinuationAlgorithm, pcurve::Vector, ics::Union{AbstractVector, Function}; kw...)
-    @warn "You must now pass a subtype of `InitialConditionSampler` explicitly to `global_continuation`.
+    @warn "You must now pass a subtype of `InitialConditionsSampler` explicitly to `global_continuation`.
     Making the closest type for now..."
     if ics isa AbstractVector
         sampler = PrescribedICs(ics)
     else
-        sampler = RandomICSampler(ics, 100)
+        sampler = RandomICsSampler(ics, 100)
     end
     return global_continuation(alg, pcurve, sampler; kw...)
 end

@@ -33,7 +33,7 @@ Perform a global continuation of all stability quantifiers estimated by
 [`StabilityQuantifiersAccumulator`](@ref) using the found attractors of
 a previous call to [`global_continuation`](@ref) using the `ds`.
 The inputs `pcurve, sampler` are the same as in [`global_continuation`](@ref)
-(i.e., a vector and an `InitialConditionSampler`).
+(i.e., a vector and an `InitialConditionsSampler`).
 
 This method is special because it always creates a [`BasinMapProximity`](@ref)
 for the attractors at a given point along the global continuation,
@@ -86,12 +86,12 @@ function stability_quantifiers_along_continuation(
     )
 
     # Deprecation: remove this at later version.
-    if !(sampler isa InitialConditionSampler)
-        @warn "You must now pass a subtype of `InitialConditionSampler` explicitly."
+    if !(sampler isa InitialConditionsSampler)
+        @warn "You must now pass a subtype of `InitialConditionsSampler` explicitly."
         if sampler isa AbstractVector
             sampler = PrescribedICs(sampler)
         else
-            sampler = RandomICSampler(sampler, 1000)
+            sampler = RandomICsSampler(sampler, 1000)
         end
     end
 

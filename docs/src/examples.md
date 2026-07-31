@@ -500,7 +500,7 @@ bmap = BasinMapRecurrences(ds, (xg, yg); Δt = 1.0)
 pcurve = [Dict(:γs => [1, 1, γ]) for γ in γγ]
 # important to make a sampler that respects the symmetry of the system
 region = HSphere(3.0, 2)
-sampler = RandomICSampler(100, region, 1234)
+sampler = RandomICsSampler(100, region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(bmap; threshold = Inf)
@@ -579,7 +579,7 @@ ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 
 
 ```@example MAIN
-sampler = RandomICSampler(100, HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
+sampler = RandomICsSampler(100, HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
 
 rrange = range(0, 2; length = 21)
 pcurve = [Dict(1 => r) for r in rrange]
@@ -938,7 +938,7 @@ bmap = BasinMapRecurrences(ds, grid;
 # A short continuation in K₁ with few samples, to keep the example fast
 prange = range(0.91, 0.89; length = 5)
 pcurve = [Dict(1 => v) for v in prange]
-sampler = RandomICSampler(100, grid, 1234)
+sampler = RandomICsSampler(100, grid, 1234)
 alg = RecurrencesFindAndMatch(bmap; distance = StrictlyMinimumDistance())
 gco = global_continuation(
     alg, pcurve, sampler; show_progress = false

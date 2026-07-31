@@ -56,7 +56,7 @@ function mean_across_features(fs)
 end
 
 function global_continuation(
-        continuation::FeaturizeGroupAcrossParameter, pcurve::Vector, sampler::InitialConditionSampler;
+        continuation::FeaturizeGroupAcrossParameter, pcurve::Vector, sampler::InitialConditionsSampler;
         show_progress = true,
     )
     (; bmap, info_extraction) = continuation

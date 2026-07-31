@@ -28,7 +28,7 @@ using Random
     ds = DiscreteDynamicalSystem(dumb_map, [0.0, 0.0], [r])
 
     sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
-    sampler = RandomICSampler(sampler, 100)
+    sampler = RandomICsSampler(sampler, 100)
 
     rrange = range(0, 2; length = 21)
     pcurve = [Dict(1 => r) for r in rrange]
@@ -128,7 +128,7 @@ if DO_EXTENSIVE_TESTS
             T = 10, Ttr = 2000, threaded = true
         )
         fgap = FeaturizeGroupAcrossParameter(bmap; par_weight = 0.0)
-        sampler = RandomICSampler(sampler, 100)
+        sampler = RandomICsSampler(sampler, 100)
         fractions_cont, attractors_cont = global_continuation(
             fgap, pcurve, sampler;
             show_progress = false

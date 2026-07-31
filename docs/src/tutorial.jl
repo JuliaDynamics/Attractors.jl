@@ -82,7 +82,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # angles = range(0, 2π; length = 101)
 # pcurve = ellipsoid.(angles)
 # gcoutput = global_continuation(
-# 	algo, pcurve, RandomICSampler(sampler, 1000)
+# 	algo, pcurve, RandomICsSampler(sampler, 1000)
 # )
 
 # ## and visualize the results
@@ -340,7 +340,7 @@ pcurve = [Dict(pidx => p) for p in prange]
 # Then, the third and final input is how, and how densely, to sample the state space.
 # Here we re-use the `sampler` and sample (per parameter value) 1000 initial conditions:
 
-gcsampler = RandomICSampler(sampler, 1000)
+gcsampler = RandomICsSampler(sampler, 1000)
 
 # Then, we may call the [`global_continuation`](@ref) function.
 
@@ -607,7 +607,7 @@ matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 # and proceed as usual
-gcsampler = RandomICSampler(sampler, 100)
+gcsampler = RandomICsSampler(sampler, 100)
 fractions_cont, attractors_cont = global_continuation(ascm, pcurve, gcsampler)
 
 # The output is exactly of the same type, and as such very easy to post-process.

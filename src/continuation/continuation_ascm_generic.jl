@@ -118,7 +118,7 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
 end
 
 function global_continuation(
-        ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionSampler;
+        ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionsSampler;
         show_progress = true,
     )
     progress = ProgressMeter.Progress(

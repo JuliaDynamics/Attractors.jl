@@ -80,7 +80,7 @@ Possible subtypes of a `GlobalContinuationAlgorithm` are:
 `pcurve` is a `Vector` of dictionaries, each dictionary mapping parameter indices to values.
 This defines an arbitrary curve in the parameter space of the dynamical system.
 
-`icsampler` is a subtype of [`InitialConditionSampler`](@ref) and provides instructions
+`icsampler` is a subtype of [`InitialConditionsSampler`](@ref) and provides instructions
 for how to sample initial conditions to explore the state space during the continuation.
 
 Return an instance of [`GlobalContinuationOutput`](@ref) that contains the continued
