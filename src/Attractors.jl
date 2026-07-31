@@ -21,8 +21,8 @@ const PMKWARGS = (
 
 # main files that import other files
 include("dict_utils.jl")
-include("mapping/attractor_mapping.jl")
 include("basins/basins.jl")
+include("mapping/attractor_mapping.jl")
 include("nonlocal/nonlocal.jl")
 include("continuation/global_continuation_api.jl")
 include("matching/matching_interface.jl")
