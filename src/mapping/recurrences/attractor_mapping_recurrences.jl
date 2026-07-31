@@ -1,3 +1,6 @@
+# `grids.jl` file is already included when defining the basins type
+include("sparse_arrays.jl")
+
 #####################################################################################
 # Type definition and documentation
 #####################################################################################
@@ -391,6 +394,4 @@ function reset_mapper!(bmap::BasinMapRecurrences)
     return
 end
 
-# `grids.jl` file is already included when defining the basins type
-include("sparse_arrays.jl")
 include("finite_state_machine.jl")

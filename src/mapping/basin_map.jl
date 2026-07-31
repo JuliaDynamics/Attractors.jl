@@ -61,10 +61,11 @@ to accelerate estimation of stability quantifiers.
 `BasinMap` and implement the following:
 
 - [`extract_attractors`](@ref)
-- `id = bmap(u0)`
 - the internal function `Attractors.referenced_dynamical_system(bmap)`.
+- the internal function `Attractors.can_map_individual_ic(bmap)::Bool`.
+- and if possible, `id = bmap(u0)`
 
-From these, everything else in the entire rest of the library just works!
+From these, everything else in the rest of the library just works!
 
 If it is not possible to implement `id = bmap(u0)`, then instead extend
 the function `basins_fractions_grouped(bmap, ics, progress, labels)`,
@@ -86,27 +87,27 @@ function generic_mapper_print(io, bmap)
 end
 Base.show(io::IO, bmap::BasinMap) = generic_mapper_print(io, bmap)
 
+"""
+    convergence_time(bmap::BasinMap) → t
+
+Return the approximate time the `bmap` took to converge to an attractor.
+This function should be called just right after `bmap(u0)` was called with
+`u0` the initial condition of interest. Hence it is only valid with `BasinMap`
+subtypes that support this syntax.
+
+Obtaining the convergence time is computationally free,
+so that [`convergence_and_basins_fractions`](@ref) can always
+be used instead of [`basins_fractions`](@ref).
+"""
+function convergence_time end
+
 #########################################################################################
 # Includes
 #########################################################################################
-# Instantiate Grid type so that BasinsOfAttraction subtype ArrayBasinsOfAttraction
-# may be loaded which allows attractor_mapping_recurrences.jl to be loaded
-abstract type Grid end
 
 include("sampler_api.jl")
+include("basins_types.jl")
 include("basin_fractions_concrete.jl")
 include("attractor_mapping_proximity.jl")
 include("recurrences/attractor_mapping_recurrences.jl")
 include("grouping/attractor_mapping_featurizing.jl")
-
-"internal function for whether the bmap can map individual i.c."
-allows_mapper_u0(::BasinMap) = true
-function allows_mapper_u0(bmap::BasinMapFeaturizeGroup)
-    if bmap.group_config isa GroupViaClustering
-        return false
-    elseif bmap.group_config isa GroupViaPairwiseComparison
-        return false
-    else
-        return true
-    end
-end

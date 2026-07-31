@@ -262,7 +262,7 @@ function convergence_time(accumulator::StabilityQuantifiersAccumulator)
     return convergence_time(accumulator.bmap)
 end
 
-allows_mapper_u0(a::StabilityQuantifiersAccumulator) = allows_mapper_u0(a.bmap)
+can_map_individual_ic(a::StabilityQuantifiersAccumulator) = can_map_individual_ic(a.bmap)
 
 function (accumulator::StabilityQuantifiersAccumulator)(u0)
     id = accumulator.bmap(u0)

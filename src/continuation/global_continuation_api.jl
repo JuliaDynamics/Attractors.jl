@@ -1,8 +1,6 @@
 export global_continuation, GlobalContinuationAlgorithm, continuation_series
 export GlobalContinuationOutput
 
-include("sampler_api.jl")
-
 """
     GlobalContinuationAlgorithm
 

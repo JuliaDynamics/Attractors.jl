@@ -1,3 +1,5 @@
+include("recurrences/grids.jl")
+
 using Neighborhood
 export BasinsOfAttraction,
     ArrayBasinsOfAttraction,
@@ -33,7 +35,6 @@ was done to ensure backwards compatibility for functions whose original return f
 `basins, attractors` but has since been replaced with a `BasinsOfAttraction` type.
 """
 abstract type BasinsOfAttraction{ID} end
-
 
 """
     ArrayBasinsOfAttraction(basins, attractors, grid)

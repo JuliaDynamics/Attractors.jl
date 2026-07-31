@@ -60,7 +60,7 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
         desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
     )
     labels = Vector{Int}(undef, fill_labels ? length(sampler) : 0)
-    ffs = if allows_mapper_u0(bmap)
+    ffs = if can_map_individual_ic(bmap)
         basins_fractions_individual(bmap, sampler, progress, labels, additional_ics)
     else
         # collect all initial conditions
@@ -138,17 +138,5 @@ function extract_attractors(bmap::BasinMap)
     return attractors
 end
 
-
-"""
-    convergence_time(bmap::BasinMap) → t
-
-Return the approximate time the `bmap` took to converge to an attractor.
-This function should be called just right after `bmap(u0)` was called with
-`u0` the initial condition of interest. Hence it is only valid with `BasinMap`
-subtypes that support this syntax.
-
-Obtaining the convergence time is computationally free,
-so that [`convergence_and_basins_fractions`](@ref) can always
-be used instead of [`basins_fractions`](@ref).
-"""
-function convergence_time end
+"internal function for whether the bmap can map individual i.c."
+can_map_individual_ic(::BasinMap) = true
