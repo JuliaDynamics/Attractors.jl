@@ -149,18 +149,15 @@ function global_continuation(
                 push!(additional_ics, u0)
             end
         end
-        # prepare the initial conditions
-        pics = generate_ics(icsampler, p)
         # and finally call basin fractions; it knows how to do all calculations given the bmap
-        fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
+        fs, labels = basins_fractions_labels(bmap, icsampler; params = p, additional_ics, show_progress, offset = 2)
         update_sampler!(sampler, labels)
         # Now, check if the sampler requires us to re-sample at the current parameter
         while resampling_required(sampler)
-            pics = generate_ics(icsampler, p)
-            fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
+        fs, labels = basins_fractions_labels(bmap, icsampler; params = p, additional_ics, show_progress, offset = 2)
             # Do more somthing, and then finally update the sampler again
             # update the sampler type, if needed
-            update_sampler!(sampler, labels)
+            update_sampler!(icsampler, labels)
             # TODO: for the future: find a way that the original initial conditions
             # used before the `while` loop, are somehow kept into memory instead
             # of being discarded.

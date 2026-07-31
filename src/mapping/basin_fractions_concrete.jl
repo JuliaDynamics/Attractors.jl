@@ -54,6 +54,9 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
         # and this is another internal keyword for the offset of the progress bar
         # for when this function is called in global continuation
         offset = 0,
+        # and yet another internal keyword used in `global_continuation`
+        # to notify which parameters to use in the sampler
+        params = current_parameters(referenced_dynamical_system(bmap))
     )
     progress = ProgressMeter.Progress(
         length(sampler);
@@ -64,7 +67,7 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
         basins_fractions_individual(bmap, sampler, progress, labels, additional_ics)
     else
         # collect all initial conditions
-        ics = generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap)))
+        ics = generate_ics(sampler, params)
         icscol = collect(ics) # thankfully this also copies for `Vector`
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)
