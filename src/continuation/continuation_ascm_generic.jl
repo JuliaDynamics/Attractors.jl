@@ -125,56 +125,53 @@ function global_continuation(
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
     )
     bmap = ascm.bmap
+    ds = referenced_dynamical_system(bmap)
+    additional_ics = typeof(current_state(ds))[]
     prev_attractors = empty(extract_attractors(bmap))
-    additional_ics = typeof(current_state(referenced_dynamical_system(bmap)))[]
+    prev_p = nothing
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict[]
     # Continue loop over all remaining parameters
     for (i, p) in enumerate(pcurve)
-        set_parameters!(referenced_dynamical_system(bmap), p)
+        set_parameters!(ds, p)
         reset_mapper!(bmap)
         # Seed initial conditions from previous attractors.
-        # Here we utilize the interal keyword `additional_ics` of `basins_fractions`.
-        # The seeding process finds attractors with really small basins, and we need
-        # to take this into account when creating the basin fractions, otherwise there
-        # could be attractor IDs with 0 fractions in the final output (if the small basin
-        # attractors are not found from the random sampling)
-        # collect seeds
         empty!(additional_ics)
         for att in values(prev_attractors)
             for u0 in ascm.seeding(att)
                 push!(additional_ics, u0)
             end
         end
-        # prepare the initial conditions
-        pics = generate_ics(icsampler, p)
-        # and finally call basin fractions; it knows how to do all calculations given the bmap
-        fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
-        update_sampler!(sampler, labels)
-        # Now, check if the sampler requires us to re-sample at the current parameter
-        while resampling_required(sampler)
+        local fs, attractors, matched_attractors
+        while true
+            # prepare the initial conditions
             pics = generate_ics(icsampler, p)
+            # and finally call basin fractions; it knows how to do all calculations given the bmap
             fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
-            # Do more somthing, and then finally update the sampler again
-            # update the sampler type, if needed
-            update_sampler!(sampler, labels)
-            # TODO: for the future: find a way that the original initial conditions
-            # used before the `while` loop, are somehow kept into memory instead
-            # of being discarded.
+            attractors = deepcopy(extract_attractors(bmap))
+            # note this is the non-mutating `matching_map`: `attractors` keeps its own IDs
+            rmap = matching_map(attractors, prev_attractors, ascm.matcher; ds, p, pprev = prev_p)
+            replace!(labels, rmap...)
+            update_sampler!(icsampler, labels)
+            matched_attractors = copy(attractors)
+            swap_dict_keys!(matched_attractors, rmap)
+            # Now, check if the sampler requires us to re-sample at the current parameter
+            resampling_required(icsampler) || break
+            # TODO: for the future: find a way that the initial conditions used in the
+            # rounds before the last one are somehow kept in memory instead of discarded.
         end
         # All the computations are done, and now we just store the result(s)
         # we don't match attractors here, this happens directly at the end.
         push!(fractions_cont, fs)
-        # deepcopy is important here as attractor container always referrenced
-        prev_attractors = deepcopy(extract_attractors(bmap))
-        push!(attractors_cont, prev_attractors)
+        push!(attractors_cont, attractors)
+        prev_attractors, prev_p = matched_attractors, p
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
     rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(bmap)
+        attractors_cont, ascm.matcher; pcurve, ds, retract_keys = false
     )
     match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont

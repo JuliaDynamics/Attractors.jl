@@ -1,5 +1,9 @@
 export InitialConditionSampler
 export RandomICSampler, PerParameterICs, PerParameterInitialConditions
+export BayesianUpdateSampler
+
+using Random: Xoshiro
+using SpecialFunctions: loggamma
 
 """
     InitialConditionSampler
@@ -84,65 +88,209 @@ end
 generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.N)
 
 """
-    BayesianUpdateSampler(dense_sampler, sparse_sampler, γ = 0.5) <: InitialConditionSampler
+    BayesianUpdateSampler(region, n_tiles::Int; sparse_n, kwargs...) <: InitialConditionSampler
 
-From Alex's paper.
+Sampler allocating initial conditions where the basins are actually changing.
+`region` is tiled into `n_tiles^D` equally sized boxes, each carrying information
+over the attractor labels found inside it. At every parameter of a
+[`global_continuation`](@ref) each box is sampled sparsely and the resulting label
+counts are tested against its prior with a log Bayes factor `η`. A box with negative
+`η` means the data are better explained by no prior at all than by its history. 
+The basins in the box have changed and the sampler asks for a dense re-sample.
+
+`region` is anything [`statespace_sampler`](@ref) accepts as a region: an `HRectangle`,
+or a tuple of ranges/`(min, max)` pairs, one per dimension.
+
+## Keyword arguments
+
+- `sparse_n::Int`: initial conditions drawn per box during routine monitoring.
+- `dense_n::Int = sparse_n^2`: initial conditions drawn per box when a box asks for a
+  re-sample, and for every box at the first parameter of the continuation.
+- `λ::Real = 0.7`: forgetting factor. The prior is decayed as `α ← λα` before each
+  sparse update, so that evidence from far-away parameters is progressively discounted.
+- `β::Real = 0.5`: Dirichlet base pseudo-count assigned to unseen labels.
+- `seed = abs(rand(Int))`: seed for the per-box point generators.
+
+## Description
+
+At the first parameter every box is sampled with `dense_n` initial conditions and its
+prior is initialised as `α_k = c_k + β` from the label counts `c` and atractor k.
+At every later parameter:
+
+1. `generate_ics` draws `sparse_n` points per box.
+2. `update_sampler!` slices the returned labels per box, decays that box's prior by `λ`,
+   and computes `η`. If `η < 0` the box is flagged and its prior left untouched;
+   otherwise the posterior `α_k ← λα_k + c_k` is stored.
+3. If any box was flagged, `resampling_required` returns `true` and the continuation loop
+   calls `generate_ics` again. That round draws `dense_n` points for the flagged boxes
+   *only*, and `update_sampler!` rebuilds their priors from scratch and clears the flags.
+
+Because a dense round performs no test, at most one re-sampling round happens per
+parameter. Every box starts out flagged, so the dense initialisation of the first
+parameter is nothing but step 3 applied to all of them.
+
 """
-struct BayesianUpdateSampler{D, S, R <: HRectangle} <: InitialConditionSampler
-    dense_n::Int
+mutable struct BayesianUpdateSampler{D, G} <: InitialConditionSampler
+    # geometry: one box, and one point generator for it, per tile
+    boxes::Vector{HRectangle{Float64, SVector{D, Float64}}}
+    generators::Vector{G}
+    # working memory: Dirichlet pseudo-counts and last log Bayes factor, per box
+    alphas::Vector{Dict{Int, Float64}}
+    etas::Vector{Float64}
+    # configuration
     sparse_n::Int
-    γ::Float64
-    β::Float64
+    dense_n::Int
     λ::Float64
-    boxes::Vector{R}
-    boxes_flags::Vector{Bool} # same size as `boxes`, true if resampling is required for this box
-    resampling_necessary::Bool
-    more_fields
+    β::Float64
+    # per-round bookkeeping
+    boxes_flags::Vector{Bool}       # true => this box wants a dense re-sample
+    layout::Vector{Pair{Int, Int}}  # (box index => n ics) of the last `generate_ics`
 end
 
-# Sketch for boxes
-# each box has either `dense_n` or `sparse_n`
+function BayesianUpdateSampler(region, n_tiles::Int;
+        sparse_n::Int, dense_n::Int = sparse_n^2, λ::Real = 0.7, β::Real = 0.5,
+        seed = abs(rand(Int)),
+    )
+    sparse_n ≥ 1 || throw(ArgumentError("`sparse_n` must be ≥ 1, got $sparse_n"))
+    dense_n ≥ 1 || throw(ArgumentError("`dense_n` must be ≥ 1, got $dense_n"))
+    0 < λ ≤ 1 || throw(ArgumentError("`λ` must be in (0, 1], got $λ"))
+    β > 0 || throw(ArgumentError("`β` must be > 0, got $β"))
 
-# if you have a total of `N` i.c.
-# and you know the `boxes_flags`, then you know exactly which ones of the total `N`
-# are in each box.
+    boxes = _tile_region(_to_hrectangle(region), n_tiles)
+    # each box gets its own generator, so that `statespace_sampler` does the actual
+    # point picking and we only decide how many points come from where
+    rng = Xoshiro(seed)
+    generators = [statespace_sampler(box, abs(rand(rng, Int)))[1] for box in boxes]
+    n = length(boxes)
+    return BayesianUpdateSampler(
+        boxes, generators,
+        [Dict{Int, Float64}() for _ in 1:n], zeros(n),
+        sparse_n, dense_n, Float64(λ), Float64(β),
+        # every box starts flagged: the first round is then just an ordinary
+        # re-sampling round, which is exactly the dense initialisation we want
+        fill(true, n), Pair{Int, Int}[],
+    )
+end
 
-# This way, you can generate a _single_ vector of initial conditions
-# (although its size would change at each step of the continuation depending
-# on which boxes get sparse or dense `n`)
+_to_hrectangle(r::HRectangle) = r
+_to_hrectangle(r) = HRectangle(SVector(minimum.(r)), SVector(maximum.(r)))
 
-function generate_ics(sampler::BayesianUpdateSampler)
-    # This function utilizes `resampling_necessary`.
-    all_ics = []
-    # loop through boxes
-    for (boxi, box) in enumerate(sampler.boxes)
-        # for each box, compute η
-        η = somehow
-        if η < 0
-            ics = random_ics_from_box(box, dense_n)
-        else
-            ics = random_ics_from_box(box, sparse_n)
+# Split `region` into `n_tiles` parts per dimension, in the column major order of
+# `CartesianIndices`.
+function _tile_region(region::HRectangle, n_tiles::Int)
+    n_tiles ≥ 1 || throw(ArgumentError("`n_tiles` must be ≥ 1, got $n_tiles"))
+    mins, maxs = region.mins, region.maxs
+    all(mins .< maxs) || throw(ArgumentError("`region` must have `mins .< maxs`"))
+    D = length(mins)
+    edges = ntuple(d -> range(Float64(mins[d]), Float64(maxs[d]); length = n_tiles + 1), D)
+    boxes = HRectangle{Float64, SVector{D, Float64}}[]
+    for idx in CartesianIndices(ntuple(_ -> n_tiles, D))
+        lo = SVector{D, Float64}(ntuple(d -> edges[d][idx[d]], D))
+        hi = SVector{D, Float64}(ntuple(d -> edges[d][idx[d] + 1], D))
+        push!(boxes, HRectangle(lo, hi))
+    end
+    return boxes
+end
+
+n_boxes(s::BayesianUpdateSampler) = length(s.boxes)
+
+# Number of initial conditions the *next* `generate_ics` call will produce.
+function Base.length(s::BayesianUpdateSampler)
+    resampling_required(s) && return s.dense_n * count(s.boxes_flags)
+    return s.sparse_n * n_boxes(s)
+end
+
+function Base.show(io::IO, s::BayesianUpdateSampler{D}) where {D}
+    println(io, "BayesianUpdateSampler in $(D)D")
+    println(io, "  boxes:    ", n_boxes(s))
+    println(io, "  sparse_n: ", s.sparse_n)
+    println(io, "  dense_n:  ", s.dense_n)
+    print(io,   "  λ, β:     ", s.λ, ", ", s.β)
+end
+
+resampling_required(s::BayesianUpdateSampler) = any(s.boxes_flags)
+
+function generate_ics(s::BayesianUpdateSampler, args...)
+    empty!(s.layout)
+    # A re-sampling round only visits the boxes that asked for it, densely; every other
+    # round visits all of them, sparsely.
+    resample = resampling_required(s)
+    for i in eachindex(s.boxes)
+        n = s.boxes_flags[i] ? s.dense_n : (resample ? 0 : s.sparse_n)
+        n == 0 || push!(s.layout, i => n)
+    end
+    # `layout` tells `update_sampler!` how to slice the labels between boxes it gets back
+    ics = Vector{Vector{Float64}}(undef, length(s))
+    j = 1
+    for (i, n) in s.layout
+        gen = s.generators[i]
+        for _ in 1:n
+            ics[j] = copy(gen()) # the generator reuses its output buffer
+            j += 1
         end
-        append!(all_ics, ics)
     end
-    return all_ics
+    return StateSpaceSet(ics)
 end
 
-function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
-    # first, analyze labels per-box
-    counter = 1
-    for box_index in eachindex(sampler.boxes)
-        n_box = boxes_flags[box_index] ? sampler.dense_n : sampler.sparse_n
-        labels_for_box = view(labels, counter:(counter + n_box))
-        # then make a decision on the η and box flag and whatever
-        # update bayesian
-        η = update_somehow(labels_for_box)
-        # then update the box flag
-        boxes_flags[box_index] = η < 0 ? true : false
-        counter += n_box
+"""
+    update_sampler!(sampler::BayesianUpdateSampler, labels)
+"""
+function update_sampler!(s::BayesianUpdateSampler, labels, args...)
+    expected = isempty(s.layout) ? 0 : sum(last, s.layout)
+    length(labels) == expected || throw(DimensionMismatch(
+        "got $(length(labels)) labels but the recorded layout expects $expected; " *
+        "`update_sampler!` must be called once per `generate_ics` call"
+    ))
+    cursor = 1
+    for (i, n) in s.layout
+        counts = _count_labels(view(labels, cursor:(cursor + n - 1)))
+        cursor += n
+        if s.boxes_flags[i]
+            # Dense round: relearn this box from scratch, no test.
+            s.alphas[i] = Dict{Int, Float64}(k => c + s.β for (k, c) in counts)
+            s.boxes_flags[i] = false
+        else
+            α = Dict{Int, Float64}(k => s.λ * v for (k, v) in s.alphas[i]) # decay priors
+            η = s.etas[i] = _log_bayes_factor(counts, α, s.β)
+            if η < 0 # the prior cannot explain the data: ask for a dense re-sample
+                s.boxes_flags[i] = true
+            else # posterior update
+                for (k, c) in counts
+                    α[k] = get(α, k, s.β) + c
+                end
+                s.alphas[i] = α
+            end
+        end
     end
-    # Processing stuff
     return nothing
 end
 
-resampling_required(sampler::BayesianUpdateSampler) = any(sampler.boxes_flags)
+function _count_labels(labels)
+    counts = Dict{Int, Int}()
+    for l in labels
+        k = Int(l)
+        counts[k] = get(counts, k, 0) + 1
+    end
+    return counts
+end
+
+# Log Bayes factor η comparing the evidence for the counts under the historical prior
+# `α` against the evidence under an uninformative one (every label has weight `β`).
+# Both are Dirichlet-multinomial log marginal likelihoods,
+# `lnΓ(α₀) - lnΓ(N + α₀) + Σₖ [lnΓ(cₖ + αₖ) - lnΓ(αₖ)]`.
+function _log_bayes_factor(counts::Dict{Int, Int}, α::Dict{Int, Float64}, β::Real)
+    N = sum(values(counts))
+    α₀ = 0.0; nk = 0
+    L_hist = 0.0; L_reset = 0.0
+    for k in union(keys(counts), keys(α))
+        nk += 1
+        a = get(α, k, β)
+        c = get(counts, k, 0)
+        α₀ += a
+        L_hist += loggamma(c + a) - loggamma(a)
+        L_reset += loggamma(c + β) - loggamma(β)
+    end
+    L_hist += loggamma(α₀) - loggamma(N + α₀)
+    L_reset += loggamma(nk * β) - loggamma(N + nk * β)
+    return L_hist - L_reset
+end

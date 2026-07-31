@@ -61,7 +61,7 @@ function matching_map(
     )
     # if either dictionary is empty there is no matching to be done
     if isempty(current_attractors) || isempty(prev_attractors)
-        return Dict{keytype(a₊), keytype(a₋)}()
+        return Dict{keytype(current_attractors), keytype(prev_attractors)}()
     end
 
     if matcher.ε === nothing
