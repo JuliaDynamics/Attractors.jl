@@ -57,6 +57,14 @@ struct RandomICsSampler{F} <: InitialConditionsSampler
 end
 RandomICsSampler(N::Int, args...; kw...) = RandomICsSampler(statespace_sampler(args...; kw...)[1], N)
 generate_ics(p::RandomICsSampler, args...) = (p.f() for _ in 1:p.N)
+# function RandomICsSampler(N::Int, args...; kw...)
+#     # we have to acknowledge that f() operates in-place here!
+#     f, = statespace_sampler(args...; kw...)[1]
+#     g = () -> copy(f())
+#     return RandomICsSampler(g, N)
+# end
+
+
 
 """
     PrescribedICs(u0s::AbstractVector) <: InitialConditionsSampler

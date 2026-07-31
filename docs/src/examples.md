@@ -40,9 +40,9 @@ Instead of computing the full basins, we could get only the fractions of the bas
 In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
 
 ```@example MAIN
-sampler, = statespace_sampler(grid)
+sampler = RandomICsSampler(1000, grid)
 
-basins = basins_fractions(mapper_newton, sampler)
+fractions = basins_fractions(mapper_newton, sampler)
 ```
 
 in this case, to also get the attractors we simply extract them from the underlying storage of the bmap:
@@ -139,9 +139,9 @@ As we don't know _when_ the basin of the third magnet will disappear, we switch 
 
 ```@example MAIN
 set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
-bmap = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
+bmap = BasinMapRecurrences(psys, grid; Δt = 1)
 basins_after, attractors_after = basins_of_attraction(
-    bmap, (xg, yg); show_progress = false
+    bmap, grid; show_progress = false
 )
 # matching attractors is important!
 rmap = matching_map!(attractors_after, attractors, MatchBySSSetDistance())
@@ -234,7 +234,7 @@ bmap = BasinMapFeaturizeGroup(psys, featurizer; Ttr = 200, T = 1)
 xg = yg = range(-4, 4; length = 101)
 
 region = HRectangle([-4, 4], [4, 4])
-sampler, = statespace_sampler(region)
+sampler = RandomICsSampler(1000, region)
 
 fs = basins_fractions(bmap, sampler; show_progress = false)
 ```
@@ -393,8 +393,8 @@ for pow in (1, 2)
     )
 
     # Find attractor and its fraction (fraction is always 1 here)
-    sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-    fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+    sampler = RandomICsSampler(100, HRectangle(zeros(2), fill(18.0, 2)), 42)
+    fractions = basins_fractions(bmap, sampler; show_progress = false)
     attractors = extract_attractors(bmap)
     scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
 end
@@ -454,8 +454,8 @@ bmap = BasinMapRecurrences(ds, grid;
     )
 
 # Find attractor and its fraction (fraction is always 1 here)
-sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+sampler = RandomICsSampler(100, HRectangle(zeros(2), fill(18.0, 2)), 42)
+fractions = basins_fractions(bmap, sampler; show_progress = false)
 attractors_SBD = extract_attractors(bmap)
 scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 
@@ -468,8 +468,7 @@ bmap = BasinMapRecurrences(ds, (xg, yg);
         maximum_iterations = 1000,
     )
 
-sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+fractions = basins_fractions(bmap, sampler; show_progress = false)
 attractors_reg = extract_attractors(bmap)
 scatter!(ax, vec(attractors_reg[1]); label = "RegularGrid")
 

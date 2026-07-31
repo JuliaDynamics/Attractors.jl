@@ -66,9 +66,8 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
     ffs = if can_map_individual_ic(bmap)
         basins_fractions_individual(bmap, sampler, params, progress, labels, additional_ics)
     else
-        # collect all initial conditions
-        ics = generate_ics(sampler, params)
-        icscol = collect(ics) # thankfully this also copies for `Vector`
+        # collect all initial conditions, making sure to copy
+        icscol = [copy(u) for u in generate_ics(sampler, params)]
         append!(icscol, additional_ics)
         basins_fractions_grouped(bmap, icscol, progress, labels)
     end
