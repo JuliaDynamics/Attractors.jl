@@ -146,14 +146,13 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
         # for when this function is called in global continuation
         offset = 0,
     )
-    N = length(sampler)
     progress = ProgressMeter.Progress(
-        N;
+        length(sampler);
         desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
     )
-    labels = Vector{Int}(undef, fill_labels ? N : 0)
+    labels = Vector{Int}(undef, fill_labels ? length(sampler) : 0)
     ffs = if allows_mapper_u0(bmap)
-        basins_fractions_individual(bmap, sampler, N, progress, labels, additional_ics)
+        basins_fractions_individual(bmap, sampler, progress, labels, additional_ics)
     else
         # collect all initial conditions
         ics = generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap)))
@@ -164,7 +163,7 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
     return ffs, labels
 end
 
-function basins_fractions_individual(bmap, sampler, N, progress, labels, additional_ics)
+function basins_fractions_individual(bmap, sampler, progress, labels, additional_ics)
     ics = generate_ics(sampler, current_parameters(referenced_dynamical_system(bmap)))
     fs = Dict{Int, Int}()
     for u0 in additional_ics
@@ -177,7 +176,7 @@ function basins_fractions_individual(bmap, sampler, N, progress, labels, additio
         !isempty(labels) && (labels[i] = label)
         ProgressMeter.next!(progress)
     end
-    ffs = Dict(k => v / (N + length(additional_ics)) for (k, v) in fs)
+    ffs = Dict(k => v / (length(sampler) + length(additional_ics)) for (k, v) in fs)
     return ffs
 end
 
