@@ -91,11 +91,7 @@ Base.show(io::IO, bmap::BasinMap) = generic_mapper_print(io, bmap)
 #########################################################################################
 # It works for all mappers that define the function-like-object behavior
 """
-    basins_fractions(
-        bmap::BasinMap,
-        ics::Union{AbstractVector, Function};
-        kwargs...
-    )
+    basins_fractions(bmap::BasinMap, ics::InitialConditionsSampler; kwargs...)
 
 Approximate the state space fractions `fs` of the basins of attraction of a dynamical
 system by mapping initial conditions to attractors using `bmap`
@@ -104,14 +100,10 @@ The fractions are simply the ratios of how many initial conditions ended up
 at each attractor. Return the fractions as a dictionary mapping
 basin IDs (integers) to their fractions.
 If you also want to obtain a vector of labels corresponding to each initial condition,
-use the function `basins_fractions_labels` instead.
+use the function [`basins_fractions_labels`](@ref) instead.
 
-Initial conditions to use are defined by `ics`. It can be:
-* an `AbstractVector` of initial conditions, in which case all are used.
-  Typically this is a `StateSpaceSet`.
-* a 0-argument function `ics()` that spits out random initial conditions.
-  Then `N` random initial conditions are chosen.
-  See [`statespace_sampler`](@ref) to generate such functions.
+Initial conditions are sampled using a concrete subtype of [`InitialConditionSampler`](@ref)
+and typically will use [`RandomICSampler`](@ref) or [`PrescribedICs`](@ref).
 
 ## Return
 
@@ -132,26 +124,21 @@ See also [`convergence_and_basins_fractions`](@ref).
 
 ## Keyword arguments
 
-* `N = 1000`: Number of random initial conditions to generate in case `ics` is a function.
 * `show_progress = true`: Display a progress bar of the process.
 """
-function basins_fractions(bmap::BasinMap, ics; kw...)
-    fs, labels = basins_fractions_labels(bmap, ics; fill_labels = false, kw...)
+function basins_fractions(bmap::BasinMap, sampler::InitialConditionsSampler; kw...)
+    fs, labels = basins_fractions_labels(bmap, sampler; fill_labels = false, kw...)
     return fs
 end
 
 """
-    basins_fractions_labels(
-        bmap::BasinMap,
-        ics::Union{AbstractVector, Function};
-        kwargs...
-    )
+    basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampler; kw...)
 
 Same as [`basins_fractions`](@ref) but return two outputs: the fractions dictionary
 and a vector of integers which contains the labels of the provided initial conditions.
 """
-function basins_fractions_labels(bmap::BasinMap, ics;
-        show_progress = true, N = 1000,
+function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampler;
+        show_progress = true,
         # This is an internal keyword used by `basin_fractions`
         fill_labels = true,
         # this is an internal keyword used in the ASCM global conitnuation
@@ -160,7 +147,7 @@ function basins_fractions_labels(bmap::BasinMap, ics;
         # for when this function is called in global continuation
         offset = 0,
     )
-    N = ics isa AbstractVector ? length(ics) : N
+    N = length(sampler)
     progress = ProgressMeter.Progress(
         N;
         desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
