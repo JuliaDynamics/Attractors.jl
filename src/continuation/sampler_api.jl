@@ -17,7 +17,8 @@ Concerete subtypes are:
 - [`PerParameterICs`](@ref)
 
 `InitialConditionSampler` defines a currently experimental extendable interface
-based on the internal functions `generate_ics, update_sampler!, resampling_required`.
+based on the internal functions
+`generate_ics, update_sampler!, resampling_required, weighted_fractions`.
 """
 abstract type InitialConditionSampler end
 Base.length(s::InitialConditionSampler) = s.N
@@ -37,6 +38,31 @@ Todo, decide `args`.
 """
 update_sampler!(sampler, args...) = nothing
 resampling_required(sampler) = false
+
+"""
+    weighted_fractions(sampler::InitialConditionSampler, counts) → Dict{Int, Float64}
+
+Basin fractions of the region the `sampler` covers at the parameter whose sampling rounds
+have just finished. `counts` maps attractor ID to the number of initial conditions that
+landed on it, pooled over every round of that parameter. This is what
+[`global_continuation`](@ref) can see from the outside, and it weighs every initial
+condition equally; its total is the number of initial conditions the parameter used, so
+nothing else about the size of the sample needs to be passed around.
+
+The default implementation is therefore just `counts ./ sum(counts)`, which is right
+whenever the sampler covers the region uniformly and in one round. A sampler that samples
+some parts of the region more densely than others, or that revisits a sub-region in a
+re-sampling round, must define its own method and **ignore `counts`**: only the sampler
+knows the density its points were drawn from, and no estimate of the fractions is unbiased
+without it. It should keep whatever running tally it needs while the rounds go by — see
+[`BayesianUpdateSampler`](@ref) for an example — rather than have the continuation hold on
+to the labels of every initial condition, which is the one thing here that grows with the
+sample size.
+"""
+function weighted_fractions(sampler, counts)
+    n = sum(values(counts); init = 0.0)
+    return Dict{Int, Float64}(k => c / n for (k, c) in counts)
+end
 
 """
     RandomICSampler(f::Function, N::Int) <: InitialConditionSampler
@@ -145,6 +171,11 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionSampler
     # per-round bookkeeping
     boxes_flags::Vector{Bool}       # true => this box wants a dense re-sample
     layout::Vector{Pair{Int, Int}}  # (box index => n ics) of the last `generate_ics`
+    # per-parameter bookkeeping: label counts per box, over every round of the current
+    # parameter. This is all `weighted_fractions` needs, and unlike a record of the
+    # labels themselves its size is bounded by the number of boxes times the number of
+    # attractors, no matter how many initial conditions are drawn.
+    step_counts::Vector{Dict{Int, Int}}
 end
 
 function BayesianUpdateSampler(region, n_tiles::Int;
@@ -168,7 +199,7 @@ function BayesianUpdateSampler(region, n_tiles::Int;
         sparse_n, dense_n, Float64(λ), Float64(β),
         # every box starts flagged: the first round is then just an ordinary
         # re-sampling round, which is exactly the dense initialisation we want
-        fill(true, n), Pair{Int, Int}[],
+        fill(true, n), Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
     )
 end
 
@@ -215,6 +246,9 @@ function generate_ics(s::BayesianUpdateSampler, args...)
     # A re-sampling round only visits the boxes that asked for it, densely; every other
     # round visits all of them, sparsely.
     resample = resampling_required(s)
+    # ... so a round that is not a re-sample is the first one of a new parameter, and the
+    # tally the fractions are computed from starts afresh
+    resample || foreach(empty!, s.step_counts)
     for i in eachindex(s.boxes)
         n = s.boxes_flags[i] ? s.dense_n : (resample ? 0 : s.sparse_n)
         n == 0 || push!(s.layout, i => n)
@@ -245,6 +279,9 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
     for (i, n) in s.layout
         counts = _count_labels(view(labels, cursor:(cursor + n - 1)))
         cursor += n
+        # every round of this parameter contributes to the box's tally, whether it ends
+        # up flagged or not; `weighted_fractions` reads it once the rounds are over
+        mergewith!(+, s.step_counts[i], counts)
         if s.boxes_flags[i]
             # Dense round: relearn this box from scratch, no test.
             s.alphas[i] = Dict{Int, Float64}(k => c + s.β for (k, c) in counts)
@@ -263,6 +300,35 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
         end
     end
     return nothing
+end
+
+"""
+    weighted_fractions(sampler::BayesianUpdateSampler, counts)
+
+The boxes all have the same volume, so the fraction of the region belonging to basin `k`
+is the average over the boxes of the fraction of each box belonging to it. Read off
+`step_counts`, the per-box tally `update_sampler!` keeps as the rounds of the parameter go
+by, so that nothing proportional to the number of initial conditions is ever stored.
+
+The pooled `counts` given by [`global_continuation`](@ref) are ignored, as they weigh each
+box by how densely it happened to be covered: a box that panicked and was re-sampled would
+count `dense_n/sparse_n` times more than a quiet one, which bends the fractions of the
+whole region towards wherever the basins are currently changing.
+"""
+function weighted_fractions(s::BayesianUpdateSampler, counts)
+    fs = Dict{Int, Float64}()
+    # a box that received nothing cannot contribute an estimate, and must not count
+    # towards the average either, or the fractions would not sum to one
+    sampled = count(!isempty, s.step_counts)
+    sampled == 0 && return fs
+    for c in s.step_counts
+        isempty(c) && continue
+        nᵢ = sum(values(c))
+        for (k, v) in c
+            fs[k] = get(fs, k, 0.0) + v / (nᵢ * sampled)
+        end
+    end
+    return fs
 end
 
 function _count_labels(labels)

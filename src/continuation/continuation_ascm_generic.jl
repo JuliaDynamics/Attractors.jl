@@ -129,6 +129,14 @@ function global_continuation(
     additional_ics = typeof(current_state(ds))[]
     prev_attractors = empty(extract_attractors(bmap))
     prev_p = nothing
+    # The matching happens here, one parameter at a time, and its running state is kept
+    # across the loop. This is the same chain `match_sequentially!` would rebuild at the
+    # end, but the loop cannot wait for it: `update_sampler!` is handed labels, and those
+    # have to name the same attractor at every parameter for the sampler to compare them.
+    # Doing it once, here, is what keeps a single set of IDs in play.
+    use_vanished = _use_vanished(ascm.matcher)
+    latest_ghosts = empty(extract_attractors(bmap))
+    next_id = 1
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict[]
@@ -143,36 +151,84 @@ function global_continuation(
                 push!(additional_ics, u0)
             end
         end
-        local fs, attractors, matched_attractors
+        rmap = Dict{Int, Int}()
+        counts = Dict{Int, Float64}()
+        local attractors
         while true
             # prepare the initial conditions
             pics = generate_ics(icsampler, p)
             # and finally call basin fractions; it knows how to do all calculations given the bmap
             fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
+            # `fs` was normalized by the sampled ics, which is what `labels` counts, plus
+            # the seeded ones
+            n_round = length(labels) + length(additional_ics)
+            for (k, v) in fs
+                counts[k] = get(counts, k, 0.0) + v * n_round
+            end
+            empty!(additional_ics)
             attractors = deepcopy(extract_attractors(bmap))
-            # note this is the non-mutating `matching_map`: `attractors` keeps its own IDs
-            rmap = matching_map(attractors, prev_attractors, ascm.matcher; ds, p, pprev = prev_p)
+            next_id = _extend_matching!(
+                rmap, attractors, use_vanished ? latest_ghosts : prev_attractors,
+                ascm.matcher, next_id; ds, p, pprev = prev_p,
+            )
             replace!(labels, rmap...)
             update_sampler!(icsampler, labels)
-            matched_attractors = copy(attractors)
-            swap_dict_keys!(matched_attractors, rmap)
             # Now, check if the sampler requires us to re-sample at the current parameter
             resampling_required(icsampler) || break
-            # TODO: for the future: find a way that the initial conditions used in the
-            # rounds before the last one are somehow kept in memory instead of discarded.
         end
-        # All the computations are done, and now we just store the result(s)
-        # we don't match attractors here, this happens directly at the end.
-        push!(fractions_cont, fs)
-        push!(attractors_cont, attractors)
+        # `attractors` keeps the IDs the basin map issued; `rmap` is applied to a copy
+        matched_attractors = copy(attractors)
+        swap_dict_keys!(matched_attractors, rmap)
+        # `counts` was pooled in those same raw IDs, so it is relabelled here, once
+        swap_dict_keys!(counts, rmap)
+        # All the computations are done, and now we just store the result(s). The
+        # attractors are matched already, so there is no matching pass at the end.
+        # The fractions go through the sampler, because it is the only one that knows how
+        # densely it covered each part of the region; see `weighted_fractions`.
+        push!(fractions_cont, weighted_fractions(icsampler, counts))
+        push!(attractors_cont, matched_attractors)
+        if use_vanished
+            for (k, A) in matched_attractors
+                latest_ghosts[k] = A
+            end
+        end
         prev_attractors, prev_p = matched_attractors, p
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
-    rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds, retract_keys = false
-    )
-    match_sequentially!(fractions_cont, rmaps)
     return fractions_cont, attractors_cont
+end
+
+
+"""
+    _extend_matching!(rmap, attractors, prev, matcher, next_id; kw...) → next_id
+
+Give an ID in `prev`'s space to every attractor of `attractors` that does not have one in
+`rmap` yet, leaving the entries `rmap` already holds alone. Returns `next_id`, an ID that
+no attractor has been given yet.
+
+Attractors found in a later round of the same parameter are matched only against the
+previous attractors that nothing has claimed yet, so extending the map can never
+invalidate the labels already handed out.
+"""
+function _extend_matching!(rmap, attractors, prev, matcher, next_id; kw...)
+    fresh = Dict(k => A for (k, A) in attractors if !haskey(rmap, k))
+    isempty(fresh) && return next_id
+    available = Dict(k => A for (k, A) in prev if k ∉ values(rmap))
+    for ids in (keys(attractors), keys(prev), values(rmap))
+        isempty(ids) || (next_id = max(next_id, maximum(ids) + 1))
+    end
+    if isempty(available)
+        isempty(prev) && return next_id
+        for k in keys(fresh)
+            rmap[k] = next_id
+            next_id += 1
+        end
+    else
+        # `matching_map` names all of `fresh`, the unmatched ones from `next_id` upwards;
+        # how many it took is read back off `rmap` the next time around.
+        merge!(rmap, matching_map(fresh, available, matcher; next_id, kw...))
+    end
+    return next_id
 end
