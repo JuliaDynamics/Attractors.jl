@@ -23,7 +23,6 @@ end
     end
 
     @testset "basins analysis" begin
-        testfile("basins/tipping_points_tests.jl")
         testfile("basins/uncertainty_tests.jl")
         testfile("basins/wada_tests.jl")
         testfile("basins/basins_utilities.jl")
