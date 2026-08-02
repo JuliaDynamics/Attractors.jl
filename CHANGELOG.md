@@ -1,6 +1,7 @@
 # v2
 
-This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
+This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis" which you can find on the arXiv:
+<https://arxiv.org/abs/2607.09332>.
 
 ## Breaking changes and Deprecations
 
@@ -29,6 +30,8 @@ This release accompanies the release of our paper "Global continuation as a comp
 - **BREAKING**: `PerParameterInitialConditions` has been renamed to `PerParameterICs`.
 - **BREAKING**: Anything related to the `par_weight` input to `FeaturizeGroupAcrossParameter` has been removed (it was so far deprecated).
 - **BREAKING**: `info_extraction` keyword argument to `FeaturizeGroupAcrossParameter` is now an optional positional argument.
+- **BREAKING**: Function `tipping_probabilities` is removed, moved to CriticalTransitions.jl.
+
 
 ### Renaming of stability measures
 

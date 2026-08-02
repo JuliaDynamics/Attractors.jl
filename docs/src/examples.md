@@ -131,38 +131,6 @@ fig
 ```
 The actual uncertainty exponent is the slope of the curve (α) and indeed we get an exponent near 0 as we know a-priory the basins have fractal boundaries for the magnetic pendulum.
 
-### Computing the tipping probabilities
-We will compute the tipping probabilities using the magnetic pendulum's example
-as the "before" state. For the "after" state we will change the `γ` parameter of the
-third magnet to be so small, its basin of attraction will virtually disappear.
-As we don't know _when_ the basin of the third magnet will disappear, we switch the attractor finding algorithm back to [`BasinMapRecurrences`](@ref).
-
-```@example MAIN
-set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
-bmap = BasinMapRecurrences(psys, grid; Δt = 1)
-basins_after, attractors_after = basins_of_attraction(
-    bmap, grid; show_progress = false
-)
-# matching attractors is important!
-rmap = matching_map!(attractors_after, attractors, MatchBySSSetDistance())
-# Don't forget to update the labels of the basins as well!
-replace!(basins_after, rmap...)
-
-# now plot
-heatmap_basins_attractors(grid, basins_after, attractors_after)
-```
-
-And let's compute the tipping "probabilities":
-
-```@example MAIN
-P = tipping_probabilities(basins, basins_after)
-```
-As you can see `P` has size 3×2, as after the change only 2 attractors have been identified
-in the system (3 still exist but our state space discretization isn't fine enough to
-find the 3rd because it has such a small basin).
-Also, the first row of `P` is 50% probability to each other magnet, as it should be due to
-the system's symmetry.
-
 ## Intermingledness and basin entropy
 
 Continuing from the above example of the magnetic pendulum, we can use it as a demonstration of the

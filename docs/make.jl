@@ -20,7 +20,14 @@ Literate.markdown(
 pages = [
     "index.md",
     "tutorial.md",
-    "api.md",
+    "API" => [
+        "api_bmap.md",
+        "api_basins.md",
+        "api_boundaries.md",
+        "api_nonlocal.md",
+        "api_cont.md",
+        "api_vis.md",
+    ],
     "examples.md",
     Documenter.hide("bfkit_comparison.md"),
     "references.md",
