@@ -22,7 +22,7 @@ using Test
     ds = DeterministicIteratedMap(dumb_map, [0.0, 0.0], [r])
     yg = xg = range(-10, 10, length = 101)
     attractors = Dict(i => SSSet([SVector(r * x, r * x)]) for (i, x) in enumerate((1, -1)))
-    sampler, = statespace_sampler((xg, yg))
+    sampler = RandomICsSampler(1000, (xg, yg))
     f = (A, B) -> abs(A[1][1] - B[1][1])
 
     @testset "distance: $(distance)" for distance in (f, Centroid(), StrictlyMinimumDistance())

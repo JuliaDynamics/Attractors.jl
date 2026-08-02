@@ -219,7 +219,7 @@ bmap = BasinMapRecurrences(
     consecutive_lost_steps = 100,
 )
 
-sampler = RandomICSampler(1000, grid)
+sampler = RandomICsSampler(1000, grid)
 
 algo = AttractorSeedContinueMatch(StabilityQuantifiersAccumulator(bmap))
 pcurve = [Dict(pidx => p) for p in prange]

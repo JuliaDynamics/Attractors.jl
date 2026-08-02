@@ -232,12 +232,12 @@ end
     ics = StateSpaceSet([deepcopy(sampler()) for _ in 1:samples_per_parameter])
 
     rrange = range(1, 9.5; step = 0.5)
-    ridx = 1
+    pcurve = [Dict(1 => r) for r in rrange]
 
     bmap = BasinMapFeaturizeGroup(ds, featurizer, grouping_config; T = 10, Ttr = 1)
     matcher = MatchByBasinEnclosure(; ε = 0.1)
     assc = AttractorSeedContinueMatch(bmap, matcher)
-    gco = global_continuation(assc, rrange, ridx, ics; show_progress = false)
+    gco = global_continuation(assc, pcurve, PrescribedICs(ics); show_progress = false)
     fs_curves, atts_all = gco.fractions, gco.attractors
 
     atts_all_endpoint_solution = Dict{Int64, SVector{1, Float64}}[Dict(1 => [0.0]), Dict(1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [-5.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(5 => [8.0], 4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(4 => [6.0], 2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 3 => [4.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(2 => [2.0], 1 => [0.0]), Dict(1 => [0.0]), Dict(1 => [0.0])]

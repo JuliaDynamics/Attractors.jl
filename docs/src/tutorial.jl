@@ -66,8 +66,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 
 # ## Find attractors and their basins of attraction state space fraction
 # ## by randomly sampling initial conditions in state sapce
-# sampler, = statespace_sampler(grid)
-# algo = AttractorSeedContinueMatch(bmap)
+# sampler = RandomICsSampler(1000, grid)
 # fs = basins_fractions(bmap, sampler)
 # attractors = extract_attractors(bmap)
 
@@ -81,15 +80,13 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # ellipsoid(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 # angles = range(0, 2π; length = 101)
 # pcurve = ellipsoid.(angles)
-# gcoutput = global_continuation(
-# 	algo, pcurve, RandomICSampler(sampler, 1000)
-# )
+# gcoutput = global_continuation(algo, pcurve, sampler)
 
 # ## and visualize the results
 # fractions_cont = gcoutput.fractions
 # attractors_cont = gcoutput.attractors
 # fig = plot_basins_attractors_curves(
-# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), angles; add_legend = false
+# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), angles
 # )
 # ```
 
@@ -212,19 +209,12 @@ plot_attractors(attractors)
 # each attractors attracts. The search is probabilistic, so "all" attractors means those
 # that at least one initial condition converged to.
 
-# We can provide explicitly initial conditions to [`basins_fractions`](@ref),
-# however it is typically simpler to provide it with with a state space sampler instead:
-# a function that generates random initial conditions in the region of the
-# state space that we are interested in. Here this region coincides with `grid`,
-# so we can simply do:
+# How initial conditions are sampled is described by the [`InitialConditionsSampelr`](@ref)
+# super type and associated subtypes. One can prescribe a set vector of ICs,
+# or randomly sample. This is what we will do here, but randomly sampling ICs
+# within the grid.
 
-sampler, = statespace_sampler(grid)
-
-sampler() # random i.c.
-
-#
-
-sampler() # another random i.c.
+sampler = RandomICsSampler(1000, grid) # sample 1000 ICs
 
 # and finally call
 
@@ -338,13 +328,9 @@ pidx = 1 # index of the parameter
 pcurve = [Dict(pidx => p) for p in prange]
 
 # Then, the third and final input is how, and how densely, to sample the state space.
-# Here we re-use the `sampler` and sample (per parameter value) 1000 initial conditions:
+# Here we re-use the `sampler` from before. So we can now call:
 
-gcsampler = RandomICSampler(sampler, 1000)
-
-# Then, we may call the [`global_continuation`](@ref) function.
-
-gco = global_continuation(ascm, pcurve, gcsampler)
+gco = global_continuation(ascm, pcurve, sampler)
 
 # This normally takes about a minute of compute depending on your computer.
 # The output is [`GlobalContinuationOutput`](@ref) which can contain a variety of information
@@ -486,7 +472,7 @@ matcher = MatchBySSSetDistance(use_vanished = true)
 
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
-gco = global_continuation(ascm, pcurve, gcsampler)
+gco = global_continuation(ascm, pcurve, sampler)
 attractors_cont = gco.attractors
 
 # and animate the result
@@ -518,7 +504,7 @@ animate_attractors_continuation(ds, gco; savename = "curvecont.mp4");
 # to run through it again and estimate now all stability quantifiers.
 
 result = stability_quantifiers_along_continuation(
-    ds, attractors_cont, pcurve, gcsampler; ε = 0.1
+    ds, attractors_cont, pcurve, sampler; ε = 0.1
 )
 keys(result)
 
@@ -607,8 +593,7 @@ matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 # and proceed as usual
-gcsampler = RandomICSampler(sampler, 100)
-fractions_cont, attractors_cont = global_continuation(ascm, pcurve, gcsampler)
+fractions_cont, attractors_cont = global_continuation(ascm, pcurve, sampler)
 
 # The output is exactly of the same type, and as such very easy to post-process.
 # For example, let's find all parameter values that support an attractor

@@ -38,7 +38,7 @@ using Random
     pcurve = [Dict(1 => r) for r in rrange]
     rsc = RecurrencesFindAndMatch(bmap; threshold = 0.3)
     gco = global_continuation(
-        rsc, pcurve, RandomICSampler(sampler, 1000); show_progress = false,
+        rsc, pcurve, RandomICsSampler(sampler, 1000); show_progress = false,
     )
 
     fractions_cont, a = gco.fractions, gco.attractors
@@ -141,7 +141,7 @@ end
     bmap = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
     rsc = RecurrencesFindAndMatch(bmap; threshold = 0.1)
     gco = global_continuation(
-        rsc, pcurve, RandomICSampler(sampler, 1000); show_progress = false
+        rsc, pcurve, RandomICsSampler(sampler, 1000); show_progress = false
     )
     fractions_cont, attractors_cont = gco.fractions, gco.attractors
     test_fs(fractions_cont, rrange, [4, 12])

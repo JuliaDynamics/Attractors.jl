@@ -29,7 +29,7 @@ using Random
     grid = (xg, yg)
     mapper1 = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false)
 
-    sampler = RandomICSampler(1000, grid, 1234)
+    sampler = RandomICsSampler(1000, grid, 1234)
 
     rrange = range(0, 2; length = 20)
     ridx = 1

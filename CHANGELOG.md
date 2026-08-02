@@ -21,9 +21,10 @@ This release accompanies the release of our paper "Global continuation as a comp
   `pcurve = [Dict(pidx => p) for p in prange]`.
 - **DEPRECATED**: giving a vector of initial conditions, or a sampling function,
   as the last argument to `global_continuation` is deprecated. Use an instance of a subtype
-  of `InitialConditionSampler` instead.
+  of `InitialConditionsSampler` instead.
 - **DEPRECATED**: Passing a vector of initial conditions or a sampling function to
-  `global_continuation` is now deprecated. Use the `InitialConditionSampler` interface.
+  `basins_fractions` is now deprecated. Use the `InitialConditionsSampler` interface.
+  Use an instance of a subtype of `InitialConditionsSampler` instead.
 - **BREAKING**: This sampler object must also be passed to `stability_quantifiers_along_continuation`.
 - **BREAKING**: `PerParameterInitialConditions` has been renamed to `PerParameterICs`.
 - **BREAKING**: Anything related to the `par_weight` input to `FeaturizeGroupAcrossParameter` has been removed (it was so far deprecated).
@@ -75,10 +76,12 @@ distances of feature centroids (instead of attractor centroids).
 - `continuation_series` now allows for mixed type outputs, so that the fill value
   can be of different type (e.g., `missing`) than the continuation quantity.
 - New API for instructing `global_continuation` on how to sample initial conditions
-  structured around a new abstract type `InitialConditionSampler`.
-  - Concrete types include `RandomICSampler, PrescribedICs, PerParameterICs` and more
+  structured around a new abstract type `InitialConditionsSampler`.
+  - Concrete types include `RandomICsSampler, PrescribedICs, PerParameterICs` and more
     to come in the future.
-
+- New `InitialConditionsSampler` interface for specifying how initial conditions should
+  be sampled. Can be extended in the future and is currently composed out of
+  `RandomICsSampler, PrescribedICs, PerParameterICs` concrete types.
 
 # v1.39
 
