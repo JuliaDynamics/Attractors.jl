@@ -593,7 +593,6 @@ matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 # and proceed as usual
-sampler = RandomICsSampler(sampler, 100)
 fractions_cont, attractors_cont = global_continuation(ascm, pcurve, sampler)
 
 # The output is exactly of the same type, and as such very easy to post-process.
