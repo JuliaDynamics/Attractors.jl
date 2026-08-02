@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples for Attractors.jl · Entropies.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro&amp;display=swap" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Entropies.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Attractors.jl</a></li><li><a class="tocitem" href="../attractors/">Finding Attractors</a></li><li><a class="tocitem" href="../basins/">Basins of Attraction</a></li><li><a class="tocitem" href="../continuation/">Attractor &amp; Basins Continuation</a></li><li class="is-active"><a class="tocitem" href>Examples for Attractors.jl</a><ul class="internal"><li><a class="tocitem" href="#Discrete-system-example"><span>Discrete system example</span></a></li><li><a class="tocitem" href="#Stroboscopic-map-example"><span>Stroboscopic map example</span></a></li><li><a class="tocitem" href="#D-basins-of-4D-system"><span>2D basins of 4D system</span></a></li><li><a class="tocitem" href="#D-basins"><span>3D basins</span></a></li><li><a class="tocitem" href="#Poincaré-map-example"><span>Poincaré map example</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples for Attractors.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples for Attractors.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaDynamics/Attractors.jl/blob/main/docs/src/examples.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples-for-Attractors.jl"><a class="docs-heading-anchor" href="#Examples-for-Attractors.jl">Examples for Attractors.jl</a><a id="Examples-for-Attractors.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Examples-for-Attractors.jl" title="Permalink"></a></h1><h2 id="Discrete-system-example"><a class="docs-heading-anchor" href="#Discrete-system-example">Discrete system example</a><a id="Discrete-system-example-1"></a><a class="docs-heading-anchor-permalink" href="#Discrete-system-example" title="Permalink"></a></h2><pre><code class="language-julia hljs">using Attractors
+function newton_map(z, p, n)
+    z1 = z[1] + im*z[2]
+    dz1 = newton_f(z1, p[1])/newton_df(z1, p[1])
+    z1 = z1 - dz1
+    return SVector(real(z1), imag(z1))
+end
+newton_f(x, p) = x^p - 1
+newton_df(x, p)= p*x^(p-1)
+
+ds = DiscreteDynamicalSystem(newton_map, [0.1, 0.2], [3.0])
+xg = yg = range(-1.5, 1.5; length = 400)
+mapper = AttractorsViaRecurrences(ds, (xg, yg))
+basins, attractors = basins_of_attraction(mapper; show_progress = false)
+basins</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><pre><code class="language-julia hljs">attractors</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>Now let&#39;s plot this as a heatmap</p><pre><code class="language-julia hljs">using CairoMakie
+# Set up some code for plotting attractors
+function scatter_attractors!(ax, attractors)
+    for k ∈ keys(attractors)
+        x, y = columns(attractors[k])
+        scatter!(ax, attractors[k].data;
+            color = Cycled(k),
+            strokewidth = 3, strokecolor = :white
+        )
+    end
+end
+
+generate_cmap(n) = cgrad(Main.COLORS[1:n], n; categorical = true)
+ids = sort!(unique(basins))
+cmap = generate_cmap(length(ids))
+
+fig, ax = heatmap(xg, yg, basins;
+    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+)
+scatter_attractors!(ax, attractors)
+fig</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><h2 id="Stroboscopic-map-example"><a class="docs-heading-anchor" href="#Stroboscopic-map-example">Stroboscopic map example</a><a id="Stroboscopic-map-example-1"></a><a class="docs-heading-anchor-permalink" href="#Stroboscopic-map-example" title="Permalink"></a></h2><p>This example targets periodically driven 2D continuous dynamical systems, like the Duffing oscillator:</p><pre><code class="language-julia hljs">using Attractors
+ω=1.0; f = 0.2
+ds = Systems.duffing([0.1, 0.25]; ω, f, d = 0.15, β = -1)
+using OrdinaryDiffEq
+diffeq = (alg = Vern9(), reltol = 1e-9)
+smap = stroboscopicmap(ds, 2π/ω; diffeq)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>For stroboscopic maps, we strongly recommend using a higher precision integrator from OrdinaryDiffEq.jl. Now we can compute the basins of <code>smap</code> just like before.</p><pre><code class="language-julia hljs">xg = yg = range(-2.2, 2.2; length = 200)
+mapper = AttractorsViaRecurrences(smap, (xg, yg); diffeq)
+basins, attractors = basins_of_attraction(mapper; show_progress = false)
+basins</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>And visualize the result as a heatmap, scattering the found attractors via scatter.</p><pre><code class="language-julia hljs">using CairoMakie
+ids = sort!(unique(basins))
+cmap = generate_cmap(length(ids))
+fig, ax = heatmap(xg, yg, basins;
+    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+)
+scatter_attractors!(ax, attractors)
+fig</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><h2 id="D-basins-of-4D-system"><a class="docs-heading-anchor" href="#D-basins-of-4D-system">2D basins of 4D system</a><a id="D-basins-of-4D-system-1"></a><a class="docs-heading-anchor-permalink" href="#D-basins-of-4D-system" title="Permalink"></a></h2><p>In this section we will calculate the basins of attraction of the four-dimensional magnetic pendulum. We know that the attractors of this system are all individual fixed points on the (x, y) plane so we will only compute the basins there. We can also use this opportunity to highlight a different method, the <a href="../attractors/#Attractors.AttractorsViaProximity"><code>AttractorsViaProximity</code></a> which works when we already know where the attractors are.</p><h3 id="Computing-the-basins"><a class="docs-heading-anchor" href="#Computing-the-basins">Computing the basins</a><a id="Computing-the-basins-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-basins" title="Permalink"></a></h3><pre><code class="language-julia hljs">ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+psys = projected_integrator(ds, [1, 2], [0.0, 0.0])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>For this systems we know the attractors are close to the magnet positions, so we can just do</p><pre><code class="language-julia hljs">attractors = Dict(i =&gt; Dataset([ds.f.magnets[i]]) for i in 1:3)
+mapper = AttractorsViaProximity(psys, attractors)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>and as before, get the basins of attraction</p><pre><code class="language-julia hljs">xg = yg = range(-4, 4; length=150)
+basins, = basins_of_attraction(mapper, (xg, yg); show_progress = false)
+ids = sort!(unique(basins))
+cmap = generate_cmap(length(ids))
+fig, ax = heatmap(xg, yg, basins;
+    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+)
+scatter_attractors!(ax, attractors)
+fig</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><h3 id="Computing-the-uncertainty-exponent"><a class="docs-heading-anchor" href="#Computing-the-uncertainty-exponent">Computing the uncertainty exponent</a><a id="Computing-the-uncertainty-exponent-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-uncertainty-exponent" title="Permalink"></a></h3><p>Let&#39;s now calculate the <a href="../basins/#Attractors.uncertainty_exponent"><code>uncertainty_exponent</code></a> for this system as well. The calculation is straightforward:</p><pre><code class="language-julia hljs">ε, f_ε, α = uncertainty_exponent(basins)
+fig, ax = lines(log.(ε), log.(f_ε))
+ax.title = &quot;α = $(round(α; digits=3))&quot;
+fig</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>The actual uncertainty exponent is the slope of the curve (α) and indeed we get an exponent near 0 as we know a-priory the basins have fractal boundaries for the magnetic pendulum.</p><h3 id="Computing-the-tipping-probabilities"><a class="docs-heading-anchor" href="#Computing-the-tipping-probabilities">Computing the tipping probabilities</a><a id="Computing-the-tipping-probabilities-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-tipping-probabilities" title="Permalink"></a></h3><p>We will compute the tipping probabilities using the magnetic pendulum&#39;s example as the &quot;before&quot; state. For the &quot;after&quot; state we will change the <code>γ</code> parameter of the third magnet to be so small, its basin of attraction will virtually disappear. As we don&#39;t know <em>when</em> the basin of the third magnet will disappear, we switch the attractor finding algorithm back to <a href="../attractors/#Attractors.AttractorsViaRecurrences"><code>AttractorsViaRecurrences</code></a>.</p><pre><code class="language-julia hljs">ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3, γs = [1.0, 1.0, 0.1])
+psys = projected_integrator(ds, [1, 2], [0.0, 0.0]; diffeq = (reltol = 1e-9,))
+mapper = AttractorsViaRecurrences(psys, (xg, yg); Δt = 1)
+basins_after, attractors_after = basins_of_attraction(
+    mapper; show_progress = false
+)
+# matching attractors is important!
+match_attractors!(basins, attractors, basins_after, attractors_after)
+
+# now plot
+ids = sort!(unique(basins_after))
+cmap = generate_cmap(length(ids))
+fig, ax = heatmap(xg, yg, basins_after;
+    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+)
+scatter_attractors!(ax, attractors_after)
+fig</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><pre><code class="language-julia hljs">P = tipping_probabilities(basins, basins_after)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>As you can see <code>P</code> has size 3×2, as after the change only 2 attractors have been identified in the system (3 still exist but our state space discretization isn&#39;t accurate enough to find the 3rd because it has such a small basin). Also, the first row of <code>P</code> is 50% probability to each other magnet, as it should be due to the system&#39;s symmetry.</p><h3 id="Computing-the-basin-fractions-via-featurizing"><a class="docs-heading-anchor" href="#Computing-the-basin-fractions-via-featurizing">Computing the basin fractions via featurizing</a><a id="Computing-the-basin-fractions-via-featurizing-1"></a><a class="docs-heading-anchor-permalink" href="#Computing-the-basin-fractions-via-featurizing" title="Permalink"></a></h3><p>We can also compute the fraction of initial conditions that go to each of the three attractors for the magnetic pendulum via featurizing using <a href="../attractors/#Attractors.AttractorsViaFeaturizing"><code>AttractorsViaFeaturizing</code></a> because here it is trivial to find the appropriate features that distinguish the attractors: simply the final value of the x and y coordinates of the trajectory.</p><p>Let&#39;s also just use <a href="../basins/#Attractors.basins_fractions"><code>basins_fractions</code></a> with random sampling instead of computing a full array of basins of attractions, just for some variety.</p><p>So let&#39;s define a random sampler and the featurizing function</p><pre><code class="language-julia hljs">using Random
+rng = Random.MersenneTwister(1234)
+sampler, _ = statespace_sampler(rng; min_bounds=[-4, -4], max_bounds=[4, 4])
+featurizer(A, t) = A[end]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>which gives</p><pre><code class="language-julia hljs">ds = Systems.magnetic_pendulum(d=0.2, α=0.2, ω=0.8, N=3)
+psys = projected_integrator(ds, [1, 2], [0.0, 0.0]; diffeq = (reltol = 1e-9,))
+mapper = AttractorsViaFeaturizing(psys, featurizer)
+fs = basins_fractions(mapper, sampler; N = 1000, show_progress = false)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>As it should, we get about 33% fraction for each attractor.</p><h2 id="D-basins"><a class="docs-heading-anchor" href="#D-basins">3D basins</a><a id="D-basins-1"></a><a class="docs-heading-anchor-permalink" href="#D-basins" title="Permalink"></a></h2><p>To showcase the true power of <a href="../attractors/#Attractors.AttractorsViaRecurrences"><code>AttractorsViaRecurrences</code></a> we need to use a system whose attractors span higher-dimensional space. An example is</p><pre><code class="language-julia hljs">ds = Systems.thomas_cyclical(b = 0.1665)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>which, for this parameter, contains 5 coexisting attractors. 3 of them are entangled periodic orbits that span across all three dimensions, and the remaining 2 are fixed points.</p><p>To compute the basins we define a three-dimensional grid and call on it <a href="../basins/#Attractors.basins_of_attraction"><code>basins_of_attraction</code></a>.</p><pre><code class="language-julia hljs"># This computation takes about an hour
+xg = yg = zg = range(-6.0, 6.0; length = 251)
+mapper = AttractorsViaRecurrences(ds, (xg, yg, zg))
+basins, attractors = basins_of_attraction(mapper)
+attractors</code></pre><pre><code class="nohighlight hljs">Dict{Int16, Dataset{3, Float64}} with 5 entries:
+  5 =&gt; 3-dimensional Dataset{Float64} with 1 points
+  4 =&gt; 3-dimensional Dataset{Float64} with 379 points
+  6 =&gt; 3-dimensional Dataset{Float64} with 1 points
+  2 =&gt; 3-dimensional Dataset{Float64} with 538 points
+  3 =&gt; 3-dimensional Dataset{Float64} with 537 points
+  1 =&gt; 3-dimensional Dataset{Float64} with 1 points</code></pre><p>The basins of attraction are very complicated. We can try to visualize them by animating the 2D slices at each z value, to obtain:</p><video width="75%" height="auto" controls autoplay loop>
+<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/chaos/cyclical_basins.mp4?raw=true" type="video/mp4">
+</video><p>Then, we visualize the attractors to obtain:</p><video width="75%" height="auto" controls autoplay loop>
+<source src="https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/videos/chaos/cyclical_attractors.mp4?raw=true" type="video/mp4">
+</video><p>In the animation above, the scattered points are the attractor values the function <a href="../attractors/#Attractors.AttractorsViaRecurrences"><code>AttractorsViaRecurrences</code></a> found by itself. Of course, for the periodic orbits these points are incomplete. Once the function&#39;s logic understood we are on an attractor, it stops computing. However, we also simulated lines, by evolving initial conditions colored appropriately with the basins output.</p><p>The animation was produced with the code:</p><pre><code class="language-julia hljs">using GLMakie
+fig = Figure()
+display(fig)
+ax = fig[1,1] = Axis3(fig; title = &quot;found attractors&quot;)
+cmap = cgrad(:dense, 6; categorical = true)
+
+for i in keys(attractors)
+    tr = attractors[i]
+    markersize = length(attractors[i]) &gt; 10 ? 2000 : 6000
+    marker = length(attractors[i]) &gt; 10 ? :circle : :rect
+    scatter!(ax, columns(tr)...; markersize, marker, transparency = true, color = cmap[i])
+    j = findfirst(isequal(i), bsn)
+    x = xg[j[1]]
+    y = yg[j[2]]
+    z = zg[j[3]]
+    tr = trajectory(ds, 100, SVector(x,y,z); Ttr = 100)
+    lines!(ax, columns(tr)...; linewidth = 1.0, color = cmap[i])
+end
+
+a = range(0, 2π; length = 200) .+ π/4
+
+record(fig, &quot;cyclical_attractors.mp4&quot;, 1:length(a)) do i
+    ax.azimuth = a[i]
+end</code></pre><h2 id="Poincaré-map-example"><a class="docs-heading-anchor" href="#Poincaré-map-example">Poincaré map example</a><a id="Poincaré-map-example-1"></a><a class="docs-heading-anchor-permalink" href="#Poincaré-map-example" title="Permalink"></a></h2><p>In the previous example we saw that this system has periodic attractors. In the Poincaré map these periodic attractors become points. We can use any instance of <a href="../attractors/#Attractors.AttractorMapper"><code>AttractorMapper</code></a> and <a href="@ref"><code>poincaremap</code></a> to find basins of attraction on the Poincaré surface of section.</p><pre><code class="language-julia hljs">ds = Systems.thomas_cyclical(b = 0.1665)
+xg = yg = range(-6.0, 6.0; length = 100)
+pmap = poincaremap(ds, (3, 0.0);
+    rootkw = (xrtol = 1e-8, atol = 1e-8), diffeq = (reltol=1e-9,)
+)
+mapper = AttractorsViaRecurrences(pmap, (xg, yg))
+basins, attractors = basins_of_attraction(mapper; show_progress = false)
+attractors</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><pre><code class="language-julia hljs">attractors[1]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>Looks good so far, but let&#39;s plot it as well:</p><pre><code class="language-julia hljs">ids = sort!(unique(basins))
+cmap = generate_cmap(length(ids))
+fig, ax = heatmap(xg, yg, basins;
+    colormap = cmap, colorrange = (ids[1] - 0.5, ids[end]+0.5),
+)
+scatter_attractors!(ax, attractors)
+fig</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&lt;&lt; @example-block not executed in draft mode &gt;&gt;</code></pre><p>This aligns perfectly with the video we produced above.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../continuation/">« Attractor &amp; Basins Continuation</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Tuesday 25 October 2022 11:20">Tuesday 25 October 2022</span>. Using Julia version 1.8.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
