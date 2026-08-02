@@ -1,6 +1,7 @@
 # v2
 
-This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis".
+This release accompanies the release of our paper "Global continuation as a complement to traditional continuation and bifurcation analysis" which you can find on the arXiv:
+<https://arxiv.org/abs/2607.09332>.
 
 ## Breaking changes and Deprecations
 
