@@ -1,6 +1,6 @@
 export InitialConditionSampler
 export RandomICSampler, PerParameterICs, PerParameterInitialConditions
-export BayesianUpdateSampler
+export BayesianUpdateSampler, sampler_history
 
 using Random: Xoshiro
 using SpecialFunctions: loggamma
@@ -136,6 +136,8 @@ or a tuple of ranges/`(min, max)` pairs, one per dimension.
   sparse update, so that evidence from far-away parameters is progressively discounted.
 - `β::Real = 0.5`: Dirichlet base pseudo-count assigned to unseen labels.
 - `seed = abs(rand(Int))`: seed for the per-box point generators.
+- `history::Bool = false`: keep a per-parameter record of `alphas` and `etas`, which
+  are otherwise overwritten in place. See "History" below.
 
 ## Description
 
@@ -155,6 +157,14 @@ Because a dense round performs no test, at most one re-sampling round happens pe
 parameter. Every box starts out flagged, so the dense initialisation of the first
 parameter is nothing but step 3 applied to all of them.
 
+## History
+
+`alphas` and `etas` describe the current parameter only: every round overwrites them,
+so by the time a continuation returns they say nothing about the sweep that produced
+it. With `history = true` the sampler snapshots both at the end of each parameter.
+
+Use [`sampler_history`](@ref)
+to read them back. 
 """
 mutable struct BayesianUpdateSampler{D, G} <: InitialConditionSampler
     # geometry: one box, and one point generator for it, per tile
@@ -176,11 +186,16 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionSampler
     # labels themselves its size is bounded by the number of boxes times the number of
     # attractors, no matter how many initial conditions are drawn.
     step_counts::Vector{Dict{Int, Int}}
+    # optional record of `alphas` and `etas` as they were at the end of each parameter,
+    # both empty unless the sampler was built with `history = true`
+    history::Bool
+    history_alphas::Vector{Vector{Dict{Int, Float64}}}
+    history_etas::Vector{Vector{Float64}}
 end
 
 function BayesianUpdateSampler(region, n_tiles::Int;
         sparse_n::Int, dense_n::Int = sparse_n^2, λ::Real = 0.7, β::Real = 0.5,
-        seed = abs(rand(Int)),
+        seed = abs(rand(Int)), history::Bool = false,
     )
     sparse_n ≥ 1 || throw(ArgumentError("`sparse_n` must be ≥ 1, got $sparse_n"))
     dense_n ≥ 1 || throw(ArgumentError("`dense_n` must be ≥ 1, got $dense_n"))
@@ -200,6 +215,7 @@ function BayesianUpdateSampler(region, n_tiles::Int;
         # every box starts flagged: the first round is then just an ordinary
         # re-sampling round, which is exactly the dense initialisation we want
         fill(true, n), Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
+        history, Vector{Dict{Int, Float64}}[], Vector{Float64}[],
     )
 end
 
@@ -236,7 +252,9 @@ function Base.show(io::IO, s::BayesianUpdateSampler{D}) where {D}
     println(io, "  boxes:    ", n_boxes(s))
     println(io, "  sparse_n: ", s.sparse_n)
     println(io, "  dense_n:  ", s.dense_n)
-    print(io,   "  λ, β:     ", s.λ, ", ", s.β)
+    println(io, "  λ, β:     ", s.λ, ", ", s.β)
+    print(io,   "  history:  ",
+          s.history ? "$(length(s.history_etas)) parameter(s) recorded" : "not kept")
 end
 
 resampling_required(s::BayesianUpdateSampler) = any(s.boxes_flags)
@@ -299,8 +317,22 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
             end
         end
     end
+    s.history && !resampling_required(s) && _push_history!(s)
     return nothing
 end
+
+function _push_history!(s::BayesianUpdateSampler)
+    push!(s.history_alphas, [copy(α) for α in s.alphas])
+    push!(s.history_etas, copy(s.etas))
+    return nothing
+end
+
+"""
+    sampler_history(sampler::BayesianUpdateSampler) → NamedTuple
+Return the history of alphas and etas per box if the keyword argument history is true
+"""
+sampler_history(s::BayesianUpdateSampler) =
+    (; alphas = s.history_alphas, etas = s.history_etas)
 
 """
     weighted_fractions(sampler::BayesianUpdateSampler, counts)

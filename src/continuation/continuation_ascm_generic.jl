@@ -139,7 +139,7 @@ function global_continuation(
     next_id = 1
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
-    fractions_cont = Dict[]
+    fractions_cont = Dict{Int, Float64}[]
     # Continue loop over all remaining parameters
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
