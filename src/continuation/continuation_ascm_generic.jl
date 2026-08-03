@@ -129,14 +129,11 @@ function global_continuation(
     additional_ics = typeof(current_state(ds))[]
     prev_attractors = empty(extract_attractors(bmap))
     prev_p = nothing
-    # The matching happens here, one parameter at a time, and its running state is kept
-    # across the loop. This is the same chain `match_sequentially!` would rebuild at the
-    # end, but the loop cannot wait for it: `update_sampler!` is handed labels, and those
-    # have to name the same attractor at every parameter for the sampler to compare them.
-    # Doing it once, here, is what keeps a single set of IDs in play.
+    # Matching happens inside the loop, one parameter at a time: `update_sampler!` is
+    # handed labels, and those have to name the same attractor at every parameter for the
+    # sampler to compare them. Each step is a single step of `match_sequentially!`.
     use_vanished = _use_vanished(ascm.matcher)
     latest_ghosts = empty(extract_attractors(bmap))
-    next_id = 1
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict{Int, Float64}[]
@@ -151,9 +148,8 @@ function global_continuation(
                 push!(additional_ics, u0)
             end
         end
-        rmap = Dict{Int, Int}()
         counts = Dict{Int, Float64}()
-        local attractors
+        local matched_attractors, rmap
         while true
             # prepare the initial conditions
             pics = generate_ics(icsampler, p)
@@ -166,20 +162,20 @@ function global_continuation(
                 counts[k] = get(counts, k, 0.0) + v * n_round
             end
             empty!(additional_ics)
-            attractors = deepcopy(extract_attractors(bmap))
-            next_id = _extend_matching!(
-                rmap, attractors, use_vanished ? latest_ghosts : prev_attractors,
-                ascm.matcher, next_id; ds, p, pprev = prev_p,
-            )
+            # one step of `match_sequentially!`: the attractors just found, against the
+            # previous parameter (or against the ghosts, if the matcher wants them)
+            matched_attractors = deepcopy(extract_attractors(bmap))
+            prev = use_vanished ? latest_ghosts : prev_attractors
+            rmap = only(match_sequentially!(
+                [prev, matched_attractors], ascm.matcher;
+                retract_keys = false, ds, pcurve = [prev_p, p],
+            ))
             replace!(labels, rmap...)
             update_sampler!(icsampler, labels)
             # Now, check if the sampler requires us to re-sample at the current parameter
             resampling_required(icsampler) || break
         end
-        # `attractors` keeps the IDs the basin map issued; `rmap` is applied to a copy
-        matched_attractors = copy(attractors)
-        swap_dict_keys!(matched_attractors, rmap)
-        # `counts` was pooled in those same raw IDs, so it is relabelled here, once
+        # `counts` was pooled in the IDs the basin map issued, so it is relabelled here
         swap_dict_keys!(counts, rmap)
         # All the computations are done, and now we just store the result(s). The
         # attractors are matched already, so there is no matching pass at the end.
@@ -198,37 +194,4 @@ function global_continuation(
         ProgressMeter.next!(progress; showvalues)
     end
     return fractions_cont, attractors_cont
-end
-
-
-"""
-    _extend_matching!(rmap, attractors, prev, matcher, next_id; kw...) → next_id
-
-Give an ID in `prev`'s space to every attractor of `attractors` that does not have one in
-`rmap` yet, leaving the entries `rmap` already holds alone. Returns `next_id`, an ID that
-no attractor has been given yet.
-
-Attractors found in a later round of the same parameter are matched only against the
-previous attractors that nothing has claimed yet, so extending the map can never
-invalidate the labels already handed out.
-"""
-function _extend_matching!(rmap, attractors, prev, matcher, next_id; kw...)
-    fresh = Dict(k => A for (k, A) in attractors if !haskey(rmap, k))
-    isempty(fresh) && return next_id
-    available = Dict(k => A for (k, A) in prev if k ∉ values(rmap))
-    for ids in (keys(attractors), keys(prev), values(rmap))
-        isempty(ids) || (next_id = max(next_id, maximum(ids) + 1))
-    end
-    if isempty(available)
-        isempty(prev) && return next_id
-        for k in keys(fresh)
-            rmap[k] = next_id
-            next_id += 1
-        end
-    else
-        # `matching_map` names all of `fresh`, the unmatched ones from `next_id` upwards;
-        # how many it took is read back off `rmap` the next time around.
-        merge!(rmap, matching_map(fresh, available, matcher; next_id, kw...))
-    end
-    return next_id
 end
