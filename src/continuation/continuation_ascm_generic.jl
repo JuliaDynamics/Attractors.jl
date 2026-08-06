@@ -127,13 +127,13 @@ function global_continuation(
     bmap = ascm.bmap
     ds = referenced_dynamical_system(bmap)
     additional_ics = typeof(current_state(ds))[]
-    prev_attractors = empty(extract_attractors(bmap))
     prev_p = nothing
     # Matching happens inside the loop, one parameter at a time: `update_sampler!` is
     # handed labels, and those have to name the same attractor at every parameter for the
     # sampler to compare them. Each step is a single step of `match_sequentially!`.
     use_vanished = _use_vanished(ascm.matcher)
     latest_ghosts = empty(extract_attractors(bmap))
+    prev_attractors = empty(extract_attractors(bmap))
     # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
     attractors_cont = Dict[]
     fractions_cont = Dict{Int, Float64}[]
@@ -169,7 +169,7 @@ function global_continuation(
             rmap = only(match_sequentially!(
                 [prev, matched_attractors], ascm.matcher;
                 retract_keys = false, ds, pcurve = [prev_p, p],
-            ))
+               ))
             replace!(labels, rmap...)
             update_sampler!(icsampler, labels)
             # Now, check if the sampler requires us to re-sample at the current parameter
