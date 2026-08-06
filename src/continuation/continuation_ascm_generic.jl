@@ -13,7 +13,8 @@ for more options.
 
 ## Description
 
-This is a general/composable global continuation method based on a 4-step process:
+This is a general and composable global continuation method outlined in our article
+[Datseris2026](@cite) and based on a 4-step process:
 
 1. Seed initial conditions from previously found attractors
 2. Propagate those forwards to "continue" previous attractors
@@ -117,7 +118,7 @@ function _default_seeding(attractor::AbstractStateSpaceSet)
 end
 
 function global_continuation(
-        ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionSampler;
+        ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionsSampler;
         show_progress = true,
     )
     progress = ProgressMeter.Progress(
@@ -134,9 +135,12 @@ function global_continuation(
     use_vanished = _use_vanished(ascm.matcher)
     latest_ghosts = empty(extract_attractors(bmap))
     prev_attractors = empty(extract_attractors(bmap))
-    # At each parameter `p`, a dictionary mapping attractor ID to fraction is created.
-    attractors_cont = Dict[]
+    # setup output containers. At each parameter `p`, a dictionary mapping attractor ID
+    # to fraction is created.
+    attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
+    quantifiers_cont = []
+    other_cont = Dict{String, Any}()
     # Continue loop over all remaining parameters
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -151,10 +155,11 @@ function global_continuation(
         counts = Dict{Int, Float64}()
         local matched_attractors, rmap
         while true
-            # prepare the initial conditions
-            pics = generate_ics(icsampler, p)
-            # and finally call basin fractions; it knows how to do all calculations given the bmap
-            fs, labels = basins_fractions_labels(bmap, pics; additional_ics, show_progress, offset = 2)
+            # call basin fractions; it knows how to do all calculations given the bmap,
+            # including generating the initial conditions from the sampler
+            fs, labels = basins_fractions_labels(
+                bmap, icsampler; params = p, additional_ics, show_progress, offset = 2
+            )
             # `fs` was normalized by the sampled ics, which is what `labels` counts, plus
             # the seeded ones
             n_round = length(labels) + length(additional_ics)
@@ -183,15 +188,36 @@ function global_continuation(
         # densely it covered each part of the region; see `weighted_fractions`.
         push!(fractions_cont, weighted_fractions(icsampler, counts))
         push!(attractors_cont, matched_attractors)
+        # the quantifiers of the accumulator are also keyed in the IDs the basin map
+        # issued, so they are relabelled here as well
+        if bmap isa StabilityQuantifiersAccumulator
+            quantifiers = finalize_accumulator(bmap)
+            for dict in values(quantifiers)
+                swap_dict_keys!(dict, rmap)
+            end
+            push!(quantifiers_cont, quantifiers)
+        end
         if use_vanished
             for (k, A) in matched_attractors
                 latest_ghosts[k] = A
             end
         end
         prev_attractors, prev_p = matched_attractors, p
+        # any extras that need to be updated can be done so here:
+        add_extra_continuation_info!(other_cont, icsampler)
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
-    return fractions_cont, attractors_cont
+    # everything has been matched already inside the loop, so all that is left is to
+    # transform the tracked quantities to the agreed output
+    fractions, quantifiers = generate_continuation_output(bmap, fractions_cont, quantifiers_cont)
+    out = GlobalContinuationOutput(attractors_cont, fractions, quantifiers, other_cont, pcurve)
+    return out
+end
+
+# This function has a generic form that just forwards the sampled fractions, and a more
+# technical form that collects various quantifiers, taken care off by the accumulator
+function generate_continuation_output(bmap, fractions_cont, quantifiers_cont)
+    return fractions_cont, Dict{String, Vector}()
 end

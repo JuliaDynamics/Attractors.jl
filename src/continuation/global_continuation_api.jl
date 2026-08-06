@@ -1,5 +1,5 @@
-export global_continuation, GlobalContinuationAlgorithm, continuation_series, stability_quantifiers_along_continuation
-include("sampler_api.jl")
+export global_continuation, GlobalContinuationAlgorithm, continuation_series
+export GlobalContinuationOutput
 
 """
     GlobalContinuationAlgorithm
@@ -12,6 +12,56 @@ across a parameter range.
 See [`global_continuation`](@ref) for more.
 """
 abstract type GlobalContinuationAlgorithm end
+
+"""
+    GlobalContinuationOutput
+
+The type of output of [`global_continuation`](@ref). It contains the fields:
+
+- `attractors::Vector{Dict{Int, SSSet}}`. The continued and matched attractors.
+  `attractors[i]` is a dictionary mapping basin ID to its
+  attractor set at the `i`-th parameter combination.
+- `fractions::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
+  `fractions[i]` is a dictionary mapping basin IDs to their basin fraction
+  at the `i`-th parameter combination.
+- `quantifiers::Dict{String, Vector{Dict}}`. Quantifiers of the attractors
+  or their basins that have been (potentially) continued. This entry is empty,
+  unless continuation is done with [`StabilityQuantifiersAccumulator`](@ref).
+  Then, it is a dictionary mapping strings (names of quantifiers) to vectors of dictionaries.
+- `other::Dict{String, Vector}`. Any other information was generated during the continuation,
+  that may relate to the sampling strategy, featurizing, or other.
+  Each quantity's name (string) is mapped to a vector of the same length as `pcurve`.
+- `pcurve::Vector{<:Dict}`. The parameter curve the continuation continued over.
+
+The various algorithms used in global continuation inform in their documentation strings
+about additional information added to this output.
+
+See the function [`continuation_series`](@ref) if you wish to transform the output(s)
+to an alternative format.
+"""
+struct GlobalContinuationOutput{SSS, F<:AbstractFloat, V<:Vector, A, P}
+    attractors::Vector{Dict{Int, SSS}}
+    fractions::Vector{Dict{Int, F}}
+    quantifiers::Dict{String, V}
+    other::Dict{String, A}
+    pcurve::Vector{P}
+end
+# this type extents `iterate` in deprecated.jl file.
+
+function Base.show(io::IO, gco::GlobalContinuationOutput)
+    println(io, "GlobalContinuationOutput with fields:")
+    println(io, " attractors")
+    println(io, " fractions")
+    println(io, " quantifiers")
+    println(io, " other")
+    println(io, " pcurve")
+end
+
+
+# Internal function for adding info; dispatches on `something`
+function add_extra_continuation_info!(extras::Dict{String,Any}, something)
+    return nothing
+end
 
 """
     global_continuation(gca::GlobalContinuationAlgorithm, pcurve, icsampler; kwargs...)
@@ -28,23 +78,13 @@ Possible subtypes of a `GlobalContinuationAlgorithm` are:
 `pcurve` is a `Vector` of dictionaries, each dictionary mapping parameter indices to values.
 This defines an arbitrary curve in the parameter space of the dynamical system.
 
-`icsampler` is a subtype of [`InitialConditionSampler`](@ref) and provides instructions
+`icsampler` is a subtype of [`InitialConditionsSampler`](@ref) and provides instructions
 for how to sample initial conditions to explore the state space during the continuation.
 
-Return:
+Return an instance of [`GlobalContinuationOutput`](@ref) that contains the continued
+attractors, their basins fractions, and any other additional information.
 
-1. `fractions_cont::Vector{Dict{Int, Float64}}`. The fractions of basins of attraction.
-   `fractions_cont[i]` is a dictionary mapping basin IDs to their basin fraction
-   at the `i`-th parameter combination.
-   -  This output is different if you are using [`StabilityQuantifiersAccumulator`](@ref)
-      in combination with [`AttractorSeedContinueMatch`](@ref). See the docstring
-      of [`StabilityQuantifiersAccumulator`](@ref) for more details.
-2. `attractors_cont::Vector{Dict{Int, SSSet}}`. The continued attractors.
-   `attractors_cont[i]` is a dictionary mapping basin ID to its
-   attractor set at the `i`-th parameter combination.
-
-See the function [`continuation_series`](@ref) if you wish to transform the output(s)
-to an alternative format. There is no difference between single or multi parameter
+There is no difference between single or multi parameter
 global continuation. Use [`hilbert_pcurve`](@ref) to cover multiparameter spaces.
 
 ## Keyword arguments
@@ -62,9 +102,9 @@ arguments that control how to continue/track/match attractors across a parameter
 are given when creating `gca`.
 
 The basin properties and the attractors (or some representation of them) are continued
-across the parameter curve, whose elements are simply given to `DynamicalSystems.set_parameters!`
-to update system parameters. This is fundamentally different to local (traditional) continuation,
-see the online documentation or our article for details.
+across the parameter curve, whose elements are given to `DynamicalSystems.set_parameters!`
+to update system parameters. Thus, global continuation operates on a prescribed parameter
+curve.
 """
 function global_continuation end
 

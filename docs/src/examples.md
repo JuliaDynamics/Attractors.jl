@@ -40,9 +40,9 @@ Instead of computing the full basins, we could get only the fractions of the bas
 In such cases it is also typically more useful to define a sampler that generates initial conditions on the fly instead of pre-defining some initial conditions (as is done in [`basins_of_attraction`](@ref). This is simple to do:
 
 ```@example MAIN
-sampler, = statespace_sampler(grid)
+sampler = RandomICsSampler(1000, grid)
 
-basins = basins_fractions(mapper_newton, sampler)
+fractions = basins_fractions(mapper_newton, sampler)
 ```
 
 in this case, to also get the attractors we simply extract them from the underlying storage of the bmap:
@@ -131,38 +131,6 @@ fig
 ```
 The actual uncertainty exponent is the slope of the curve (α) and indeed we get an exponent near 0 as we know a-priory the basins have fractal boundaries for the magnetic pendulum.
 
-### Computing the tipping probabilities
-We will compute the tipping probabilities using the magnetic pendulum's example
-as the "before" state. For the "after" state we will change the `γ` parameter of the
-third magnet to be so small, its basin of attraction will virtually disappear.
-As we don't know _when_ the basin of the third magnet will disappear, we switch the attractor finding algorithm back to [`BasinMapRecurrences`](@ref).
-
-```@example MAIN
-set_parameter!(psys, :γs, [1.0, 1.0, 0.1])
-bmap = BasinMapRecurrences(psys, (xg, yg); Δt = 1)
-basins_after, attractors_after = basins_of_attraction(
-    bmap, (xg, yg); show_progress = false
-)
-# matching attractors is important!
-rmap = matching_map!(attractors_after, attractors, MatchBySSSetDistance())
-# Don't forget to update the labels of the basins as well!
-replace!(basins_after, rmap...)
-
-# now plot
-heatmap_basins_attractors(grid, basins_after, attractors_after)
-```
-
-And let's compute the tipping "probabilities":
-
-```@example MAIN
-P = tipping_probabilities(basins, basins_after)
-```
-As you can see `P` has size 3×2, as after the change only 2 attractors have been identified
-in the system (3 still exist but our state space discretization isn't fine enough to
-find the 3rd because it has such a small basin).
-Also, the first row of `P` is 50% probability to each other magnet, as it should be due to
-the system's symmetry.
-
 ## Intermingledness and basin entropy
 
 Continuing from the above example of the magnetic pendulum, we can use it as a demonstration of the
@@ -234,7 +202,7 @@ bmap = BasinMapFeaturizeGroup(psys, featurizer; Ttr = 200, T = 1)
 xg = yg = range(-4, 4; length = 101)
 
 region = HRectangle([-4, 4], [4, 4])
-sampler, = statespace_sampler(region)
+sampler = RandomICsSampler(1000, region)
 
 fs = basins_fractions(bmap, sampler; show_progress = false)
 ```
@@ -393,8 +361,8 @@ for pow in (1, 2)
     )
 
     # Find attractor and its fraction (fraction is always 1 here)
-    sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-    fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+    sampler = RandomICsSampler(100, HRectangle(zeros(2), fill(18.0, 2)), 42)
+    fractions = basins_fractions(bmap, sampler; show_progress = false)
     attractors = extract_attractors(bmap)
     scatter!(ax, vec(attractors[1]); markersize = 16/pow, label = "pow = $(pow)")
 end
@@ -454,8 +422,8 @@ bmap = BasinMapRecurrences(ds, grid;
     )
 
 # Find attractor and its fraction (fraction is always 1 here)
-sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+sampler = RandomICsSampler(100, HRectangle(zeros(2), fill(18.0, 2)), 42)
+fractions = basins_fractions(bmap, sampler; show_progress = false)
 attractors_SBD = extract_attractors(bmap)
 scatter!(ax, vec(attractors_SBD[1]); label = "SubdivisionBasedGrid")
 
@@ -468,8 +436,7 @@ bmap = BasinMapRecurrences(ds, (xg, yg);
         maximum_iterations = 1000,
     )
 
-sampler, _ = statespace_sampler(HRectangle(zeros(2), fill(18.0, 2)), 42)
-fractions = basins_fractions(bmap, sampler; N = 100, show_progress = false)
+fractions = basins_fractions(bmap, sampler; show_progress = false)
 attractors_reg = extract_attractors(bmap)
 scatter!(ax, vec(attractors_reg[1]); label = "RegularGrid")
 
@@ -478,7 +445,7 @@ fig
 
 ```
 
-## Basin fractions continuation in the magnetic pendulum
+## Global continuation in the magnetic pendulum
 
 Perhaps the simplest application of [`global_continuation`](@ref) is to produce a plot of how the fractions of attractors change as we continuously change the parameter we changed above to calculate tipping probabilities.
 
@@ -497,18 +464,17 @@ ds = ProjectedDynamicalSystem(ds, 1:2, [0.0, 0.0])
 bmap = BasinMapRecurrences(ds, (xg, yg); Δt = 1.0)
 # What parameter to change, over what range
 γγ = range(1, 0; length = 101)
-prange = [[1, 1, γ] for γ in γγ]
-pidx = :γs
+pcurve = [Dict(:γs => [1, 1, γ]) for γ in γγ]
 # important to make a sampler that respects the symmetry of the system
 region = HSphere(3.0, 2)
-sampler, = statespace_sampler(region, 1234)
+sampler = RandomICsSampler(100, region, 1234)
 # continue attractors and basins:
 # `Inf` threshold fits here, as attractors move smoothly in parameter space
 rsc = RecurrencesFindAndMatch(bmap; threshold = Inf)
-fractions_cont, attractors_cont = global_continuation(
-    rsc, prange, pidx, sampler;
-    show_progress = false, samples_per_parameter = 100
+gco = global_continuation(
+    rsc, pcurve, sampler; show_progress = false,
 )
+fractions_cont, attractors_cont = gco.fractions, gco.attractors
 # Show some characteristic fractions:
 fractions_cont[[1, 50, 101]]
 ```
@@ -548,8 +514,9 @@ fig
 as you can see, two of the three fixed points, and their stability, do not depend at all on the parameter value, since this parameter value tunes the magnetic strength of only the third magnet. Nevertheless, the **fractions of basin of attraction** of all attractors depend strongly on the parameter. This is a simple example that highlights excellently how this new approach we propose here should be used even if one has already done a standard linearized bifurcation analysis.
 
 ## Featurizing and grouping across parameters (MCBB / FGAP)
+
 Here we showcase the example of the Monte Carlo Basin Bifurcation publication.
-For this, we will use [`FeaturizeGroupAcrossParameter`](@ref) while also providing a `par_weight = 1` keyword.
+For this, we will use [`FeaturizeGroupAcrossParameter`](@ref).
 However, we will not use a network of 2nd order Kuramoto oscillators (as done in the paper by Gelbrecht et al.) because it is too costly to run on CI.
 Instead, we will use "dummy" system which we know analytically the attractors and how they behave versus a parameter.
 
@@ -579,25 +546,25 @@ ds = DiscreteDynamicalSystem(dumb_map, [0., 0.], [r])
 
 
 ```@example MAIN
-sampler, = statespace_sampler(HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
+sampler = RandomICsSampler(100, HRectangle([-3.0, -3.0], [3.0, 3.0]), 1234)
 
 rrange = range(0, 2; length = 21)
-ridx = 1
+pcurve = [Dict(1 => r) for r in rrange]
 
 featurizer(a, t) = a[end]
 clusterspecs = GroupViaClustering(optimal_radius_method = "silhouettes", max_used_features = 200)
 bmap = BasinMapFeaturizeGroup(ds, featurizer, clusterspecs; T = 20, threaded = true)
-gap = FeaturizeGroupAcrossParameter(bmap; par_weight = 1.0)
-fractions_cont, clusters_info = global_continuation(
-    gap, rrange, ridx, sampler; show_progress = false
+gap = FeaturizeGroupAcrossParameter(bmap)
+gco = global_continuation(
+    gap, pcurve, sampler; show_progress = false
 )
-fractions_cont
+fractions_cont = gco.fractions
 ```
 
 Looking at the information of the "attractors" (here the clusters of the grouping procedure) does not make it clear which label corresponds to which kind of attractor, but we can look at the:
 
 ```@example MAIN
-clusters_info
+clusters_info = gco.attractors
 ```
 
 ## Using histograms and histogram distances as features
@@ -899,8 +866,6 @@ This special `matcher` achieves the following:
   the attractors are matched!
 
 
-
-
 ## [Aggregated stability quantifiers of a population model](@id aggregate_continuation_example)
 
 This example discusses aggregation of continuation results: where a dynamical system may have multiple attractors, but some of them share the same functional/operating state for the context of the system. In such cases, you want to aggregate attractors with similar function.
@@ -940,12 +905,12 @@ bmap = BasinMapRecurrences(ds, grid;
 # A short continuation in K₁ with few samples, to keep the example fast
 prange = range(0.91, 0.89; length = 5)
 pcurve = [Dict(1 => v) for v in prange]
-sampler, = statespace_sampler(grid, 1234)
+sampler = RandomICsSampler(100, grid, 1234)
 alg = RecurrencesFindAndMatch(bmap; distance = StrictlyMinimumDistance())
-fractions_cont, attractors_cont = global_continuation(
-    alg, pcurve, sampler; samples_per_parameter = 100, show_progress = false
+gco = global_continuation(
+    alg, pcurve, sampler; show_progress = false
 )
-
+attractors_cont = gco.attractors
 length.(values.(attractors_cont)) # number of attractors at each step
 ```
 

@@ -1,33 +1,36 @@
-export InitialConditionSampler
-export RandomICSampler, PerParameterICs, PerParameterInitialConditions
+export InitialConditionsSampler
+export RandomICsSampler, PrescribedICs, PerParameterICs
 export BayesianUpdateSampler, sampler_history
 
 using Random: Xoshiro
 using SpecialFunctions: loggamma
 
 """
-    InitialConditionSampler
+    InitialConditionsSampler
 
 Data structure deciding how to sample initial conditions during
 [`global_continuation`](@ref).
 Concerete subtypes are:
 
-- [`RandomICSampler`]
-- [`PrescribedICs`]
+- [`RandomICsSampler`](@ref)
+- [`PrescribedICs`](@ref)
 - [`PerParameterICs`](@ref)
 
-`InitialConditionSampler` defines a currently experimental extendable interface
+`InitialConditionsSampler` defines a currently experimental extendable interface
 based on the internal functions
 `generate_ics, update_sampler!, resampling_required, weighted_fractions`.
+
+`length(sampler)` returns the number of initial conditions that will be generated
+by the sampler.
 """
-abstract type InitialConditionSampler end
-Base.length(s::InitialConditionSampler) = s.N
+abstract type InitialConditionsSampler end
+Base.length(s::InitialConditionsSampler) = s.N
 
 """
-    generate_ics(sampler::InitialConditionsSampler, p::Dict)
+    generate_ics(sampler::InitialConditionsSampler, params)
 
 Generate initial condititions from the given sampler, optionally utilizing
-the parameters of the current continuation step.
+a container of parameters of a dynamical system.
 """
 function generate_ics end
 
@@ -40,7 +43,7 @@ update_sampler!(sampler, args...) = nothing
 resampling_required(sampler) = false
 
 """
-    weighted_fractions(sampler::InitialConditionSampler, counts) → Dict{Int, Float64}
+    weighted_fractions(sampler::InitialConditionsSampler, counts) → Dict{Int, Float64}
 
 Basin fractions of the region the `sampler` covers at the parameter whose sampling rounds
 have just finished. `counts` maps attractor ID to the number of initial conditions that
@@ -65,7 +68,7 @@ function weighted_fractions(sampler, counts)
 end
 
 """
-    RandomICSampler(f::Function, N::Int) <: InitialConditionSampler
+    RandomICsSampler(f::Function, N::Int) <: InitialConditionsSampler
 
 Wrapper around a function `f`, to be called as
 `f() -> u`. When called, it generates a random initial condition.
@@ -73,48 +76,56 @@ The sampler generates overall `N` initial conditions.
 
 The following convenience signature is also provided
 
-    RandomICSampler(N::Int, args...; kw...)
+    RandomICsSampler(N::Int, args...; kw...)
 
 which propagates `args, kw` to [`statespace_sampler`](@ref) and uses the generated
 sampler as the function `f`.
 """
-struct RandomICSampler{F} <: InitialConditionSampler
+struct RandomICsSampler{F} <: InitialConditionsSampler
     f::F
     N::Int
 end
-RandomICSampler(N::Int, args...; kw...) = RandomICSampler(statespace_sampler(args...; kw...)[1], N)
-generate_ics(p::RandomICSampler, args...) = (p.f() for _ in 1:p.N)
+RandomICsSampler(N::Int, args...; kw...) = RandomICsSampler(statespace_sampler(args...; kw...)[1], N)
+generate_ics(p::RandomICsSampler, args...) = (p.f() for _ in 1:p.N)
+# function RandomICsSampler(N::Int, args...; kw...)
+#     # we have to acknowledge that f() operates in-place here!
+#     f, = statespace_sampler(args...; kw...)[1]
+#     g = () -> copy(f())
+#     return RandomICsSampler(g, N)
+# end
+
+
 
 """
-    PrescribedICs(u0s::AbstractVector) <: InitialConditionSampler
+    PrescribedICs(u0s::AbstractVector) <: InitialConditionsSampler
 
 Wrapper around a container of initial conditions that simply provides
 `u0s` as the sampled initial conditions.
 """
-struct PrescribedICs{V<:AbstractVector} <: InitialConditionSampler
+struct PrescribedICs{V<:AbstractVector} <: InitialConditionsSampler
     ics::V
 end
 generate_ics(p::PrescribedICs, args...) = p.ics
 Base.length(s::PrescribedICs) = length(s.ics)
 
 """
-    PerParameterICs(f, N::Int) <: InitialConditionSampler
+    PerParameterICs(f, N::Int) <: InitialConditionsSampler
 
 Wrapper around a function `f`, to be called as
-`f(parameters, N)`.
-It inputs the current parameter(s) of a [`global_continuation`](@ref)
-(elements of `pcurve` which are always a dictionary), and outputs
-`N` initial conditions.
+`f(parameters, N)`. When used in [`basins_fractions`](@ref),
+it inputs the `current_parameters` of the dynamical system.
+When used in [`global_continuation`](@ref) it inputs the current
+element of `pcurve` (which is expected to be a dictionary).
 The sampler generates overall `N` initial conditions.
 """
-struct PerParameterInitialConditions{F} <: InitialConditionSampler
+struct PerParameterICs{F} <: InitialConditionsSampler
     f::F
     N::Int
 end
-generate_ics(p::PerParameterInitialConditions, params, args...) = p.f(params, p.N)
+generate_ics(p::PerParameterICs, params, args...) = p.f(params, p.N)
 
 """
-    BayesianUpdateSampler(region, n_tiles::Int; sparse_n, kwargs...) <: InitialConditionSampler
+    BayesianUpdateSampler(region, n_tiles::Int; sparse_n, kwargs...) <: InitialConditionsSampler
 
 Sampler allocating initial conditions where the basins are actually changing.
 `region` is tiled into `n_tiles^D` equally sized boxes, each carrying information
@@ -166,7 +177,7 @@ it. With `history = true` the sampler snapshots both at the end of each paramete
 Use [`sampler_history`](@ref)
 to read them back. 
 """
-mutable struct BayesianUpdateSampler{D, G} <: InitialConditionSampler
+mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     # geometry: one box, and one point generator for it, per tile
     boxes::Vector{HRectangle{Float64, SVector{D, Float64}}}
     generators::Vector{G}

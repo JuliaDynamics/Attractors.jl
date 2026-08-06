@@ -219,12 +219,12 @@ bmap = BasinMapRecurrences(
     consecutive_lost_steps = 100,
 )
 
-sampler, = statespace_sampler(grid)
+sampler = RandomICsSampler(1000, grid)
 
 algo = AttractorSeedContinueMatch(StabilityQuantifiersAccumulator(bmap))
-
+pcurve = [Dict(pidx => p) for p in prange]
 @time quantifiers_cont, attractors_cont = global_continuation(
-    algo, prange, pidx, sampler; samples_per_parameter = 1_000
+    algo, pcurve, sampler
 )
 
 plot_attractors_curves(

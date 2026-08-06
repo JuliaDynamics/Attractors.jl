@@ -35,7 +35,7 @@ end
 ##########################################################################################
 # Attractors
 ##########################################################################################
-function Attractors.plot_attractors(a; access = SVector(1, 2), kw...)
+function Attractors.plot_attractors(a::Dict; access = SVector(1, 2), kw...)
     fig = Figure()
     AX = length(access) == 2 ? Axis : Axis3
     ax = AX(fig[1, 1])
@@ -44,7 +44,7 @@ function Attractors.plot_attractors(a; access = SVector(1, 2), kw...)
 end
 
 function Attractors.plot_attractors!(
-        ax, attractors;
+        ax, attractors::Dict;
         ukeys = sort(collect(keys(attractors))), # internal argument just for other keywords
         colors = colors_from_keys(ukeys),
         markers = markers_from_keys(ukeys),

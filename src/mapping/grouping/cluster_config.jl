@@ -117,14 +117,7 @@ end
 #####################################################################################
 # API function (group features)
 #####################################################################################
-# The keywords `par_weight, plength, spp` enable the "for-free" implementation of the
-# MCBB algorithm (weighting the distance matrix by parameter value as well).
-# The keyword version of this function is only called in
-# `GroupingAcrossParametersContinuation` and is not part of public API!
-function group_features(
-        features, config::GroupViaClustering;
-        par_weight::Real = 0, plength::Int = 1, spp::Int = 1,
-    )
+function group_features(features, config::GroupViaClustering)
     nfeats = length(features); dimfeats = length(features[1])
     if dimfeats ≥ nfeats
         throw(
@@ -143,15 +136,12 @@ function group_features(
     if iszero(ϵ_optimal) # if this is deduced as zero, all features overlap exactly
         return fill(1, length(features))
     end
-    distances = _distance_matrix(features, config; par_weight, plength, spp)
+    distances = _distance_matrix(features, config)
     labels = _cluster_distances_into_labels(distances, ϵ_optimal, config.min_neighbors)
     return labels
 end
 
-function _distance_matrix(
-        features, config::GroupViaClustering;
-        par_weight::Real = 0, plength::Int = 1, spp::Int = 1
-    )
+function _distance_matrix(features, config::GroupViaClustering)
     metric = config.clust_distance_metric
     L = length(features)
     if config.use_mmap
@@ -168,21 +158,6 @@ function _distance_matrix(
             @inbounds for j in i:length(features)
                 v = metric(features[i], features[j])
                 dists[i, j] = dists[j, i] = v # utilize symmetry
-            end
-        end
-    end
-
-    if par_weight ≠ 0 # weight distance matrix by parameter value
-        par_vector = kron(range(0, 1, plength), ones(spp))
-        length(par_vector) ≠ size(dists, 1) && error("Feature size doesn't match.")
-        @inbounds for k in eachindex(par_vector)
-            # We can optimize the loop here due to symmetry of the metric.
-            # Instead of going over all `j` we go over `(k+1)` to end,
-            # and also add value to transpose. (also assume that if j=k, distance is 0)
-            for j in (k + 1):size(dists, 1)
-                pdist = par_weight * abs(par_vector[k] - par_vector[j])
-                dists[k, j] += pdist
-                dists[j, k] += pdist
             end
         end
     end

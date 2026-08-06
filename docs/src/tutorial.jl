@@ -2,7 +2,7 @@
 
 # ```@raw html
 # <video width="auto" controls loop>
-# <source src="../attracont_extra.mp4" type="video/mp4">
+# <source src="../globalcont_extra.mp4" type="video/mp4">
 # </video>
 # ```
 
@@ -52,7 +52,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
 # ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
 
-# ## Define key input: an `AttractorMaper` that maps initial
+# ## Define key input: a `BasinMap` that maps initial
 # ## conditions to attractors of a `DynamicalSystem`
 # grid = (
 #     range(-15.0, 15.0; length = 150), # x
@@ -66,8 +66,7 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 
 # ## Find attractors and their basins of attraction state space fraction
 # ## by randomly sampling initial conditions in state sapce
-# sampler, = statespace_sampler(grid)
-# algo = AttractorSeedContinueMatch(bmap)
+# sampler = RandomICsSampler(1000, grid)
 # fs = basins_fractions(bmap, sampler)
 # attractors = extract_attractors(bmap)
 
@@ -78,16 +77,16 @@ Pkg.status(["Attractors", "CairoMakie", "OrdinaryDiffEqVerner"])
 # ## continue all attractors and their basin fractions across any arbigrary
 # ## curve in parameter space using a global continuation algorithm
 # algo = AttractorSeedContinueMatch(bmap)
-# params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
+# ellipsoid(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 # angles = range(0, 2π; length = 101)
-# pcurve = params.(angles)
-# fractions_cont, attractors_cont = global_continuation(
-# 	algo, pcurve, sampler; samples_per_parameter = 1_000
-# )
+# pcurve = ellipsoid.(angles)
+# gcoutput = global_continuation(algo, pcurve, sampler)
 
 # ## and visualize the results
+# fractions_cont = gcoutput.fractions
+# attractors_cont = gcoutput.attractors
 # fig = plot_basins_attractors_curves(
-# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), angles; add_legend = false
+# 	fractions_cont, attractors_cont, A -> minimum(A[:, 1]), angles
 # )
 # ```
 
@@ -210,19 +209,12 @@ plot_attractors(attractors)
 # each attractors attracts. The search is probabilistic, so "all" attractors means those
 # that at least one initial condition converged to.
 
-# We can provide explicitly initial conditions to [`basins_fractions`](@ref),
-# however it is typically simpler to provide it with with a state space sampler instead:
-# a function that generates random initial conditions in the region of the
-# state space that we are interested in. Here this region coincides with `grid`,
-# so we can simply do:
+# How initial conditions are sampled is described by the [`InitialConditionsSampelr`](@ref)
+# super type and associated subtypes. One can prescribe a set vector of ICs,
+# or randomly sample. This is what we will do here, but randomly sampling ICs
+# within the grid.
 
-sampler, = statespace_sampler(grid)
-
-sampler() # random i.c.
-
-#
-
-sampler() # another random i.c.
+sampler = RandomICsSampler(1000, grid) # sample 1000 ICs
 
 # and finally call
 
@@ -236,12 +228,7 @@ fs = basins_fractions(bmap, sampler)
 # To obtain the full basins, which is computationally much more expensive,
 # use [`basins_of_attraction`](@ref).
 
-# You can use alternative algorithms in [`basins_fractions`](@ref), see
-# the documentation of [`BasinMap`](@ref) for possible subtypes.
-# [`BasinMap`](@ref) defines an extendable interface and can be enriched
-# with other methods in the future!
-
-# ## Different Attractor Mapper
+# ## Different Basin Map
 
 # Attractors.jl utilizes composable interfaces throughout its functionality.
 # In the above example we used one particular method to find attractors,
@@ -263,7 +250,7 @@ end
 
 # from which we initialize
 
-mapper2 = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
+bmap_fg = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
 
 # [`BasinMapFeaturizeGroup`](@ref) allows for a third input, which is a
 # "grouping configuration", that dictates how features will be grouped into
@@ -274,23 +261,23 @@ mapper2 = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)
 # a trajectory `A` given to the `featurizer` function. Because one of the two attractors
 # is chaotic, we need denser sampling time than the default.
 
-# We can use `mapper2` exactly as `bmap`:
+# We can use `bmap_fg` exactly as `bmap`:
 
-fs2 = basins_fractions(mapper2, sampler)
+fs2 = basins_fractions(bmap_fg, sampler)
 
-attractors2 = extract_attractors(mapper2)
+attractors_fg = extract_attractors(bmap_fg)
 
-plot_attractors(attractors2)
+plot_attractors(attractors_fg)
 
 # This basin map also found the attractors, but we should warn you: this basin map is less
 # robust than [`BasinMapRecurrences`](@ref). One of the reasons for this is
 # that [`BasinMapFeaturizeGroup`](@ref) is not auto-terminating. For example, if we do not
 # have enough transient integration time, the two attractors will get confused into one:
 
-mapper3 = BasinMapFeaturizeGroup(ds, featurizer; Ttr = 10, Δt = 0.1)
-fs3 = basins_fractions(mapper3, sampler)
-attractors3 = extract_attractors(mapper3)
-plot_attractors(attractors3)
+bmap_fg2 = BasinMapFeaturizeGroup(ds, featurizer; Ttr = 10, Δt = 0.1)
+basins_fractions(bmap_fg2, sampler)
+attractors_fg2 = extract_attractors(bmap_fg2)
+plot_attractors(attractors_fg2)
 
 # On the other hand, the downside of [`BasinMapRecurrences`](@ref) is that
 # it can take quite a while to converge for chaotic or high dimensional systems.
@@ -299,37 +286,26 @@ plot_attractors(attractors3)
 
 # If you have heard before the word "continuation", then you are likely aware of the
 # **traditional continuation-based bifurcation analysis (CBA)** offered by many software,
-# such as AUTO, MatCont, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
+# such as AUTO, CoCo, and in Julia [BifurcationKit.jl](https://github.com/bifurcationkit/BifurcationKit.jl).
 # These software perform **local continuation**.
 # Here we offer a completely different kind of continuation called **global continuation**.
+# For an extensive comparison of the two, see our paper [Datseris2026](@cite)
+# or have a look at the last paragraph in this tutorial.
+# From our article:
 
-# The local continuation continues the curves of individual _fixed
-# points (and under some conditions limit cycles)_ across the joint state-parameter space and
-# tracks their _local (linear) stability_.
-# This approach needs to manually be "re-run" for every individual branch of fixed points
-# or limit cycles.
-# The global continuation in Attractors.jl finds _all_ attractors, _including chaotic
-# or quasiperiodic ones_,
-# in the whole of the state space (that it searches in), without manual intervention.
-# It then continues all of these attractors concurrently along a parameter axis.
-# Additionally, the global continuation tracks a _nonlocal_ stability property which by
-# default is the basin fraction.
+# !!! "quote"
+#      Global continuation finds and continues in parallel (practically) all system attractors
+#      and their response to finite perturbations by synthesising information from the whole
+#      state space, while placing a focus on the qualities or observables of a dynamical
+#      system that the practitioner cares about in context.
 
 # Because all attractors are simultaneously
 # tracked across the parameter axis, the user may arbitrarily estimate _any_
 # property of the attractors and how it varies as the parameter varies.
-# A more detailed comparison between these two approaches can be found in [Datseris2023](@cite).
-# See also the [comparison page](@ref bfkit_comparison) in our docs
-# that attempts to do the same analysis of our Tutorial with traditional continuation software.
 
-# To perform a global continuation is surprisingly simple. First, we decide what parameter,
-# and what range of that parameter, to continue over:
-
-prange = 4.5:0.01:6
-pidx = 1 # index of the parameter
-
-# Then, we may call the [`global_continuation`](@ref) function.
-# We have to provide a continuation algorithm, which itself references an [`BasinMap`](@ref).
+# To perform a global continuation is surprisingly simple and requires only three
+# clear inputs. First, we need to decide the global continuation algorithm which also
+# references a [`BasinMap`](@ref).
 # In this example we will re-use the `bmap` to create the "flagship product" of Attractors.jl
 # which is the general [`AttractorSeedContinueMatch`](@ref).
 # This algorithm uses the `bmap` to find all attractors at each parameter value
@@ -341,39 +317,52 @@ pidx = 1 # index of the parameter
 
 ascm = AttractorSeedContinueMatch(bmap)
 
-# and call
+# The second input to global continuation is what parameter,
+# and what values of that parameter, to continue over:
 
-fractions_cont, attractors_cont = global_continuation(
-    ascm, prange, pidx, sampler; samples_per_parameter = 1_000
-)
+prange = 4.5:0.01:6
+pidx = 1 # index of the parameter
 
-# the output is given as two vectors. Each vector is a dictionary
-# mapping attractor IDs to their basin fractions, or their state space sets, respectively.
-# Both vectors have the same size as the parameter range.
-# For example, the attractors at the 34-th parameter value are:
+# Global continuation occurs over a prescribed parameter curve, so we convert this to
 
-attractors_cont[34]
+pcurve = [Dict(pidx => p) for p in prange]
+
+# Then, the third and final input is how, and how densely, to sample the state space.
+# Here we re-use the `sampler` from before. So we can now call:
+
+gco = global_continuation(ascm, pcurve, sampler)
+
+# This normally takes about a minute of compute depending on your computer.
+# The output is [`GlobalContinuationOutput`](@ref) which can contain a variety of information
+# but always contains the following two crucial pieces of information given as two vectors:
+
+fractions_cont = gco.fractions
+attractors_cont = gco.attractors;
+
+# Each vector is a dictionary
+# mapping basin IDs to their basin fractions, or their state space sets, respectively.
+# Both vectors have the same size as the parameter axis.
+# For example, the attractors at the 77-th parameter value are:
+
+attractors_cont[77]
 
 # If you want to transform the output to the alternative format of
 # a dictionary of vectors, use [`continuation_series`](@ref).
-# You typically don't have to though, because there is a fantastic convenience function
+# There is also a fantastic convenience function
 # for animating the attractors evolution, that utilizes things we have
 # already defined:
 
-animate_attractors_continuation(
-    ds, attractors_cont, fractions_cont, prange, pidx
-);
+animate_attractors_continuation(ds, gco)
 
 # ```@raw html
 # <video width="auto" controls loop>
-# <source src="../attracont.mp4" type="video/mp4">
+# <source src="../globalcont.mp4" type="video/mp4">
 # </video>
 # ```
 
 # Hah, how cool is that! The attractors pop in and out of existence like out of nowhere!
 # It can be difficult to find these attractors in traditional continuation software
-# where a rough estimate of the period is required! (It would also be too hard due to the presence
-# of chaos for most of the parameter values, but that's another issue!)
+# where a rough estimate of the period is required!
 
 # Now typically a continuation is visualized in a 2D plot where the x axis is the
 # parameter axis. We can do this with the convenience function:
@@ -384,7 +373,7 @@ fig = plot_basins_attractors_curves(
 
 # In the top panel are the basin fractions, by default plotted as stacked bars.
 # Bottom panel is a visualization of some feature(s) of the tracked attractors.
-# The argument `A -> minimum(A[:, 1])` is simply a function that maps
+# The argument `A -> minimum(A[:, 1])` is a function that maps
 # an attractor into a real number for plotting. A vector of such functions can be
 # given instead.
 
@@ -394,20 +383,21 @@ fig = plot_basins_attractors_curves(
 # keyword arguments like so:
 
 fig = animate_attractors_continuation(
-    ds, attractors_cont, fractions_cont, prange, pidx;
+    ds, gco;
     figure = (size = (600, 700),),
     axis = (ylabel = "y", xlabel = "x"),
-    savename = "attracont_extra.mp4",
+    savename = "globalcont_extra.mp4",
     add_legend = false,
     a2rs = [A -> minimum(A[:, 1]), A -> maximum(A[:, 2])],
     a2rs_ylabels = ["x-min", "y-max"],
     a2rs_ratio = 0.33,
     vline_kwargs = (linestyle = :dash, linewidth = 3, color = "red"),
+    prange,
 )
 
 # ```@raw html
 # <video width="auto" controls loop>
-# <source src="../attracont_extra.mp4" type="video/mp4">
+# <source src="../globalcont_extra.mp4" type="video/mp4">
 # </video>
 # ```
 
@@ -466,11 +456,11 @@ fig = plot_attractors_curves(
 # are two completely orthogonal steps, and (2) it is completely fine for
 # attractors to dissapear (and perhaps re-appear) during a global continuation.
 
-#For example, we can probe an elipsoid defined as
+# For example, we can probe an elipsoid defined as
 
-params(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
+ellipsoid(θ) = [1 => 5 + 0.5cos(θ), 2 => 0.1 + 0.01sin(θ)]
 θs = range(0, 2π; length = 101)
-pcurve = params.(θs)
+pcurve = ellipsoid.(θs)
 
 # here each component maps the parameter index to its value.
 # We can just give this `pcurve` to the global continuation,
@@ -482,15 +472,11 @@ matcher = MatchBySSSetDistance(use_vanished = true)
 
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
-fractions_cont, attractors_cont = global_continuation(
-    ascm, pcurve, sampler; samples_per_parameter = 1_000
-)
+gco = global_continuation(ascm, pcurve, sampler)
+attractors_cont = gco.attractors
 
 # and animate the result
-animate_attractors_continuation(
-    ds, attractors_cont, fractions_cont, pcurve;
-    savename = "curvecont.mp4"
-);
+animate_attractors_continuation(ds, gco; savename = "curvecont.mp4");
 
 # ```@raw html
 # <video width="auto" controls loop>
@@ -505,7 +491,7 @@ animate_attractors_continuation(
 # is the basin fractions. This is primarily because it is computed automatically
 # as we find the different attractors. There are many more stability quantifiers
 # that could be more useful in different contexts. Attractors.jl offers
-# the unique possibility of estimating _almost all_ known quantifiers of stability in the
+# the unique possibility of estimating a multitude of known quantifiers of stability in the
 # literature of dynamical systems during a _single_ global continuation pass.
 # This is done with the [`StabilityQuantifiersAccumulator`](@ref) data structure.
 # You can visit its documentation string to learn about all different stability quantifiers.
@@ -513,8 +499,8 @@ animate_attractors_continuation(
 # then either open an Issue and tell us about it or even better make a Pull Request and
 # contribute it yourself!
 
-# Using [`StabilityQuantifiersAccumulator`](@ref) is very easy. If we have already performed
-# a global continuation then we can utilize the function [`stability_quantifiers_along_continuation`](@ref)
+# Using [`StabilityQuantifiersAccumulator`](@ref) is very easy. If you have already performed
+# a global continuation then you can utilize the function [`stability_quantifiers_along_continuation`](@ref)
 # to run through it again and estimate now all stability quantifiers.
 
 result = stability_quantifiers_along_continuation(
@@ -607,9 +593,7 @@ matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
 ascm = AttractorSeedContinueMatch(bmap, matcher)
 
 # and proceed as usual
-fractions_cont, attractors_cont = global_continuation(
-    ascm, pcurve, sampler; samples_per_parameter = 100
-)
+fractions_cont, attractors_cont = global_continuation(ascm, pcurve, sampler)
 
 # The output is exactly of the same type, and as such very easy to post-process.
 # For example, let's find all parameter values that support an attractor

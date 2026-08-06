@@ -1,13 +1,13 @@
 function Attractors.animate_attractors_continuation(
-        ds::DynamicalSystem, attractors_cont, fractions_cont, prange, pidx; kw...
+        ds::DynamicalSystem, gco::GlobalContinuationOutput; kw...
     )
-    pcurve = [[pidx => p] for p in prange]
-    return animate_attractors_continuation(ds, attractors_cont, fractions_cont, pcurve; prange, kw...)
+    (; attractors, fractions, pcurve) = gco
+    return animate_attractors_continuation(ds, attractors, fractions, pcurve; kw...)
 end
 
 function Attractors.animate_attractors_continuation(
         ds::DynamicalSystem, attractors_cont, fractions_cont, pcurve;
-        savename = "attracont.mp4", access = SVector(1, 2),
+        savename = "globalcont.mp4", access = SVector(1, 2),
         limits = auto_attractor_lims(attractors_cont, access),
         framerate = 4, markersize = 10,
         ukeys = unique_keys(attractors_cont),

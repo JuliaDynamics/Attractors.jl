@@ -109,6 +109,16 @@ function (bmap::BasinMapFeaturizeGroup)(u0)
 end
 convergence_time(bmap::BasinMapFeaturizeGroup) = bmap.Ttr + bmap.total
 
+function can_map_individual_ic(bmap::BasinMapFeaturizeGroup)
+    if bmap.group_config isa GroupViaClustering
+        return false
+    elseif bmap.group_config isa GroupViaPairwiseComparison
+        return false
+    else
+        return true
+    end
+end
+
 DynamicalSystemsBase.rulestring(m::BasinMapFeaturizeGroup) = DynamicalSystemsBase.rulestring(m.ds)
 
 function Base.show(io::IO, bmap::BasinMapFeaturizeGroup)

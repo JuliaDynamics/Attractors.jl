@@ -33,6 +33,17 @@ end
 @deprecate stability_measures_along_continuation stability_quantifiers_along_continuation
 @deprecate StabilityMeasuresAccumulator StabilityQuantifiersAccumulator
 
+function basins_fractions(bmap::BasinMap, ics::Union{AbstractVector, Function}; kw...)
+    @warn "You must now pass a subtype of `InitialConditionsSampler` explicitly to `basins_fractions`.
+    Keyword `N` is also invalid. Making the closest type for now..."
+    if ics isa AbstractVector
+        sampler = PrescribedICs(ics)
+    else
+        sampler = RandomICsSampler(ics, 1000)
+    end
+    return basins_fractions(bmap, sampler; kw...)
+end
+
 function global_continuation(alg, prange, pidx, ics; kw...)
     @warn "passing `prange, pidx` as inputs to `global_continuation` is deprecated. Pass a single `pcurve`."
     pcurve = [Dict(pidx => p) for p in prange]
@@ -40,12 +51,22 @@ function global_continuation(alg, prange, pidx, ics; kw...)
 end
 
 function global_continuation(alg::GlobalContinuationAlgorithm, pcurve::Vector, ics::Union{AbstractVector, Function}; kw...)
-    @warn "You must now pass a subtype of `InitialConditionSampler` explicitly to `global_continuation`.
+    @warn "You must now pass a subtype of `InitialConditionsSampler` explicitly to `global_continuation`.
     Making the closest type for now..."
     if ics isa AbstractVector
         sampler = PrescribedICs(ics)
     else
-        sampler = RandomICSampler(ics, 100)
+        sampler = RandomICsSampler(ics, 100)
     end
     return global_continuation(alg, pcurve, sampler; kw...)
+end
+
+function Base.iterate(gco::GlobalContinuationOutput, state = 1)
+    if state == 1
+        return (gco.fractions, 2)
+    elseif state == 2
+        return (gco.attractors, 3)
+    else
+        return nothing
+    end
 end

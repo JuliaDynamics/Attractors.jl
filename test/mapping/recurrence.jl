@@ -49,8 +49,7 @@ if DO_EXTENSIVE_TESTS
 
             sampler, = statespace_sampler(HRectangle([-0.5, 0], [0.5, 1]), 155)
             ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
-
-            fs, labels = basins_fractions(bmap, ics; show_progress = false)
+            fs = basins_fractions(bmap, PrescribedICs(ics); show_progress = false)
             num_att = length(fs)
             return num_att
         end
@@ -72,13 +71,13 @@ if DO_EXTENSIVE_TESTS
     @testset "Compatibility sparse and nonsparse" begin
         function test_compatibility_sparse_nonsparse(ds, grid; kwargs...)
             sampler, = statespace_sampler(grid, 1244)
-            ics = StateSpaceSet([copy(sampler()) for i in 1:1000])
+            ics = PrescribedICs(StateSpaceSet([copy(sampler()) for i in 1:1000]))
 
             bmap = BasinMapRecurrences(ds, grid; sparse = true, show_progress = false, kwargs...)
-            fs_sparse, labels_sparse = basins_fractions(bmap, ics; show_progress = false)
+            fs_sparse, labels_sparse = basins_fractions_labels(bmap, ics; show_progress = false)
             approx_atts_sparse = extract_attractors(bmap)
             bmap = BasinMapRecurrences(ds, grid; sparse = false, show_progress = false, kwargs...)
-            fs_non, labels_non = basins_fractions(bmap, ics; show_progress = false)
+            fs_non, labels_non = basins_fractions_labels(bmap, ics; show_progress = false)
             approx_atts_non = extract_attractors(bmap)
 
             @test fs_sparse == fs_non
