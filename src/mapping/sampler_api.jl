@@ -45,22 +45,11 @@ resampling_required(sampler) = false
 """
     weighted_fractions(sampler::InitialConditionsSampler, counts) → Dict{Int, Float64}
 
-Basin fractions of the region the `sampler` covers at the parameter whose sampling rounds
-have just finished. `counts` maps attractor ID to the number of initial conditions that
-landed on it, pooled over every round of that parameter. This is what
-[`global_continuation`](@ref) can see from the outside, and it weighs every initial
-condition equally; its total is the number of initial conditions the parameter used, so
-nothing else about the size of the sample needs to be passed around.
+Since the sampling is not uniform across the domain the fractions have to be computed
+taking into account the weight of each box.
 
-The default implementation is therefore just `counts ./ sum(counts)`, which is right
-whenever the sampler covers the region uniformly and in one round. A sampler that samples
-some parts of the region more densely than others, or that revisits a sub-region in a
-re-sampling round, must define its own method and **ignore `counts`**: only the sampler
-knows the density its points were drawn from, and no estimate of the fractions is unbiased
-without it. It should keep whatever running tally it needs while the rounds go by — see
-[`BayesianUpdateSampler`](@ref) for an example — rather than have the continuation hold on
-to the labels of every initial condition, which is the one thing here that grows with the
-sample size.
+The default implementation is just `counts ./ sum(counts)`, which is right
+whenever the sampler covers the region uniformly and in one round. 
 """
 function weighted_fractions(sampler, counts)
     n = sum(values(counts); init = 0.0)
@@ -189,16 +178,12 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     dense_n::Int
     λ::Float64
     β::Float64
-    # per-round bookkeeping
     boxes_flags::Vector{Bool}       # true => this box wants a dense re-sample
     layout::Vector{Pair{Int, Int}}  # (box index => n ics) of the last `generate_ics`
     # per-parameter bookkeeping: label counts per box, over every round of the current
-    # parameter. This is all `weighted_fractions` needs, and unlike a record of the
-    # labels themselves its size is bounded by the number of boxes times the number of
-    # attractors, no matter how many initial conditions are drawn.
+    # parameter. This is all `weighted_fractions` needs
     step_counts::Vector{Dict{Int, Int}}
-    # optional record of `alphas` and `etas` as they were at the end of each parameter,
-    # both empty unless the sampler was built with `history = true`
+    # optional record of `alphas` and `etas` 
     history::Bool
     history_alphas::Vector{Vector{Dict{Int, Float64}}}
     history_etas::Vector{Vector{Float64}}
@@ -349,19 +334,12 @@ sampler_history(s::BayesianUpdateSampler) =
     weighted_fractions(sampler::BayesianUpdateSampler, counts)
 
 The boxes all have the same volume, so the fraction of the region belonging to basin `k`
-is the average over the boxes of the fraction of each box belonging to it. Read off
-`step_counts`, the per-box tally `update_sampler!` keeps as the rounds of the parameter go
-by, so that nothing proportional to the number of initial conditions is ever stored.
+is the average over the boxes of the fraction of each box belonging to it. 
 
-The pooled `counts` given by [`global_continuation`](@ref) are ignored, as they weigh each
-box by how densely it happened to be covered: a box that panicked and was re-sampled would
-count `dense_n/sparse_n` times more than a quiet one, which bends the fractions of the
-whole region towards wherever the basins are currently changing.
+The function takes into account the boxes that have been resampled.
 """
 function weighted_fractions(s::BayesianUpdateSampler, counts)
     fs = Dict{Int, Float64}()
-    # a box that received nothing cannot contribute an estimate, and must not count
-    # towards the average either, or the fractions would not sum to one
     sampled = count(!isempty, s.step_counts)
     sampled == 0 && return fs
     for c in s.step_counts
