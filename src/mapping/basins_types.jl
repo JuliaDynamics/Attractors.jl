@@ -43,6 +43,7 @@ A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are repre
 `AbstractArray` that has `D` dimensions. The `grid` prescribes
 the state space domain that `basins` cover, and must be a tuple of ranges or ordered vectors.
 Each vector is a dimension for each axis of the `basins` array.
+Alternative, `grid` can be a `RegularGrid` or `IrregularGrid`.
 The `attractors` are a dictionary mapping labels to `StateSpaceSet`s.
 """
 struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S <: StateSpaceSet} <: BasinsOfAttraction{ID}
