@@ -197,7 +197,7 @@ function map_to_basin(BoA::BasinsOfAttraction, point; kwargs...)
 end
 
 # Map point to index of the nearest member of the domain of the basin of attraction
-map_to_domain(BoA::ArrayBasinsOfAttraction, point) = basin_cell_index(point, BoA.grid) # Nearest grid cell
+map_to_domain(BoA::ArrayBasinsOfAttraction, point) = basin_cell_index(point, BoA.typed_grid) # Nearest grid cell
 function map_to_domain(BoA::SampledBasinsOfAttraction, point; tree = KDTree, metric = Euclidean(), ss_kwargs...)
     idx, _ = nn(BoA.search_struct, point, args...; kwargs...)
     return idx
