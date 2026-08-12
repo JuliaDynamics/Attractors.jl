@@ -45,14 +45,24 @@ the state space domain that `basins` cover, and must be a tuple of ranges or ord
 Each vector is a dimension for each axis of the `basins` array.
 The `attractors` are a dictionary mapping labels to `StateSpaceSet`s.
 """
-struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, T <: Tuple, G<:Grid, K, S <: StateSpaceSet} <: BasinsOfAttraction{ID}
+struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S <: StateSpaceSet} <: BasinsOfAttraction{ID}
     basins::B
     attractors::Dict{K, S}
-    grid::T
-    typed_grid::G
-end
+    grid::G
 
-function ArrayBasinsOfAttraction(basins::AbstractArray{ID}, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, AK, S <: AbstractStateSpaceSet}
+    function ArrayBasinsOfAttraction(basins::AbstractArray{ID, D}, attractors::Dict{K, S}, grid::G) where {D, ID, G <: Grid, K, S <: StateSpaceSet}
+        # Dimensionality checks
+        length(grid.grid) != ndims(basins) && error("The basins and the grid must have the same number of dimensions")
+        # Attractor state space sets have the same type so same dimensions, can compare grid with any of them
+        if !isempty(attractors) #
+            length(grid.grid) != dimension(first(values(attractors))) && error("The attractor points and the grid must have the same number of dimensions")
+        end
+        B = typeof(basins)
+        return new{ID, D, B, G, K, S}(basins, attractors, grid)
+    end
+end
+# ArrayBasinsOfAttraction with grid as tuple
+function ArrayBasinsOfAttraction(basins::B, attractors::Dict{AK, S}, grid_tup::Tuple) where {ID, B <: AbstractArray{ID}, AK, S <: AbstractStateSpaceSet}
     size(basins) != length.(grid_tup) && error("The size of the grid must be equal to the size of the basins array")
     if all(t -> t isa AbstractRange, grid_tup) && all(axis -> issorted(axis), grid_tup) # regular
         grid = RegularGrid(grid_tup)
@@ -61,7 +71,7 @@ function ArrayBasinsOfAttraction(basins::AbstractArray{ID}, attractors::Dict{AK,
     else
         error("Incorrect grid specification!")
     end
-    return ArrayBasinsOfAttraction(basins, attractors, grid_tup, grid)
+    return ArrayBasinsOfAttraction(basins, attractors, grid)
 end
 
 """
