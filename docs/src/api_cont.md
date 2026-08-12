@@ -3,6 +3,7 @@
 ```@docs
 global_continuation
 GlobalContinuationAlgorithm
+GlobalContinuationOutput
 continuation_series
 ```
 
