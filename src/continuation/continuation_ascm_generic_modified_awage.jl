@@ -180,6 +180,7 @@ function global_continuation(
 
         # The accumulated counts are transformed to fractions depending on `sampler`
         fs = weighted_fractions(icsampler, total_counts)
+        empty!(total_counts)
         # and now we are done; we store various continuation quantities!
         prev_attractors, pprev = deepcopy(attractors), p # book-keeping
         push!(fractions_cont, fs)
