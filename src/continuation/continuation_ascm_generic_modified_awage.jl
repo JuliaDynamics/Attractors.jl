@@ -133,9 +133,7 @@ function global_continuation(
     # Matching happens inside the loop, one parameter at a time; this is because
     # the `update_sampler!` function needs to have matched labels already.
     # Each matching step is essentially the inner loop of `match_sequentially!`.
-    prev_p = first(pcurve)
-    use_vanished = _use_vanished(ascm.matcher)
-    latest_ghosts = empty(extract_attractors(bmap))
+    pprev = first(pcurve)
     prev_attractors = empty(extract_attractors(bmap))
     # Setup output containers:
     attractors_cont = typeof(prev_attractors)[]
@@ -167,19 +165,27 @@ function global_continuation(
             for (k, v) in fs
                 counts[k] = get(counts, k, 0.0) + v * n_round
             end
-            empty!(additional_ics)
-            # one step of `match_sequentially!`: the attractors just found, against the
-            # previous parameter (or against the ghosts, if the matcher wants them)
-            matched_attractors = deepcopy(extract_attractors(bmap))
-            prev = use_vanished ? latest_ghosts : prev_attractors
-            rmap = only(match_sequentially!(
-                [prev, matched_attractors], ascm.matcher;
-                retract_keys = false, ds, pcurve = [prev_p, p],
-               ))
+            empty!(additional_ics) # these have already been processed, so no need to repeat them
+            # match inside the loop; it doesn't respect `vanished` but that's okay, we'll rematch
+            attractors = extract_attractors(bmap)
+            rmap = matching_map!(attractors, prev_attractors, ascm.matcher; ds, p, pprev)
             replace!(labels, rmap...)
             update_sampler!(icsampler, labels)
             # Now, check if the sampler requires us to re-sample at the current parameter
             resampling_required(icsampler) || break
+
+            # # step of `match_sequentially!`: the attractors just found, against the
+            # # previous parameter (or against the ghosts, if the matcher wants them)
+            # matched_attractors = deepcopy(extract_attractors(bmap))
+            # prev = use_vanished ? latest_ghosts : prev_attractors
+            # rmap = only(match_sequentially!(
+            #     [prev, matched_attractors], ascm.matcher;
+            #     retract_keys = false, ds, pcurve = [pprev, p],
+            #    ))
+            # replace!(labels, rmap...)
+            # update_sampler!(icsampler, labels)
+
+            # TODO: STOPPED HERE!
         end
         # `counts` was pooled in the IDs the basin map issued, so it is relabelled here
         swap_dict_keys!(counts, rmap)
@@ -203,13 +209,16 @@ function global_continuation(
                 latest_ghosts[k] = A
             end
         end
-        prev_attractors, prev_p = matched_attractors, p
+        prev_attractors, pprev = matched_attractors, p
         # any extras that need to be updated can be done so here:
         add_extra_continuation_info!(other_cont, icsampler)
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
+    # If the matcher uses vanished, we need to rematch:
+
+
     # everything has been matched already inside the loop, so all that is left is to
     # transform the tracked quantities to the agreed output
     fractions, quantifiers = generate_continuation_output(bmap, fractions_cont, quantifiers_cont)

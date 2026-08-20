@@ -35,12 +35,12 @@ struct DontMatch <: IDMatcher end
 
 """
     matching_map(
-        a₊::Dict, a₋::Dict, matcher;
+        a₊::Dict, a₋::Dict, matcher::IDMatcher;
         ds::DynamicalSystem, p, pprev, next_id
     ) → rmap
 
 Given dictionaries `a₊, a₋` mapping IDs to values,
-return a _replacement map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
+return a _matching map_: a dictionary mapping the IDs (keys) in dictionary `a₊`
 to IDs (keys) in dictionary `a₋`, so that
 so that values in `a₊` that are the "closest" to values in `a₋` get assigned the
 same key as in `a₋`. In this way keys of `a₊` are "matched" to keys of `a₋`.
