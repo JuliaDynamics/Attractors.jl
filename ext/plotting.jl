@@ -87,6 +87,10 @@ function Attractors.heatmap_basins_attractors(BoA::ArrayBasinsOfAttraction; kwar
     return Attractors.heatmap_basins_attractors(BoA.grid.grid, BoA.basins, BoA.attractors; kwargs...)
 end
 
+function Attractors.heatmap_basins_attractors!(ax, BoA::ArrayBasinsOfAttraction; kwargs...)
+    return Attractors.heatmap_basins_attractors!(ax, BoA.grid.grid, BoA.basins, BoA.attractors; kwargs...)
+end
+
 function Attractors.heatmap_basins_attractors!(
         ax, grid, basins, attractors;
         ukeys = unique(basins), # internal argument just for other keywords

@@ -37,13 +37,14 @@ was done to ensure backwards compatibility for functions whose original return f
 abstract type BasinsOfAttraction{ID} end
 
 """
-    ArrayBasinsOfAttraction(basins, attractors, grid)
+    ArrayBasinsOfAttraction(basins, attractors, grid::Tuple)
 
 A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are represented by an
-`array::AbstractArray`, that has `D` number of dimensions. The `grid` prescribes
-the state space domain that `basins` cover, and can be anything given to [`BasinMapRecurrences`](@ref)
-as a grid, i.e., a tuple of ranges or a `Grid` subtype.
-The `attractors` are the usual form of Attractors.jl, a dictionary labels to `StateSpaceSet`s.
+`AbstractArray` that has `D` dimensions. The `grid` prescribes
+the state space domain that `basins` cover, and must be a tuple of ranges or ordered vectors.
+Each vector is a dimension for each axis of the `basins` array.
+Alternative, `grid` can be a `RegularGrid` or `IrregularGrid`.
+The `attractors` are a dictionary mapping labels to `StateSpaceSet`s.
 """
 struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S <: StateSpaceSet} <: BasinsOfAttraction{ID}
     basins::B
