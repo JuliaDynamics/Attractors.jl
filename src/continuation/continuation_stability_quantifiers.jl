@@ -6,9 +6,7 @@ export stability_quantifiers_along_continuation
 # Note that the returned fractions are the ones the accumulator estimated, i.e. they
 # follow its `weighting_distribution` and not the density the sampler covered the
 # state space region with, exactly like every other quantifier it produces.
-function generate_continuation_output(
-        bmap::StabilityQuantifiersAccumulator, fractions_cont, quantifiers_cont
-    )
+function transpose_quantifiers(bmap::StabilityQuantifiersAccumulator, quantifiers_cont)
     # "transpose" (i.e., swap nesting order)
     transposed = Dict{String, Vector{Dict{Int64, Any}}}()
     for quantifier in quantifiers_cont[1]
@@ -20,7 +18,7 @@ function generate_continuation_output(
             push!(transposed[quantifier_name], quantifier_dict)
         end
     end
-    return Vector{Dict{Int64, Float64}}(transposed["basin_fraction"]), transposed
+    return transposed
 end
 
 

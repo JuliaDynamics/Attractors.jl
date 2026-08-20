@@ -141,6 +141,7 @@ function global_continuation(
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
     other_cont = Dict{String, Any}("resamplings" => zeros(Int, length(pcurve)))
+
     # Loop over parameters
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -152,7 +153,7 @@ function global_continuation(
                 push!(additional_ics, u0)
             end
         end
-
+        # main process: map initial conditions to labels
         local attractors, rmap
         while true
             # call basin counts; it knows how to do all calculations given the bmap,
@@ -162,7 +163,8 @@ function global_continuation(
             )
             additive_dict_merge!(total_counts, counts)
             empty!(additional_ics) # these have already been processed, so no need to repeat them
-            # match inside the loop: PROBLEM: it doesn't do `vanished` NOR `next_id`...
+            # match inside the loop:
+            # TODO: PROBLEM: it doesn't do `vanished` NOR `next_id`...
             attractors = extract_attractors(bmap)
             rmap = matching_map!(attractors, prev_attractors, ascm.matcher; ds, p, pprev)
             replace!(labels, rmap...)
@@ -179,11 +181,9 @@ function global_continuation(
         # The accumulated counts are transformed to fractions depending on `sampler`
         fs = weighted_fractions(icsampler, total_counts)
         # and now we are done; we store various continuation quantities!
-        prev_attractors, pprev = deepcopy(attractors), p
+        prev_attractors, pprev = deepcopy(attractors), p # book-keeping
         push!(fractions_cont, fs)
         push!(attractors_cont, prev_attractors)
-
-        # TODO: STOPPED HERE
 
         # the quantifiers of the accumulator are also keyed in the IDs the basin map
         # issued, so they are relabelled here as well
@@ -195,15 +195,12 @@ function global_continuation(
             push!(quantifiers_cont, quantifiers)
         end
 
-
         # TODO: I have commented this out; we need to take care of both `vanished` and `next_id`
         # if use_vanished
         #     for (k, A) in matched_attractors
         #         latest_ghosts[k] = A
         #     end
         # end
-
-
 
         # any extras that need to be updated can be done so here:
         add_extra_continuation_info!(other_cont, icsampler)
@@ -215,13 +212,11 @@ function global_continuation(
 
     # everything has been matched already inside the loop, so all that is left is to
     # transform the tracked quantities to the agreed output
-    fractions, quantifiers = generate_continuation_output(bmap, fractions_cont, quantifiers_cont)
-    out = GlobalContinuationOutput(attractors_cont, fractions, quantifiers, other_cont, pcurve)
+    quantifiers = transpose_quantifiers(bmap, fractions_cont, quantifiers_cont)
+    out = GlobalContinuationOutput(attractors_cont, fractions_cont, quantifiers, other_cont, pcurve)
     return out
 end
 
 # This function has a generic form that just forwards the sampled fractions, and a more
 # technical form that collects various quantifiers, taken care off by the accumulator
-function generate_continuation_output(bmap, fractions_cont, quantifiers_cont)
-    return fractions_cont, Dict{String, Vector}()
-end
+transpose_quantifiers(bmap, fractions_cont, quantifiers_cont) = Dict{String, Any}()
