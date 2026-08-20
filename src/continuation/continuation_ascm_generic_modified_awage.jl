@@ -121,6 +121,7 @@ function global_continuation(
         ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionsSampler;
         show_progress = true,
     )
+    # Setup generic variables:
     progress = ProgressMeter.Progress(
         length(pcurve);
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
@@ -134,13 +135,12 @@ function global_continuation(
     # Each matching step is essentially the inner loop of `match_sequentially!`.
     pprev = first(pcurve)
     prev_attractors = empty(extract_attractors(bmap))
-    # setup output containers. At each parameter `p`, a dictionary mapping attractor ID
-    # to fraction is created.
+    # Setup output containers:
     attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
     other_cont = Dict{String, Any}()
-    # Continue loop over all remaining parameters
+    # Loop over parameters
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
         reset_mapper!(bmap)
