@@ -114,14 +114,15 @@ i.e., the pairs of `old => new` IDs.
   1, 2, 3. The special ID -1 is unaffected by this.
 """
 function match_sequentially!(
-        attractors::AbstractVector{<:Dict}, matcher::IDMatcher;
-        retract_keys = true, use_vanished = _use_vanished(matcher),
-        kw... # parameter and ds keywords
+        attractors_cont::AbstractVector{<:Dict}, matcher::IDMatcher;
+        ds = nothing, p = nothing, pprev = nothing, # parameter and ds keywords
+        # TODO: Remove these keywords:
+        retract_keys = _retract_keys(matcher), use_vanished = _use_vanished(matcher),
     )
     # this generic implementation works for any matcher!!!
     # the matcher also provides the `use_vanished` keyword if it makes sense!
     rmaps = Dict{keytype(attractors_cont[1]), keytype(attractors_cont[1])}[]
-    tracker = init_matching_tracker(attractors, matcher)
+    tracker = init_matching_tracker(attractors_cont, matcher)
     for i in 1:(length(attractors_cont) - 1)
         a₊, a₋ = attractors_cont[i + 1], attractors_cont[i]
         p, pprev = pcurve[i + 1], pcurve[i]
@@ -129,30 +130,8 @@ function match_sequentially!(
         rmap = tracked_matching_map!(a₊, a₋, matcher, tracker, ds, p, pprev)
         push!(rmaps, rmap)
     end
-
-    # if !use_vanished # matchers implement this!
-    #     rmaps = _rematch_ignored!(attractors, matcher; kw...)
-    # else
-    #     rmaps = _rematch_with_past!(attractors, matcher; kw...)
-    # end
-    if retract_keys
-        retracted = retract_keys_to_consecutive(attractors) # already matched input
-        for (rmap, attrs) in zip(rmaps, attractors)
-            swap_dict_keys!(attrs, retracted)
-            # for `rmap` the situation is more tricky, because we have to change the
-            # value of the _values_ of the dictionary, not the keys!
-            for (k, v) in rmap
-                if v ∈ keys(retracted)
-                    # so we make that the replacement map points to the
-                    # retracted key instead of whatever it pointed to originally,
-                    # if this key exists in the retracted mapping
-                    rmap[k] = retracted[v]
-                end
-            end
-        end
-        # `attractors` have 1 more element than `rmaps`
-        swap_dict_keys!(attractors[end], retracted)
-    end
+    # note this changes keys in both attractors and rmaps
+    retract_keys && retract_keys!(attractors_cont, rmaps)
     return rmaps
 end
 
@@ -193,6 +172,26 @@ function tracked_matching_map!(a₊, a₋, matcher, tracker, ds, p, pprev)
         rmap = matching_map!(a₊, a₋, matcher; next_id = tracker, ds, p, pprev)
     end
     return rmap
+end
+
+function retract_keys!(attractors, rmaps)
+    retracted = retract_keys_to_consecutive(attractors) # already matched input
+    for (rmap, attrs) in zip(rmaps, attractors)
+        swap_dict_keys!(attrs, retracted)
+        # for `rmap` the situation is more tricky, because we have to change the
+        # value of the _values_ of the dictionary, not the keys!
+        for (k, v) in rmap
+            if v ∈ keys(retracted)
+                # so we make that the replacement map points to the
+                # retracted key instead of whatever it pointed to originally,
+                # if this key exists in the retracted mapping
+                rmap[k] = retracted[v]
+            end
+        end
+    end
+    # `attractors` have 1 more element than `rmaps`
+    swap_dict_keys!(attractors[end], retracted)
+    return
 end
 
 
@@ -264,6 +263,7 @@ end
 # end
 
 _use_vanished(matcher) = false
+_retract_keys(matcher) = true
 
 include("basin_overlap.jl")
 include("sssdistance.jl")

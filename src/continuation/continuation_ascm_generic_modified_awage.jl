@@ -135,6 +135,7 @@ function global_continuation(
     # Each matching step is essentially the inner loop of `match_sequentially!`.
     pprev = first(pcurve)
     prev_attractors = empty(extract_attractors(bmap))
+    tracker = init_matching_tracker(attractors, matcher)
     # Setup output containers:
     total_counts = Dict{Int, Int}()
     attractors_cont = typeof(prev_attractors)[]
@@ -166,15 +167,15 @@ function global_continuation(
             # match inside the loop:
             # TODO: PROBLEM: it doesn't do `vanished` NOR `next_id`...
             attractors = extract_attractors(bmap)
-            rmap = matching_map!(attractors, prev_attractors, ascm.matcher; ds, p, pprev)
-            replace!(labels, rmap...)
-            swap_dict_keys!(total_counts, rmap)
+            tracker = update_matching_tracker(tracker, matcher, attractors, prev_attractors)
+            rmap = tracked_matching_map!(attractors, prev_attractors, matcher, tracker, ds, p, pprev)
+            replace!(labels, rmap...) # the labels are used in the sampler!
             # finally do the resampling check:
             update_sampler!(icsampler, labels)
             if resampling_required(icsampler)
                 other_cont["resamplings"][i] += 1
             else
-                break
+                break # the while loop
             end
         end
 
@@ -190,30 +191,27 @@ function global_continuation(
         # issued, so they are relabelled here as well
         if bmap isa StabilityQuantifiersAccumulator
             quantifiers = finalize_accumulator(bmap)
-            for dict in values(quantifiers)
-                swap_dict_keys!(dict, rmap)
-            end
             push!(quantifiers_cont, quantifiers)
         end
 
-        # TODO: I have commented this out; we need to take care of both `vanished` and `next_id`
-        # if use_vanished
-        #     for (k, A) in matched_attractors
-        #         latest_ghosts[k] = A
-        #     end
-        # end
-
         # any extras that need to be updated can be done so here:
         add_extra_continuation_info!(other_cont, icsampler)
+
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
-    # TODO: How to handle "proper" matching with `vanished` and `next_id` ?
 
-    # everything has been matched already inside the loop, so all that is left is to
-    # transform the tracked quantities to the agreed output
+    # last component is to retract keys if need be
+    if _retract_keys(matcher)
+        retract_keys!(attractors_cont, rmaps)
+    end
+    # now go through fractions and quantifiers and apply rmaps:
+    match_sequentially!(fractions_cont, rmaps)
     quantifiers = transpose_quantifiers(bmap, fractions_cont, quantifiers_cont)
+    for (name, continuation_quantity) in quantifiers
+        match_sequentially!(continuation_quantity, rmaps)
+    end
     out = GlobalContinuationOutput(attractors_cont, fractions_cont, quantifiers, other_cont, pcurve)
     return out
 end
