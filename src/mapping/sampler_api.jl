@@ -49,10 +49,10 @@ Since the sampling is not uniform across the domain the fractions have to be com
 taking into account the weight of each box.
 
 The default implementation is just `counts ./ sum(counts)`, which is right
-whenever the sampler covers the region uniformly and in one round. 
+whenever the sampler covers the region uniformly and in one round.
 """
 function weighted_fractions(sampler, counts)
-    n = sum(values(counts); init = 0.0)
+    n = sum(values(counts); init = 0)
     return Dict{Int, Float64}(k => c / n for (k, c) in counts)
 end
 
@@ -121,7 +121,7 @@ Sampler allocating initial conditions where the basins are actually changing.
 over the attractor labels found inside it. At every parameter of a
 [`global_continuation`](@ref) each box is sampled sparsely and the resulting label
 counts are tested against its prior with a log Bayes factor `η`. A box with negative
-`η` means the data are better explained by no prior at all than by its history. 
+`η` means the data are better explained by no prior at all than by its history.
 The basins in the box have changed and the sampler asks for a dense re-sample.
 
 `region` is anything [`statespace_sampler`](@ref) accepts as a region: an `HRectangle`,
@@ -164,7 +164,7 @@ so by the time a continuation returns they say nothing about the sweep that prod
 it. With `history = true` the sampler snapshots both at the end of each parameter.
 
 Use [`sampler_history`](@ref)
-to read them back. 
+to read them back.
 """
 mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     # geometry: one box, and one point generator for it, per tile
@@ -183,7 +183,7 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     # per-parameter bookkeeping: label counts per box, over every round of the current
     # parameter. This is all `weighted_fractions` needs
     step_counts::Vector{Dict{Int, Int}}
-    # optional record of `alphas` and `etas` 
+    # optional record of `alphas` and `etas`
     history::Bool
     history_alphas::Vector{Vector{Dict{Int, Float64}}}
     history_etas::Vector{Vector{Float64}}
@@ -334,7 +334,7 @@ sampler_history(s::BayesianUpdateSampler) =
     weighted_fractions(sampler::BayesianUpdateSampler, counts)
 
 The boxes all have the same volume, so the fraction of the region belonging to basin `k`
-is the average over the boxes of the fraction of each box belonging to it. 
+is the average over the boxes of the fraction of each box belonging to it.
 
 The function takes into account the boxes that have been resampled.
 """

@@ -136,6 +136,7 @@ function global_continuation(
     pprev = first(pcurve)
     prev_attractors = empty(extract_attractors(bmap))
     # Setup output containers:
+    total_counts = Dict{Int, Int}()
     attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
@@ -144,57 +145,42 @@ function global_continuation(
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
         reset_mapper!(bmap)
-        # Seed initial conditions from previous attractors.
+        # Seed initial conditions from previous attractors
         empty!(additional_ics)
         for att in values(prev_attractors)
             for u0 in ascm.seeding(att)
                 push!(additional_ics, u0)
             end
         end
-        counts = Dict{Int, Float64}()
-        local matched_attractors, rmap
+
+        local attractors, rmap
         while true
-            # call basin fractions; it knows how to do all calculations given the bmap,
+            # call basin counts; it knows how to do all calculations given the bmap,
             # including generating the initial conditions from the sampler
-            fs, labels = basins_fractions_labels(
+            counts, labels = basins_counts_labels(
                 bmap, icsampler; params = p, additional_ics, show_progress, offset = 2
             )
-            # `fs` was normalized by the sampled ics, which is what `labels` counts, plus
-            # the seeded ones
-            n_round = length(labels) + length(additional_ics)
-            for (k, v) in fs
-                counts[k] = get(counts, k, 0.0) + v * n_round
-            end
+            additive_dict_merge!(total_counts, counts)
             empty!(additional_ics) # these have already been processed, so no need to repeat them
-            # match inside the loop; it doesn't respect `vanished` but that's okay, we'll rematch
+            # match inside the loop: PROBLEM: it doesn't do `vanished` NOR `next_id`...
             attractors = extract_attractors(bmap)
             rmap = matching_map!(attractors, prev_attractors, ascm.matcher; ds, p, pprev)
             replace!(labels, rmap...)
+            swap_dict_keys!(total_counts, rmap)
+            # finally do the resampling check:
             update_sampler!(icsampler, labels)
-            # Now, check if the sampler requires us to re-sample at the current parameter
             resampling_required(icsampler) || break
-
-            # # step of `match_sequentially!`: the attractors just found, against the
-            # # previous parameter (or against the ghosts, if the matcher wants them)
-            # matched_attractors = deepcopy(extract_attractors(bmap))
-            # prev = use_vanished ? latest_ghosts : prev_attractors
-            # rmap = only(match_sequentially!(
-            #     [prev, matched_attractors], ascm.matcher;
-            #     retract_keys = false, ds, pcurve = [pprev, p],
-            #    ))
-            # replace!(labels, rmap...)
-            # update_sampler!(icsampler, labels)
-
-            # TODO: STOPPED HERE!
         end
-        # `counts` was pooled in the IDs the basin map issued, so it is relabelled here
-        swap_dict_keys!(counts, rmap)
-        # All the computations are done, and now we just store the result(s). The
-        # attractors are matched already, so there is no matching pass at the end.
-        # The fractions go through the sampler, because it is the only one that knows how
-        # densely it covered each part of the region; see `weighted_fractions`.
-        push!(fractions_cont, weighted_fractions(icsampler, counts))
-        push!(attractors_cont, matched_attractors)
+
+        # The accumulated counts are transformed to fractions depending on `sampler`
+        fs = weighted_fractions(icsampler, total_counts)
+        # and now we are done; we store various continuation quantities!
+        prev_attractors, pprev = deepcopy(attractors), p
+        push!(fractions_cont, fs)
+        push!(attractors_cont, prev_attractors)
+
+        # TODO: STOPPED HERE
+
         # the quantifiers of the accumulator are also keyed in the IDs the basin map
         # issued, so they are relabelled here as well
         if bmap isa StabilityQuantifiersAccumulator
