@@ -140,7 +140,7 @@ function global_continuation(
     attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
-    other_cont = Dict{String, Any}()
+    other_cont = Dict{String, Any}("resamplings" => zeros(Int, length(pcurve)))
     # Loop over parameters
     for (i, p) in enumerate(pcurve)
         set_parameters!(ds, p)
@@ -169,7 +169,11 @@ function global_continuation(
             swap_dict_keys!(total_counts, rmap)
             # finally do the resampling check:
             update_sampler!(icsampler, labels)
-            resampling_required(icsampler) || break
+            if resampling_required(icsampler)
+                other_cont["resamplings"][i] += 1
+            else
+                break
+            end
         end
 
         # The accumulated counts are transformed to fractions depending on `sampler`
@@ -190,20 +194,24 @@ function global_continuation(
             end
             push!(quantifiers_cont, quantifiers)
         end
-        if use_vanished
-            for (k, A) in matched_attractors
-                latest_ghosts[k] = A
-            end
-        end
-        prev_attractors, pprev = matched_attractors, p
+
+
+        # TODO: I have commented this out; we need to take care of both `vanished` and `next_id`
+        # if use_vanished
+        #     for (k, A) in matched_attractors
+        #         latest_ghosts[k] = A
+        #     end
+        # end
+
+
+
         # any extras that need to be updated can be done so here:
         add_extra_continuation_info!(other_cont, icsampler)
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
-    # If the matcher uses vanished, we need to rematch:
-
+    # TODO: How to handle "proper" matching with `vanished` and `next_id` ?
 
     # everything has been matched already inside the loop, so all that is left is to
     # transform the tracked quantities to the agreed output
