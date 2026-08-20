@@ -133,16 +133,16 @@ end
 
 
 #####################################################################################
-# Extension of `BasinMap` API
+# Extension of `BasinMap` API: basins_fractions_grouped
 #####################################################################################
-function basins_counts_grouped(bmap::BasinMapFeaturizeGroup, ics, progress, labels)
+function basins_fractions_grouped(bmap::BasinMapFeaturizeGroup, ics, progress, labels)
     features = extract_features(bmap, ics; progress)
     glabels = group_features(features, bmap.group_config)
     if !isempty(labels)
         labels .= @view(glabels[1:length(labels)])
     end
     extract_attractors!(bmap, glabels, ics)
-    fs = basins_counts(glabels) # Vanilla fractions method with Array input
+    fs = basins_fractions(glabels) # Vanilla fractions method with Array input
     return fs
 end
 

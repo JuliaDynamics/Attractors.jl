@@ -534,10 +534,10 @@ function weighted_median(
 end
 
 # Extension function to allow accumulator to work also with non-single-u0 mappers
-function basins_counts_grouped(accumulator::StabilityQuantifiersAccumulator, ics, progress::Progress, labels)
+function basins_fractions_grouped(accumulator::StabilityQuantifiersAccumulator, ics, progress::Progress, labels)
     # note that ics is always collected into vector, cascaded by `basins_fraction`.
     # Here we'll call the same function with the stored bmap, cheating the system
-    fs, _labels = basins_counts_labels(accumulator.bmap, PrescribedICs(ics); show_progress = progress.core.enabled)
+    fs, _labels = basins_fractions_labels(accumulator.bmap, PrescribedICs(ics); show_progress = progress.core.enabled)
     if !isempty(labels)
         labels .= @view(_labels[1:length(labels)])
     end

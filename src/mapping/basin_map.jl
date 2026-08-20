@@ -68,7 +68,7 @@ to accelerate estimation of stability quantifiers.
 From these, everything else in the rest of the library just works!
 
 If it is not possible to implement `id = bmap(u0)`, then instead extend
-the internal function `basins_counts_grouped(bmap, ics, progress, labels)`,
+the function `basins_fractions_grouped(bmap, ics, progress, labels)`,
 where `ics` is always a `Vector` of initial conditions, `progress` is a preinitialized
 progress bar, and `labels` is a preinitialized container of labels.
 If `!isempty(labels)`, then its full length must be filled with the ids corresponding
