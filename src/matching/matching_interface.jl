@@ -1,6 +1,7 @@
-# Matching is part of an extendable interface. However, as we have not been able to
-# create more matchers than just the `MatchBySSSetDistance`, we do not expose this
-# interface to the users. Perhaps in the future we will expose this!
+# Matching is part of an extendable interface. Currently, all matchers that can be
+# used in global continuation have a type parameter flag for using the vanished
+# approach to matching, or the next-id approach. If in the future more approaches
+# become possible, we should make a dedicated Enum type and make this the type parameter.
 
 # For now, the only parts exposed are these functions:
 export matching_map, matching_map!, match_sequentially!, IDMatcher, DontMatch
@@ -21,7 +22,7 @@ Currently available matchers:
 Matchers implement an extendable interface based on the function [`matching_map`](@ref).
 This function is used by the higher level function [`match_sequentially!`](@ref),
 which can be called after any call to a global continuation to match attractors
-differently, if the matching used originally during the continuation was not the best.
+differently, if the matching used originally during the continuation was not optimal.
 """
 abstract type IDMatcher end
 
@@ -140,8 +141,6 @@ end
 # incremental IDs. Before we had two individual functions for these behaviours.
 # The "tracking" variable depends on whether # we matching with ghosts or without,
 # in which case we need unique next ids.
-# TODO: At the moment this creates type instability because the `_use_vanished(matcher)`
-# function is not decidable at compile time. Easy to fix though.
 function init_matching_tracker(attractors::AbstractVector{<:Dict}, matcher::IDMatcher)
     if _use_vanished(matcher) # return ghost attractor container
         return latest_ghosts = deepcopy(attractors_cont[1])

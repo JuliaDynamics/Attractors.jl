@@ -43,13 +43,19 @@ is larger than this `threshold`, then it is guaranteed that the two sets will ge
 different ID in the replacement map, and hence, the set in `a₊` gets the next available
 integer as its ID.
 """
-@kwdef struct MatchBySSSetDistance{M, T <: Real} <: IDMatcher
-    distance::M = Centroid()
-    threshold::T = Inf
-    use_vanished::Bool = !isinf(threshold)
+struct MatchBySSSetDistance{M, T <: Real, UV} <: IDMatcher # UV = Use Vanished, Boolean
+    distance::M
+    threshold::T
 end
 
-_use_vanished(m::MatchBySSSetDistance) = m.use_vanished
+# `use_vanished` is a type parameter so that `_use_vanished` is compile-time inferrable
+function MatchBySSSetDistance(;
+        distance = Centroid(), threshold = Inf, use_vanished::Bool = !isinf(threshold)
+    )
+    return MatchBySSSetDistance{typeof(distance), typeof(threshold), use_vanished}(distance, threshold)
+end
+
+_use_vanished(::MatchBySSSetDistance{M, T, U}) where {M, T, U} = U
 
 function matching_map(
         a₊::AbstractDict, a₋::AbstractDict, matcher::MatchBySSSetDistance;
