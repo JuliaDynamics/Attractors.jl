@@ -44,8 +44,22 @@ end
 
 Same as [`basins_fractions`](@ref) but return two outputs: the fractions dictionary
 and a vector of integers which contains the labels of the provided initial conditions.
+
+See also [`basins_counts_labels`](@ref).
 """
-function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampler;
+function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampler; kw...)
+    fs, labels = basins_counts_labels(bmap, sampler; kw...)
+    ffs = Dict(k => v/length(labels) for (k, v) in fs)
+    return ffs, labels
+end
+
+"""
+    basins_counts_labels(bmap::BasinMap, sampler::InitialConditionsSampler; kw...)
+
+Same as [`basins_fractions_labels`](@ref) but return the counts of initial conditions
+instead of their fractions.
+"""
+function basins_counts_labels(bmap::BasinMap, sampler::InitialConditionsSampler;
         show_progress = true,
         # This is an internal keyword used by `basin_fractions`
         fill_labels = true,
@@ -63,18 +77,18 @@ function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampl
         desc = "Running basin map:", PMKWARGS..., offset, enabled = show_progress
     )
     labels = Vector{Int}(undef, fill_labels ? length(sampler) : 0)
-    ffs = if can_map_individual_ic(bmap)
-        basins_fractions_individual(bmap, sampler, params, progress, labels, additional_ics)
+    counts = if can_map_individual_ic(bmap)
+        basins_counts_individual(bmap, sampler, params, progress, labels, additional_ics)
     else
         # collect all initial conditions, making sure to copy
         icscol = [copy(u) for u in generate_ics(sampler, params)]
         append!(icscol, additional_ics)
-        basins_fractions_grouped(bmap, icscol, progress, labels)
+        basins_counts_grouped(bmap, icscol, progress, labels)
     end
-    return ffs, labels
+    return counts, labels
 end
 
-function basins_fractions_individual(bmap, sampler, params, progress, labels, additional_ics)
+function basins_counts_individual(bmap, sampler, params, progress, labels, additional_ics)
     ics = generate_ics(sampler, params)
     fs = Dict{Int, Int}()
     for u0 in additional_ics
@@ -87,12 +101,11 @@ function basins_fractions_individual(bmap, sampler, params, progress, labels, ad
         !isempty(labels) && (labels[i] = label)
         ProgressMeter.next!(progress)
     end
-    ffs = Dict(k => v / (length(sampler) + length(additional_ics)) for (k, v) in fs)
-    return ffs
+    return fs
 end
 
 """
-    basins_fractions_grouped(bmap, ics, progress, labels)
+    basins_counts_grouped(bmap, ics, progress, labels)
 
 Internal function called by `basins_fractions` for `BasinMap`s that
 cannot map individual initial conditions to attractor labels.
@@ -103,7 +116,7 @@ Must be extended for new mappers that fall under this category.
 in the function call if it is not `empty`.
 See the implementation of `BasinMapFeaturizeGroup` for an example.
 """
-function basins_fractions_grouped(bmap, ics, progress, labels)
+function basins_counts_grouped(bmap, ics, progress, labels)
     error("Must be implemented for bmap of type $(nameof(typeof(bmap)))")
 end
 

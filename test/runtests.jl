@@ -33,6 +33,7 @@ end
         testfile("continuation/recurrences_continuation.jl")
         testfile("continuation/grouping_continuation.jl")
         testfile("continuation/seed_continue_generic.jl")
+        testfile("continuation/bayesian_sampler.jl")
     end
 
     @testset "nonlocal stab" begin

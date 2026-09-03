@@ -112,7 +112,7 @@ The function assumes tha the dictionary keys are integers.
 """
 next_free_id(a₊::AbstractDict, a₋::AbstractDict) = next_free_id(keys(a₊), keys(a₋))
 function next_free_id(keys₊, keys₋)
-    if length(keys₋) == 0 && length(keys(keys₊)) == 0
+    if length(keys₋) == 0 && length(keys₊) == 0
         return 1
     elseif length(keys₋) == 0
         return maximum(keys₊) + 1
