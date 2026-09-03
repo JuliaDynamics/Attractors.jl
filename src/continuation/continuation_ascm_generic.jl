@@ -121,79 +121,101 @@ function global_continuation(
         ascm::AttractorSeedContinueMatch, pcurve::Vector, icsampler::InitialConditionsSampler;
         show_progress = true,
     )
+    # Setup generic variables:
     progress = ProgressMeter.Progress(
         length(pcurve);
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
     )
     bmap = ascm.bmap
+    ds = referenced_dynamical_system(bmap)
+    additional_ics = typeof(current_state(ds))[]
+    # Setup matching variables:
+    # Matching happens inside the loop, one parameter at a time; this is because
+    # the `update_sampler!` function needs to have matched labels already.
+    # Each matching step is essentially the inner loop of `match_sequentially!`.
+    pprev = first(pcurve)
     prev_attractors = empty(extract_attractors(bmap))
-    additional_ics = typeof(current_state(referenced_dynamical_system(bmap)))[]
-    # setup output containers
+    tracker = init_matching_tracker(attractors, matcher)
+    # Setup output containers:
+    total_counts = Dict{Int, Int}()
     attractors_cont = typeof(prev_attractors)[]
+    fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
-    other_cont = Dict{String, Any}()
-    # Continue loop over all remaining parameters
+    other_cont = Dict{String, Any}("resamplings" => zeros(Int, length(pcurve)))
+
+    # Loop over parameters
     for (i, p) in enumerate(pcurve)
-        set_parameters!(referenced_dynamical_system(bmap), p)
+        set_parameters!(ds, p)
         reset_mapper!(bmap)
-        # Seed initial conditions from previous attractors.
-        # Here we utilize the interal keyword `additional_ics` of `basins_fractions`.
-        # The seeding process finds attractors with really small basins, and we need
-        # to take this into account when creating the basin fractions, otherwise there
-        # could be attractor IDs with 0 fractions in the final output (if the small basin
-        # attractors are not found from the random sampling)
-        # collect seeds
+        # Seed initial conditions from previous attractors
         empty!(additional_ics)
         for att in values(prev_attractors)
             for u0 in ascm.seeding(att)
                 push!(additional_ics, u0)
             end
         end
-        # and finally call basin fractions; it knows how to do all calculations given the bmap
-        fs, labels = basins_fractions_labels(bmap, icsampler; params = p, additional_ics, show_progress, offset = 2)
-        update_sampler!(sampler, labels)
-        # Now, check if the sampler requires us to re-sample at the current parameter
-        while resampling_required(sampler)
-        fs, labels = basins_fractions_labels(bmap, icsampler; params = p, additional_ics, show_progress, offset = 2)
-            # Do more somthing, and then finally update the sampler again
-            # update the sampler type, if needed
+
+        # main process: map initial conditions to labels following sampler requirements
+        local attractors, rmap
+        while true
+            # call basin counts; it knows how to do all calculations given the bmap,
+            # including generating the initial conditions from the sampler
+            counts, labels = basins_counts_labels(
+                bmap, icsampler; params = p, additional_ics, show_progress, offset = 2
+            )
+            additive_dict_merge!(total_counts, counts)
+            empty!(additional_ics) # these have already been processed, so no need to repeat them
+            # match inside the loop:
+            attractors = extract_attractors(bmap)
+            tracker = update_matching_tracker(tracker, matcher, attractors, prev_attractors)
+            rmap = tracked_matching_map!(attractors, prev_attractors, matcher, tracker, ds, p, pprev)
+            replace!(labels, rmap...) # the labels are used in the sampler!
+            # finally do the resampling check:
             update_sampler!(icsampler, labels)
-            # TODO: for the future: find a way that the original initial conditions
-            # used before the `while` loop, are somehow kept into memory instead
-            # of being discarded.
+            if resampling_required(icsampler)
+                other_cont["resamplings"][i] += 1
+            else
+                break # the while loop
+            end
         end
-        # All the computations are done, and now we just store the result(s)
-        # we don't match attractors here, this happens directly at the end.
+
+        # The accumulated counts are transformed to fractions depending on `sampler`
+        fs = weighted_fractions(icsampler, total_counts)
+        empty!(total_counts)
+        # and now we are done; we store various continuation quantities!
+        prev_attractors, pprev = deepcopy(attractors), p # book-keeping
+        push!(fractions_cont, fs)
+        push!(attractors_cont, prev_attractors)
+
+        # the quantifiers of the accumulator are also keyed in the IDs the basin map
+        # issued, so they are relabelled here as well
         if bmap isa StabilityQuantifiersAccumulator
             quantifiers = finalize_accumulator(bmap)
-        else
-            quantifiers = fs
+            push!(quantifiers_cont, quantifiers)
         end
-        push!(quantifiers_cont, quantifiers)
-        # deepcopy is important here as attractor container always referrenced
-        prev_attractors = deepcopy(extract_attractors(bmap))
-        push!(attractors_cont, prev_attractors)
+
         # any extras that need to be updated can be done so here:
-        add_extra_continuation_info!(other_cont, sampler)
+        add_extra_continuation_info!(other_cont, icsampler)
+
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
         ProgressMeter.next!(progress; showvalues)
     end
-    # we now do the matching pass
-    rmaps = match_sequentially!(
-        attractors_cont, ascm.matcher; pcurve, ds = referenced_dynamical_system(bmap)
-    )
-    # and finally match the rest of the tracked quantities, as well as transform
-    # them to the agreed output
-    fractions, quantifiers = match_and_generate_output(bmap, quantifiers_cont, rmaps)
-    out = GlobalContinuationOutput(attractors_cont, fractions, quantifiers, other_cont, pcurve)
+
+    # last component is to retract keys if need be
+    if _retract_keys(matcher)
+        retract_keys!(attractors_cont, rmaps)
+    end
+    # now go through fractions and quantifiers and apply rmaps:
+    match_sequentially!(fractions_cont, rmaps)
+    quantifiers = transpose_quantifiers(bmap, fractions_cont, quantifiers_cont)
+    for (name, continuation_quantity) in quantifiers
+        match_sequentially!(continuation_quantity, rmaps)
+    end
+    out = GlobalContinuationOutput(attractors_cont, fractions_cont, quantifiers, other_cont, pcurve)
     return out
 end
 
-# This function has a generic form that just matches fractions, and a more technical
-# form that matches various quantifiers and is taken care off by the accumulator
-function match_and_generate_output(bmap, quantifiers_cont, rmaps)
-    fractions_cont = Dict{Int, Float64}.(quantifiers_cont)
-    match_sequentially!(fractions_cont, rmaps)
-    return fractions_cont, Dict{String, Vector}()
-end
+# This function has a generic form that just forwards the sampled fractions, and a more
+# technical form that collects various quantifiers, taken care off by the accumulator
+transpose_quantifiers(bmap, fractions_cont, quantifiers_cont) = Dict{String, Any}()
