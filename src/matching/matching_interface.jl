@@ -116,7 +116,7 @@ i.e., the pairs of `old => new` IDs.
 """
 function match_sequentially!(
         attractors_cont::AbstractVector{<:Dict}, matcher::IDMatcher;
-        ds = nothing, p = nothing, pprev = nothing, # parameter and ds keywords
+        ds = nothing, pcurve = nothing, # parameter and ds keywords
         # TODO: Remove these keywords:
         retract_keys = _retract_keys(matcher), use_vanished = _use_vanished(matcher),
     )
@@ -126,7 +126,11 @@ function match_sequentially!(
     tracker = init_matching_tracker(attractors_cont, matcher)
     for i in 1:(length(attractors_cont) - 1)
         a₊, a₋ = attractors_cont[i + 1], attractors_cont[i]
-        p, pprev = pcurve[i + 1], pcurve[i]
+        if !isnothing(pcurve)
+            p, pprev = pcurve[i + 1], pcurve[i]
+        else
+            p = pprev = nothing
+        end
         tracker = update_matching_tracker(tracker, matcher, a₊, a₋)
         rmap = tracked_matching_map!(a₊, a₋, matcher, tracker, ds, p, pprev)
         push!(rmaps, rmap)
