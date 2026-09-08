@@ -94,8 +94,6 @@ end
                    if b.mins[1] < 0.4 && b.maxs[1] > -0.4]
     @test length(overlapping) == 8
     @test alarms[5] == overlapping
-    # Make sure the new label appears in all boxes with the basin at w[5] 
-    new_id = only(k for (k, a) in ATTRACTORS_CONT[5] if a[1][1] ≈ 0.0)
     @test findall(a -> haskey(a, new_id), h.alphas[5]) == overlapping
 
     # 0 to 3 alarms at parameter w[6] over the seeds tried.

@@ -49,7 +49,8 @@ See also [`basins_counts_labels`](@ref).
 """
 function basins_fractions_labels(bmap::BasinMap, sampler::InitialConditionsSampler; kw...)
     fs, labels = basins_counts_labels(bmap, sampler; kw...)
-    ffs = Dict(k => v/length(labels) for (k, v) in fs)
+    n = sum(values(fs); init = 0)
+    ffs = Dict(k => v/n for (k, v) in fs)
     return ffs, labels
 end
 

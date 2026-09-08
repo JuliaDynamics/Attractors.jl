@@ -165,6 +165,13 @@ it. With `history = true` the sampler snapshots both at the end of each paramete
 
 Use [`sampler_history`](@ref)
 to read them back.
+
+!!! warning "The history IDs are not those of the continuation output"
+    The recorded `alphas` are keyed by the attractor IDs in use while the sweep is
+    running. [`global_continuation`](@ref) relabel the IDs to consecutive integers once
+    the sweep is over. So the same attractor may be keyed differently in the history.
+    The history is meant for computing statistics over the boxes, such as where and when
+    the basins changed.
 """
 mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     boxes::Vector{HRectangle{Float64, SVector{D, Float64}}}
@@ -321,7 +328,11 @@ end
 
 """
     sampler_history(sampler::BayesianUpdateSampler) → NamedTuple
-Return the history of alphas and etas per box if the keyword argument history is true
+
+Return the history of alphas and etas per box, provided the sampler was created with
+`history = true`. Mind that the `alphas` are keyed by the attractor IDs of the running
+sweep, which need not be those of the continuation output; see the "History" section of
+[`BayesianUpdateSampler`](@ref).
 """
 sampler_history(s::BayesianUpdateSampler) =
     (; alphas = s.history_alphas, etas = s.history_etas)
