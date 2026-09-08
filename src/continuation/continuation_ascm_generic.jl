@@ -127,6 +127,7 @@ function global_continuation(
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
     )
     bmap = ascm.bmap
+    matcher = ascm.matcher
     ds = referenced_dynamical_system(bmap)
     additional_ics = typeof(current_state(ds))[]
     # Setup matching variables:
@@ -134,9 +135,8 @@ function global_continuation(
     # the `update_sampler!` function needs to have matched labels already.
     # Each matching step is essentially the inner loop of `match_sequentially!`.
     pprev = first(pcurve)
-    attractors = extract_attractors(bmap)
-    prev_attractors = empty(attractors)
-    tracker = init_matching_tracker(attractors, ascm.matcher)
+    prev_attractors = empty(extract_attractors(bmap))
+    tracker = init_matching_tracker(prev_attractors, matcher)
     # Setup output containers:
     total_counts = Dict{Int, Int}()
     attractors_cont = typeof(prev_attractors)[]
@@ -158,19 +158,24 @@ function global_continuation(
 
         # main process: map initial conditions to labels following sampler requirements
         local attractors, rmap
+        round = 0
         while true
+            round += 1
             # call basin counts; it knows how to do all calculations given the bmap,
             # including generating the initial conditions from the sampler
             counts, labels = basins_counts_labels(
                 bmap, icsampler; params = p, additional_ics, show_progress, offset = 2
             )
+            empty!(additional_ics) 
+            attractors = deepcopy(extract_attractors(bmap))
+            if i > 1
+                # the tracker advances once per parameter, not once per round
+                round == 1 && (tracker = update_matching_tracker(tracker, matcher, attractors, prev_attractors))
+                rmap = tracked_matching_map!(attractors, prev_attractors, matcher, tracker, ds, p, pprev)
+                replace!(labels, rmap...) # the labels are used in the sampler!
+                swap_dict_keys!(counts, rmap) # and the counts become the fractions
+            end
             mergewith!(+, total_counts, counts)
-            empty!(additional_ics) # these have already been processed, so no need to repeat them
-            # match inside the loop:
-            attractors = extract_attractors(bmap)
-            tracker = update_matching_tracker(tracker, matcher, attractors, prev_attractors)
-            rmap = tracked_matching_map!(attractors, prev_attractors, matcher, tracker, ds, p, pprev)
-            replace!(labels, rmap...) # the labels are used in the sampler!
             # finally do the resampling check:
             update_sampler!(icsampler, labels)
             if resampling_required(icsampler)
@@ -203,15 +208,10 @@ function global_continuation(
         ProgressMeter.next!(progress; showvalues)
     end
 
-    # last component is to retract keys if need be
-    if _retract_keys(matcher)
-        retract_keys!(attractors_cont, rmaps)
-    end
-    # now go through fractions and quantifiers and apply rmaps:
-    match_sequentially!(fractions_cont, rmaps)
+    # everything is matched already; only the retraction to consecutive IDs is left
     quantifiers = transpose_quantifiers(bmap, fractions_cont, quantifiers_cont)
-    for (name, continuation_quantity) in quantifiers
-        match_sequentially!(continuation_quantity, rmaps)
+    if _retract_keys(matcher)
+        retract_keys!(attractors_cont, fractions_cont, values(quantifiers)...)
     end
     out = GlobalContinuationOutput(attractors_cont, fractions_cont, quantifiers, other_cont, pcurve)
     return out
@@ -219,4 +219,4 @@ end
 
 # This function has a generic form that just forwards the sampled fractions, and a more
 # technical form that collects various quantifiers, taken care off by the accumulator
-transpose_quantifiers(bmap, fractions_cont, quantifiers_cont) = Dict{String, Any}()
+transpose_quantifiers(bmap, fractions_cont, quantifiers_cont) = Dict{String, Vector}()

@@ -135,8 +135,13 @@ function match_sequentially!(
         rmap = tracked_matching_map!(a₊, a₋, matcher, tracker, ds, p, pprev)
         push!(rmaps, rmap)
     end
-    # note this changes keys in both attractors and rmaps
-    retract_keys && retract_keys!(attractors_cont, rmaps)
+    if retract_keys
+        retracted = retract_keys!(attractors_cont)
+        # the returned maps must point at the retracted IDs too        
+        for rmap in rmaps, (k, v) in rmap
+            v ∈ keys(retracted) && (rmap[k] = retracted[v])
+        end
+    end
     return rmaps
 end
 
@@ -145,13 +150,15 @@ end
 # incremental IDs. Before we had two individual functions for these behaviours.
 # The "tracking" variable depends on whether # we matching with ghosts or without,
 # in which case we need unique next ids.
-function init_matching_tracker(attractors::AbstractVector{<:Dict}, matcher::IDMatcher)
+function init_matching_tracker(attractors::Dict, matcher::IDMatcher)
     if _use_vanished(matcher) # return ghost attractor container
-        return latest_ghosts = deepcopy(attractors_cont[1])
+        return latest_ghosts = deepcopy(attractors)
     else
         return next_id = 1
     end
 end
+init_matching_tracker(attractors_cont::AbstractVector{<:Dict}, matcher::IDMatcher) =
+    init_matching_tracker(first(attractors_cont), matcher)
 
 function update_matching_tracker(tracker, matcher, a₊, a₋)
     if _use_vanished(matcher) # then it's the `latest_ghosts`
@@ -177,24 +184,19 @@ function tracked_matching_map!(a₊, a₋, matcher, tracker, ds, p, pprev)
     return rmap
 end
 
-function retract_keys!(attractors, rmaps)
-    retracted = retract_keys_to_consecutive(attractors) # already matched input
-    for (rmap, attrs) in zip(rmaps, attractors)
-        swap_dict_keys!(attrs, retracted)
-        # for `rmap` the situation is more tricky, because we have to change the
-        # value of the _values_ of the dictionary, not the keys!
-        for (k, v) in rmap
-            if v ∈ keys(retracted)
-                # so we make that the replacement map points to the
-                # retracted key instead of whatever it pointed to originally,
-                # if this key exists in the retracted mapping
-                rmap[k] = retracted[v]
-            end
-        end
+"""
+    retract_keys!(containers::AbstractVector{<:Dict}...) → retracted
+
+Retract the keys of all `containers` to consecutive integers, deduced from the keys of
+the first one. All containers must be matched already. Return the replacement map used,
+so that any other quantity keyed by the same IDs can follow the retraction.
+"""
+function retract_keys!(containers::AbstractVector{<:Dict}...)
+    retracted = retract_keys_to_consecutive(first(containers))
+    for c in containers
+        foreach(d -> swap_dict_keys!(d, retracted), c)
     end
-    # `attractors` have 1 more element than `rmaps`
-    swap_dict_keys!(attractors[end], retracted)
-    return
+    return retracted
 end
 
 
