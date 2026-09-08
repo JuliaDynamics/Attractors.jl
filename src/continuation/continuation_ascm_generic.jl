@@ -134,8 +134,9 @@ function global_continuation(
     # the `update_sampler!` function needs to have matched labels already.
     # Each matching step is essentially the inner loop of `match_sequentially!`.
     pprev = first(pcurve)
-    prev_attractors = empty(extract_attractors(bmap))
-    tracker = init_matching_tracker(attractors, matcher)
+    attractors = extract_attractors(bmap)
+    prev_attractors = empty(attractors)
+    tracker = init_matching_tracker(attractors, ascm.matcher)
     # Setup output containers:
     total_counts = Dict{Int, Int}()
     attractors_cont = typeof(prev_attractors)[]
@@ -163,7 +164,7 @@ function global_continuation(
             counts, labels = basins_counts_labels(
                 bmap, icsampler; params = p, additional_ics, show_progress, offset = 2
             )
-            additive_dict_merge!(total_counts, counts)
+            mergewith!(+, total_counts, counts)
             empty!(additional_ics) # these have already been processed, so no need to repeat them
             # match inside the loop:
             attractors = extract_attractors(bmap)
