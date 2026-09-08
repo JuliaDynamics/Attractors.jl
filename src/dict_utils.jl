@@ -49,6 +49,19 @@ function overwrite_dict!(old::Dict, new::Dict)
     return
 end
 
+"""
+    additive_dict_merge!(d1::Dict, d2::Dict)
+
+Merge keys and values of `d2` into `d1` additively: the values of the same keys
+are added together in `d1` and new keys are given to `d1` as-is.
+"""
+function additive_dict_merge!(d1::Dict, d2::Dict)
+    z = zero(valtype(d1))
+    for (k, v) in d2
+        d1[k] = get(d1, k, z) + v
+    end
+    return d1
+end
 
 """
     retract_keys_to_consecutive(v::Vector{<:Dict}) → rmap
