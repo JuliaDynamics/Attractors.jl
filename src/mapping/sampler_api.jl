@@ -167,23 +167,17 @@ Use [`sampler_history`](@ref)
 to read them back.
 """
 mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
-    # geometry: one box, and one point generator for it, per tile
     boxes::Vector{HRectangle{Float64, SVector{D, Float64}}}
     generators::Vector{G}
-    # working memory: Dirichlet pseudo-counts and last log Bayes factor, per box
     alphas::Vector{Dict{Int, Float64}}
     etas::Vector{Float64}
-    # configuration
     sparse_n::Int
     dense_n::Int
     λ::Float64
     β::Float64
     boxes_flags::Vector{Bool}       # true => this box wants a dense re-sample
     layout::Vector{Pair{Int, Int}}  # (box index => n ics) of the last `generate_ics`
-    # per-parameter bookkeeping: label counts per box, over every round of the current
-    # parameter. This is all `weighted_fractions` needs
     step_counts::Vector{Dict{Int, Int}}
-    # optional record of `alphas` and `etas`
     history::Bool
     history_alphas::Vector{Vector{Dict{Int, Float64}}}
     history_etas::Vector{Vector{Float64}}
@@ -208,8 +202,7 @@ function BayesianUpdateSampler(region, n_tiles::Int;
         boxes, generators,
         [Dict{Int, Float64}() for _ in 1:n], zeros(n),
         sparse_n, dense_n, Float64(λ), Float64(β),
-        # every box starts flagged: the first round is then just an ordinary
-        # re-sampling round, which is exactly the dense initialisation we want
+        # every box starts flagged
         fill(true, n), Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
         history, Vector{Dict{Int, Float64}}[], Vector{Float64}[],
     )
@@ -255,30 +248,35 @@ end
 
 resampling_required(s::BayesianUpdateSampler) = any(s.boxes_flags)
 
-function generate_ics(s::BayesianUpdateSampler, args...)
-    empty!(s.layout)
-    # A re-sampling round only visits the boxes that asked for it, densely; every other
-    # round visits all of them, sparsely.
+function generate_ics(s::BayesianUpdateSampler{D}, args...) where {D}
     resample = resampling_required(s)
-    # ... so a round that is not a re-sample is the first one of a new parameter, and the
-    # tally the fractions are computed from starts afresh
+    # a round that is not a re-sample is the first one of a new parameter
     resample || foreach(empty!, s.step_counts)
-    for i in eachindex(s.boxes)
-        n = s.boxes_flags[i] ? s.dense_n : (resample ? 0 : s.sparse_n)
-        n == 0 || push!(s.layout, i => n)
+    empty!(s.layout)
+    total = 0 
+    if resample
+        for i in eachindex(s.boxes)
+            s.boxes_flags[i] || continue
+            push!(s.layout, i => s.dense_n)
+            total += s.dense_n
+        end
+    else
+        for i in eachindex(s.boxes)
+            push!(s.layout, i => s.sparse_n)
+            total += s.sparse_n
+        end
     end
-    # `layout` tells `update_sampler!` how to slice the labels between boxes it gets back
-    ics = Vector{Vector{Float64}}(undef, length(s))
-    j = 1
+    ics = Vector{SVector{D, Float64}}(undef, total)
+    j = 0
     for (i, n) in s.layout
         gen = s.generators[i]
         for _ in 1:n
-            ics[j] = copy(gen()) # the generator reuses its output buffer
-            j += 1
+            ics[j += 1] = SVector{D, Float64}(gen())
         end
     end
     return StateSpaceSet(ics)
 end
+
 
 """
     update_sampler!(sampler::BayesianUpdateSampler, labels)
@@ -293,8 +291,6 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
     for (i, n) in s.layout
         counts = _count_labels(view(labels, cursor:(cursor + n - 1)))
         cursor += n
-        # every round of this parameter contributes to the box's tally, whether it ends
-        # up flagged or not; `weighted_fractions` reads it once the rounds are over
         mergewith!(+, s.step_counts[i], counts)
         if s.boxes_flags[i]
             # Dense round: relearn this box from scratch, no test.
@@ -303,7 +299,7 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
         else
             α = Dict{Int, Float64}(k => s.λ * v for (k, v) in s.alphas[i]) # decay priors
             η = s.etas[i] = _log_bayes_factor(counts, α, s.β)
-            if η < 0 # the prior cannot explain the data: ask for a dense re-sample
+            if η < 0 # alarm: ask for a dense re-sample
                 s.boxes_flags[i] = true
             else # posterior update
                 for (k, c) in counts
@@ -337,6 +333,9 @@ The boxes all have the same volume, so the fraction of the region belonging to b
 is the average over the boxes of the fraction of each box belonging to it.
 
 The function takes into account the boxes that have been resampled.
+
+Note that the argument `counts` is not used in the function, the internal counts
+for each box are used but the argument is necessary for the function signature. 
 """
 function weighted_fractions(s::BayesianUpdateSampler, counts)
     fs = Dict{Int, Float64}()
