@@ -19,7 +19,7 @@ Common keywords for plotting functions in Attractors.jl are:
 - `access = [1, 2]`: indices of which dimensions of an attractor to select and visualize in a two-dimensional plot (as in [`animate_attractors_continuation`](@ref)).
 - `colors`: a dictionary mapping basin ids (i.e., including the `-1` key) to a color. By default the JuliaDynamics colorscheme is used if less than 7 ids are present, otherwise random colors from the `:darktest` colormap.
 - `markers`: dictionary mapping attractor ids to markers they should be plotted as
-- `labels = Dict(ukeys .=> ukeys)`: how to label each attractor.
+- `labels = Dict(ukeys .=> string.(ukeys))`: how to label each attractor. The values need to be valid inputs to Makie's `label` keyword. The value `nothing` can be used for a particular label to be hidden.
 - `add_legend = length(ukeys) < 7`: whether to add a legend mapping colors to labels.
 - `axislegend_kwargs = (position = :lt,)`: propagated to `axislegend` if a legend is added
 
