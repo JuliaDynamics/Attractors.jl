@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Attractors.jl Tutorial · Attractors.jl</title><meta name="title" content="Attractors.jl Tutorial · Attractors.jl"/><meta property="og:title" content="Attractors.jl Tutorial · Attractors.jl"/><meta property="twitter:title" content="Attractors.jl Tutorial · Attractors.jl"/><meta name="description" content="Documentation for Attractors.jl."/><meta property="og:description" content="Documentation for Attractors.jl."/><meta property="twitter:description" content="Documentation for Attractors.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro&amp;display=swap" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">Attractors.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Attractors.jl</a></li><li class="is-active"><a class="tocitem" href>Attractors.jl Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Tutorial-copy-pasteable-version"><span>Tutorial - copy-pasteable version</span></a></li><li><a class="tocitem" href="#Input:-a-DynamicalSystem"><span>Input: a <code>DynamicalSystem</code></span></a></li><li><a class="tocitem" href="#Finding-attractors-and-basins-(basin-map)"><span>Finding attractors and basins (basin map)</span></a></li><li><a class="tocitem" href="#Different-Basin-Map"><span>Different Basin Map</span></a></li><li><a class="tocitem" href="#global_cont_tutorial"><span>Global continuation</span></a></li><li><a class="tocitem" href="#Different-matching-procedures"><span>Different matching procedures</span></a></li><li><a class="tocitem" href="#Continuation-along-arbitrary-parameter-curves"><span>Continuation along arbitrary parameter curves</span></a></li><li><a class="tocitem" href="#Enhancing-the-continuation-with-more-stability-quantifiers-or-other-quantities"><span>Enhancing the continuation with more stability quantifiers or other quantities</span></a></li><li><a class="tocitem" href="#Multiparameter-continuation"><span>Multiparameter continuation</span></a></li><li><a class="tocitem" href="#Conclusion-and-comparison-with-traditional-local-continuation"><span>Conclusion and comparison with traditional local continuation</span></a></li></ul></li><li><span class="tocitem">API</span><ul><li><a class="tocitem" href="../api_bmap/">Basin maps</a></li><li><a class="tocitem" href="../api_basins/">Basins functions</a></li><li><a class="tocitem" href="../api_boundaries/">Basin boundaries</a></li><li><a class="tocitem" href="../api_nonlocal/">Nonlocal Stability</a></li><li><a class="tocitem" href="../api_cont/">Global continuation</a></li><li><a class="tocitem" href="../api_vis/">Visualizations</a></li></ul></li><li><a class="tocitem" href="../examples/">Examples for Attractors.jl</a></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Attractors.jl Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Attractors.jl Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaDynamics/Attractors.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaDynamics/Attractors.jl/blob/main/docs/src/tutorial.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="tutorial"><a class="docs-heading-anchor" href="#tutorial">Attractors.jl Tutorial</a><a id="tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#tutorial" title="Permalink"></a></h1><video width="auto" controls loop>
+<source src="../globalcont_extra.mp4" type="video/mp4">
+</video><p><a href="../#Attractors"><code>Attractors</code></a> is a component of the <strong>DynamicalSystems.jl</strong> library. This tutorial will walk you through its main functionality. That is, given a <code>DynamicalSystem</code> instance, find all its attractors and their basins of attraction. Then, continue these attractors, and their stability properties, across a parameter value. It also offers various functions that compute nonlocal stability properties for an attractor, any of which can be used in the continuation to quantify stability.</p><p>Besides this main functionality, there are plenty of other stuff, like for example <a href="@ref"><code>edgestate</code></a> or <a href="../api_boundaries/#Attractors.basins_fractal_dimension"><code>basins_fractal_dimension</code></a>, but we won&#39;t cover anything else in this introductory tutorial. See the <a href="../examples/#examples">examples</a> page instead.</p><h3 id="Package-versions-used"><a class="docs-heading-anchor" href="#Package-versions-used">Package versions used</a><a id="Package-versions-used-1"></a><a class="docs-heading-anchor-permalink" href="#Package-versions-used" title="Permalink"></a></h3><pre><code class="language-julia hljs">import Pkg
+
+Pkg.status([&quot;Attractors&quot;, &quot;CairoMakie&quot;, &quot;OrdinaryDiffEqVerner&quot;])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Status `~/work/Attractors.jl/Attractors.jl/docs/Project.toml`
+  [f3fd9213] Attractors v2.0.1 `~/work/Attractors.jl/Attractors.jl`
+  [13f3f980] CairoMakie v0.15.13
+  [79d7bb75] OrdinaryDiffEqVerner v2.2.2</code></pre><h2 id="Tutorial-copy-pasteable-version"><a class="docs-heading-anchor" href="#Tutorial-copy-pasteable-version">Tutorial - copy-pasteable version</a><a id="Tutorial-copy-pasteable-version-1"></a><a class="docs-heading-anchor-permalink" href="#Tutorial-copy-pasteable-version" title="Permalink"></a></h2><p><em>Gotta go fast!</em></p><pre><code class="language-julia hljs">using Attractors, CairoMakie, OrdinaryDiffEqVerner
+## Define key input: a `DynamicalSystem`
+function modified_lorenz_rule(u, p, t)
+    x, y, z = u; a, b = p
+    dx = y - x
+    dy = - x*z + b*abs(z)
+    dz = x*y - a
+    return SVector(dx, dy, dz)
+end
+p0 = [5.0, 0.1] # parameters
+u0 = [-4.0, 5, 0] # state
+diffeq = (alg = Vern9(), abstol = 1e-9, reltol = 1e-9, dt = 0.01) # solver options
+ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)
+
+## Define key input: a `BasinMap` that maps initial
+## conditions to attractors of a `DynamicalSystem`
+grid = (
+    range(-15.0, 15.0; length = 150), # x
+    range(-20.0, 20.0; length = 150), # y
+    range(-20.0, 20.0; length = 150), # z
+)
+bmap = BasinMapRecurrences(ds, grid;
+    consecutive_recurrences = 1000,
+    consecutive_lost_steps = 100,
+)
+
+## Find attractors and their basins of attraction state space fraction
+## by randomly sampling initial conditions in state sapce
+sampler = RandomICsSampler(1000, grid)
+fs = basins_fractions(bmap, sampler)
+attractors = extract_attractors(bmap)
+
+## found two attractors: one is a limit cycle, the other is chaotic
+## visualize them
+plot_attractors(attractors)
+
+## continue all attractors and their basin fractions across any arbigrary
+## curve in parameter space using a global continuation algorithm
+algo = AttractorSeedContinueMatch(bmap)
+ellipsoid(θ) = [1 =&gt; 5 + 0.5cos(θ), 2 =&gt; 0.1 + 0.01sin(θ)]
+angles = range(0, 2π; length = 101)
+pcurve = ellipsoid.(angles)
+gcoutput = global_continuation(algo, pcurve, sampler)
+
+## and visualize the results
+fractions_cont = gcoutput.fractions
+attractors_cont = gcoutput.attractors
+fig = plot_basins_attractors_curves(
+	fractions_cont, attractors_cont, A -&gt; minimum(A[:, 1]), angles
+)</code></pre><h2 id="Input:-a-DynamicalSystem"><a class="docs-heading-anchor" href="#Input:-a-DynamicalSystem">Input: a <code>DynamicalSystem</code></a><a id="Input:-a-DynamicalSystem-1"></a><a class="docs-heading-anchor-permalink" href="#Input:-a-DynamicalSystem" title="Permalink"></a></h2><p>The key input for most functionality of Attractors.jl is an instance of a <code>DynamicalSystem</code>. If you don&#39;t know how to make a <code>DynamicalSystem</code>, you need to consult the main tutorial of the <a href="https://juliadynamics.github.io/DynamicalSystemsDocs.jl/dynamicalsystems/stable/tutorial/">DynamicalSystems.jl library</a>. For this tutorial we will use a modified Lorenz-like system with equations</p><p class="math-container">\[\begin{align*}
+\dot{x} &amp; = y - x \\
+\dot{y}  &amp;= -x*z + b*|z| \\
+\dot{z}  &amp;= x*y - a \\
+\end{align*}\]</p><p>which we define in code as</p><pre><code class="language-julia hljs">using Attractors # part of `DynamicalSystems`, so it re-exports functionality for making them!
+using OrdinaryDiffEqVerner # for accessing advanced ODE Solvers
+
+function modified_lorenz_rule(u, p, t)
+    x, y, z = u; a, b = p
+    dx = y - x
+    dy = - x * z + b * abs(z)
+    dz = x * y - a
+    return SVector(dx, dy, dz)
+end
+
+p0 = [5.0, 0.1] # parameters
+u0 = [-4.0, 5, 0] # state
+diffeq = (alg = Vern9(), abstol = 1.0e-9, reltol = 1.0e-9, dt = 0.01) # solver options
+ds = CoupledODEs(modified_lorenz_rule, u0, p0; diffeq)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-dimensional CoupledODEs
+ deterministic: true
+ discrete time: false
+ in-place:      false
+ dynamic rule:  modified_lorenz_rule
+ ODE solver:    Vern9
+ ODE kwargs:    (abstol = 1.0e-9, reltol = 1.0e-9, dt = 0.01)
+ parameters:    [5.0, 0.1]
+ time:          0.0
+ state:         [-4.0, 5.0, 0.0]
+</code></pre><h2 id="Finding-attractors-and-basins-(basin-map)"><a class="docs-heading-anchor" href="#Finding-attractors-and-basins-(basin-map)">Finding attractors and basins (basin map)</a><a id="Finding-attractors-and-basins-(basin-map)-1"></a><a class="docs-heading-anchor-permalink" href="#Finding-attractors-and-basins-(basin-map)" title="Permalink"></a></h2><p>In this tutorial we will utilize two methods for finding attractors and their basins. Explanation of how they work is in their respective docs.</p><ol><li><a href="../api_bmap/#Attractors.BasinMapRecurrences"><code>BasinMapRecurrences</code></a>.</li><li><a href="../api_bmap/#Attractors.BasinMapFeaturizeGroup"><code>BasinMapFeaturizeGroup</code></a>.</li></ol><p>You can consult (<a href="../references/#Datseris2023">Datseris <em>et al.</em>, 2023</a>) for a comparison between the two.</p><p>As far as the user is concerned, both algorithms are part of the same interface that is called <code>BasinMap</code>, as these constructs are mapping initial conditions to their corresponding basins of attraction. Thus, they are used the same way. The interface is extendable as well.</p><p>First, we create an instance of a <code>BasinMap</code>. For example, <a href="../api_bmap/#Attractors.BasinMapRecurrences"><code>BasinMapRecurrences</code></a> requires a tesselated grid of the state space to search for attractors in. It also allows the user to tune some meta parameters, but in our example they are already tuned for the dynamical system at hand. So we initialize</p><pre><code class="language-julia hljs">grid = (
+    range(-10.0, 10.0; length = 150), # x
+    range(-15.0, 15.0; length = 150), # y
+    range(-15.0, 15.0; length = 150), # z
+)
+
+bmap = BasinMapRecurrences(
+    ds, grid;
+    consecutive_recurrences = 1000, attractor_locate_steps = 1000,
+    consecutive_lost_steps = 100,
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BasinMapRecurrences
+ system:      CoupledODEs
+ grid:        (-10.0:0.1342281879194631:10.0, -15.0:0.20134228187919462:15.0, -15.0:0.20134228187919462:15.0)
+ attractors:  Dict{Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}}()
+</code></pre><p>This <code>bmap</code> can map any initial condition to tis corresponding basin, enumerated by unique integers. For example</p><pre><code class="language-julia hljs">bmap([-4.0, 5, 0])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1</code></pre><p>while</p><pre><code class="language-julia hljs">bmap([4.0, 2, 0])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2</code></pre><p>the fact that these two different initial conditions got assigned different IDs means that they converged to a different attractor under this basin map. Indeed,</p><pre><code class="language-julia hljs">bmap([1.0, 3, 2])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1</code></pre><p>gets the same ID as the first initial condition.</p><p>This functionality is already incredibly powerful! To our knowledge the DynamicalSystems.jl library is the only dynamical systems software (in any language) that provides such an infrastructure for mapping initial conditions of any arbitrary dynamical system to its unique basins. And this is only the tip of this iceberg! The rest of the functionality of Attractors.jl is all full of brand new cutting edge progress in dynamical systems research.</p><p>Okay, back to the tutorial now! The found attractors are stored in the basin map internally, to obtain them we use the function</p><pre><code class="language-julia hljs">attractors = extract_attractors(bmap)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}} with 2 entries:
+  2 =&gt; 3-dimensional StateSpaceSet{Float64} with 320 points
+  1 =&gt; 3-dimensional StateSpaceSet{Float64} with 938 points</code></pre><p>In Attractors.jl, all information regarding attractors is always a standard Julia <code>Dict</code>, which maps attractor IDs (positive integers) to the corresponding quantity. Here the quantity are the attractors themselves, represented as <code>StateSpaceSet</code>.</p><p>We can visualize them with the convenience plotting function</p><pre><code class="language-julia hljs">using CairoMakie
+plot_attractors(attractors)</code></pre><img src="1e2f6a86.png" alt="Example block output"/><p>(this convenience function is a simple loop over scattering the values of the <code>attractors</code> dictionary)</p><p>In our example system we see that for the chosen parameters there are two coexisting attractors: a limit cycle and a chaotic attractor. There may be more attractors though! We&#39;ve only checked a few initial conditions. However, it can get tedious to manually iterate over initial conditions, which is why this <code>bmap</code> is typically given to higher level functions for finding attractors and their basins of attraction. The simplest one is <a href="../api_basins/#Attractors.basins_fractions"><code>basins_fractions</code></a>. Using the <code>bmap</code>, it finds &quot;all&quot; attractors of the dynamical system and reports the state space fraction each attractors attracts. The search is probabilistic, so &quot;all&quot; attractors means those that at least one initial condition converged to.</p><p>How initial conditions are sampled is described by the <a href="@ref"><code>InitialConditionsSampelr</code></a> super type and associated subtypes. One can prescribe a set vector of ICs, or randomly sample. This is what we will do here, but randomly sampling ICs within the grid.</p><pre><code class="language-julia hljs">sampler = RandomICsSampler(1000, grid) # sample 1000 ICs</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">RandomICsSampler{StateSpaceSets.RectangleGenerator{Float64, SVector{3, Float64}, Random.Xoshiro}}(StateSpaceSets.RectangleGenerator{Float64, SVector{3, Float64}, Random.Xoshiro}([-10.0, -15.0, -15.0], [20.0, 30.0, 30.0], [[0.0, 0.0, 0.0]], Random.Xoshiro(0xa6e8f75b4e130898, 0x8690598359ebe3a5, 0xc11072dad7bdcfc2, 0x06f6cab8fa71faa5, 0x30abcd3a6ba99cd4)), 1000)</code></pre><p>and finally call</p><pre><code class="language-julia hljs">fs = basins_fractions(bmap, sampler)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, Float64} with 2 entries:
+  2 =&gt; 0.337
+  1 =&gt; 0.663</code></pre><p>The returned <code>fs</code> is a dictionary mapping each attractor ID to the fraction of the state space the corresponding basin occupies. With this we can confirm that there are (likely) only two attractors and that both attractors are robust as both have sufficiently large basin fractions.</p><p>To obtain the full basins, which is computationally much more expensive, use <a href="../api_basins/#Attractors.basins_of_attraction"><code>basins_of_attraction</code></a>.</p><h2 id="Different-Basin-Map"><a class="docs-heading-anchor" href="#Different-Basin-Map">Different Basin Map</a><a id="Different-Basin-Map-1"></a><a class="docs-heading-anchor-permalink" href="#Different-Basin-Map" title="Permalink"></a></h2><p>Attractors.jl utilizes composable interfaces throughout its functionality. In the above example we used one particular method to find attractors, via recurrences in the state space. An alternative is <a href="../api_bmap/#Attractors.BasinMapFeaturizeGroup"><code>BasinMapFeaturizeGroup</code></a>.</p><p>For this method, we need to provide a &quot;featurizing&quot; function that given an trajectory (which is likely an attractor), it returns some features that will hopefully distinguish different attractors in a subsequent grouping step. Finding good features is typically a trial-and-error process, but for our system we already have some good features:</p><pre><code class="language-julia hljs">using Statistics: mean
+
+function featurizer(A, t) # t is the time vector associated with trajectory A
+    xmin = minimum(A[:, 1])
+    ycen = mean(A[:, 2])
+    return SVector(xmin, ycen)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">featurizer (generic function with 1 method)</code></pre><p>from which we initialize</p><pre><code class="language-julia hljs">bmap_fg = BasinMapFeaturizeGroup(ds, featurizer; Δt = 0.1)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">BasinMapFeaturizeGroup
+ system:      CoupledODEs
+ Ttr:         100.0
+ Δt:          0.1
+ T:           100.0
+ group via:   GroupViaClustering
+ featurizer:  featurizer
+</code></pre><p><a href="../api_bmap/#Attractors.BasinMapFeaturizeGroup"><code>BasinMapFeaturizeGroup</code></a> allows for a third input, which is a &quot;grouping configuration&quot;, that dictates how features will be grouped into attractors, as features are extracted from (randomly) sampled state space trajectories. In this tutorial we leave it at its default value, which is clustering using the DBSCAN algorithm. The keyword arguments are meta parameters which control how long to integrate each initial condition for, and what sampling time, to produce a trajectory <code>A</code> given to the <code>featurizer</code> function. Because one of the two attractors is chaotic, we need denser sampling time than the default.</p><p>We can use <code>bmap_fg</code> exactly as <code>bmap</code>:</p><pre><code class="language-julia hljs">fs2 = basins_fractions(bmap_fg, sampler)
+
+attractors_fg = extract_attractors(bmap_fg)
+
+plot_attractors(attractors_fg)</code></pre><img src="6e2e4edd.png" alt="Example block output"/><p>This basin map also found the attractors, but we should warn you: this basin map is less robust than <a href="../api_bmap/#Attractors.BasinMapRecurrences"><code>BasinMapRecurrences</code></a>. One of the reasons for this is that <a href="../api_bmap/#Attractors.BasinMapFeaturizeGroup"><code>BasinMapFeaturizeGroup</code></a> is not auto-terminating. For example, if we do not have enough transient integration time, the two attractors will get confused into one:</p><pre><code class="language-julia hljs">bmap_fg2 = BasinMapFeaturizeGroup(ds, featurizer; Ttr = 10, Δt = 0.1)
+basins_fractions(bmap_fg2, sampler)
+attractors_fg2 = extract_attractors(bmap_fg2)
+plot_attractors(attractors_fg2)</code></pre><img src="c6a09a51.png" alt="Example block output"/><p>On the other hand, the downside of <a href="../api_bmap/#Attractors.BasinMapRecurrences"><code>BasinMapRecurrences</code></a> is that it can take quite a while to converge for chaotic or high dimensional systems.</p><h2 id="global_cont_tutorial"><a class="docs-heading-anchor" href="#global_cont_tutorial">Global continuation</a><a id="global_cont_tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#global_cont_tutorial" title="Permalink"></a></h2><p>If you have heard before the word &quot;continuation&quot;, then you are likely aware of the <strong>traditional continuation-based bifurcation analysis (CBA)</strong> offered by many software, such as AUTO, CoCo, and in Julia <a href="https://github.com/bifurcationkit/BifurcationKit.jl">BifurcationKit.jl</a>. These software perform <strong>local continuation</strong>. Here we offer a completely different kind of continuation called <strong>global continuation</strong>. For an extensive comparison of the two, see our paper (<a href="../references/#Datseris2026">Datseris <em>et al.</em>, 2026</a>) or have a look at the last paragraph in this tutorial. From our article:</p><p>!!! &quot;quote&quot;      Global continuation finds and continues in parallel (practically) all system attractors      and their response to finite perturbations by synthesising information from the whole      state space, while placing a focus on the qualities or observables of a dynamical      system that the practitioner cares about in context.</p><p>Because all attractors are simultaneously tracked across the parameter axis, the user may arbitrarily estimate <em>any</em> property of the attractors and how it varies as the parameter varies.</p><p>To perform a global continuation is surprisingly simple and requires only three clear inputs. First, we need to decide the global continuation algorithm which also references a <a href="../api_bmap/#Attractors.BasinMap"><code>BasinMap</code></a>. In this example we will re-use the <code>bmap</code> to create the &quot;flagship product&quot; of Attractors.jl which is the general <a href="../api_cont/#Attractors.AttractorSeedContinueMatch"><code>AttractorSeedContinueMatch</code></a>. This algorithm uses the <code>bmap</code> to find all attractors at each parameter value and from the found attractors it continues them along a parameter axis using a seeding process (see its documentation string). Then, it performs a &quot;matching&quot; step, ensuring a &quot;continuity&quot; of the attractor label across the parameter axis. For now we ignore the matching step, leaving it to the default value. We&#39;ll use the <code>bmap</code> we created above and define</p><pre><code class="language-julia hljs">ascm = AttractorSeedContinueMatch(bmap)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AttractorSeedContinueMatch{BasinMapRecurrences{CoupledODEs{false, 3, OrdinaryDiffEqCore.ODEIntegrator{OrdinaryDiffEqVerner.Vern9{typeof(OrdinaryDiffEqCore.trivial_limiter!), typeof(OrdinaryDiffEqCore.trivial_limiter!), FastBroadcast.Serial, Val{true}}, false, SVector{3, Float64}, Nothing, Float64, Vector{Float64}, Float64, Float64, Vector{SVector{3, Float64}}, SciMLBase.ODESolution{Float64, 2, Vector{SVector{3, Float64}}, Nothing, Nothing, Vector{Float64}, Vector{Vector{SVector{3, Float64}}}, Nothing, SciMLBase.ODEProblem{SVector{3, Float64}, Tuple{Float64, Float64}, false, Vector{Float64}, SciMLBase.ODEFunction{false, SciMLBase.AutoSpecialize, typeof(Main.modified_lorenz_rule), LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}, Base.Pairs{Symbol, Union{}, Tuple{}, @NamedTuple{}}, SciMLBase.StandardODEProblem}, OrdinaryDiffEqVerner.Vern9{typeof(OrdinaryDiffEqCore.trivial_limiter!), typeof(OrdinaryDiffEqCore.trivial_limiter!), FastBroadcast.Serial, Val{true}}, OrdinaryDiffEqCore.InterpolationData{SciMLBase.ODEFunction{false, SciMLBase.AutoSpecialize, typeof(Main.modified_lorenz_rule), LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}, Vector{SVector{3, Float64}}, Vector{Float64}, Vector{Vector{SVector{3, Float64}}}, Nothing, OrdinaryDiffEqVerner.Vern9ConstantCache{Val{true}}, Nothing}, SciMLBase.DEStats, Nothing, Nothing, Nothing, Nothing}, SciMLBase.ODEFunction{false, SciMLBase.AutoSpecialize, typeof(Main.modified_lorenz_rule), LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}, OrdinaryDiffEqVerner.Vern9ConstantCache{Val{true}}, OrdinaryDiffEqCore.DEOptions{Float64, Float64, Float64, Float64, typeof(DiffEqBase.ODE_DEFAULT_NORM), typeof(LinearAlgebra.opnorm), Bool, SciMLBase.CallbackSet{Tuple{}, Tuple{}}, typeof(DiffEqBase.ODE_DEFAULT_ISOUTOFDOMAIN), typeof(DiffEqBase.ODE_DEFAULT_PROG_MESSAGE), typeof(DiffEqBase.ODE_DEFAULT_UNSTABLE_CHECK), BinaryHeaps.BinaryHeap{Float64, BinaryHeaps.FasterForward}, BinaryHeaps.BinaryHeap{Float64, BinaryHeaps.FasterForward}, Nothing, Nothing, Float64, Tuple{}, Tuple{}, Tuple{}, DiffEqBase.DEVerbosity{true, SciMLLogging.Minimal, SciMLLogging.Minimal}, Nothing, typeof(OrdinaryDiffEqCore.trivial_limiter!), typeof(OrdinaryDiffEqCore.trivial_limiter!)}, SVector{3, Float64}, Float64, Nothing, DiffEqBase.DefaultInit, Nothing, OrdinaryDiffEqCore.PIControllerCache{Float64, Float64, SciMLBase.IntervalNonlinearProblem}, Random.TaskLocalRNG, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing}, Vector{Float64}}, Attractors.BasinsInfo{3, Float64, Attractors.SparseArray{Int64, 3}, ArrayBasinsOfAttraction{Int64, 3, Attractors.SparseArray{Int64, 3}, Attractors.RegularGrid{3, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}, Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}}}, Attractors.RegularGrid{3, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}, Base.Pairs{Symbol, Int64, Tuple{Symbol, Symbol, Symbol}, @NamedTuple{consecutive_recurrences::Int64, attractor_locate_steps::Int64, consecutive_lost_steps::Int64}}}, MatchBySSSetDistance{Centroid{Euclidean}, Float64}, typeof(Attractors._default_seeding)}(BasinMapRecurrences
+ system:      CoupledODEs
+ grid:        (-10.0:0.1342281879194631:10.0, -15.0:0.20134228187919462:15.0, -15.0:0.20134228187919462:15.0)
+ attractors:  Dict{Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}}(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 320 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 938 points)
+, MatchBySSSetDistance{Centroid{Euclidean}, Float64}(Centroid{Euclidean}(Euclidean(0.0)), Inf, false), Attractors._default_seeding)</code></pre><p>The second input to global continuation is what parameter, and what values of that parameter, to continue over:</p><pre><code class="language-julia hljs">prange = 4.5:0.01:6
+pidx = 1 # index of the parameter</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1</code></pre><p>Global continuation occurs over a prescribed parameter curve, so we convert this to</p><pre><code class="language-julia hljs">pcurve = [Dict(pidx =&gt; p) for p in prange]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">151-element Vector{Dict{Int64, Float64}}:
+ Dict(1 =&gt; 4.5)
+ Dict(1 =&gt; 4.51)
+ Dict(1 =&gt; 4.52)
+ Dict(1 =&gt; 4.53)
+ Dict(1 =&gt; 4.54)
+ Dict(1 =&gt; 4.55)
+ Dict(1 =&gt; 4.56)
+ Dict(1 =&gt; 4.57)
+ Dict(1 =&gt; 4.58)
+ Dict(1 =&gt; 4.59)
+ ⋮
+ Dict(1 =&gt; 5.92)
+ Dict(1 =&gt; 5.93)
+ Dict(1 =&gt; 5.94)
+ Dict(1 =&gt; 5.95)
+ Dict(1 =&gt; 5.96)
+ Dict(1 =&gt; 5.97)
+ Dict(1 =&gt; 5.98)
+ Dict(1 =&gt; 5.99)
+ Dict(1 =&gt; 6.0)</code></pre><p>Then, the third and final input is how, and how densely, to sample the state space. Here we re-use the <code>sampler</code> from before. So we can now call:</p><pre><code class="language-julia hljs">gco = global_continuation(ascm, pcurve, sampler)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GlobalContinuationOutput with fields:
+ attractors
+ fractions
+ quantifiers
+ other
+ pcurve
+</code></pre><p>This normally takes about a minute of compute depending on your computer. The output is <a href="@ref"><code>GlobalContinuationOutput</code></a> which can contain a variety of information but always contains the following two crucial pieces of information given as two vectors:</p><pre><code class="language-julia hljs">fractions_cont = gco.fractions
+attractors_cont = gco.attractors;</code></pre><p>Each vector is a dictionary mapping basin IDs to their basin fractions, or their state space sets, respectively. Both vectors have the same size as the parameter axis. For example, the attractors at the 77-th parameter value are:</p><pre><code class="language-julia hljs">attractors_cont[77]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}} with 2 entries:
+  2 =&gt; 3-dimensional StateSpaceSet{Float64} with 762 points
+  1 =&gt; 3-dimensional StateSpaceSet{Float64} with 298 points</code></pre><p>If you want to transform the output to the alternative format of a dictionary of vectors, use <a href="../api_cont/#Attractors.continuation_series"><code>continuation_series</code></a>. There is also a fantastic convenience function for animating the attractors evolution, that utilizes things we have already defined:</p><pre><code class="language-julia hljs">animate_attractors_continuation(ds, gco)</code></pre><img src="3f605140.png" alt="Example block output"/><video width="auto" controls loop>
+<source src="../globalcont.mp4" type="video/mp4">
+</video><p>Hah, how cool is that! The attractors pop in and out of existence like out of nowhere! It can be difficult to find these attractors in traditional continuation software where a rough estimate of the period is required!</p><p>Now typically a continuation is visualized in a 2D plot where the x axis is the parameter axis. We can do this with the convenience function:</p><pre><code class="language-julia hljs">fig = plot_basins_attractors_curves(
+    fractions_cont, attractors_cont, A -&gt; minimum(A[:, 1]), prange,
+)</code></pre><img src="98f7b5ef.png" alt="Example block output"/><p>In the top panel are the basin fractions, by default plotted as stacked bars. Bottom panel is a visualization of some feature(s) of the tracked attractors. The argument <code>A -&gt; minimum(A[:, 1])</code> is a function that maps an attractor into a real number for plotting. A vector of such functions can be given instead.</p><p>Moreover, you can combine the animation we created above with this continuation plot so you can see both the attractors in state space as well as some chosen feature(s). This is done by calling <a href="../api_vis/#Attractors.animate_attractors_continuation"><code>animate_attractors_continuation</code></a> again with additional keyword arguments like so:</p><pre><code class="language-julia hljs">fig = animate_attractors_continuation(
+    ds, gco;
+    figure = (size = (600, 700),),
+    axis = (ylabel = &quot;y&quot;, xlabel = &quot;x&quot;),
+    savename = &quot;globalcont_extra.mp4&quot;,
+    add_legend = false,
+    a2rs = [A -&gt; minimum(A[:, 1]), A -&gt; maximum(A[:, 2])],
+    a2rs_ylabels = [&quot;x-min&quot;, &quot;y-max&quot;],
+    a2rs_ratio = 0.33,
+    vline_kwargs = (linestyle = :dash, linewidth = 3, color = &quot;red&quot;),
+    prange,
+)</code></pre><img src="dfa24797.png" alt="Example block output"/><video width="auto" controls loop>
+<source src="../globalcont_extra.mp4" type="video/mp4">
+</video><h2 id="Different-matching-procedures"><a class="docs-heading-anchor" href="#Different-matching-procedures">Different matching procedures</a><a id="Different-matching-procedures-1"></a><a class="docs-heading-anchor-permalink" href="#Different-matching-procedures" title="Permalink"></a></h2><p>By default attractors are matched by their distance in state space. The default matcher is <a href="../api_cont/#Attractors.MatchBySSSetDistance"><code>MatchBySSSetDistance</code></a>, and is given implicitly as a default 2nd argument when creating <a href="../api_cont/#Attractors.AttractorSeedContinueMatch"><code>AttractorSeedContinueMatch</code></a>. But like anything else in Attractors.jl, &quot;matchers&quot; also follow a well-defined and extendable interface, see <a href="@ref"><code>IDMatchers</code></a> for that.</p><p>Let&#39;s say that the default matching that we chose above isn&#39;t desirable. For example, one may argue that the attractor that pops up at the end of the continuation should have been assigned the same ID as attractor 1, because they are both to the left (see the video above). In reality one wouldn&#39;t really request that, because looking the video of attractors above shows that the attractors labelled &quot;1&quot;, &quot;2&quot;, and &quot;3&quot; are all completely different. But we argue here for example that &quot;3&quot; should have been the same as &quot;1&quot;.</p><p>Thankfully during a global continuation the &quot;matching&quot; step is completely separated from the &quot;finding and continuing&quot; step. If we don&#39;t like the initial matching, we can call <a href="../api_cont/#Attractors.match_sequentially!"><code>match_sequentially!</code></a> with a new instance of a matcher, and match again, without having to recompute the attractors and their basin fractions. For example, using this matcher:</p><pre><code class="language-julia hljs">matcher = MatchBySSSetDistance(use_vanished = true)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">MatchBySSSetDistance{Centroid{Euclidean}, Float64}(Centroid{Euclidean}(Euclidean(0.0)), Inf, true)</code></pre><p>will compare a new attractor with the latest instance of attractors with a given ID that have ever existed, irrespectively if they exist in the current parameter or not. This means, that the attractor &quot;3&quot; would in fact be compared with both attractor &quot;2&quot; and &quot;1&quot;, even if &quot;1&quot; doesn&#39;t exist in the parameter &quot;3&quot; started existing at. And because &quot;3&quot; is closer to &quot;1&quot; than to &quot;2&quot;, it will get matched to attractor &quot;1&quot; and get the same ID.</p><p>Let&#39;s see this in action:</p><pre><code class="language-julia hljs">attractors_cont2 = deepcopy(attractors_cont)
+
+match_sequentially!(attractors_cont2, matcher)
+
+fig = plot_attractors_curves(
+    attractors_cont2, A -&gt; minimum(A[:, 1]), prange,
+)</code></pre><img src="4853cfab.png" alt="Example block output"/><p>and as we can see, the new attractor at the end of the parameter range got assigned the same ID as the original attractor &quot;1&quot;. For more ways of matching attractors see <a href="../api_cont/#Attractors.IDMatcher"><code>IDMatcher</code></a>.</p><h2 id="Continuation-along-arbitrary-parameter-curves"><a class="docs-heading-anchor" href="#Continuation-along-arbitrary-parameter-curves">Continuation along arbitrary parameter curves</a><a id="Continuation-along-arbitrary-parameter-curves-1"></a><a class="docs-heading-anchor-permalink" href="#Continuation-along-arbitrary-parameter-curves" title="Permalink"></a></h2><p>One of the many advantages of the global continuation is that we can choose what parameters to continue over. We can provide any arbitrary curve in parameter space. This is possible because (1) finding and matching attractors are two completely orthogonal steps, and (2) it is completely fine for attractors to dissapear (and perhaps re-appear) during a global continuation.</p><p>For example, we can probe an elipsoid defined as</p><pre><code class="language-julia hljs">ellipsoid(θ) = [1 =&gt; 5 + 0.5cos(θ), 2 =&gt; 0.1 + 0.01sin(θ)]
+θs = range(0, 2π; length = 101)
+pcurve = ellipsoid.(θs)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">101-element Vector{Vector{Pair{Int64, Float64}}}:
+ [1 =&gt; 5.5, 2 =&gt; 0.1]
+ [1 =&gt; 5.499013364214136, 2 =&gt; 0.10062790519529313]
+ [1 =&gt; 5.496057350657239, 2 =&gt; 0.10125333233564304]
+ [1 =&gt; 5.491143625364344, 2 =&gt; 0.10187381314585725]
+ [1 =&gt; 5.4842915805643155, 2 =&gt; 0.10248689887164855]
+ [1 =&gt; 5.475528258147577, 2 =&gt; 0.10309016994374948]
+ [1 =&gt; 5.4648882429441255, 2 =&gt; 0.10368124552684678]
+ [1 =&gt; 5.45241352623301, 2 =&gt; 0.10425779291565074]
+ [1 =&gt; 5.438153340021932, 2 =&gt; 0.10481753674101715]
+ [1 =&gt; 5.422163962751007, 2 =&gt; 0.10535826794978997]
+ ⋮
+ [1 =&gt; 5.438153340021932, 2 =&gt; 0.09518246325898286]
+ [1 =&gt; 5.45241352623301, 2 =&gt; 0.09574220708434927]
+ [1 =&gt; 5.4648882429441255, 2 =&gt; 0.09631875447315323]
+ [1 =&gt; 5.475528258147577, 2 =&gt; 0.09690983005625053]
+ [1 =&gt; 5.4842915805643155, 2 =&gt; 0.09751310112835145]
+ [1 =&gt; 5.491143625364344, 2 =&gt; 0.09812618685414276]
+ [1 =&gt; 5.496057350657239, 2 =&gt; 0.09874666766435695]
+ [1 =&gt; 5.499013364214136, 2 =&gt; 0.09937209480470688]
+ [1 =&gt; 5.5, 2 =&gt; 0.1]</code></pre><p>here each component maps the parameter index to its value. We can just give this <code>pcurve</code> to the global continuation, using the same basin map and continuation algorithm, but adjusting the matching process so that vanished attractors are kept in &quot;memory&quot;</p><pre><code class="language-julia hljs">matcher = MatchBySSSetDistance(use_vanished = true)
+
+ascm = AttractorSeedContinueMatch(bmap, matcher)
+
+gco = global_continuation(ascm, pcurve, sampler)
+attractors_cont = gco.attractors</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">101-element Vector{Dict{Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}}}:
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 338 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 500 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 329 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 506 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 339 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 573 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 348 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 582 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 351 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 627 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 324 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 627 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 330 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 643 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 329 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 645 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 332 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 678 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 325 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 728 points)
+ ⋮
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 317 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 608 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 334 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 651 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 315 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 607 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 328 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 582 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 318 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 530 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 333 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 521 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 331 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 504 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 303 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 515 points)
+ Dict(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 323 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 524 points)</code></pre><p>and animate the result</p><pre><code class="language-julia hljs">animate_attractors_continuation(ds, gco; savename = &quot;curvecont.mp4&quot;);</code></pre><video width="auto" controls loop>
+<source src="../curvecont.mp4" type="video/mp4">
+</video><h2 id="Enhancing-the-continuation-with-more-stability-quantifiers-or-other-quantities"><a class="docs-heading-anchor" href="#Enhancing-the-continuation-with-more-stability-quantifiers-or-other-quantities">Enhancing the continuation with more stability quantifiers or other quantities</a><a id="Enhancing-the-continuation-with-more-stability-quantifiers-or-other-quantities-1"></a><a class="docs-heading-anchor-permalink" href="#Enhancing-the-continuation-with-more-stability-quantifiers-or-other-quantities" title="Permalink"></a></h2><p>The standard stability quantifier that is reported during a global continuation is the basin fractions. This is primarily because it is computed automatically as we find the different attractors. There are many more stability quantifiers that could be more useful in different contexts. Attractors.jl offers the unique possibility of estimating a multitude of known quantifiers of stability in the literature of dynamical systems during a <em>single</em> global continuation pass. This is done with the <a href="../api_nonlocal/#Attractors.StabilityQuantifiersAccumulator"><code>StabilityQuantifiersAccumulator</code></a> data structure. You can visit its documentation string to learn about all different stability quantifiers. If you find some stability quantifiers not included in the <a href="../api_nonlocal/#Attractors.StabilityQuantifiersAccumulator"><code>StabilityQuantifiersAccumulator</code></a> then either open an Issue and tell us about it or even better make a Pull Request and contribute it yourself!</p><p>Using <a href="../api_nonlocal/#Attractors.StabilityQuantifiersAccumulator"><code>StabilityQuantifiersAccumulator</code></a> is very easy. If you have already performed a global continuation then you can utilize the function <a href="../api_nonlocal/#Attractors.stability_quantifiers_along_continuation"><code>stability_quantifiers_along_continuation</code></a> to run through it again and estimate now all stability quantifiers.</p><pre><code class="language-julia hljs">result = stability_quantifiers_along_continuation(
+    ds, attractors_cont, pcurve, sampler; ε = 0.1
+)
+keys(result)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">KeySet for a Dict{String, Vector{Dict{Int64, Float64}}} with 19 entries. Keys:
+  &quot;characteristic_return_time&quot;
+  &quot;maximal_amplification_time&quot;
+  &quot;finite_time_basin_stability&quot;
+  &quot;mean_noncritical_shock_magnitude&quot;
+  &quot;median_convergence_pace&quot;
+  &quot;reactivity&quot;
+  &quot;basin_stability&quot;
+  &quot;maximal_convergence_pace&quot;
+  &quot;mean_convergence_pace&quot;
+  &quot;basin_fraction&quot;
+  &quot;minimal_critical_shock_magnitude&quot;
+  &quot;maximal_noncritical_shock_magnitude&quot;
+  &quot;boundary_basin_entropy&quot;
+  &quot;mean_convergence_time&quot;
+  &quot;basin_entropy&quot;
+  &quot;median_convergence_time&quot;
+  &quot;maximal_convergence_time&quot;
+  &quot;maximal_amplification&quot;
+  &quot;intermingledness1&quot;</code></pre><p>The result is a dictionary mapping the stability quantifier name (as a string) to the continuation of the quantifier. We can see there are quite a lot of quantifiers that have been estimated! So the values of <code>result</code> are the same type as the <code>fractions_cont</code> we have computed before. This means it is straightforward to visualize these new stability quantifiers. For example, let&#39;s say we want to visualize</p><pre><code class="language-julia hljs">chosen = [&quot;median_convergence_pace&quot;, &quot;minimal_critical_shock_magnitude&quot;]
+abbrev = [&quot;MCP&quot;, &quot;MCS&quot;]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{String}:
+ &quot;MCP&quot;
+ &quot;MCS&quot;</code></pre><p>then we just use the visualization function <code>plot_continuation_curves</code></p><pre><code class="language-julia hljs">ukeys = unique_keys(attractors_cont) # so that we ignore key -1 (divergent orbits)
+fig = plot_attractors_curves(attractors_cont, A -&gt; minimum(A[:, 1]), θs)
+for (i, c) in enumerate(chosen)
+    ax = Axis(fig[1 - i, 1]; ylabel = abbrev[i])
+    quantifier_cont = result[c]
+    plot_continuation_curves!(ax, quantifier_cont, θs; ukeys, add_legend = false)
+    hidexdecorations!(ax; grid = false)
+end
+resize!(fig, 600, 500)
+fig</code></pre><img src="3639253d.png" alt="Example block output"/><p>For more specialization on estimating these stability quantifiers, see the documentation of <a href="../api_nonlocal/#Attractors.StabilityQuantifiersAccumulator"><code>StabilityQuantifiersAccumulator</code></a>.</p><p>One of the biggest strengths of Attractors.jl is that it is not an isolated software. It is part of <strong>DynamicalSystems.jl</strong>. We can straightforwardly use any other functionality of the library to enhance this continuation, even beyond stability quantifiers. Let&#39;s also estimate and visualize the maximum Lyapunov exponent for each attractor. We first import the function that estimates the MLE</p><pre><code class="language-julia hljs">using ChaosTools: lyapunov</code></pre><p>and then, the estimation itself is rather simple:</p><pre><code class="language-julia hljs">lis = map(enumerate(pcurve)) do (i, p) # loop over parameters
+    set_parameters!(ds, p) # important! We use the dynamical system!
+    attractors = attractors_cont[i]
+    # Return a dictionary mapping attractor IDs to their MLE
+    Dict(k =&gt; lyapunov(ds, 10000.0; u0 = A[1]) for (k, A) in attractors)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">101-element Vector{Dict{Int64, Float64}}:
+ Dict(2 =&gt; 0.00023148683530336975, 1 =&gt; -1.1555064974011018e-5)
+ Dict(2 =&gt; 0.00025142576792374244, 1 =&gt; 0.0004978105165290823)
+ Dict(2 =&gt; -4.4428575906269724e-5, 1 =&gt; 0.00013835999730112009)
+ Dict(2 =&gt; 0.00026317756200130196, 1 =&gt; 7.941516272362377e-5)
+ Dict(2 =&gt; 0.00022180324244346652, 1 =&gt; 0.0002897926730188832)
+ Dict(2 =&gt; 0.00019328959347291878, 1 =&gt; 9.200033125637728e-6)
+ Dict(2 =&gt; 6.867289236294363e-5, 1 =&gt; -8.273680615331471e-6)
+ Dict(2 =&gt; -1.0708972180375826e-5, 1 =&gt; 0.00010012748327197029)
+ Dict(2 =&gt; -0.00025116962673887134, 1 =&gt; 5.215826804742569e-5)
+ Dict(2 =&gt; 0.000116564470742011, 1 =&gt; 0.00014129685217236868)
+ ⋮
+ Dict(2 =&gt; 0.00012834661438594638, 1 =&gt; -5.027245059274349e-5)
+ Dict(2 =&gt; 0.00012498304797670047, 1 =&gt; -6.382774218072584e-5)
+ Dict(2 =&gt; 4.540814910093644e-5, 1 =&gt; 0.0003115766708967932)
+ Dict(2 =&gt; -1.5123661150422107e-6, 1 =&gt; 4.350100383441806e-5)
+ Dict(2 =&gt; 2.367316643181956e-5, 1 =&gt; 0.00019109744670821641)
+ Dict(2 =&gt; 0.00015424817108953547, 1 =&gt; 0.00016768322809548566)
+ Dict(2 =&gt; 4.569119797075593e-5, 1 =&gt; -9.672079768122524e-6)
+ Dict(2 =&gt; 0.00012047734219060045, 1 =&gt; 0.00011117183453630552)
+ Dict(2 =&gt; 0.0002255327256852366, 1 =&gt; -6.716679016225298e-6)</code></pre><p>The above <code>map</code> loop may be intimidating if you are a beginner, but it is really just a shorter way to write a <code>for</code> loop for our example. We iterate over all parameters, and for each we first update the dynamical system with the correct parameter, and then extract the MLE for each attractor. <code>map</code> just means that we don&#39;t have to pre-allocate a new vector before the loop; it creates it for us.</p><p>Notice: in the example here we we computed the Lyapunov exponents after the fact. We could do it however duing the first-pass of the continuation of the <a href="../api_nonlocal/#Attractors.StabilityQuantifiersAccumulator"><code>StabilityQuantifiersAccumulator</code></a> by providing the <code>extras</code> argument to it, see e.g., the <a href="../examples/#user_defined_quantifiers">example of additional quantifiers</a> online.</p><p>Regardless, we now visualize the MLE with the same way as any other quantity over the continuation:</p><pre><code class="language-julia hljs">axλ = Axis(fig[-length(chosen), 1]; ylabel = &quot;MLE&quot;)
+hidexdecorations!(axλ)
+plot_continuation_curves!(axλ, lis, θs; add_legend = false)
+fig</code></pre><img src="ead6ea7b.png" alt="Example block output"/><p>This reveals crucial information for tha attractors, whether they are chaotic or not, that we would otherwise obtain only by visualizing the system dynamics at every single point in the continuation parameter.</p><h2 id="Multiparameter-continuation"><a class="docs-heading-anchor" href="#Multiparameter-continuation">Multiparameter continuation</a><a id="Multiparameter-continuation-1"></a><a class="docs-heading-anchor-permalink" href="#Multiparameter-continuation" title="Permalink"></a></h2><p>For global continuation, there is truthfully no difference between single and multiple parameter continuation. To efficiently cover a multidimensional parameter space, We provide the convenience function <a href="@ref"><code>hilbert_pcurve</code></a>. Let&#39;s use it here to continue over both parameters</p><pre><code class="language-julia hljs">specs = Dict(1 =&gt; (5, 6, 2^4), 2 =&gt; (0.1, 0.2, 2^4))
+pcurve = hilbert_pcurve(specs)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">256-element Vector{Dict{Int64, Float64}}:
+ Dict(2 =&gt; 0.1, 1 =&gt; 5.0)
+ Dict(2 =&gt; 0.10666666666666667, 1 =&gt; 5.0)
+ Dict(2 =&gt; 0.10666666666666667, 1 =&gt; 5.066666666666666)
+ Dict(2 =&gt; 0.1, 1 =&gt; 5.066666666666666)
+ Dict(2 =&gt; 0.1, 1 =&gt; 5.133333333333334)
+ Dict(2 =&gt; 0.1, 1 =&gt; 5.2)
+ Dict(2 =&gt; 0.10666666666666667, 1 =&gt; 5.2)
+ Dict(2 =&gt; 0.10666666666666667, 1 =&gt; 5.133333333333334)
+ Dict(2 =&gt; 0.11333333333333333, 1 =&gt; 5.133333333333334)
+ Dict(2 =&gt; 0.11333333333333333, 1 =&gt; 5.2)
+ ⋮
+ Dict(2 =&gt; 0.18666666666666668, 1 =&gt; 5.133333333333334)
+ Dict(2 =&gt; 0.19333333333333333, 1 =&gt; 5.133333333333334)
+ Dict(2 =&gt; 0.19333333333333333, 1 =&gt; 5.2)
+ Dict(2 =&gt; 0.2, 1 =&gt; 5.2)
+ Dict(2 =&gt; 0.2, 1 =&gt; 5.133333333333334)
+ Dict(2 =&gt; 0.2, 1 =&gt; 5.066666666666666)
+ Dict(2 =&gt; 0.19333333333333333, 1 =&gt; 5.066666666666666)
+ Dict(2 =&gt; 0.19333333333333333, 1 =&gt; 5.0)
+ Dict(2 =&gt; 0.2, 1 =&gt; 5.0)</code></pre><p>We need to add a threshold to the continuation matching. Here we&#39;ll add an arbitrary value, but in a research setup this would need to be studied. Thankfully, the matching can be redone after the continuation at practically no cost using <a href="../api_cont/#Attractors.match_sequentially!"><code>match_sequentially!</code></a>.</p><pre><code class="language-julia hljs">matcher = MatchBySSSetDistance(use_vanished = true, threshold = 0.5)
+ascm = AttractorSeedContinueMatch(bmap, matcher)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AttractorSeedContinueMatch{BasinMapRecurrences{CoupledODEs{false, 3, OrdinaryDiffEqCore.ODEIntegrator{OrdinaryDiffEqVerner.Vern9{typeof(OrdinaryDiffEqCore.trivial_limiter!), typeof(OrdinaryDiffEqCore.trivial_limiter!), FastBroadcast.Serial, Val{true}}, false, SVector{3, Float64}, Nothing, Float64, Vector{Float64}, Float64, Float64, Vector{SVector{3, Float64}}, SciMLBase.ODESolution{Float64, 2, Vector{SVector{3, Float64}}, Nothing, Nothing, Vector{Float64}, Vector{Vector{SVector{3, Float64}}}, Nothing, SciMLBase.ODEProblem{SVector{3, Float64}, Tuple{Float64, Float64}, false, Vector{Float64}, SciMLBase.ODEFunction{false, SciMLBase.AutoSpecialize, typeof(Main.modified_lorenz_rule), LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}, Base.Pairs{Symbol, Union{}, Tuple{}, @NamedTuple{}}, SciMLBase.StandardODEProblem}, OrdinaryDiffEqVerner.Vern9{typeof(OrdinaryDiffEqCore.trivial_limiter!), typeof(OrdinaryDiffEqCore.trivial_limiter!), FastBroadcast.Serial, Val{true}}, OrdinaryDiffEqCore.InterpolationData{SciMLBase.ODEFunction{false, SciMLBase.AutoSpecialize, typeof(Main.modified_lorenz_rule), LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}, Vector{SVector{3, Float64}}, Vector{Float64}, Vector{Vector{SVector{3, Float64}}}, Nothing, OrdinaryDiffEqVerner.Vern9ConstantCache{Val{true}}, Nothing}, SciMLBase.DEStats, Nothing, Nothing, Nothing, Nothing}, SciMLBase.ODEFunction{false, SciMLBase.AutoSpecialize, typeof(Main.modified_lorenz_rule), LinearAlgebra.UniformScaling{Bool}, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, typeof(SciMLBase.DEFAULT_OBSERVED), Nothing, Nothing, Nothing, Nothing}, OrdinaryDiffEqVerner.Vern9ConstantCache{Val{true}}, OrdinaryDiffEqCore.DEOptions{Float64, Float64, Float64, Float64, typeof(DiffEqBase.ODE_DEFAULT_NORM), typeof(LinearAlgebra.opnorm), Bool, SciMLBase.CallbackSet{Tuple{}, Tuple{}}, typeof(DiffEqBase.ODE_DEFAULT_ISOUTOFDOMAIN), typeof(DiffEqBase.ODE_DEFAULT_PROG_MESSAGE), typeof(DiffEqBase.ODE_DEFAULT_UNSTABLE_CHECK), BinaryHeaps.BinaryHeap{Float64, BinaryHeaps.FasterForward}, BinaryHeaps.BinaryHeap{Float64, BinaryHeaps.FasterForward}, Nothing, Nothing, Float64, Tuple{}, Tuple{}, Tuple{}, DiffEqBase.DEVerbosity{true, SciMLLogging.Minimal, SciMLLogging.Minimal}, Nothing, typeof(OrdinaryDiffEqCore.trivial_limiter!), typeof(OrdinaryDiffEqCore.trivial_limiter!)}, SVector{3, Float64}, Float64, Nothing, DiffEqBase.DefaultInit, Nothing, OrdinaryDiffEqCore.PIControllerCache{Float64, Float64, SciMLBase.IntervalNonlinearProblem}, Random.TaskLocalRNG, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing}, Vector{Float64}}, Attractors.BasinsInfo{3, Float64, Attractors.SparseArray{Int64, 3}, ArrayBasinsOfAttraction{Int64, 3, Attractors.SparseArray{Int64, 3}, Attractors.RegularGrid{3, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}, Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}}}, Attractors.RegularGrid{3, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}}, Base.Pairs{Symbol, Int64, Tuple{Symbol, Symbol, Symbol}, @NamedTuple{consecutive_recurrences::Int64, attractor_locate_steps::Int64, consecutive_lost_steps::Int64}}}, MatchBySSSetDistance{Centroid{Euclidean}, Float64}, typeof(Attractors._default_seeding)}(BasinMapRecurrences
+ system:      CoupledODEs
+ grid:        (-10.0:0.1342281879194631:10.0, -15.0:0.20134228187919462:15.0, -15.0:0.20134228187919462:15.0)
+ attractors:  Dict{Int64, StateSpaceSet{3, Float64, SVector{3, Float64}}}(2 =&gt; 3-dimensional StateSpaceSet{Float64} with 323 points, 1 =&gt; 3-dimensional StateSpaceSet{Float64} with 524 points)
+, MatchBySSSetDistance{Centroid{Euclidean}, Float64}(Centroid{Euclidean}(Euclidean(0.0)), 0.5, true), Attractors._default_seeding)</code></pre><p>and proceed as usual</p><pre><code class="language-julia hljs">fractions_cont, attractors_cont = global_continuation(ascm, pcurve, sampler)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">GlobalContinuationOutput with fields:
+ attractors
+ fractions
+ quantifiers
+ other
+ pcurve
+</code></pre><p>The output is exactly of the same type, and as such very easy to post-process. For example, let&#39;s find all parameter values that support an attractor with x-minimum less than <code>-5</code> (this is the teal attractor in the starting video of this page)</p><pre><code class="language-julia hljs">function find_condition(attractors::Dict)
+    return any(A -&gt; minimum(A[:, 1]) &lt; -5, values(attractors))
+end
+pidxs = findall(find_condition, attractors_cont)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">24-element Vector{Int64}:
+  83
+  84
+  93
+  94
+  96
+  97
+  98
+  99
+ 100
+ 109
+   ⋮
+ 159
+ 160
+ 161
+ 162
+ 175
+ 176
+ 177
+ 180
+ 181</code></pre><p>We can now scatterplot the parameters that have, or don&#39;t have, this property:</p><pre><code class="language-julia hljs">coords = [SVector(p[1], p[2]) for p in pcurve]
+markers = [i ∈ pidxs ? :circle : :rect for i in eachindex(pcurve)]
+colors = [i ∈ pidxs ? :black : :blue for i in eachindex(pcurve)]
+fig, ax = scatter(coords; marker = markers, color = colors)
+ax.xlabel = &quot;parameter 1&quot;
+ax.ylabel = &quot;parameter 2&quot;
+ax.title = &quot;parameters that have teal attractor&quot;
+fig</code></pre><img src="ffe842d5.png" alt="Example block output"/><h2 id="Conclusion-and-comparison-with-traditional-local-continuation"><a class="docs-heading-anchor" href="#Conclusion-and-comparison-with-traditional-local-continuation">Conclusion and comparison with traditional local continuation</a><a id="Conclusion-and-comparison-with-traditional-local-continuation-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion-and-comparison-with-traditional-local-continuation" title="Permalink"></a></h2><p>We&#39;ve reached the end of the tutorial! Some aspects we haven&#39;t highlighted is how most of the infrastructure of Attractors.jl is fully extendable. You will see this when reading the documentation strings of key structures like <a href="../api_bmap/#Attractors.BasinMap"><code>BasinMap</code></a>. All documentation strings are in the <a href="@ref">API</a> page. See the <a href="../examples/#examples">examples</a> page for more varied applications. And lastly, see the <a href="../bfkit_comparison/#bfkit_comparison">comparison page</a> in our docs that attempts to do the same analysis of our Tutorial with traditional local continuation and bifurcation analysis software showing that (at least for this example) using Attractors.jl is clearly beneficial over the alternatives.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Attractors.jl</a><a class="docs-footer-nextpage" href="../api_bmap/">Basin maps »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 3 August 2026 18:57">Monday 3 August 2026</span>. Using Julia version 1.11.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
