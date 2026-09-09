@@ -125,27 +125,6 @@ function Attractors.heatmap_basins_attractors!(
     return ax
 end
 
-function Attractors.heatmap_basins_attractors!(
-        ax, BoA::ArrayBasinsOfAttraction;
-        ukeys = unique(BoA.basins), # internal argument just for other keywords
-        colors = colors_from_keys(ukeys),
-        markers = markers_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
-        add_legend = length(ukeys) < 7,
-        access = SVector(1, 2),
-        sckwargs = (strokewidth = 1.5, strokecolor = :white)
-    )
-    return Attractors.heatmap_basins_attractors!(
-        ax, BoA.grid, BoA.basins, BoA.attractors;
-        ukeys = ukeys, # internal argument just for other keywords
-        colors = colors,
-        markers = markers,
-        labels = labels,
-        add_legend = add_legend,
-        access = access,
-        sckwargs = sckwargs
-    )
-end
 ##########################################################################################
 # Shaded basins
 ##########################################################################################
