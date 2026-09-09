@@ -135,6 +135,11 @@ or a tuple of ranges/`(min, max)` pairs, one per dimension.
 - `λ::Real = 0.7`: forgetting factor. The prior is decayed as `α ← λα` before each
   sparse update, so that evidence from far-away parameters is progressively discounted.
 - `β::Real = 0.5`: Dirichlet base pseudo-count assigned to unseen labels.
+- `global_reset::Bool = false`: a heuristic sitting on top of the per-box test.
+  If an attractor appear or disapear from one parameter to another we can ask 
+  the sampler to flag all boxes for a dense resampling. It will give a better 
+  estimate of the basin entropy for example. Basins fraction are more robust and 
+  the change will not be so drastic. 
 - `seed = abs(rand(Int))`: seed for the per-box point generators.
 - `history::Bool = false`: keep a per-parameter record of `alphas` and `etas`, which
   are otherwise overwritten in place. See "History" below.
@@ -182,17 +187,20 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     dense_n::Int
     λ::Float64
     β::Float64
+    global_reset::Bool
     boxes_flags::Vector{Bool}       # true => this box wants a dense re-sample
     layout::Vector{Pair{Int, Int}}  # (box index => n ics) of the last `generate_ics`
     step_counts::Vector{Dict{Int, Int}}
+    did_reset::Bool                 # a global reset was triggered at this parameter
     history::Bool
     history_alphas::Vector{Vector{Dict{Int, Float64}}}
     history_etas::Vector{Vector{Float64}}
+    history_resets::Vector{Bool}
 end
 
 function BayesianUpdateSampler(region, n_tiles::Int;
         sparse_n::Int, dense_n::Int = sparse_n^2, λ::Real = 0.7, β::Real = 0.5,
-        seed = abs(rand(Int)), history::Bool = false,
+        global_reset::Bool = false, seed = abs(rand(Int)), history::Bool = false,
     )
     sparse_n ≥ 1 || throw(ArgumentError("`sparse_n` must be ≥ 1, got $sparse_n"))
     dense_n ≥ 1 || throw(ArgumentError("`dense_n` must be ≥ 1, got $dense_n"))
@@ -208,10 +216,10 @@ function BayesianUpdateSampler(region, n_tiles::Int;
     return BayesianUpdateSampler(
         boxes, generators,
         [Dict{Int, Float64}() for _ in 1:n], zeros(n),
-        sparse_n, dense_n, Float64(λ), Float64(β),
+        sparse_n, dense_n, Float64(λ), Float64(β), global_reset,
         # every box starts flagged
         fill(true, n), Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
-        history, Vector{Dict{Int, Float64}}[], Vector{Float64}[],
+        false, history, Vector{Dict{Int, Float64}}[], Vector{Float64}[], Bool[],
     )
 end
 
@@ -249,6 +257,7 @@ function Base.show(io::IO, s::BayesianUpdateSampler{D}) where {D}
     println(io, "  sparse_n: ", s.sparse_n)
     println(io, "  dense_n:  ", s.dense_n)
     println(io, "  λ, β:     ", s.λ, ", ", s.β)
+    println(io, "  global reset: ", s.global_reset ? "on" : "off")
     print(io,   "  history:  ",
           s.history ? "$(length(s.history_etas)) parameter(s) recorded" : "not kept")
 end
@@ -258,7 +267,7 @@ resampling_required(s::BayesianUpdateSampler) = any(s.boxes_flags)
 function generate_ics(s::BayesianUpdateSampler{D}, args...) where {D}
     resample = resampling_required(s)
     # a round that is not a re-sample is the first one of a new parameter
-    resample || foreach(empty!, s.step_counts)
+    resample || (foreach(empty!, s.step_counts); s.did_reset = false)
     empty!(s.layout)
     total = 0 
     if resample
@@ -294,11 +303,15 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
         "got $(length(labels)) labels but the recorded layout expects $expected; " *
         "`update_sampler!` must be called once per `generate_ics` call"
     ))
+    # if it fires, every box is about to be re-learned, so the priors are left alone below
+    # and this round contributes nothing but its counts
+    global_reset = _global_reset_detection!(s, labels)
     cursor = 1
     for (i, n) in s.layout
         counts = _count_labels(view(labels, cursor:(cursor + n - 1)))
         cursor += n
         mergewith!(+, s.step_counts[i], counts)
+        global_reset && continue
         if s.boxes_flags[i]
             # Dense round: relearn this box from scratch, no test.
             s.alphas[i] = Dict{Int, Float64}(k => c + s.β for (k, c) in counts)
@@ -320,22 +333,37 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
     return nothing
 end
 
+# An attractor born or dead changes the set of labels, which no sampling noise can fake.
+# If the keyword global_reset is true, then all the boxes are flagged when attractors 
+# changes from one parameter slice to the next.
+function _global_reset_detection!(s::BayesianUpdateSampler, labels)
+    (s.global_reset && !any(s.boxes_flags)) || return false
+    prior_labels = mapreduce(keys, union!, s.alphas; init = Set{Int}())
+    Set{Int}(Int(l) for l in labels) == prior_labels && return false
+    fill!(s.boxes_flags, true)
+    fill!(s.etas, 0.0)      # no box was tested at this parameter
+    s.did_reset = true
+    return true
+end
+
 function _push_history!(s::BayesianUpdateSampler)
     push!(s.history_alphas, [copy(α) for α in s.alphas])
     push!(s.history_etas, copy(s.etas))
+    push!(s.history_resets, s.did_reset)
     return nothing
 end
 
 """
     sampler_history(sampler::BayesianUpdateSampler) → NamedTuple
 
-Return the history of alphas and etas per box, provided the sampler was created with
-`history = true`. Mind that the `alphas` are keyed by the attractor IDs of the running
+Return the history of alphas and etas per box, and of the global resets (`resets[i]` is
+`true` if the whole tiling was re-learned at parameter `i` because the label set changed),
+provided the sampler was created with `history = true`. Mind that the `alphas` are keyed by the attractor IDs of the running
 sweep, which need not be those of the continuation output; see the "History" section of
 [`BayesianUpdateSampler`](@ref).
 """
 sampler_history(s::BayesianUpdateSampler) =
-    (; alphas = s.history_alphas, etas = s.history_etas)
+    (; alphas = s.history_alphas, etas = s.history_etas, resets = s.history_resets)
 
 """
     weighted_fractions(sampler::BayesianUpdateSampler, counts)
@@ -376,18 +404,41 @@ end
 # Both are Dirichlet-multinomial log marginal likelihoods,
 # `lnΓ(α₀) - lnΓ(N + α₀) + Σₖ [lnΓ(cₖ + αₖ) - lnΓ(αₖ)]`.
 function _log_bayes_factor(counts::Dict{Int, Int}, α::Dict{Int, Float64}, β::Real)
-    N = sum(values(counts))
-    α₀ = 0.0; nk = 0
-    L_hist = 0.0; L_reset = 0.0
-    for k in union(keys(counts), keys(α))
-        nk += 1
-        a = get(α, k, β)
-        c = get(counts, k, 0)
-        α₀ += a
-        L_hist += loggamma(c + a) - loggamma(a)
-        L_reset += loggamma(c + β) - loggamma(β)
-    end
-    L_hist += loggamma(α₀) - loggamma(N + α₀)
-    L_reset += loggamma(nk * β) - loggamma(N + nk * β)
+    L_hist = log_marginal_likelihood(counts, α, β)
+
+    # Log-evidence under reset (uninformative) prior: α_i = β for all categories
+    all_keys = union(keys(counts), keys(α))
+    α_reset = Dict{Int, Float64}(k => β for k in all_keys)
+    L_reset = log_marginal_likelihood(counts, α_reset, β)
     return L_hist - L_reset
 end
+
+"""
+    log_marginal_likelihood(counts, alpha, β)
+
+Computes the log-marginal likelihood (log-evidence) of observed counts `c`
+under a Dirichlet-Multinomial model with prior `alpha`.
+
+    L(α) = lnΓ(α₀) − lnΓ(N_s + α₀) + Σᵢ [lnΓ(cᵢ + αᵢ) − lnΓ(αᵢ)]
+
+where α₀ = Σ αᵢ and N_s = Σ cᵢ. Categories not present in `alpha` get
+the base prior `β`.
+"""
+function log_marginal_likelihood(new_counts::Dict{Int, Int}, alpha::Dict{Int, Float64}, β::Float64)
+    all_keys = union(keys(new_counts), keys(alpha))
+
+    alpha_0 = 0.0
+    N_s = sum(values(new_counts))
+    log_lik = 0.0
+
+    for k in all_keys
+        a_k = get(alpha, k, β)
+        c_k = get(new_counts, k, 0)
+        alpha_0 += a_k
+        log_lik += loggamma(c_k + a_k) - loggamma(a_k)
+    end
+
+    log_lik += loggamma(alpha_0) - loggamma(N_s + alpha_0)
+    return log_lik
+end
+
