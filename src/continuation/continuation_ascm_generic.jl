@@ -197,6 +197,7 @@ function global_continuation(
         # issued, so they are relabelled here as well
         if bmap isa StabilityQuantifiersAccumulator
             quantifiers = finalize_accumulator(bmap)
+            i > 1 && foreach(q -> swap_dict_keys!(q, rmap), values(quantifiers))
             push!(quantifiers_cont, quantifiers)
         end
 
