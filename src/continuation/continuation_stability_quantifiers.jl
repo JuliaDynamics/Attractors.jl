@@ -1,13 +1,12 @@
 export stability_quantifiers_along_continuation
 
-# this fuction is called in `global_continuation` when the bmap is the accumulator
-function match_and_generate_output(bmap::StabilityQuantifiersAccumulator, quantifiers_cont, rmaps)
-    # match
-    for (i, rmap) in enumerate(rmaps)
-        for dict in values(quantifiers_cont[i + 1])
-            swap_dict_keys!(dict, rmap)
-        end
-    end
+# this fuction is called in `global_continuation` when the bmap is the accumulator.
+# The quantifiers have already been matched (this happens one parameter at a time,
+# inside the continuation loop), so here they are only re-arranged into the output format.
+# Note that the returned fractions are the ones the accumulator estimated, i.e. they
+# follow its `weighting_distribution` and not the density the sampler covered the
+# state space region with, exactly like every other quantifier it produces.
+function transpose_quantifiers(bmap::StabilityQuantifiersAccumulator, quantifiers_cont)
     # "transpose" (i.e., swap nesting order)
     transposed = Dict{String, Vector{Dict{Int64, Any}}}()
     for quantifier in quantifiers_cont[1]
@@ -19,7 +18,7 @@ function match_and_generate_output(bmap::StabilityQuantifiersAccumulator, quanti
             push!(transposed[quantifier_name], quantifier_dict)
         end
     end
-    return Vector{Dict{Int64, Float64}}(transposed["basin_fraction"]), transposed
+    return transposed
 end
 
 

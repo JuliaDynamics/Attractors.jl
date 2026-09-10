@@ -19,6 +19,8 @@ the basin of a new attractor or not.
   in case there are co-flowing attractors, see below.
 - `seeding = A -> A[end]`: how to select a point from the attractor to see if
   it is enclosed in the basin of a new attractor.
+- `use_vanished = false`: value of the keyword `use_vanished` when
+  used in [`match_sequentially!`](@ref).
 
 ## Description
 
@@ -33,7 +35,7 @@ to the old attractor `A₋` attractor if `A₋` is located inside the basin of a
 To see if `A₋` is in the basin of `A₊`, we first pick a point from `A₋` using the `seeding`
 keyword argument. By default this is the last point on the attractor, but it could be anything
 else, including the centroid of the attractor (`mean(A)`).
-This point is given as an initial condition to an [`BasinMapProximity`](@ref) bmap
+This point is given as an initial condition to a [`BasinMapProximity`](@ref)
 that maps initial conditions to the `₊` attractors when
 the trajectories from the initial conditions are `ε`-close to the `₊` attractors.
 
@@ -47,13 +49,25 @@ ID of the `₋` closest attractor that converge to it.
 Basin enclosure is a concept similar to "basin (in)stability" in [Ritchie2023](@cite):
 attractors that quantify as "basin stable" are matched.
 """
-@kwdef struct MatchByBasinEnclosure{E, D, S, T} <: IDMatcher
-    ε::E = nothing
-    distance::D = Centroid()
-    seeding::S = A -> A[end]
-    Δt::T = 1
-    consecutive_lost_steps::Int = 1000
+struct MatchByBasinEnclosure{E, D, S, T, U} <: IDMatcher
+    ε::E
+    distance::D
+    seeding::S
+    Δt::T
+    consecutive_lost_steps::Int
 end
+
+# `use_vanished` is a type parameter so that `_use_vanished` is compile-time inferrable
+function MatchByBasinEnclosure(;
+        ε = nothing, distance = Centroid(), seeding = A -> A[end],
+        Δt = 1, consecutive_lost_steps = 1000, use_vanished::Bool = false,
+    )
+    return MatchByBasinEnclosure{typeof(ε), typeof(distance), typeof(seeding), typeof(Δt), use_vanished}(
+        ε, distance, seeding, Δt, consecutive_lost_steps
+    )
+end
+
+_use_vanished(::MatchByBasinEnclosure{E, D, S, T, U}) where {E, D, S, T, U} = U
 
 function matching_map(
         current_attractors, prev_attractors, matcher::MatchByBasinEnclosure;
@@ -61,7 +75,7 @@ function matching_map(
     )
     # if either dictionary is empty there is no matching to be done
     if isempty(current_attractors) || isempty(prev_attractors)
-        return Dict{keytype(a₊), keytype(a₋)}()
+        return Dict{keytype(current_attractors), keytype(prev_attractors)}()
     end
 
     if matcher.ε === nothing

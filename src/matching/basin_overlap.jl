@@ -7,7 +7,7 @@ A matcher that matches IDs given full basins of attraction.
 
 ## Description
 
-This matcher cannot be used in with the generic global continuation
+This matcher **cannot** be used in with the generic global continuation
 method of [`AttractorSeedContinueMatch`](@ref).
 This matcher matches IDs of attractors whose basins of attraction before and after `b₋, b₊`
 have the most overlap (in pixels). This overlap is normalized in 0-1 (with 1 meaning
@@ -34,7 +34,7 @@ or equivalently `replace!(BoA₊.basins, rmap...)`, or use the in-place version 
 
 A lower-level input for this matcher in [`matching_map`](@ref)
 can be dictionaries mapping IDs to vectors of cartesian indices,
-where the indices mean which parts of the state space belong to which ID
+where the indices mean which parts of the state space belong to which ID.
 """
 struct MatchByBasinOverlap
     threshold::Float64
