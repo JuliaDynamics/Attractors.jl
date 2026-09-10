@@ -226,22 +226,30 @@ end
 _to_hrectangle(r::HRectangle) = r
 _to_hrectangle(r) = HRectangle(SVector(minimum.(r)), SVector(maximum.(r)))
 
-# Split `region` into `n_tiles` parts per dimension, in the column major order of
-# `CartesianIndices`.
+# Split `region` into `n_tiles` parts per dimension
 function _tile_region(region::HRectangle, n_tiles::Int)
     n_tiles ≥ 1 || throw(ArgumentError("`n_tiles` must be ≥ 1, got $n_tiles"))
     mins, maxs = region.mins, region.maxs
-    all(mins .< maxs) || throw(ArgumentError("`region` must have `mins .< maxs`"))
+    all(i -> mins[i] < maxs[i], eachindex(mins)) ||
+        throw(ArgumentError("`region` must have `mins .< maxs`"))
     D = length(mins)
-    edges = ntuple(d -> range(Float64(mins[d]), Float64(maxs[d]); length = n_tiles + 1), D)
-    boxes = HRectangle{Float64, SVector{D, Float64}}[]
-    for idx in CartesianIndices(ntuple(_ -> n_tiles, D))
-        lo = SVector{D, Float64}(ntuple(d -> edges[d][idx[d]], D))
-        hi = SVector{D, Float64}(ntuple(d -> edges[d][idx[d] + 1], D))
-        push!(boxes, HRectangle(lo, hi))
+    N = n_tiles^D # Careful in high dim, this will explode
+    edges = [range(Float64(mins[d]), Float64(maxs[d]); length = n_tiles + 1) for d in 1:D]
+    boxes = Vector{HRectangle{Float64, SVector{D, Float64}}}(undef, N)
+    tile = ones(Int, D)  # tile index per dimension, the first one varying fastest
+    lo, hi = zeros(D), zeros(D)
+    for i in 1:N
+        for d in 1:D
+            lo[d], hi[d] = edges[d][tile[d]], edges[d][tile[d] + 1]
+        end
+        boxes[i] = HRectangle(SVector{D, Float64}(lo), SVector{D, Float64}(hi))
+        for d in 1:D  # odometer: bump the first dimension, carry into the next ones
+            tile[d] < n_tiles ? (tile[d] += 1; break) : (tile[d] = 1)
+        end
     end
     return boxes
 end
+
 
 n_boxes(s::BayesianUpdateSampler) = length(s.boxes)
 
