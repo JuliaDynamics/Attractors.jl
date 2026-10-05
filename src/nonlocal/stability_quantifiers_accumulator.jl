@@ -8,6 +8,7 @@ struct EverywhereUniform end
 Distributions.pdf(::EverywhereUniform, u) = one(eltype(u))
 
 """
+    StabilityQuantifiersAccumulator <: BasinMap
     StabilityQuantifiersAccumulator(bmap::BasinMap [, extras]; kwargs...)
 
 A special data structure that allows mapping initial conditions to their basins

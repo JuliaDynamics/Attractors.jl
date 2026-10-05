@@ -209,7 +209,7 @@ function global_continuation(
     end
 
     # everything is matched already; only the retraction to consecutive IDs is left
-    quantifiers = transpose_quantifiers(bmap, fractions_cont, quantifiers_cont)
+    quantifiers = transpose_quantifiers(bmap, quantifiers_cont)
     if _retract_keys(matcher)
         retract_keys!(attractors_cont, fractions_cont, values(quantifiers)...)
     end
@@ -219,4 +219,4 @@ end
 
 # This function has a generic form that just forwards the sampled fractions, and a more
 # technical form that collects various quantifiers, taken care off by the accumulator
-transpose_quantifiers(bmap, fractions_cont, quantifiers_cont) = Dict{String, Vector}()
+transpose_quantifiers(bmap, quantifiers_cont) = Dict{String, Vector}()
