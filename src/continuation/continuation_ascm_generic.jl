@@ -232,7 +232,7 @@ function init_other_cont(N::Int, sampler) # any other args here
     return container
 end
 
-function add_extra_continuation_info!(other_cont, x)
+function add_extra_continuation_info!(other_cont, i, x)
     extras = extract_other_info(x)
     for (k, v) in extras
         other_cont[k][i] = v
