@@ -141,7 +141,8 @@ function global_continuation(
     attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
-    other_cont = Dict{String, Any}("resamplings" => zeros(Int, length(pcurve)))
+    other_cont = init_other_cont()
+
 
     # Loop over parameters
     for (i, p) in enumerate(pcurve)
@@ -220,3 +221,38 @@ end
 # This function has a generic form that just forwards the sampled fractions, and a more
 # technical form that collects various quantifiers, taken care off by the accumulator
 transpose_quantifiers(bmap, quantifiers_cont) = Dict{String, Vector}()
+
+
+# Additional continuation info
+function init_other_cont(N::Int, sampler) # any other args here
+    container = Dict{String, Any}("resamplings" => zeros(Int, N))
+    extras = init_other_info(sampler)
+    for (k, T) in extras
+        container[k] = Vector{T}(undef, N)
+    end
+    return container
+end
+
+"""
+    init_other_info(x)
+
+Return an iterator of `key => Type` pairs, with the `key` being of type `String`
+and the `Type` indicating what type this additional information will be.
+
+Called at the start of a global continuation.
+"""
+function init_other_info(x)
+    return Dict{String, Any}()
+end
+
+"""
+    extract_other_info(x)
+
+Return an iterator of `key => value` pairs, with the `key` being of a string
+and the `value` the value of the corresponding additional information.
+
+Called at the end of a global continuation step.
+"""
+function extract_other_info(x)
+    Dict{String, Any}()
+end

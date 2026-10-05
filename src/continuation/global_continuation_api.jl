@@ -38,6 +38,10 @@ about additional information added to this output.
 
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format.
+
+!!! note "Developer's note"
+    Any struct can add information to the `other` field of a continuation.
+    To do so, extend the methods `init_other_info` and `extract_other_info`.
 """
 struct GlobalContinuationOutput{SSS, F<:AbstractFloat, V<:Vector, A, P}
     attractors::Vector{Dict{Int, SSS}}
@@ -60,7 +64,8 @@ end
 
 # Internal function for adding info; dispatches on `something`
 function add_extra_continuation_info!(extras::Dict{String,Any}, something)
-    return nothing
+    other_info = add_other_info(icsamler, )
+    push(extras, )
 end
 
 """

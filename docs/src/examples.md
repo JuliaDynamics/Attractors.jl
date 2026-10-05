@@ -1039,3 +1039,64 @@ be matched with each other! That means that for example a "high cloud fraction a
 will have a consistent ID through one continuation, but between
 different continuations it may not have the same ID!
 The easiest way to resolve this is to transform each continuation to a series using [`continuation_series`](@ref). Then, use a dedicated classification function that analyses a particular series (i.e., a single and specific attractor continuation) and assigns to it a particular, context-related label, instead of the random integer it obtains by default.
+
+
+## Bayesian basin tracking (effecient resampling)
+
+The sampler type [`BayesianUpdateSampler`](@ref) increases the efficiency of global continuation by sampling points densely only when need be.
+Here is an example applied to the Duffing oscillator,
+
+
+```@example MAIN
+using OrdinaryDiffEqVerner
+
+# Define Duffing system
+@inline @inbounds function duffing_rescaled(u, p, s)
+    d = p[1]; F = p[2]; ω = p[3]
+    du1 = u[2] / ω
+    du2 = (-d * u[2] + u[1] - u[1]^3 + F * sin(s)) / ω
+    return SVector{2}(du1, du2)
+end
+
+d = 0.2; F = 0.2  # smooth boundary for starting values
+ω_range = range(0.2, 1.5; length = 101)
+diffeq = (reltol = 1e-9, abstol = 1e-9, alg = Vern9(), maxiters = 1e9)
+ds = CoupledODEs(duffing_rescaled, [0.1, 0.1], [d, F, first(ω_range)]; diffeq)
+
+# define basin map
+grid_rec = (range(-7, 7; length = 1001), range(-7, 7; length = 1001))
+smap = StroboscopicMap(ds, 2π)
+
+# define bayesian sampler
+λ = 0.7
+β = 0.5
+n_tiles = 15
+sparse_n = 5 # note this is per tile, for `n_tiles^2` tiles
+dense_n = sparse_n^2
+global_bounds = ((-2.0, 2.0), (-2.0, 2.0))
+
+sampler = BayesianUpdateSampler(global_bounds, n_tiles;
+    sparse_n, dense_n, λ, β
+)
+```
+
+Once we have the Bayesian sampler, we run global continuation as usual
+
+```@example MAIN
+bmap = BasinMapRecurrences(smap, grid_rec;
+    consecutive_recurrences = 1000, show_progress = false
+)
+matcher = MatchBySSSetDistance(distance = Hausdorff(), threshold = Inf)
+algo = AttractorSeedContinueMatch(bmap, matcher)
+pcurve = @. Dict(3 => ω_range)
+gco = global_continuation(algo, pcurve, sampler)
+```
+
+we can now visualise the continuation and also some information that are specifically
+tied to the Bayesian sampler (stored in the `other` field of `gco`)
+
+```@example MAIN
+
+fig = Figure()
+axs = [Axis(fig[i, 1]) for i in 1:3]
+linkxaxes!(axs)
