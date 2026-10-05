@@ -126,8 +126,7 @@ function global_continuation(
         length(pcurve);
         desc = "Global continuation:", PMKWARGS..., enabled = show_progress
     )
-    bmap = ascm.bmap
-    matcher = ascm.matcher
+    (; bmap, matcher) = ascm
     ds = referenced_dynamical_system(bmap)
     additional_ics = typeof(current_state(ds))[]
     # Setup matching variables:
@@ -166,7 +165,7 @@ function global_continuation(
             counts, labels = basins_counts_labels(
                 bmap, icsampler; params = p, additional_ics, show_progress, offset = 2
             )
-            empty!(additional_ics) 
+            empty!(additional_ics)
             attractors = deepcopy(extract_attractors(bmap))
             if i > 1
                 # the tracker advances once per parameter, not once per round

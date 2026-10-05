@@ -1,6 +1,6 @@
 export InitialConditionsSampler
 export RandomICsSampler, PrescribedICs, PerParameterICs
-export BayesianUpdateSampler, sampler_history
+export BayesianUpdateSampler, bayesian_sampler_history
 
 using Random: Xoshiro
 using SpecialFunctions: loggamma
@@ -15,6 +15,7 @@ Concerete subtypes are:
 - [`RandomICsSampler`](@ref)
 - [`PrescribedICs`](@ref)
 - [`PerParameterICs`](@ref)
+- [`BayesianUpdateSampler`](@ref)
 
 `InitialConditionsSampler` defines a currently experimental extendable interface
 based on the internal functions
@@ -114,18 +115,19 @@ end
 generate_ics(p::PerParameterICs, params, args...) = p.f(params, p.N)
 
 """
-    BayesianUpdateSampler(region, n_tiles::Int; sparse_n, kwargs...) <: InitialConditionsSampler
+    BayesianUpdateSampler(region, n_tiles::Int; kwargs...) <: InitialConditionsSampler
 
-Sampler allocating initial conditions where the basins are actually changing.
-`region` is tiled into `n_tiles^D` equally sized boxes, each carrying information
-over the attractor labels found inside it. At every parameter of a
-[`global_continuation`](@ref) each box is sampled sparsely and the resulting label
-counts are tested against its prior with a log Bayes factor `η`. A box with negative
-`η` means the data are better explained by no prior at all than by its history.
-The basins in the box have changed and the sampler asks for a dense re-sample.
+Sampler that may re-sample initial conditions wih larger density by employing the
+daptive Bayesian framework of [Haerter2026](@cite).
 
 `region` is anything [`statespace_sampler`](@ref) accepts as a region: an `HRectangle`,
 or a tuple of ranges/`(min, max)` pairs, one per dimension.
+This is then tiled into `n_tiles^D` equally sized boxes, with `D` the system dimension.
+Each box is sampled sparsely.
+
+When this sampler is used with [`global_continuation`](@ref), boxes may be resampled
+with higher density according to the Bayesian framework of [Haerter2026](@cite),
+see description below.
 
 ## Keyword arguments
 
@@ -136,23 +138,24 @@ or a tuple of ranges/`(min, max)` pairs, one per dimension.
   sparse update, so that evidence from far-away parameters is progressively discounted.
 - `β::Real = 0.5`: Dirichlet base pseudo-count assigned to unseen labels.
 - `global_reset::Bool = false`: a heuristic sitting on top of the per-box test.
-  If an attractor appear or disapear from one parameter to another we can ask 
-  the sampler to flag all boxes for a dense resampling. It will give a better 
-  estimate of the basin entropy for example. Basins fraction are more robust and 
-  the change will not be so drastic. 
+  If an attractor appear or disapear from one parameter to another we can ask
+  the sampler to flag all boxes for a dense resampling. It will give a better
+  estimate of the basin entropy for example. Basins fraction are more robust and
+  the change will not be so drastic.
 - `seed = abs(rand(Int))`: seed for the per-box point generators.
 - `history::Bool = false`: keep a per-parameter record of `alphas` and `etas`, which
   are otherwise overwritten in place. See "History" below.
 
 ## Description
 
+We outline how this sampler works in global continuation.
 At the first parameter every box is sampled with `dense_n` initial conditions and its
 prior is initialised as `α_k = c_k + β` from the label counts `c` and atractor k.
 At every later parameter:
 
 1. `generate_ics` draws `sparse_n` points per box.
 2. `update_sampler!` slices the returned labels per box, decays that box's prior by `λ`,
-   and computes `η`. If `η < 0` the box is flagged and its prior left untouched;
+   and computes `η`, the Bayes factor. If `η < 0` the box is flagged and its prior left untouched;
    otherwise the posterior `α_k ← λα_k + c_k` is stored.
 3. If any box was flagged, `resampling_required` returns `true` and the continuation loop
    calls `generate_ics` again. That round draws `dense_n` points for the flagged boxes
@@ -162,14 +165,13 @@ Because a dense round performs no test, at most one re-sampling round happens pe
 parameter. Every box starts out flagged, so the dense initialisation of the first
 parameter is nothing but step 3 applied to all of them.
 
-## History
+### History
 
 `alphas` and `etas` describe the current parameter only: every round overwrites them,
 so by the time a continuation returns they say nothing about the sweep that produced
 it. With `history = true` the sampler snapshots both at the end of each parameter.
 
-Use [`sampler_history`](@ref)
-to read them back.
+Use [`bayesian_sampler_history`](@ref) to read them back.
 
 !!! warning "The history IDs are not those of the continuation output"
     The recorded `alphas` are keyed by the attractor IDs in use while the sweep is
@@ -277,7 +279,7 @@ function generate_ics(s::BayesianUpdateSampler{D}, args...) where {D}
     # a round that is not a re-sample is the first one of a new parameter
     resample || (foreach(empty!, s.step_counts); s.did_reset = false)
     empty!(s.layout)
-    total = 0 
+    total = 0
     if resample
         for i in eachindex(s.boxes)
             s.boxes_flags[i] || continue
@@ -342,7 +344,7 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
 end
 
 # An attractor born or dead changes the set of labels, which no sampling noise can fake.
-# If the keyword global_reset is true, then all the boxes are flagged when attractors 
+# If the keyword global_reset is true, then all the boxes are flagged when attractors
 # changes from one parameter slice to the next.
 function _global_reset_detection!(s::BayesianUpdateSampler, labels)
     (s.global_reset && !any(s.boxes_flags)) || return false
@@ -362,7 +364,7 @@ function _push_history!(s::BayesianUpdateSampler)
 end
 
 """
-    sampler_history(sampler::BayesianUpdateSampler) → NamedTuple
+    bayesian_sampler_history(sampler::BayesianUpdateSampler) → NamedTuple
 
 Return the history of alphas and etas per box, and of the global resets (`resets[i]` is
 `true` if the whole tiling was re-learned at parameter `i` because the label set changed),
@@ -370,7 +372,7 @@ provided the sampler was created with `history = true`. Mind that the `alphas` a
 sweep, which need not be those of the continuation output; see the "History" section of
 [`BayesianUpdateSampler`](@ref).
 """
-sampler_history(s::BayesianUpdateSampler) =
+bayesian_sampler_history(s::BayesianUpdateSampler) =
     (; alphas = s.history_alphas, etas = s.history_etas, resets = s.history_resets)
 
 """
@@ -382,7 +384,7 @@ is the average over the boxes of the fraction of each box belonging to it.
 The function takes into account the boxes that have been resampled.
 
 Note that the argument `counts` is not used in the function, the internal counts
-for each box are used but the argument is necessary for the function signature. 
+for each box are used but the argument is necessary for the function signature.
 """
 function weighted_fractions(s::BayesianUpdateSampler, counts)
     fs = Dict{Int, Float64}()

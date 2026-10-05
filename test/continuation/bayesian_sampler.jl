@@ -4,7 +4,7 @@
 using Test, Attractors
 using Attractors: n_boxes, resampling_required
 
-# dummy dynamical system 
+# dummy dynamical system
 function dumb_multistable(u, p, n)
     x = u[1]
     w = p[1]
@@ -17,9 +17,9 @@ function dumb_multistable(u, p, n)
 end
 
 # Exact basin fractions over the region [-1, 1]².
-function dumb_fractions(w)  
-    if  w ≤ 0 
-         Dict(1 => 0.5, 3 => 0.5) 
+function dumb_fractions(w)
+    if  w ≤ 0
+         Dict(1 => 0.5, 3 => 0.5)
     else
         Dict(1 => (1 - w)/2, 2 => w, 3 => (1 - w)/2)
     end
@@ -74,13 +74,13 @@ end
 
 @testset "alarms test" begin
     # get history
-    h = sampler_history(SAMPLER)
+    h = bayesian_sampler_history(SAMPLER)
     @test length(h.etas) == length(h.alphas) == length(WS)
     alarms = [findall(<(0), e) for e in h.etas]
 
     # dense initialisation, no test is performed.
     @test all(iszero, h.etas[1])
- 
+
     # η = 0 for w < 0: no alarm is possible, false or otherwise.
     @test all(isempty, alarms[2:3])
 
@@ -91,7 +91,7 @@ end
     @test length(overlapping) == 8
     @test alarms[4] == overlapping
 
-    # Last parameter is repeated and the alarms shouldn't 
+    # Last parameter is repeated and the alarms shouldn't
     # trigger
     @test length(alarms[6]) ≤ 2
 end
