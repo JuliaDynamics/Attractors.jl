@@ -1096,7 +1096,12 @@ we can now visualise the continuation and also some information that are specifi
 tied to the Bayesian sampler (stored in the `other` field of `gco`)
 
 ```@example MAIN
-
-fig = Figure()
-axs = [Axis(fig[i, 1]) for i in 1:3]
-linkxaxes!(axs)
+fig = plot_basins_curves(gco.fractions, ω_range)
+ax = content(fig[1,1])
+axs = [Axis(fig[1 - i, 1]) for i in 1:2]
+linkxaxes!(ax, axs...)
+hidexdecorations!.(axs; grid = false)
+xlims!(ax, extrema(ω_range))
+scatter!(axs[1], ω_range, length.(gco.attractors))
+fig
+```

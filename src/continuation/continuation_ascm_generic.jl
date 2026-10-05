@@ -141,8 +141,7 @@ function global_continuation(
     attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
-    other_cont = init_other_cont()
-
+    other_cont = init_other_cont(length(pcurve), sampler)
 
     # Loop over parameters
     for (i, p) in enumerate(pcurve)
@@ -231,28 +230,4 @@ function init_other_cont(N::Int, sampler) # any other args here
         container[k] = Vector{T}(undef, N)
     end
     return container
-end
-
-"""
-    init_other_info(x)
-
-Return an iterator of `key => Type` pairs, with the `key` being of type `String`
-and the `Type` indicating what type this additional information will be.
-
-Called at the start of a global continuation.
-"""
-function init_other_info(x)
-    return Dict{String, Any}()
-end
-
-"""
-    extract_other_info(x)
-
-Return an iterator of `key => value` pairs, with the `key` being of a string
-and the `value` the value of the corresponding additional information.
-
-Called at the end of a global continuation step.
-"""
-function extract_other_info(x)
-    Dict{String, Any}()
 end
