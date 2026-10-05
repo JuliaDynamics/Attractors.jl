@@ -201,7 +201,7 @@ function global_continuation(
         end
 
         # any extras that need to be updated can be done so here:
-        add_extra_continuation_info!(other_cont, icsampler)
+        add_extra_continuation_info!(other_cont, i, icsampler)
 
         # update progress bar
         showvalues = i < length(pcurve) ? [("pcurve index", i + 1)] : []
@@ -230,4 +230,12 @@ function init_other_cont(N::Int, sampler) # any other args here
         container[k] = Vector{T}(undef, N)
     end
     return container
+end
+
+function add_extra_continuation_info!(other_cont, x)
+    extras = extract_other_info(x)
+    for (k, v) in extras
+        other_cont[k][i] = v
+    end
+    return
 end
