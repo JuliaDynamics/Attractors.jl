@@ -105,7 +105,6 @@ function convergence_time end
 # Includes
 #########################################################################################
 
-include("sampler_api.jl")
 include("basins_types.jl")
 include("basin_fractions_concrete.jl")
 include("attractor_mapping_proximity.jl")
