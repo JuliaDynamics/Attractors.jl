@@ -1,5 +1,5 @@
 using Neighborhood
-export ics_from_grid, map_to_basin
+export ics_from_grid, map_to_basin, basins_counts
 
 """
     basins_of_attraction(bmap::BasinMap, grid::Tuple) → boa
@@ -85,11 +85,21 @@ Optionally you may give a vector of `ids` to calculate the fractions of only
 the chosen ids (by default `ids = unique(basins)`).
 """
 function basins_fractions(basins::AbstractArray, ids = unique(basins)::AbstractArray)
-    fs = Dict{eltype(basins), Float64}()
+    counts = basins_counts(basins, ids)
     N = length(basins)
+    return Dict(k => v/N for (k, v) in counts)
+end
+
+"""
+    basins_counts(basins::AbstractArray [,ids]) → fs::Dict
+
+Same as `basins_fractions(basins, ids)` but return only the direct counts instead of
+relative fractions.
+"""
+function basins_counts(basins::AbstractArray, ids = unique(basins)::AbstractArray)
+    fs = Dict{eltype(basins), Int}()
     for ξ in ids
-        B = count(isequal(ξ), basins)
-        fs[ξ] = B / N
+        fs[ξ] = count(isequal(ξ), basins)
     end
     return fs
 end

@@ -38,6 +38,11 @@ about additional information added to this output.
 
 See the function [`continuation_series`](@ref) if you wish to transform the output(s)
 to an alternative format.
+
+!!! note "Developer's note"
+    Any struct can add information to the `other` field of a continuation.
+    To do so, extend the methods `init_other_info` and `extract_other_info`
+    (currently internal functions and expertimental API).
 """
 struct GlobalContinuationOutput{SSS, F<:AbstractFloat, V<:Vector, A, P}
     attractors::Vector{Dict{Int, SSS}}
@@ -55,12 +60,6 @@ function Base.show(io::IO, gco::GlobalContinuationOutput)
     println(io, " quantifiers")
     println(io, " other")
     println(io, " pcurve")
-end
-
-
-# Internal function for adding info; dispatches on `something`
-function add_extra_continuation_info!(extras::Dict{String,Any}, something)
-    return nothing
 end
 
 """
@@ -134,9 +133,35 @@ function continuation_series(continuation_info::AbstractVector{<:AbstractDict}, 
     return series
 end
 
+"""
+    init_other_info(x)
+
+Return an iterator of `key => Type` pairs, with the `key` being of type `String`
+and the `Type` indicating what type this additional information will be.
+
+Called at the start of a global continuation.
+"""
+function init_other_info(x)
+    return Dict{String, Any}()
+end
+
+"""
+    extract_other_info(x)
+
+Return an iterator of `key => value` pairs, with the `key` being of a string
+and the `value` the value of the corresponding additional information.
+
+Called at the end of a global continuation step.
+"""
+function extract_other_info(x)
+    Dict{String, Any}()
+end
+
+
 include("hilbert_pcurve.jl")
 include("continuation_ascm_generic.jl")
 include("continuation_recurrences.jl")
 include("continuation_grouping.jl")
 include("aggregate_continuation.jl")
 include("continuation_stability_quantifiers.jl")
+

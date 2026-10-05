@@ -1,6 +1,8 @@
 export InitialConditionsSampler
 export RandomICsSampler, PrescribedICs, PerParameterICs
 
+using Random: Xoshiro
+
 """
     InitialConditionsSampler
 
@@ -11,9 +13,11 @@ Concerete subtypes are:
 - [`RandomICsSampler`](@ref)
 - [`PrescribedICs`](@ref)
 - [`PerParameterICs`](@ref)
+- [`BayesianUpdateSampler`](@ref)
 
 `InitialConditionsSampler` defines a currently experimental extendable interface
-based on the internal functions `generate_ics, update_sampler!, resampling_required`.
+based on the internal functions
+`generate_ics, update_sampler!, resampling_required, weighted_fractions`.
 
 `length(sampler)` returns the number of initial conditions that will be generated
 by the sampler.
@@ -38,6 +42,20 @@ update_sampler!(sampler, args...) = nothing
 resampling_required(sampler) = false
 
 """
+    weighted_fractions(sampler::InitialConditionsSampler, counts) → Dict{Int, Float64}
+
+Since the sampling is not uniform across the domain the fractions have to be computed
+taking into account the weight of each box.
+
+The default implementation is just `counts ./ sum(counts)`, which is right
+whenever the sampler covers the region uniformly and in one round.
+"""
+function weighted_fractions(sampler, counts)
+    n = sum(values(counts); init = 0)
+    return Dict{Int, Float64}(k => c / n for (k, c) in counts)
+end
+
+"""
     RandomICsSampler(f::Function, N::Int) <: InitialConditionsSampler
 
 Wrapper around a function `f`, to be called as
@@ -57,14 +75,6 @@ struct RandomICsSampler{F} <: InitialConditionsSampler
 end
 RandomICsSampler(N::Int, args...; kw...) = RandomICsSampler(statespace_sampler(args...; kw...)[1], N)
 generate_ics(p::RandomICsSampler, args...) = (p.f() for _ in 1:p.N)
-# function RandomICsSampler(N::Int, args...; kw...)
-#     # we have to acknowledge that f() operates in-place here!
-#     f, = statespace_sampler(args...; kw...)[1]
-#     g = () -> copy(f())
-#     return RandomICsSampler(g, N)
-# end
-
-
 
 """
     PrescribedICs(u0s::AbstractVector) <: InitialConditionsSampler
@@ -94,66 +104,4 @@ struct PerParameterICs{F} <: InitialConditionsSampler
 end
 generate_ics(p::PerParameterICs, params, args...) = p.f(params, p.N)
 
-"""
-    BayesianUpdateSampler(dense_sampler, sparse_sampler, γ = 0.5) <: InitialConditionsSampler
-
-From Alex's paper.
-"""
-struct BayesianUpdateSampler{D, S, R <: HRectangle} <: InitialConditionsSampler
-    dense_n::Int
-    sparse_n::Int
-    γ::Float64
-    β::Float64
-    λ::Float64
-    boxes::Vector{R}
-    boxes_flags::Vector{Bool} # same size as `boxes`, true if resampling is required for this box
-    resampling_necessary::Bool
-    more_fields
-end
-
-# Sketch for boxes
-# each box has either `dense_n` or `sparse_n`
-
-# if you have a total of `N` i.c.
-# and you know the `boxes_flags`, then you know exactly which ones of the total `N`
-# are in each box.
-
-# This way, you can generate a _single_ vector of initial conditions
-# (although its size would change at each step of the continuation depending
-# on which boxes get sparse or dense `n`)
-
-function generate_ics(sampler::BayesianUpdateSampler)
-    # This function utilizes `resampling_necessary`.
-    all_ics = []
-    # loop through boxes
-    for (boxi, box) in enumerate(sampler.boxes)
-        # for each box, compute η
-        η = somehow
-        if η < 0
-            ics = random_ics_from_box(box, dense_n)
-        else
-            ics = random_ics_from_box(box, sparse_n)
-        end
-        append!(all_ics, ics)
-    end
-    return all_ics
-end
-
-function update_sampler!(sampler::BayesianUpdateSampler, labels, args...)
-    # first, analyze labels per-box
-    counter = 1
-    for box_index in eachindex(sampler.boxes)
-        n_box = boxes_flags[box_index] ? sampler.dense_n : sampler.sparse_n
-        labels_for_box = view(labels, counter:(counter + n_box))
-        # then make a decision on the η and box flag and whatever
-        # update bayesian
-        η = update_somehow(labels_for_box)
-        # then update the box flag
-        boxes_flags[box_index] = η < 0 ? true : false
-        counter += n_box
-    end
-    # Processing stuff
-    return nothing
-end
-
-resampling_required(sampler::BayesianUpdateSampler) = any(sampler.boxes_flags)
+include("bayesian.jl")
