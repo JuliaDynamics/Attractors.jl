@@ -1,6 +1,5 @@
-export BayesianUpdateSampler, bayesian_sampler_history
+export BayesianUpdateSampler
 using SpecialFunctions: loggamma
-
 
 """
     BayesianUpdateSampler(region, n_tiles::Int; kwargs...) <: InitialConditionsSampler
@@ -32,7 +31,9 @@ see description below.
   the change will not be so drastic.
 - `seed = abs(rand(Int))`: seed for the per-box point generators.
 - `history::Bool = false`: keep a per-parameter record of `alphas` and `etas`, which
-  are otherwise overwritten in place. See "History" below.
+  are otherwise overwritten in place. They are stored in the fields
+  `history_alphas, history_etas`. Note that the IDs of these containers have not been
+  matched; you can apply `match_sequentially!` to them if you want though.
 
 ## Description
 
@@ -53,20 +54,12 @@ Because a dense round performs no test, at most one re-sampling round happens pe
 parameter. Every box starts out flagged, so the dense initialisation of the first
 parameter is nothing but step 3 applied to all of them.
 
-### History
-
-`alphas` and `etas` describe the current parameter only: every round overwrites them,
-so by the time a continuation returns they say nothing about the sweep that produced
-it. With `history = true` the sampler snapshots both at the end of each parameter.
-
-Use [`bayesian_sampler_history`](@ref) to read them back.
-
-!!! warning "The history IDs are not those of the continuation output"
-    The recorded `alphas` are keyed by the attractor IDs in use while the sweep is
-    running. [`global_continuation`](@ref) relabel the IDs to consecutive integers once
-    the sweep is over. So the same attractor may be keyed differently in the history.
-    The history is meant for computing statistics over the boxes, such as where and when
-    the basins changed.
+This sampler adds the number of alarms
+in the `other` component of the continuation output. If `n_tiles > 1`,
+then the basin entropy and basin entropy variance is also attributed.
+Note that their accuracy depends on the number of tiles, and the basin entropy does not
+equal exactly the KDTree-based estimation that occurs generically through
+[`StabilityQuantifiersAccumulator`](@ref).
 """
 mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     boxes::Vector{HRectangle{Float64, SVector{D, Float64}}}
@@ -85,7 +78,6 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     history::Bool
     history_alphas::Vector{Vector{Dict{Int, Float64}}}
     history_etas::Vector{Vector{Float64}}
-    history_resets::Vector{Bool}
 end
 
 function BayesianUpdateSampler(region, n_tiles::Int;
@@ -192,9 +184,6 @@ function generate_ics(s::BayesianUpdateSampler{D}, args...) where {D}
 end
 
 
-"""
-    update_sampler!(sampler::BayesianUpdateSampler, labels)
-"""
 function update_sampler!(s::BayesianUpdateSampler, labels, args...)
     expected = isempty(s.layout) ? 0 : sum(last, s.layout)
     length(labels) == expected || throw(DimensionMismatch(
@@ -247,45 +236,7 @@ end
 function _push_history!(s::BayesianUpdateSampler)
     push!(s.history_alphas, [copy(α) for α in s.alphas])
     push!(s.history_etas, copy(s.etas))
-    push!(s.history_resets, s.did_reset)
     return nothing
-end
-
-"""
-    bayesian_sampler_history(sampler::BayesianUpdateSampler) → NamedTuple
-
-Return the history of alphas and etas per box, and of the global resets (`resets[i]` is
-`true` if the whole tiling was re-learned at parameter `i` because the label set changed),
-provided the sampler was created with `history = true`. Mind that the `alphas` are keyed by the attractor IDs of the running
-sweep, which need not be those of the continuation output; see the "History" section of
-[`BayesianUpdateSampler`](@ref).
-"""
-bayesian_sampler_history(s::BayesianUpdateSampler) =
-    (; alphas = s.history_alphas, etas = s.history_etas, resets = s.history_resets)
-
-"""
-    weighted_fractions(sampler::BayesianUpdateSampler, counts)
-
-The boxes all have the same volume, so the fraction of the region belonging to basin `k`
-is the average over the boxes of the fraction of each box belonging to it.
-
-The function takes into account the boxes that have been resampled.
-
-Note that the argument `counts` is not used in the function, the internal counts
-for each box are used but the argument is necessary for the function signature.
-"""
-function weighted_fractions(s::BayesianUpdateSampler, counts)
-    fs = Dict{Int, Float64}()
-    sampled = count(!isempty, s.step_counts)
-    sampled == 0 && return fs
-    for c in s.step_counts
-        isempty(c) && continue
-        nᵢ = sum(values(c))
-        for (k, v) in c
-            fs[k] = get(fs, k, 0.0) + v / (nᵢ * sampled)
-        end
-    end
-    return fs
 end
 
 function _count_labels(labels)
@@ -338,4 +289,86 @@ function log_marginal_likelihood(new_counts::Dict{Int, Int}, alpha::Dict{Int, Fl
 
     log_lik += loggamma(alpha_0) - loggamma(N_s + alpha_0)
     return log_lik
+end
+
+# The following fuctions are for estimating the basin entropy
+
+# Posterior mean of the Shannon entropy of a Dirichlet(α) distribution,
+# E[S] = ψ(α₀ + 1) − Σₖ (αₖ/α₀) ψ(αₖ + 1),    α₀ = Σₖ αₖ
+function bayes_entropy(alpha::AbstractDict{Int, Float64})
+    a0 = sum(values(alpha))
+    a0 > 0 || return 0.0
+    term2 = 0.0
+    for val in values(alpha)
+        term2 += (val / a0) * digamma(val + 1)
+    end
+    return digamma(a0 + 1) - term2
+end
+
+# Exact posterior variance of the Shannon entropy under Dirichlet(α), following
+# Wolpert & Wolf (1995), Theorem 16 (Eqs. 16.1–16.2). The `i ≠ j` cross terms are
+# summed with the `(Σ)² − Σ(·²)` trick, so the cost is O(K) rather than O(K²).
+function bayes_entropy_variance(alpha::Union{AbstractVector{Float64}, AbstractDict{Int, Float64}})
+    vals = isa(alpha, AbstractDict) ? collect(values(alpha)) : alpha
+    a0 = sum(vals)
+    a0 > 0 || return 0.0
+
+    # Polygamma terms of the total, needed by every summand
+    psi_a0_1 = digamma(a0 + 1)
+    psi_a0_2 = digamma(a0 + 2)
+    tri_a0_2 = trigamma(a0 + 2)
+
+    E_S = 0.0      # E[S], Eq. 16.1
+    sum_A = 0.0    # Σ Aᵢ, for the cross-term trick
+    sum_A2 = 0.0   # Σ Aᵢ²
+    sum_a_sq = 0.0 # Σ αᵢ²
+    D = 0.0        # diagonal (i == j) terms of Eq. 16.2
+
+    for a_i in vals
+        a_i > 0 || continue
+        E_S -= (a_i / a0) * (digamma(a_i + 1) - psi_a0_1)
+
+        A_i = a_i * (digamma(a_i + 1) - psi_a0_2)
+        sum_A += A_i
+        sum_A2 += A_i^2
+        sum_a_sq += a_i^2
+
+        D += (a_i * (a_i + 1)) / (a0 * (a0 + 1)) *
+             ((digamma(a_i + 2) - psi_a0_2)^2 + trigamma(a_i + 2) - tri_a0_2)
+    end
+
+    C = ((sum_A^2 - sum_A2) - tri_a0_2 * (a0^2 - sum_a_sq)) / (a0 * (a0 + 1))
+    # Var = E[S²] − E[S]²; clamp away float noise around 0
+    return max(0.0, (C + D) - E_S^2)
+end
+
+
+# Basin entropy of the whole region: the mean over boxes of their posterior mean entropy.
+mean_basin_entropy(alphas::AbstractVector{<:AbstractDict{Int, Float64}}) =
+    isempty(alphas) ? 0.0 : sum(bayes_entropy, alphas) / length(alphas)
+
+# Variance of [`mean_entropy`](@ref). The boxes are treated as independent, so the
+# variance of their mean is `(1/N²) Σᵢ Var[Sᵢ]`.
+function mean_basin_entropy_variance(alphas::AbstractVector{<:AbstractDict{Int, Float64}})
+    n = length(alphas)
+    n > 0 || return 0.0
+    return sum(bayes_entropy_variance, alphas) / n^2
+end
+
+function init_other_info(s::BayesianUpdateSampler)
+    out = Dict{String, Any}("alarms" => Int)
+    if length(s.boxes) > 1
+        out["basin_entropy"] = Float64
+        out["basin_entropy_variance"] = Float64
+    end
+    return out
+end
+
+function extract_other_info(s::BayesianUpdateSampler)
+    out = Dict("alarms" => count(s.boxes_flags))
+    if length(s.boxes) > 1
+        out["basin_entropy"] = mean_entropy(s.alphas)
+        out["basin_entropy_variance"] = mean_entropy_variance(s.alphas)
+    end
+    return out
 end

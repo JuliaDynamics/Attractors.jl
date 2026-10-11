@@ -41,7 +41,7 @@ to an alternative format.
 
 !!! note "Developer's note"
     Any struct can add information to the `other` field of a continuation.
-    To do so, extend the methods `init_other_info` and `extract_other_info`
+    To do so, extend the internal functions `init_other_info` and `extract_other_info`
     (currently internal functions and expertimental API).
 """
 struct GlobalContinuationOutput{SSS, F<:AbstractFloat, V<:Vector, A, P}
@@ -154,7 +154,7 @@ and the `value` the value of the corresponding additional information.
 Called at the end of a global continuation step.
 """
 function extract_other_info(x)
-    Dict{String, Any}()
+    return Dict{String, Any}()
 end
 
 
