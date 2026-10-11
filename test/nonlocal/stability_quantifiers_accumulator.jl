@@ -21,11 +21,10 @@ using Random
     # `StabilityQuantifiersAccumulator` for a dumb map.
     dynamics = DeterministicIteratedMap(dumb_map2, [1.0, 1.0], [1.0])
     grid = ([-1, 0, 1.0], [-1, 0, 1.0])
-    bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
     A = ics_from_grid(grid)
 
     @testset "mapping" begin
-
+        bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
         for u0 in A
             id = bmap(u0) # run this to find all attractors
         end
@@ -178,6 +177,7 @@ using Random
     end
 
     @testset "continuation with ASCM" begin
+        bmap = BasinMapRecurrences(dynamics, grid; sparse = false)
         accumulator = StabilityQuantifiersAccumulator(bmap)
         pcurve = [[1 => p] for p in [-1.0, 1.0]]
         ascm = AttractorSeedContinueMatch(accumulator)
@@ -462,7 +462,7 @@ end
     @testset "continuation" begin
         pcurve = [[1 => r] for r in rs]
         acsm = AttractorSeedContinueMatch(accumulator)
-        gco = global_continuation(acsm, pcurve, PrescribedICs(ics))
+        gco = global_continuation(acsm, pcurve, PrescribedICs(ics); show_progress = false)
         quantifiers_cont = gco.quantifiers
         @test isequal(quantifiers_cont["minimal_critical_shock_magnitude"][2], Dict(2 => 2.0, 1 => 1.0))
         fs = quantifiers_cont["basin_fraction"][1]

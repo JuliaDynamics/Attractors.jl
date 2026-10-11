@@ -1,6 +1,7 @@
 # Basins functions
 
 ## Basins types
+
 The basins of attraction are often represented as an array or vector. We also provide a convenient extendable structure
 that contains the basins themselves, attractors, and the domains on which the basins are defined. All standard basin-related
 functions are compatible with this alternate representation.
@@ -41,6 +42,13 @@ InitialConditionsSampler
 RandomICsSampler
 PrescribedICs
 PerParameterICs
+```
+
+### Bayesian basin tracking
+
+```@docs
+BayesianUpdateSampler
+bayesian_sampler_history
 ```
 
 ## Convergence times
