@@ -1098,9 +1098,10 @@ fig = plot_basins_curves(gco.fractions, ω_range)
 axs = [Axis(fig[1 - i, 1]) for i in 1:3]
 linkxaxes!(content(fig[1,1]), axs...)
 hidexdecorations!.(axs; grid = false)
+axs[1].ylabel = "# alarms"
+scatterlines!(axs[1], ω_range, gco.other["alarms"])
+scatterlines!(axs[2], ω_range, gco.other["basin_entropy"])
+scatterlines!(axs[3], ω_range, gco.other["basin_entropy_variance"])
 xlims!(axs[end], extrema(ω_range))
-scatter!(axs[1], ω_range, gco.other["alarms"])
-scatter!(axs[2], ω_range, gco.other["basin_entropy"])
-scatter!(axs[3], ω_range, gco.other["basin_entropy_variance"])
 fig
 ```
