@@ -44,7 +44,7 @@ A subtype of [`BasinsOfAttraction`](@ref) whose `basins` of attraction are repre
 the state space domain that `basins` cover, and must be a tuple of ranges or ordered vectors.
 Each vector is a dimension for each axis of the `basins` array.
 Alternative, `grid` can be a `RegularGrid` or `IrregularGrid`.
-The `attractors` are a dictionary mapping labels to `StateSpaceSet`s.
+The `attractors` are a dictionary mapping labels to `StateSpaceSet`s that is copied in.
 """
 struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S <: StateSpaceSet} <: BasinsOfAttraction{ID}
     basins::B
@@ -59,7 +59,7 @@ struct ArrayBasinsOfAttraction{ID, D, B <: AbstractArray{ID, D}, G <: Grid, K, S
             length(grid.grid) != dimension(first(values(attractors))) && error("The attractor points and the grid must have the same number of dimensions")
         end
         B = typeof(basins)
-        return new{ID, D, B, G, K, S}(basins, attractors, grid)
+        return new{ID, D, B, G, K, S}(basins, copy(attractors), grid)
     end
 end
 # ArrayBasinsOfAttraction with grid as tuple
@@ -80,7 +80,7 @@ end
 
 A subtype of [`BasinsOfAttraction`](@ref) where the basins are sampled points in the state space.
 `basins` are thus a `vector::AbstractVector`, each entry corresponding to the point in `sampled_points`.
-The `attractors` are the usual form of Attractors.jl, a dictionary labels to `StateSpaceSet`s.
+The `attractors` are a dictionary mapping labels to `StateSpaceSet`s that is copied in.
 
 `sampled_points` can be a `StateSpaceSet` with the same dimensionality and element type
 as the attractors, or alternatively a vector of points with the same requirements.
@@ -102,7 +102,7 @@ struct SampledBasinsOfAttraction{ID, D, T, AK, S <: StateSpaceSet{D, T}, ss} <: 
         {ID, D, T, AK, S <: StateSpaceSet{D, T}}
         length(basins) != length(sampled_points) && error("The basins and the sampled points must have equal length")
         search_struct = searchstructure(tree, sampled_points, metric; ss_kwargs...)
-        return new{ID, D, T, AK, S, typeof(search_struct)}(basins, attractors, sampled_points, search_struct)
+        return new{ID, D, T, AK, S, typeof(search_struct)}(basins, copy(attractors), sampled_points, search_struct)
     end
 end
 

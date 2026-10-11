@@ -48,7 +48,7 @@ function Attractors.plot_attractors!(
         ukeys = sort(collect(keys(attractors))), # internal argument just for other keywords
         colors = colors_from_keys(ukeys),
         markers = markers_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
+        labels = Dict(ukeys .=> string.(ukeys)),
         add_legend = length(ukeys) < 7,
         axislegend_kwargs = NamedTuple(),
         access = SVector(1, 2),
@@ -61,7 +61,7 @@ function Attractors.plot_attractors!(
             ax, A[:, access];
             color = (colors[k], 0.9), markersize = 20,
             marker = markers[k],
-            label = "$(labels[k])",
+            label = labels[k],
             sckwargs...
         )
     end
@@ -96,7 +96,7 @@ function Attractors.heatmap_basins_attractors!(
         ukeys = unique(basins), # internal argument just for other keywords
         colors = colors_from_keys(ukeys),
         markers = markers_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
+        labels = Dict(ukeys .=> string.(ukeys)),
         add_legend = length(ukeys) < 7,
         access = SVector(1, 2),
         sckwargs = (strokewidth = 1.5, strokecolor = :white)
@@ -170,7 +170,7 @@ function Attractors.shaded_basins_heatmap!(
 
     cmap, colors = custom_colormap_shaded(ukeys)
     markers = markers_from_keys(ukeys)
-    labels = Dict(ukeys .=> ukeys)
+    labels = Dict(ukeys .=> string.(ukeys))
     add_legend = length(ukeys) < 7
 
     it = findall(iterations .> maxit)
@@ -203,7 +203,7 @@ function Attractors.shaded_basins_heatmap!(
                 color = colors[k], markersize = 20,
                 marker = markers[k],
                 strokewidth = 1.5, strokecolor = :white,
-                label = "$(labels[k])"
+                label = labels[k]
             )
         end
         # Add legend using colors only
@@ -267,7 +267,7 @@ function Attractors.plot_basins_curves!(
         ax, fractions_cont, prange = 1:length(fractions_cont);
         ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
+        labels = Dict(ukeys .=> string.(ukeys)),
         separatorwidth = 1, separatorcolor = "white",
         add_legend = length(ukeys) < 7,
         axislegend_kwargs = (position = :lt,),
@@ -294,7 +294,7 @@ function Attractors.plot_basins_curves!(
             end
             band!(
                 ax, prange, l, u;
-                color = colors[k], label = "$(labels[k])", series_kwargs...
+                color = colors[k], label = labels[k], series_kwargs...
             )
             if separatorwidth > 0 && j < length(ukeys)
                 lines!(ax, prange, u; color = separatorcolor, linewidth = separatorwidth, linestyle = :solid)
@@ -305,7 +305,7 @@ function Attractors.plot_basins_curves!(
         for k in ukeys
             scatterlines!(
                 ax, prange, bands[k];
-                color = colors[k], label = "$(labels[k])", marker = markers[k],
+                color = colors[k], label = labels[k], marker = markers[k],
                 markersize = 10, linewidth = 3, series_kwargs...
             )
         end
@@ -342,7 +342,7 @@ function Attractors.plot_continuation_curves!(
         ax, continuation_info, prange = 1:length(continuation_info);
         ukeys = unique_keys(continuation_info), # internal argument
         colors = colors_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
+        labels = Dict(ukeys .=> string.(ukeys)),
         add_legend = length(ukeys) < 7,
         markers = markers_from_keys(ukeys),
         series_kwargs = NamedTuple(),
@@ -357,7 +357,7 @@ function Attractors.plot_continuation_curves!(
     for k in ukeys
         scatterlines!(
             ax, prange, series[k];
-            color = colors[k], label = "$(labels[k])", marker = markers[k],
+            color = colors[k], label = labels[k], marker = markers[k],
             markersize = 10, linewidth = 3, series_kwargs...
         )
     end
@@ -387,7 +387,7 @@ function Attractors.plot_basins_attractors_curves(
         a2rs::Vector, prange = 1:length(attractors_cont);
         ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
+        labels = Dict(ukeys .=> string.(ukeys)),
         markers = markers_from_keys(ukeys),
         style = :band,
         kwargs...
@@ -424,7 +424,7 @@ function Attractors.plot_basins_attractors_curves!(
         attractor_to_real, prange = 1:length(attractors_cont);
         ukeys = unique_keys(fractions_cont), # internal argument
         colors = colors_from_keys(ukeys),
-        labels = Dict(ukeys .=> ukeys),
+        labels = Dict(ukeys .=> string.(ukeys)),
         kwargs...
     )
 
