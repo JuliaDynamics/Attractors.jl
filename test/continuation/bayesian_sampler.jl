@@ -74,12 +74,12 @@ end
 
 @testset "alarms test" begin
     # get history
-    h = bayesian_sampler_history(SAMPLER)
-    @test length(h.etas) == length(h.alphas) == length(WS)
-    alarms = [findall(<(0), e) for e in h.etas]
+    alphas, etas = SAMPLER.history_alphas, SAMPLER.history_etas
+    @test length(etas) == length(alphas) == length(WS)
+    alarms = [findall(<(0), e) for e in etas]
 
     # dense initialisation, no test is performed.
-    @test all(iszero, h.etas[1])
+    @test all(iszero, etas[1])
 
     # η = 0 for w < 0: no alarm is possible, false or otherwise.
     @test all(isempty, alarms[2:3])
