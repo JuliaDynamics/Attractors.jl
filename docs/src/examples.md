@@ -1044,20 +1044,18 @@ The easiest way to resolve this is to transform each continuation to a series us
 ## Bayesian basin tracking (effecient resampling)
 
 The sampler type [`BayesianUpdateSampler`](@ref) increases the efficiency of global continuation by sampling points densely only when need be.
-Here is an example applied to the Duffing oscillator,
-
+Here is an example applied to the Duffing oscillator, as in the paper that
+introduces the algorithm [Haerter2026](@cite).
 
 ```@example MAIN
 using OrdinaryDiffEqVerner
 
-# Define Duffing system
 @inline @inbounds function duffing_rescaled(u, p, s)
     d = p[1]; F = p[2]; ω = p[3]
     du1 = u[2] / ω
     du2 = (-d * u[2] + u[1] - u[1]^3 + F * sin(s)) / ω
     return SVector{2}(du1, du2)
 end
-
 d = 0.2; F = 0.2  # smooth boundary for starting values
 ω_range = range(0.2, 1.5; length = 101)
 diffeq = (reltol = 1e-9, abstol = 1e-9, alg = Vern9(), maxiters = 1e9)

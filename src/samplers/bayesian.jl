@@ -2,23 +2,21 @@ export BayesianUpdateSampler
 using SpecialFunctions: loggamma
 
 """
-    BayesianUpdateSampler(region, n_tiles::Int; kwargs...) <: InitialConditionsSampler
+    BayesianUpdateSampler(region, tiles_n::Int, sparse_n::Int; kwargs...) <: InitialConditionsSampler
 
 Sampler that may re-sample initial conditions wih larger density by employing the
-daptive Bayesian framework of [Haerter2026](@cite).
+adaptive Bayesian framework of [Haerter2026](@cite).
 
 `region` is anything [`statespace_sampler`](@ref) accepts as a region: an `HRectangle`,
 or a tuple of ranges/`(min, max)` pairs, one per dimension.
-This is then tiled into `n_tiles^D` equally sized boxes, with `D` the system dimension.
-Each box is sampled sparsely.
-
-When this sampler is used with [`global_continuation`](@ref), boxes may be resampled
+This is then tiled into `tiles_n^D` equally sized boxes, with `D` the system dimension.
+Each box is sampled with `sparse_n` samples by default. However,
+when this sampler is used with [`global_continuation`](@ref), boxes may be resampled
 with higher density according to the Bayesian framework of [Haerter2026](@cite),
 see description below.
 
 ## Keyword arguments
 
-- `sparse_n::Int`: initial conditions drawn per box during routine monitoring.
 - `dense_n::Int = sparse_n^2`: initial conditions drawn per box when a box asks for a
   re-sample, and for every box at the first parameter of the continuation.
 - `λ::Real = 0.7`: forgetting factor. The prior is decayed as `α ← λα` before each
@@ -55,7 +53,7 @@ parameter. Every box starts out flagged, so the dense initialisation of the firs
 parameter is nothing but step 3 applied to all of them.
 
 This sampler adds the number of alarms
-in the `other` component of the continuation output. If `n_tiles > 1`,
+in the `other` component of the continuation output. If `tiles_n > 1`,
 then the basin entropy and basin entropy variance is also attributed.
 Note that their accuracy depends on the number of tiles, and the basin entropy does not
 equal exactly the KDTree-based estimation that occurs generically through
@@ -80,8 +78,8 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     history_etas::Vector{Vector{Float64}}
 end
 
-function BayesianUpdateSampler(region, n_tiles::Int;
-        sparse_n::Int, dense_n::Int = sparse_n^2, λ::Real = 0.7, β::Real = 0.5,
+function BayesianUpdateSampler(region, tiles_n::Int, sparse_n::Int;
+        dense_n::Int = sparse_n^2, λ::Real = 0.7, β::Real = 0.5,
         global_reset::Bool = false, seed = abs(rand(Int)), history::Bool = false,
     )
     sparse_n ≥ 1 || throw(ArgumentError("`sparse_n` must be ≥ 1, got $sparse_n"))
@@ -89,7 +87,7 @@ function BayesianUpdateSampler(region, n_tiles::Int;
     0 < λ ≤ 1 || throw(ArgumentError("`λ` must be in (0, 1], got $λ"))
     β > 0 || throw(ArgumentError("`β` must be > 0, got $β"))
 
-    boxes = _tile_region(_to_hrectangle(region), n_tiles)
+    boxes = _tile_region(_to_hrectangle(region), tiles_n)
     # each box gets its own generator, so that `statespace_sampler` does the actual
     # point picking and we only decide how many points come from where
     rng = Xoshiro(seed)
@@ -101,22 +99,22 @@ function BayesianUpdateSampler(region, n_tiles::Int;
         sparse_n, dense_n, Float64(λ), Float64(β), global_reset,
         # every box starts flagged
         fill(true, n), Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
-        false, history, Vector{Dict{Int, Float64}}[], Vector{Float64}[], Bool[],
+        false, history, Vector{Dict{Int, Float64}}[], Vector{Float64}[],
     )
 end
 
 _to_hrectangle(r::HRectangle) = r
 _to_hrectangle(r) = HRectangle(SVector(minimum.(r)), SVector(maximum.(r)))
 
-# Split `region` into `n_tiles` parts per dimension
-function _tile_region(region::HRectangle, n_tiles::Int)
-    n_tiles ≥ 1 || throw(ArgumentError("`n_tiles` must be ≥ 1, got $n_tiles"))
+# Split `region` into `tiles_n` parts per dimension
+function _tile_region(region::HRectangle, tiles_n::Int)
+    tiles_n ≥ 1 || throw(ArgumentError("`tiles_n` must be ≥ 1, got $tiles_n"))
     mins, maxs = region.mins, region.maxs
     all(i -> mins[i] < maxs[i], eachindex(mins)) ||
         throw(ArgumentError("`region` must have `mins .< maxs`"))
     D = length(mins)
-    N = n_tiles^D # Careful in high dim, this will explode
-    edges = [range(Float64(mins[d]), Float64(maxs[d]); length = n_tiles + 1) for d in 1:D]
+    N = tiles_n^D # Careful in high dim, this will explode
+    edges = [range(Float64(mins[d]), Float64(maxs[d]); length = tiles_n + 1) for d in 1:D]
     boxes = Vector{HRectangle{Float64, SVector{D, Float64}}}(undef, N)
     tile = ones(Int, D)  # tile index per dimension, the first one varying fastest
     lo, hi = zeros(D), zeros(D)
@@ -126,7 +124,7 @@ function _tile_region(region::HRectangle, n_tiles::Int)
         end
         boxes[i] = HRectangle(SVector{D, Float64}(lo), SVector{D, Float64}(hi))
         for d in 1:D  # odometer: bump the first dimension, carry into the next ones
-            tile[d] < n_tiles ? (tile[d] += 1; break) : (tile[d] = 1)
+            tile[d] < tiles_n ? (tile[d] += 1; break) : (tile[d] = 1)
         end
     end
     return boxes
