@@ -141,7 +141,7 @@ function global_continuation(
     attractors_cont = typeof(prev_attractors)[]
     fractions_cont = Dict{Int, Float64}[]
     quantifiers_cont = []
-    other_cont = init_other_cont(length(pcurve), sampler)
+    other_cont = init_other_container(length(pcurve), icsampler)
 
     # Loop over parameters
     for (i, p) in enumerate(pcurve)
@@ -223,7 +223,7 @@ transpose_quantifiers(bmap, quantifiers_cont) = Dict{String, Vector}()
 
 
 # Additional continuation info
-function init_other_cont(N::Int, sampler) # any other args here
+function init_other_container(N::Int, sampler) # any other args here?
     container = Dict{String, Any}("resamplings" => zeros(Int, N))
     extras = init_other_info(sampler)
     for (k, T) in extras

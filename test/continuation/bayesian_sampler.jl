@@ -41,8 +41,8 @@ const WS = [-0.5, -0.4, -0.3, 0.2, 0.4, 0.4]
 const PCURVE = [[1 => w, 2 => 0.0] for w in WS]
 
 _, BMAP = recurrences_mapper(first(WS))
-SAMPLER = BayesianUpdateSampler(REGION, 4;
-    sparse_n = 40, dense_n = 400, seed = 09092026, history = true)
+SAMPLER = BayesianUpdateSampler(REGION, 4, 40;
+    dense_n = 400, seed = 09092026, history = true)
 FRACTIONS_CONT, ATTRACTORS_CONT = global_continuation(
     AttractorSeedContinueMatch(BMAP), PCURVE, SAMPLER; show_progress = false,
 )

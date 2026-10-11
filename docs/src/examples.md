@@ -1073,8 +1073,8 @@ sparse_n = 5 # note this is per tile, for `n_tiles^2` tiles
 dense_n = sparse_n^2
 global_bounds = ((-2.0, 2.0), (-2.0, 2.0))
 
-sampler = BayesianUpdateSampler(global_bounds, n_tiles;
-    sparse_n, dense_n, λ, β
+sampler = BayesianUpdateSampler(global_bounds, n_tiles, sparse_n;
+    dense_n, λ, β
 )
 ```
 
@@ -1095,11 +1095,12 @@ tied to the Bayesian sampler (stored in the `other` field of `gco`)
 
 ```@example MAIN
 fig = plot_basins_curves(gco.fractions, ω_range)
-ax = content(fig[1,1])
-axs = [Axis(fig[1 - i, 1]) for i in 1:2]
-linkxaxes!(ax, axs...)
+axs = [Axis(fig[1 - i, 1]) for i in 1:3]
+linkxaxes!(content(fig[1,1]), axs...)
 hidexdecorations!.(axs; grid = false)
-xlims!(ax, extrema(ω_range))
-scatter!(axs[1], ω_range, length.(gco.attractors))
+xlims!(axs[end], extrema(ω_range))
+scatter!(axs[1], ω_range, gco.other["alarms"])
+scatter!(axs[2], ω_range, gco.other["basin_entropy"])
+scatter!(axs[3], ω_range, gco.other["basin_entropy_variance"])
 fig
 ```

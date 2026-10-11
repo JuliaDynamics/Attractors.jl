@@ -1,5 +1,5 @@
 export BayesianUpdateSampler
-using SpecialFunctions: loggamma
+using SpecialFunctions: loggamma, digamma, trigamma
 
 """
     BayesianUpdateSampler(region, tiles_n::Int, sparse_n::Int; kwargs...) <: InitialConditionsSampler
@@ -69,7 +69,8 @@ mutable struct BayesianUpdateSampler{D, G} <: InitialConditionsSampler
     λ::Float64
     β::Float64
     global_reset::Bool
-    boxes_flags::Vector{Bool}       # true => this box wants a dense re-sample
+    boxes_flags::Vector{Bool} # true => this box wants a dense re-sample
+    prior_alarms::Int # number of alarms raised at the current parameter
     layout::Vector{Pair{Int, Int}}  # (box index => n ics) of the last `generate_ics`
     step_counts::Vector{Dict{Int, Int}}
     did_reset::Bool                 # a global reset was triggered at this parameter
@@ -98,7 +99,7 @@ function BayesianUpdateSampler(region, tiles_n::Int, sparse_n::Int;
         [Dict{Int, Float64}() for _ in 1:n], zeros(n),
         sparse_n, dense_n, Float64(λ), Float64(β), global_reset,
         # every box starts flagged
-        fill(true, n), Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
+        fill(true, n), 0, Pair{Int, Int}[], [Dict{Int, Int}() for _ in 1:n],
         false, history, Vector{Dict{Int, Float64}}[], Vector{Float64}[],
     )
 end
@@ -155,7 +156,7 @@ resampling_required(s::BayesianUpdateSampler) = any(s.boxes_flags)
 function generate_ics(s::BayesianUpdateSampler{D}, args...) where {D}
     resample = resampling_required(s)
     # a round that is not a re-sample is the first one of a new parameter
-    resample || (foreach(empty!, s.step_counts); s.did_reset = false)
+    resample || (foreach(empty!, s.step_counts); s.did_reset = false; s.prior_alarms = 0)
     empty!(s.layout)
     total = 0
     if resample
@@ -206,6 +207,7 @@ function update_sampler!(s::BayesianUpdateSampler, labels, args...)
             η = s.etas[i] = _log_bayes_factor(counts, α, s.β)
             if η < 0 # alarm: ask for a dense re-sample
                 s.boxes_flags[i] = true
+                s.prior_alarms += 1
             else # posterior update
                 for (k, c) in counts
                     α[k] = get(α, k, s.β) + c
@@ -363,10 +365,10 @@ function init_other_info(s::BayesianUpdateSampler)
 end
 
 function extract_other_info(s::BayesianUpdateSampler)
-    out = Dict("alarms" => count(s.boxes_flags))
+    out = Dict{String, Any}("alarms" => s.prior_alarms)
     if length(s.boxes) > 1
-        out["basin_entropy"] = mean_entropy(s.alphas)
-        out["basin_entropy_variance"] = mean_entropy_variance(s.alphas)
+        out["basin_entropy"] = mean_basin_entropy(s.alphas)
+        out["basin_entropy_variance"] = mean_basin_entropy_variance(s.alphas)
     end
     return out
 end
