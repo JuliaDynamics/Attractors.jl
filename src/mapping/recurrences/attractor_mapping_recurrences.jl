@@ -16,7 +16,7 @@ exposition to the algorithm than the paper.
 so that a finite state machine can operate on top of it. Possibilities are:
 
 1. A tuple of sorted `AbstractRange`s for a regular grid.
-   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`
+   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 101)`
    for a two-dimensional system.
 2. A tuple of sorted `AbstractVector`s for an irregular grid, for example
    `grid = (xg, yg)` with `xg = range(0, 10.0^(1/2); length = 200).^2,
@@ -26,6 +26,9 @@ so that a finite state machine can operate on top of it. Possibilities are:
    [`subdivision_based_grid`](@ref).
    This automatically analyzes and adapts grid discretization
    levels in accordance with state space flow speed in different regions.
+
+In all cases the grid points correspond to cell _centers_.
+For irregular grid, the midpoints of the ranges provide the cell edges.
 
 The grid has to be the same dimensionality as
 the state space, use a [`ProjectedDynamicalSystem`](@ref) if you
@@ -84,8 +87,8 @@ want to search for attractors in a lower dimensional subspace.
   limit we declare that the orbit diverged to infinity.
 * `maximum_iterations = Int(1e6)`: A safety counter that is always increasing for
   each initial condition. Once exceeded, the algorithm assigns `-1` and throws a warning.
-  This clause exists to stop the algorithm never halting for inappropriate grids. It may happen
-  when a newly found attractor orbit intersects in the same cell of a previously found attractor (which leads to infinite resetting of all counters).
+  This clause exists to stop the algorithm never halting for inappropriate grids, or
+  the threshold of recurrences is never met due to complex transient dynamics.
 
 ## Description
 
