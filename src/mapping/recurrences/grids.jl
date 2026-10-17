@@ -20,10 +20,17 @@ end
 minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::RegularGrid) = norm(g.grid_steps)
 
-struct IrregularGrid{D, T <: Tuple} <: Grid
-    grid::T
+struct IrregularGrid{D, T <: Tuple, M <: Tuple} <: Grid
+    grid::T       # cell centers, sorted ascending
+    midpoints::M  # edges between consecutive centers
 end
-IrregularGrid(tuple::T) where {T} = IrregularGrid{length(tuple), T}(tuple)
+
+function IrregularGrid(grid::Tuple)
+    all(issorted, grid) || error("IrregularGrid axes must be sorted ascending.")
+    midpoints = map(ax -> (ax[1:end-1] .+ ax[2:end]) ./ 2, grid)
+    return IrregularGrid{length(grid), typeof(grid), typeof(midpoints)}(grid, midpoints)
+end
+
 minmax_grid_extent(g::IrregularGrid) = minmax_grid_extent(g.grid)
 
 minmax_grid_extent(g::NTuple) = map(minimum, g), map(maximum, g)
@@ -147,30 +154,27 @@ function basin_cell_index(u, grid_nfo::RegularGrid)
     return CartesianIndex{D}(ind...)
 end
 
-function basin_cell_index(u, grid_nfo::IrregularGrid)
-    D = length(grid_nfo.grid) # compile-type deduction
-    for (axis, coord) in zip(grid_nfo.grid, u)
+function basin_cell_index(u, g::IrregularGrid)
+    D = length(g.grid)
+    for (axis, coord) in zip(g.grid, u)
         if coord < first(axis) || coord > last(axis)
             return CartesianIndex{D}(-1)
         end
     end
-    cell_indices = map((x, y) -> searchsortedlast(x, y), grid_nfo.grid, u)
-    return CartesianIndex{D}(cell_indices...)
+    inds = map((m, x) -> searchsortedlast(m, x) + 1, g.midpoints, u)
+    return CartesianIndex{D}(inds...)
 end
 
-function basin_cell_index(u, grid_nfo::SubdivisionBasedGrid)
-    D = length(grid_nfo.grid) # compile-type deduction
-    initial_index = basin_cell_index(u, RegularGrid(SVector{D, Float64}(step.(grid_nfo.grid)), grid_nfo.grid_minima, grid_nfo.grid_maxima, grid_nfo.grid))
-    if initial_index == CartesianIndex{D}(-1)
-        return initial_index
-    end
-    cell_area = grid_nfo.lvl_array[initial_index]
-    grid_maxima = grid_nfo.grid_maxima
-    grid_minima = grid_nfo.grid_minima
-    grid_steps = grid_nfo.grid_steps
-    max_level = maximum(keys(grid_steps))
-    grid_step = (grid_maxima - grid_minima .+ 1) ./ grid_steps[cell_area]
-    ind = @. round(Int, (u - grid_minima) / grid_step, RoundDown) * (2^(max_level - cell_area)) + 1
+function basin_cell_index(u, g::SubdivisionBasedGrid)
+    D = length(g.grid)
+    s = SVector{D, Float64}(step.(g.grid))
+    initial_index = basin_cell_index(u, RegularGrid(s, g.grid_minima, g.grid_maxima, g.grid))
+    initial_index == CartesianIndex{D}(-1) && return initial_index
+    lvl = g.lvl_array[initial_index]
+    max_level = maximum(keys(g.grid_steps))
+    origin = g.grid_minima .- s ./ 2 # lower edge of the first coarse cell
+    fine_step = s ./ 2^lvl
+    ind = @. floor(Int, (u - origin) / fine_step) * 2^(max_level - lvl) + 1
     return CartesianIndex{D}(ind...)
 end
 
