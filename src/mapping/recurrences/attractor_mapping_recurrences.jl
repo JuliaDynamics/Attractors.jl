@@ -9,8 +9,7 @@ include("sparse_arrays.jl")
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
 recurrences in the state space, as outlined in [Datseris2022](@cite).
-However, the Description section below for has a more accurate (and simpler)
-exposition to the algorithm than the paper.
+See the Description section below for an up-to-date description of the algorithm.
 
 `grid` is instructions for partitioning the state space into finite-sized cells
 so that a finite state machine can operate on top of it. Possibilities are:
@@ -27,8 +26,9 @@ so that a finite state machine can operate on top of it. Possibilities are:
    This automatically analyzes and adapts grid discretization
    levels in accordance with state space flow speed in different regions.
 
-In all cases the grid points correspond to cell _centers_.
-For irregular grid, the midpoints of the ranges provide the cell edges.
+In all cases the `grid` values correspond to cell edges, the same way in traditional
+histograms: cell `i` covers the range `[range[i], range[i+1])`, so that the number of
+grid cells is 1 less than the given `grid` length (per dimension).
 
 The grid has to be the same dimensionality as
 the state space, use a [`ProjectedDynamicalSystem`](@ref) if you

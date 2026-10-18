@@ -20,15 +20,13 @@ end
 minmax_grid_extent(g::RegularGrid) = g.grid_minima, g.grid_maxima
 mean_cell_diagonal(g::RegularGrid) = norm(g.grid_steps)
 
-struct IrregularGrid{D, T <: Tuple, M <: Tuple} <: Grid
+struct IrregularGrid{D, T <: Tuple} <: Grid
     grid::T       # cell centers, sorted ascending
-    midpoints::M  # edges between consecutive centers
 end
 
 function IrregularGrid(grid::Tuple)
-    all(issorted, grid) || error("IrregularGrid axes must be sorted ascending.")
-    midpoints = map(ax -> (ax[1:end-1] .+ ax[2:end]) ./ 2, grid)
-    return IrregularGrid{length(grid), typeof(grid), typeof(midpoints)}(grid, midpoints)
+    all(issorted, grid) || error("IrregularGrid dimensions must be sorted ascending.")
+    return IrregularGrid{length(grid), typeof(grid)}(grid)
 end
 
 minmax_grid_extent(g::IrregularGrid) = minmax_grid_extent(g.grid)
@@ -86,32 +84,34 @@ function subdivision_based_grid(ds::DynamicalSystem, grid; maxlevel = 4, q = 0.9
 end
 
 function SubdivisionBasedGrid(grid::NTuple{D, <:AbstractRange}, lvl_array::Array{Int, D}) where {D}
+    size(lvl_array) == length.(grid) .- 1 ||
+        error("`lvl_array` must have size `length.(grid) .- 1` (one entry per cell).")
     unique_lvls = unique(lvl_array)
     any(<(0), unique_lvls) && error("Level array cannot contain negative values!")
+
     grid_steps = Dict{Int, Vector{Int}}()
     for i in unique_lvls
-        grid_steps[i] = [length(axis) * 2^i for axis in grid]
+        grid_steps[i] = [(length(axis) - 1) * 2^i for axis in grid]   # cells per dim
     end
     grid_maxima = SVector{D, Float64}(maximum.(grid))
     grid_minima = SVector{D, Float64}(minimum.(grid))
 
     function scale_axis(axis, multiplier)
-        new_length = length(axis) * (2^multiplier)
-        return range(first(axis), last(axis), length = new_length)
+        ncells = (length(axis) - 1) * 2^multiplier
+        return range(first(axis), last(axis), length = ncells + 1)
     end
     multiplier = maximum(keys(grid_steps))
-    scaled_axis = [scale_axis(axis, multiplier) for axis in grid]
-    max_grid = Tuple(scaled_axis)
-
+    max_grid = Tuple([scale_axis(axis, multiplier) for axis in grid])
     return SubdivisionBasedGrid(grid_steps, grid_minima, grid_maxima, lvl_array, grid, max_grid)
 end
 
 function make_lvl_array(ds::DynamicalSystem, grid, maxlevel, q)
     isdiscretetime(ds) && error("Dynamical system must be continuous time.")
-    indices = CartesianIndices(length.(grid))
+    ncells = length.(grid) .- 1 # remember grid is the cell edges
+    indices = CartesianIndices(ncells)
     f, p = dynamic_rule(ds), current_parameters(ds)
     udummy = copy(current_state(ds))
-    velocities = zeros(length.(grid))
+    velocities = zeros(ncells)
     for ind in indices
         u0 = Attractors.generate_ic_on_grid(grid, ind)
         velocity = if !isinplace(ds)
@@ -121,60 +121,47 @@ function make_lvl_array(ds::DynamicalSystem, grid, maxlevel, q)
             udummy
         end
         speed = norm(velocity)
-        if isnan(speed)
-            velocities[ind] = Inf
-        else
-            velocities[ind] = speed
-        end
+        velocities[ind] = isnan(speed) ? Inf : speed
     end
-
     maxvel = quantile(filter(x -> x != Inf, velocities), q)
-    # large ratio means small velocity means high subdivision
     ratios = maxvel ./ velocities
-    # subdivision is just the log2 of the ratio. We do this fancy
-    # computation because this way zeros are handled correctly
-    # (and we also clamp the values of the level array correctly in 0-maxlevel)
-    result = [round(Int, log2(clamp(x, 1, 2^maxlevel))) for x in ratios]
-    return result
+    return [round(Int, log2(clamp(x, 1, 2^maxlevel))) for x in ratios]
 end
 
 
 #####################################################################################
 # Mapping a state to a cartesian index according to the grid
 #####################################################################################
-function basin_cell_index(u, grid_nfo::RegularGrid)
-    D = length(grid_nfo.grid_minima) # compile-type deduction
-    @inbounds for i in eachindex(grid_nfo.grid_minima)
-        if !(grid_nfo.grid_minima[i] ≤ u[i] ≤ grid_nfo.grid_maxima[i])
+function basin_cell_index(u, g::RegularGrid)
+    D = length(g.grid_minima)
+    @inbounds for i in 1:D
+        if !(g.grid_minima[i] ≤ u[i] < g.grid_maxima[i])
             return CartesianIndex{D}(-1)
         end
     end
-    # Snap point to grid
-    ind = @. round(Int, (u - grid_nfo.grid_minima) / grid_nfo.grid_steps) + 1
+    ind = @. floor(Int, (u - g.grid_minima) / g.grid_steps) + 1
     return CartesianIndex{D}(ind...)
 end
 
 function basin_cell_index(u, g::IrregularGrid)
     D = length(g.grid)
     for (axis, coord) in zip(g.grid, u)
-        if coord < first(axis) || coord > last(axis)
+        if !(first(axis) ≤ coord < last(axis))
             return CartesianIndex{D}(-1)
         end
     end
-    inds = map((m, x) -> searchsortedlast(m, x) + 1, g.midpoints, u)
+    inds = map((x, y) -> searchsortedlast(x, y), g.grid, u)
     return CartesianIndex{D}(inds...)
 end
 
 function basin_cell_index(u, g::SubdivisionBasedGrid)
     D = length(g.grid)
     s = SVector{D, Float64}(step.(g.grid))
-    initial_index = basin_cell_index(u, RegularGrid(s, g.grid_minima, g.grid_maxima, g.grid))
-    initial_index == CartesianIndex{D}(-1) && return initial_index
-    lvl = g.lvl_array[initial_index]
+    i0 = basin_cell_index(u, RegularGrid(s, g.grid_minima, g.grid_maxima, g.grid))
+    i0 == CartesianIndex{D}(-1) && return i0
+    lvl = g.lvl_array[i0]
     max_level = maximum(keys(g.grid_steps))
-    origin = g.grid_minima .- s ./ 2 # lower edge of the first coarse cell
-    fine_step = s ./ 2^lvl
-    ind = @. floor(Int, (u - origin) / fine_step) * 2^(max_level - lvl) + 1
+    ind = @. floor(Int, (u - g.grid_minima) / (s / 2^lvl)) * 2^(max_level - lvl) + 1
     return CartesianIndex{D}(ind...)
 end
 
