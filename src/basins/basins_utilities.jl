@@ -9,26 +9,27 @@ which includes a reference to a [`DynamicalSystem`](@ref) and return them
 along with (perhaps approximated) found attractors contained within the
 [`ArrayBasinsOfAttraction`](@ref) structure.
 
-`grid` is a tuple of ranges defining the grid of initial conditions that partition
-the state space into boxes with size the step size of each range.
+`grid` is a tuple of vectors defining a tesselation of the state space along each dimension.
 For example, `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`.
+We follow a "histogram" convention, where the provided `grid` defines the
+cell _edges_, and the generated initial conditions are the _midpoints_ of the grid.
+Thus, the number of initial conditions is `prod(length.(grid) .- 1))`.
+
 The grid has to be the same dimensionality as the state space expected by the
-integrator/system used in `bmap`. E.g., a [`ProjectedDynamicalSystem`](@ref)
+dynamical system used in `bmap`. E.g., a [`ProjectedDynamicalSystem`](@ref)
 could be used for lower dimensional projections, etc. A special case here is
 a [`PoincareMap`](@ref) with `plane` being `Tuple{Int, <: Real}`. In this special
 scenario the grid can be one dimension smaller than the state space, in which case
 the partitioning happens directly on the hyperplane the Poincaré map operates on.
 
 `basins_of_attraction` function is a convenience 5-lines-of-code wrapper which uses the
-`labels` returned by [`basins_fractions`](@ref) and simply assigns them to a full array
+`labels` returned by [`basins_fractions_labels`](@ref) and simply assigns them to a full array
 corresponding to the state space partitioning indicated by `grid`.
-
-Note that, to ensure backwards compatibility the return type can be decomposed such that
-`basins, attractors = boa`.
 
 See also [`convergence_and_basins_of_attraction`](@ref).
 """
 function basins_of_attraction(bmap::BasinMap, grid::Tuple; kwargs...)
+    all(issorted, grid) || error("All grid dimensions must be sorted ascending.")
     basins = zeros(Int32, map(length, grid))
     A = ics_from_grid(grid)
     _, labels = basins_fractions_labels(bmap, PrescribedICs(A); kwargs...)
@@ -52,21 +53,25 @@ function basins_of_attraction(bmap::BasinMap, sampler::InitialConditionsSampler;
 end
 
 """
-    ics_from_grid(grid)
+    ics_from_grid(grid::Tuple)
 
-Generate all initial conditions corresponding to the given `grid`
-(a state space tessellation used e.g. in [`basins_of_attraction`](@ref)).
+Generate all initial conditions corresponding to the given `grid`, which is
+a state space tesselation used e.g. in [`basins_of_attraction`](@ref) or in
+[`BasinMapRecurrences`](@ref). The convention is that the provided `grid` denotes
+cell _edges_, and the generated initial conditions are the _midpoints_ of the grid.
 """
 function ics_from_grid(grid)
-    I = CartesianIndices(length.(grid))
+    I = CartesianIndices(length.(grid) .- 1)
     A = [generate_ic_on_grid(grid, i) for i in vec(I)]
     return A
 end
 
 
-# Type-stable generation of an initial condition given a grid array index
+# Type-stable generation of an initial condition at the center of the cell
+# `ind`, where `grid` holds cell edges (cell k is [grid[k][i], grid[k][i+1]))
+# so it assumes that `ind` is at most `length(grid) - 1`!!!
 @generated function generate_ic_on_grid(grid::NTuple{B, T}, ind) where {B, T}
-    gens = [:(grid[$k][ind[$k]]) for k in 1:B]
+    gens = [:((grid[$k][ind[$k]] + grid[$k][ind[$k] + 1]) / 2) for k in 1:B]
     return quote
         Base.@_inline_meta
         @inbounds return SVector{$B, Float64}($(gens...))

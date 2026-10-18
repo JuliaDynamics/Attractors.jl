@@ -9,14 +9,13 @@ include("sparse_arrays.jl")
 
 Map initial conditions of `ds` to attractors by identifying attractors on the fly based on
 recurrences in the state space, as outlined in [Datseris2022](@cite).
-However, the Description section below for has a more accurate (and simpler)
-exposition to the algorithm than the paper.
+See the Description section below for an up-to-date description of the algorithm.
 
 `grid` is instructions for partitioning the state space into finite-sized cells
 so that a finite state machine can operate on top of it. Possibilities are:
 
 1. A tuple of sorted `AbstractRange`s for a regular grid.
-   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 100)`
+   Example is `grid = (xg, yg)` where `xg = yg = range(-5, 5; length = 101)`
    for a two-dimensional system.
 2. A tuple of sorted `AbstractVector`s for an irregular grid, for example
    `grid = (xg, yg)` with `xg = range(0, 10.0^(1/2); length = 200).^2,
@@ -26,6 +25,10 @@ so that a finite state machine can operate on top of it. Possibilities are:
    [`subdivision_based_grid`](@ref).
    This automatically analyzes and adapts grid discretization
    levels in accordance with state space flow speed in different regions.
+
+In all cases the `grid` values correspond to cell edges, the same way in traditional
+histograms: cell `i` covers the range `[range[i], range[i+1])`, so that the number of
+grid cells is 1 less than the given `grid` length (per dimension).
 
 The grid has to be the same dimensionality as
 the state space, use a [`ProjectedDynamicalSystem`](@ref) if you
@@ -84,8 +87,8 @@ want to search for attractors in a lower dimensional subspace.
   limit we declare that the orbit diverged to infinity.
 * `maximum_iterations = Int(1e6)`: A safety counter that is always increasing for
   each initial condition. Once exceeded, the algorithm assigns `-1` and throws a warning.
-  This clause exists to stop the algorithm never halting for inappropriate grids. It may happen
-  when a newly found attractor orbit intersects in the same cell of a previously found attractor (which leads to infinite resetting of all counters).
+  This clause exists to stop the algorithm never halting for inappropriate grids, or
+  the threshold of recurrences is never met due to complex transient dynamics.
 
 ## Description
 
