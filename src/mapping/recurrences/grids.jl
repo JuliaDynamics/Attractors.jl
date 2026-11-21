@@ -144,7 +144,7 @@ function basin_cell_index(u, grid_nfo::RegularGrid)
     end
     # Snap point to grid
     ind = @. round(Int, (u - grid_nfo.grid_minima) / grid_nfo.grid_steps) + 1
-    return CartesianIndex{D}(ind...)
+    return CartesianIndex(Tuple(ind))
 end
 
 function basin_cell_index(u, grid_nfo::IrregularGrid)
